@@ -1,5 +1,5 @@
 ﻿<RCC>
     <qresource prefix="/">
-        <file>motordev_logo.svg</file>
+        <file alias="motordev_logo.svg">../motordev_logo.svg</file>
     </qresource>
 </RCC>

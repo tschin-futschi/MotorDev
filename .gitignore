@@ -1,6 +1,7 @@
 # Build directories
 /build/
 /build_qt/
+/build_*/
 /cmake-build-*/
 
 # CMake

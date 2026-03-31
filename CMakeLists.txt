@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Svg SvgWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Svg SvgWidgets SerialPort PrintSupport)
 
 qt_add_executable(MotorDev
     src/main.cpp
@@ -36,4 +36,6 @@ target_link_libraries(MotorDev PRIVATE
     Qt6::Widgets
     Qt6::Svg
     Qt6::SvgWidgets
+    Qt6::SerialPort
+    Qt6::PrintSupport
 )

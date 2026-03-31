@@ -62,9 +62,11 @@ Sidebar::Sidebar(QWidget *parent)
     contentLayout->addWidget(makeSectionLabel(tr("端口"), m_contentWidget));
     contentLayout->addWidget(makeCombo({tr("COM1"), tr("COM2"), tr("COM3")}, m_contentWidget));
     contentLayout->addWidget(makeSectionLabel(tr("波特率"), m_contentWidget));
-    contentLayout->addWidget(makeCombo(
+    auto *baudRateCombo = makeCombo(
         {tr("9600"), tr("19200"), tr("38400"), tr("57600"), tr("115200"), tr("230400"), tr("460800"), tr("921600")},
-        m_contentWidget));
+        m_contentWidget);
+    baudRateCombo->setCurrentIndex(4);
+    contentLayout->addWidget(baudRateCombo);
     contentLayout->addWidget(makeSectionLabel(tr("数据位"), m_contentWidget));
     contentLayout->addWidget(makeCombo({tr("8")}, m_contentWidget));
     contentLayout->addWidget(makeSectionLabel(tr("停止位"), m_contentWidget));

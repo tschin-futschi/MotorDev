@@ -51,7 +51,7 @@ ActivityBar::ActivityBar(QWidget *parent)
     m_settingsButton = new QPushButton(tr("设置"), this);
 
     const QList<QPushButton *> buttons = {
-        m_registerButton, m_flashButton, m_scopeButton, m_settingsButton};
+        m_registerButton, m_flashButton, m_scopeButton};
     for (auto *button : buttons) {
         button->setFixedSize(
             Style::Size::ActivityButtonSize,
@@ -61,6 +61,11 @@ ActivityBar::ActivityBar(QWidget *parent)
     }
 
     layout->addStretch();
+    m_settingsButton->setFixedSize(
+        Style::Size::ActivityButtonSize,
+        Style::Size::ActivityButtonSize);
+    m_settingsButton->setStyleSheet(activityButtonStyle(false));
+    layout->addWidget(m_settingsButton, 0, Qt::AlignHCenter);
 
     setStyleSheet(QStringLiteral("background:%1; border-right:%2px solid %3;")
                       .arg(Style::Color::ActivityBarBackground.name())

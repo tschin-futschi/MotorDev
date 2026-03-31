@@ -56,7 +56,7 @@ TopBar::TopBar(QWidget *parent)
     m_connectionIndicator->setStyleSheet(QStringLiteral(
         "background:%1; border-radius:%2px;")
                                              .arg(Style::Color::DisconnectedIndicator.name())
-                                             .arg(Style::Size::IndicatorSize / 2));
+                                             .arg(Style::Size::IndicatorSize / 2 + 1));
     connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
                                        .arg(Style::Color::TopBarValueText.name()));
     m_languageCombo->setStyleSheet(QStringLiteral(
