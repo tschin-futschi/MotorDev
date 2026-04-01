@@ -19,17 +19,20 @@ QString activityButtonStyle(bool active) {
                "border:%2px solid %3;"
                "border-radius:%4px;"
                "color:%5;"
-               "font-size:9px;"
+               "font-size:11px;"
                "padding:%6px;"
                "}"
-               "QPushButton:hover { background:%7; }")
+               "QPushButton:hover { background:%7; }"
+               "QPushButton:pressed { background:#dddbd6; padding:%8px %6px %9px %6px; }")
         .arg(background)
         .arg(Style::Size::BorderThin)
         .arg(border)
         .arg(Style::Size::ActivityButtonRadius)
         .arg(text)
         .arg(Style::Size::ActivityButtonPadding)
-        .arg(Style::Color::TopBarBackground.name());
+        .arg(Style::Color::TopBarBackground.name())
+        .arg(Style::Size::ActivityButtonPadding + 1)
+        .arg(Style::Size::ActivityButtonPadding - 1);
 }
 }
 

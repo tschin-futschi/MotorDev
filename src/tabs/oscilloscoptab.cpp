@@ -30,7 +30,7 @@ void OscilloscopTab::setupUi() {
     sidebarLayout->setSpacing(Style::Size::SidebarSectionSpacing);
     auto *sidebarLabel = new QLabel(tr("示波侧边栏"), sidebarContent);
     sidebarLabel->setWordWrap(true);
-    sidebarLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+    sidebarLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
                                     .arg(Style::Color::SidebarLabelText.name()));
     sidebarLayout->addWidget(sidebarLabel);
     sidebarLayout->addStretch();
@@ -46,7 +46,7 @@ void OscilloscopTab::setupUi() {
         Style::Size::ContentPadding);
     auto *label = new QLabel(tr("实时示波页面"), contentWidget);
     label->setAlignment(Qt::AlignCenter);
-    label->setStyleSheet(QStringLiteral("color:%1; font-size:18px;")
+    label->setStyleSheet(QStringLiteral("color:%1; font-size:20px;")
                              .arg(Style::Color::TopBarValueText.name()));
     contentLayout->addWidget(label, 1);
     layout->addWidget(contentWidget, 1);

@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent)
     statusLayout->setSpacing(Style::Size::StatusBarSpacing);
 
     m_statusLabel = new QLabel(tr("115200 8N1 | 未连接 | RX: 0 | TX: 0 | 就绪"), m_statusBarWidget);
-    m_statusLabel->setStyleSheet(QStringLiteral("color:%1; font-size:10px;")
+    m_statusLabel->setStyleSheet(QStringLiteral("color:%1; font-size:12px;")
                                      .arg(Style::Color::StatusBarText.name()));
     statusLayout->addWidget(m_statusLabel);
     statusLayout->addStretch();

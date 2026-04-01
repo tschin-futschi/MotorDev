@@ -46,18 +46,18 @@ TopBar::TopBar(QWidget *parent)
     m_languageCombo->setFixedWidth(Style::Size::LanguageComboWidth);
     m_languageCombo->addItems({tr("中文"), tr("English")});
 
-    titleLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px; font-weight:500;")
+    titleLabel->setStyleSheet(QStringLiteral("color:%1; font-size:15px; font-weight:500;")
                                   .arg(Style::Color::AppText.name()));
     separator->setStyleSheet(QStringLiteral("color:%1;").arg(Style::Color::TableRowBorder.name()));
-    portLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+    portLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
                                  .arg(Style::Color::TopBarLabelText.name()));
-    m_portValueLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+    m_portValueLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
                                         .arg(Style::Color::TopBarValueText.name()));
     m_connectionIndicator->setStyleSheet(QStringLiteral(
         "background:%1; border-radius:%2px;")
                                              .arg(Style::Color::DisconnectedIndicator.name())
                                              .arg(Style::Size::IndicatorSize / 2 + 1));
-    connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+    connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
                                        .arg(Style::Color::TopBarValueText.name()));
     m_languageCombo->setStyleSheet(QStringLiteral(
         "QComboBox { background:%1; border:%2px solid %3; padding:2px 6px; color:%4; }")

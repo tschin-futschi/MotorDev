@@ -6,7 +6,6 @@ class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
 class QGroupBox;
-class QLineEdit;
 class QPushButton;
 class SerialManager;
 
@@ -25,14 +24,16 @@ private:
     QGroupBox *createIcGroup();
     QGroupBox *createSerialGroup();
     QGroupBox *createPmicGroup();
-    QGroupBox *createConfigFileGroup();
+    QWidget *createConfigFileRow();
 
     SerialManager *m_serialManager = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     bool m_isSerialConnected = false;
 
     QComboBox *m_icCombo = nullptr;
-    QLineEdit *m_slaveIdEdit = nullptr;
+    QComboBox *m_slaveIdCombo = nullptr;
+    QPushButton *m_icScanButton = nullptr;
+    QPushButton *m_icConnectButton = nullptr;
     QComboBox *m_portCombo = nullptr;
     QComboBox *m_baudRateCombo = nullptr;
     QPushButton *m_scanButton = nullptr;

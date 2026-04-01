@@ -8,28 +8,55 @@
 #include <QColor>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QEvent>
 #include <QFormLayout>
 #include <QGraphicsDropShadowEffect>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
 #include <QMetaObject>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QStyle>
 #include <QDebug>
-#include <QRegularExpression>
-#include <QRegularExpressionValidator>
 #include <QSplitter>
 #include <QVBoxLayout>
 
 using namespace MotorDev;
 
 namespace {
+class GroupHoverFilter : public QObject {
+public:
+    explicit GroupHoverFilter(QObject *parent = nullptr)
+        : QObject(parent) {}
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        auto *widget = qobject_cast<QWidget *>(watched);
+        if (widget == nullptr) {
+            return QObject::eventFilter(watched, event);
+        }
+
+        if (event->type() == QEvent::HoverEnter) {
+            widget->setProperty("hovered", true);
+            widget->style()->unpolish(widget);
+            widget->style()->polish(widget);
+            widget->update();
+        } else if (event->type() == QEvent::HoverLeave) {
+            widget->setProperty("hovered", false);
+            widget->style()->unpolish(widget);
+            widget->style()->polish(widget);
+            widget->update();
+        }
+
+        return QObject::eventFilter(watched, event);
+    }
+};
+
 QLabel *makeFormLabel(const QString &text, QWidget *parent) {
     auto *label = new QLabel(text, parent);
-    label->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+    label->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
                              .arg(Style::Color::TopBarValueText.name()));
     return label;
 }
@@ -67,7 +94,9 @@ QPushButton *makePrimaryButton(const QString &text, QWidget *parent) {
     auto *button = new QPushButton(text, parent);
     button->setFixedHeight(Style::Size::SidebarButtonHeight);
     button->setStyleSheet(QStringLiteral(
-        "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:11px; padding:0 12px; }")
+        "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
+        "QPushButton:hover { background:#D5E8C4; }"
+        "QPushButton:pressed { background:#C0DD97; padding:1px 12px 0 12px; }")
                               .arg(Style::Color::LightGreen.name())
                               .arg(Style::Size::BorderThin)
                               .arg(Style::Color::PrimaryGreen.name())
@@ -86,13 +115,16 @@ void applyPanelShadow(QWidget *widget) {
 QGroupBox *makePanelGroup(const QString &title, QWidget *parent) {
     auto *group = new QGroupBox(title, parent);
     group->setStyleSheet(QStringLiteral(
-        "QGroupBox { background:%1; border:%2px solid %3; margin-top:12px; color:%4; font-size:12px; font-weight:500; }"
-        "QGroupBox::title { subcontrol-origin: margin; left:%5px; padding:0 4px; }")
+        "QGroupBox { background:%1; border:%2px solid %3; padding-top:28px; color:%4; font-size:14px; font-weight:500; }"
+        "QGroupBox[hovered=\"true\"] { background:#f5f5f2; }"
+        "QGroupBox::title { subcontrol-origin: padding; subcontrol-position: top center; padding:8px 0 4px 0; }")
                              .arg(Style::Color::PanelBackground.name())
                              .arg(Style::Size::BorderThin)
                              .arg(Style::Color::DefaultBorder.name())
-                             .arg(Style::Color::TopBarValueText.name())
-                             .arg(Style::Size::ContentPadding - 4));
+                             .arg(Style::Color::TopBarValueText.name()));
+    group->setAttribute(Qt::WA_Hover, true);
+    group->setProperty("hovered", false);
+    group->installEventFilter(new GroupHoverFilter(group));
     applyPanelShadow(group);
     return group;
 }
@@ -196,13 +228,13 @@ void ConfigTab::setupUi() {
     auto *lowerLayout = new QVBoxLayout(lowerArea);
     lowerLayout->setContentsMargins(0, 0, 0, 0);
     lowerLayout->setSpacing(Style::Size::ContentSpacing);
-    lowerLayout->addWidget(createConfigFileGroup());
+    lowerLayout->addWidget(createConfigFileRow());
     lowerLayout->addStretch();
 
     splitter->addWidget(upperArea);
     splitter->addWidget(lowerArea);
-    splitter->setStretchFactor(0, 3);
-    splitter->setStretchFactor(1, 2);
+    splitter->setStretchFactor(0, 4);
+    splitter->setStretchFactor(1, 1);
 
     contentLayout->addWidget(splitter);
     layout->addWidget(contentWidget, 1);
@@ -220,12 +252,6 @@ void ConfigTab::connectSignals() {
     {
         const QSignalBlocker comboBlocker(m_icCombo);
         m_icCombo->setCurrentIndex(indexFromMotorIcType(m_deviceContext->icType()));
-    }
-
-    if (m_deviceContext->slaveId() != 0x00) {
-        m_slaveIdEdit->setText(QStringLiteral("0x%1").arg(m_deviceContext->slaveId(), 2, 16, QLatin1Char('0')).toUpper());
-    } else {
-        m_slaveIdEdit->clear();
     }
 
     connect(m_scanButton, &QPushButton::clicked, this, [this]() {
@@ -287,35 +313,52 @@ void ConfigTab::connectSignals() {
         m_icCombo->setCurrentIndex(indexFromMotorIcType(type));
     });
 
-    connect(m_slaveIdEdit, &QLineEdit::editingFinished, this, [this]() {
-        const QString text = m_slaveIdEdit->text().trimmed();
+    connect(m_icScanButton, &QPushButton::clicked, this, []() {
+        qDebug() << "I2C scan started (stub)";
+    });
+
+    connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
+        const QString addr = m_slaveIdCombo->currentText().trimmed();
+        if (addr.isEmpty()) {
+            qWarning() << "IC connect failed: no slave address selected";
+            return;
+        }
+
+        qDebug().noquote() << QStringLiteral("IC connect to %1 (stub)").arg(addr);
+    });
+
+    connect(m_slaveIdCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
         if (text.isEmpty()) {
-            qDebug() << "Slave ID cleared";
-            m_deviceContext->setSlaveId(0x00);
             return;
         }
 
         bool ok = false;
         const uint value = text.toUInt(&ok, 16);
-        if (!ok || value > 0x7F) {
-            qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
+        if (ok && value <= 0x7F) {
+            qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1")
+                                      .arg(value, 2, 16, QLatin1Char('0'))
+                                      .toUpper();
+            m_deviceContext->setSlaveId(static_cast<uint8_t>(value));
             return;
         }
 
-        qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1")
-                                  .arg(value, 2, 16, QLatin1Char('0'))
-                                  .toUpper();
-        m_deviceContext->setSlaveId(static_cast<uint8_t>(value));
+        if (!ok || value > 0x7F) {
+            qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
+        }
     });
 
     connect(m_deviceContext, &DeviceContext::slaveIdChanged, this, [this](uint8_t id) {
-        const QSignalBlocker blocker(m_slaveIdEdit);
+        const QSignalBlocker blocker(m_slaveIdCombo);
         if (id == 0x00) {
-            m_slaveIdEdit->clear();
+            m_slaveIdCombo->setCurrentIndex(-1);
             return;
         }
 
-        m_slaveIdEdit->setText(QStringLiteral("0x%1").arg(id, 2, 16, QLatin1Char('0')).toUpper());
+        const QString text = QStringLiteral("0x%1").arg(id, 2, 16, QLatin1Char('0')).toUpper();
+        const int index = m_slaveIdCombo->findText(text);
+        if (index >= 0) {
+            m_slaveIdCombo->setCurrentIndex(index);
+        }
     });
 }
 
@@ -359,7 +402,6 @@ QGroupBox *ConfigTab::createIcGroup() {
         Style::Size::ContentPadding,
         Style::Size::ContentPadding);
     layout->setSpacing(Style::Size::FormSpacing);
-    layout->setAlignment(Qt::AlignTop);
 
     auto *formLayout = new QFormLayout;
     formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -370,21 +412,23 @@ QGroupBox *ConfigTab::createIcGroup() {
     m_icCombo = makeCombo({QStringLiteral("AW86006"), QStringLiteral("DW9786"), QStringLiteral("DW9788")}, group);
     formLayout->addRow(makeFormLabel(tr("Select IC"), group), m_icCombo);
 
-    m_slaveIdEdit = new QLineEdit(group);
-    m_slaveIdEdit->setPlaceholderText(QStringLiteral("0x18"));
-    m_slaveIdEdit->setMinimumHeight(Style::Size::SidebarComboMinHeight);
-    m_slaveIdEdit->setValidator(new QRegularExpressionValidator(
-        QRegularExpression(QStringLiteral("^(0x)?[0-9A-Fa-f]{1,2}$")),
-        m_slaveIdEdit));
-    m_slaveIdEdit->setStyleSheet(QStringLiteral(
-        "QLineEdit { background:%1; border:%2px solid %3; padding:4px 6px; color:%4; }")
-                                      .arg(Style::Color::White.name())
-                                      .arg(Style::Size::BorderThin)
-                                      .arg(Style::Color::InputBorder.name())
-                                      .arg(Style::Color::TopBarValueText.name()));
-    formLayout->addRow(makeFormLabel(QStringLiteral("Slave ID"), group), m_slaveIdEdit);
+    m_slaveIdCombo = makeCombo({}, group);
+    m_slaveIdCombo->setPlaceholderText(QStringLiteral("Scan first"));
+    m_slaveIdCombo->setCurrentIndex(-1);
+    formLayout->addRow(makeFormLabel(QStringLiteral("Slave ID"), group), m_slaveIdCombo);
 
     layout->addLayout(formLayout);
+    layout->addStretch();
+
+    auto *buttonRow = new QHBoxLayout;
+    buttonRow->setSpacing(Style::Size::FormSpacing);
+    m_icScanButton = makePrimaryButton(tr("Scan"), group);
+    m_icConnectButton = makePrimaryButton(tr("Connect"), group);
+    buttonRow->addWidget(m_icScanButton);
+    buttonRow->addWidget(m_icConnectButton);
+    buttonRow->addStretch();
+    layout->addLayout(buttonRow);
+
     return group;
 }
 
@@ -397,7 +441,6 @@ QGroupBox *ConfigTab::createSerialGroup() {
         Style::Size::ContentPadding,
         Style::Size::ContentPadding);
     layout->setSpacing(Style::Size::FormSpacing);
-    layout->setAlignment(Qt::AlignTop);
 
     auto *formLayout = new QFormLayout;
     formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -416,6 +459,7 @@ QGroupBox *ConfigTab::createSerialGroup() {
     formLayout->addRow(makeFormLabel(tr("Port"), group), m_portCombo);
     formLayout->addRow(makeFormLabel(tr("Baud Rate"), group), m_baudRateCombo);
     layout->addLayout(formLayout);
+    layout->addStretch();
 
     auto *buttonRow = new QHBoxLayout;
     buttonRow->setSpacing(Style::Size::FormSpacing);
@@ -437,7 +481,6 @@ QGroupBox *ConfigTab::createPmicGroup() {
         Style::Size::ContentPadding,
         Style::Size::ContentPadding);
     layout->setSpacing(Style::Size::FormSpacing);
-    layout->setAlignment(Qt::AlignTop);
 
     auto *formLayout = new QFormLayout;
     formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -465,44 +508,43 @@ QGroupBox *ConfigTab::createPmicGroup() {
     }
 
     layout->addLayout(formLayout);
+    layout->addStretch();
     m_pmicConfigButton = makePrimaryButton(tr("配置 PMIC"), group);
     layout->addWidget(m_pmicConfigButton, 0, Qt::AlignLeft);
     return group;
 }
 
-QGroupBox *ConfigTab::createConfigFileGroup() {
-    auto *group = makePanelGroup(tr("Config File"), this);
-    auto *layout = new QVBoxLayout(group);
-    layout->setContentsMargins(
-        Style::Size::ContentPadding,
-        Style::Size::GroupBoxTopMargin,
-        Style::Size::ContentPadding,
-        Style::Size::ContentPadding);
-    layout->setSpacing(Style::Size::ContentSpacing);
-    layout->setAlignment(Qt::AlignTop);
+QWidget *ConfigTab::createConfigFileRow() {
+    auto *rowWidget = new QWidget(this);
+    auto *layout = new QHBoxLayout(rowWidget);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(Style::Size::FormSpacing);
 
-    auto *row = new QHBoxLayout;
-    row->setSpacing(Style::Size::FormSpacing);
-    m_fileCombo = makeCombo({}, group);
+    auto *label = makeFormLabel(tr("Config File"), rowWidget);
+    layout->addWidget(label);
+
+    m_fileCombo = makeCombo({}, rowWidget);
     m_fileCombo->setEditable(true);
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
-    row->addWidget(m_fileCombo, 1);
+    layout->addWidget(m_fileCombo, 1);
 
-    m_browseButton = new QPushButton(tr("Browse"), group);
+    m_browseButton = new QPushButton(tr("Browse"), rowWidget);
     m_browseButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_browseButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:11px; padding:0 12px; }")
+        "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
+        "QPushButton:hover { background:#f0f0f0; }"
+        "QPushButton:pressed { background:#e0e0e0; padding:1px 12px 0 12px; }")
                                        .arg(Style::Color::White.name())
                                        .arg(Style::Size::BorderThin)
                                        .arg(Style::Color::DefaultBorder.name())
                                        .arg(Style::Color::TopBarValueText.name()));
-    row->addWidget(m_browseButton);
+    layout->addWidget(m_browseButton);
 
-    m_writeButton = makePrimaryButton(tr("Write"), group);
-    m_readButton = makePrimaryButton(tr("Read"), group);
-    row->addWidget(m_writeButton);
-    row->addWidget(m_readButton);
-    layout->addLayout(row);
-    return group;
+    m_writeButton = makePrimaryButton(tr("Write"), rowWidget);
+    m_readButton = makePrimaryButton(tr("Read"), rowWidget);
+    layout->addWidget(m_writeButton);
+    layout->addWidget(m_readButton);
+
+    return rowWidget;
 }

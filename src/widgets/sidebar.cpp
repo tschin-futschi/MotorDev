@@ -37,7 +37,7 @@ Sidebar::Sidebar(const QString &title, QWidget *contentWidget, QWidget *parent)
         Style::Size::SidebarContentHorizontalPadding,
         0);
     headerLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    headerLabel->setStyleSheet(QStringLiteral("color:%1; font-size:10px; font-weight:500;")
+    headerLabel->setStyleSheet(QStringLiteral("color:%1; font-size:12px; font-weight:500;")
                                    .arg(Style::Color::MutedText.name()));
     bodyLayout->addWidget(headerLabel);
 
