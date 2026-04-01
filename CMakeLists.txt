@@ -21,6 +21,8 @@ qt_add_executable(MotorDev
     src/widgets/sidebar.h
     src/widgets/topbar.cpp
     src/widgets/topbar.h
+    src/tabs/configtab.cpp
+    src/tabs/configtab.h
     src/tabs/registerrwtab.cpp
     src/tabs/registerrwtab.h
     src/tabs/fwflashtab.cpp

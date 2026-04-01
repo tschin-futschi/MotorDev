@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QWidget>
 
@@ -7,4 +7,8 @@ class RegisterRwTab : public QWidget {
 
 public:
     explicit RegisterRwTab(QWidget *parent = nullptr);
+
+private:
+    void setupUi();
+    void connectSignals();
 };

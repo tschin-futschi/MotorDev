@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QWidget>
 
@@ -9,9 +9,10 @@ class ActivityBar : public QWidget {
 
 public:
     enum Page {
-        RegisterPage = 0,
-        FlashPage = 1,
-        ScopePage = 2,
+        ConfigPage = 0,
+        RegisterPage = 1,
+        FlashPage = 2,
+        ScopePage = 3,
     };
 
     explicit ActivityBar(QWidget *parent = nullptr);
@@ -22,6 +23,7 @@ signals:
 private:
     void setActivePage(int index);
 
+    QPushButton *m_configButton = nullptr;
     QPushButton *m_registerButton = nullptr;
     QPushButton *m_flashButton = nullptr;
     QPushButton *m_scopeButton = nullptr;

@@ -1,16 +1,15 @@
-﻿#include "mainwindow.h"
+#include "mainwindow.h"
 
+#include "tabs/configtab.h"
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
 #include "tabs/registerrwtab.h"
 #include "ui/style_constants.h"
 #include "widgets/activitybar.h"
-#include "widgets/sidebar.h"
 #include "widgets/topbar.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -44,27 +43,15 @@ MainWindow::MainWindow(QWidget *parent)
     middleLayout->setSpacing(Style::Size::MainSpacing);
 
     m_activityBar = new ActivityBar(middleWidget);
-    m_sidebar = new Sidebar(middleWidget);
     m_contentStack = new QStackedWidget(middleWidget);
-    m_sidebarToggleButton = new QPushButton(tr("‹"), middleWidget);
-
-    m_sidebarToggleButton->setFixedWidth(Style::Size::SidebarHandleWidth);
-    m_sidebarToggleButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background:%1; border:%2px solid %3; color:%4; }")
-                                             .arg(Style::Color::SidebarBackground.name())
-                                             .arg(Style::Size::BorderThin)
-                                             .arg(Style::Color::DefaultBorder.name())
-                                             .arg(Style::Color::MutedText.name()));
-
+    m_contentStack->addWidget(new ConfigTab(m_contentStack));
     m_contentStack->addWidget(new RegisterRwTab(m_contentStack));
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
     m_contentStack->addWidget(new OscilloscopTab(m_contentStack));
-    m_contentStack->setCurrentIndex(ActivityBar::RegisterPage);
+    m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
     m_contentStack->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
 
     middleLayout->addWidget(m_activityBar);
-    middleLayout->addWidget(m_sidebar);
-    middleLayout->addWidget(m_sidebarToggleButton);
     middleLayout->addWidget(m_contentStack, 1);
 
     m_statusBarWidget = new QWidget(central);
@@ -94,14 +81,4 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(central);
 
     connect(m_activityBar, &ActivityBar::pageSelected, m_contentStack, &QStackedWidget::setCurrentIndex);
-    connect(m_sidebarToggleButton, &QPushButton::clicked, m_sidebar, &Sidebar::toggleCollapsed);
-    connect(m_sidebar, &Sidebar::collapseStateChanged, this, [this](bool) {
-        updateSidebarToggleButton();
-    });
-
-    updateSidebarToggleButton();
-}
-
-void MainWindow::updateSidebarToggleButton() {
-    m_sidebarToggleButton->setText(m_sidebar->isCollapsed() ? tr("›") : tr("‹"));
 }

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QWidget>
 
@@ -7,4 +7,8 @@ class FwFlashTab : public QWidget {
 
 public:
     explicit FwFlashTab(QWidget *parent = nullptr);
+
+private:
+    void setupUi();
+    void connectSignals();
 };

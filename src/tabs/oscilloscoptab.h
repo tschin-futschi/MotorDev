@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QWidget>
 
@@ -7,4 +7,8 @@ class OscilloscopTab : public QWidget {
 
 public:
     explicit OscilloscopTab(QWidget *parent = nullptr);
+
+private:
+    void setupUi();
+    void connectSignals();
 };

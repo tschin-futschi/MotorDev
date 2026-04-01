@@ -1,4 +1,4 @@
-﻿#include "widgets/activitybar.h"
+#include "widgets/activitybar.h"
 
 #include "ui/style_constants.h"
 
@@ -45,13 +45,17 @@ ActivityBar::ActivityBar(QWidget *parent)
         Style::Size::ActivityBarBottomPadding);
     layout->setSpacing(Style::Size::ActivityBarSpacing);
 
+    m_configButton = new QPushButton(tr("配置"), this);
     m_registerButton = new QPushButton(tr("读写"), this);
     m_flashButton = new QPushButton(tr("烧录"), this);
     m_scopeButton = new QPushButton(tr("示波"), this);
     m_settingsButton = new QPushButton(tr("设置"), this);
 
     const QList<QPushButton *> buttons = {
-        m_registerButton, m_flashButton, m_scopeButton};
+        m_configButton,
+        m_registerButton,
+        m_flashButton,
+        m_scopeButton};
     for (auto *button : buttons) {
         button->setFixedSize(
             Style::Size::ActivityButtonSize,
@@ -72,6 +76,10 @@ ActivityBar::ActivityBar(QWidget *parent)
                       .arg(Style::Size::BorderThin)
                       .arg(Style::Color::DefaultBorder.name()));
 
+    connect(m_configButton, &QPushButton::clicked, this, [this] {
+        setActivePage(ConfigPage);
+        emit pageSelected(ConfigPage);
+    });
     connect(m_registerButton, &QPushButton::clicked, this, [this] {
         setActivePage(RegisterPage);
         emit pageSelected(RegisterPage);
@@ -85,10 +93,11 @@ ActivityBar::ActivityBar(QWidget *parent)
         emit pageSelected(ScopePage);
     });
 
-    setActivePage(RegisterPage);
+    setActivePage(ConfigPage);
 }
 
 void ActivityBar::setActivePage(int index) {
+    m_configButton->setStyleSheet(activityButtonStyle(index == ConfigPage));
     m_registerButton->setStyleSheet(activityButtonStyle(index == RegisterPage));
     m_flashButton->setStyleSheet(activityButtonStyle(index == FlashPage));
     m_scopeButton->setStyleSheet(activityButtonStyle(index == ScopePage));

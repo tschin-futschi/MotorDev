@@ -25,6 +25,7 @@ inline const QColor MutedText("#888888");
 inline const QColor SidebarLabelText("#666666");
 inline const QColor TopBarLabelText("#aaaaaa");
 inline const QColor TopBarValueText("#555555");
+inline const QColor PanelBackground("#ffffff");
 inline const QColor White("#ffffff");
 inline const QColor Transparent("transparent");
 }
@@ -40,6 +41,7 @@ inline constexpr int ActivityBarWidth = 44;
 inline constexpr int SidebarWidth = 150;
 inline constexpr int SidebarCollapsedWidth = 0;
 inline constexpr int SidebarHandleWidth = 18;
+inline constexpr int SidebarTotalWidth = SidebarWidth + SidebarHandleWidth;
 inline constexpr int SidebarHeaderHeight = 30;
 inline constexpr int SidebarButtonHeight = 32;
 inline constexpr int ActivityButtonSize = 34;
@@ -60,6 +62,11 @@ inline constexpr int ActivityBarSpacing = 6;
 inline constexpr int ActivityButtonPadding = 4;
 inline constexpr int LanguageComboWidth = 96;
 inline constexpr int SidebarComboMinHeight = 28;
+inline constexpr int ContentPadding = 24;
+inline constexpr int ContentSpacing = 16;
+inline constexpr int FormSpacing = 10;
+inline constexpr int GroupBoxTopMargin = 10;
+inline constexpr int SplitterHandleWidth = 8;
 inline constexpr int StatusBarHorizontalPadding = 10;
 inline constexpr int StatusBarSpacing = 10;
 }
