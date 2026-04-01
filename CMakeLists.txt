@@ -14,6 +14,12 @@ qt_add_executable(MotorDev
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    src/devicecontext.cpp
+    src/devicecontext.h
+    src/frameparser.cpp
+    src/frameparser.h
+    src/serialmanager.cpp
+    src/serialmanager.h
     src/ui/style_constants.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
@@ -31,6 +37,10 @@ qt_add_executable(MotorDev
     src/tabs/oscilloscoptab.h
     resources/resources.qrc
 )
+
+if(WIN32)
+    set_target_properties(MotorDev PROPERTIES WIN32_EXECUTABLE FALSE)
+endif()
 
 target_include_directories(MotorDev PRIVATE src)
 

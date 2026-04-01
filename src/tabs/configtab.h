@@ -2,26 +2,34 @@
 
 #include <QWidget>
 
+class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
 class QGroupBox;
 class QLineEdit;
 class QPushButton;
+class SerialManager;
 
 class ConfigTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ConfigTab(QWidget *parent = nullptr);
+    explicit ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent = nullptr);
 
 private:
     void setupUi();
     void connectSignals();
+    void refreshAvailablePorts();
+    void setSerialControlsConnected(bool connected);
 
     QGroupBox *createIcGroup();
     QGroupBox *createSerialGroup();
     QGroupBox *createPmicGroup();
     QGroupBox *createConfigFileGroup();
+
+    SerialManager *m_serialManager = nullptr;
+    DeviceContext *m_deviceContext = nullptr;
+    bool m_isSerialConnected = false;
 
     QComboBox *m_icCombo = nullptr;
     QLineEdit *m_slaveIdEdit = nullptr;

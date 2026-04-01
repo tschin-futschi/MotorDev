@@ -1,5 +1,7 @@
 #include "tabs/configtab.h"
 
+#include "devicecontext.h"
+#include "serialmanager.h"
 #include "ui/style_constants.h"
 #include "widgets/sidebar.h"
 
@@ -13,7 +15,10 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMetaObject>
 #include <QPushButton>
+#include <QSignalBlocker>
+#include <QDebug>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QSplitter>
@@ -91,10 +96,49 @@ QGroupBox *makePanelGroup(const QString &title, QWidget *parent) {
     applyPanelShadow(group);
     return group;
 }
+
+MotorIcType motorIcTypeFromIndex(int index) {
+    switch (index) {
+    case 1:
+        return MotorIcType::DW9786;
+    case 2:
+        return MotorIcType::DW9788;
+    case 0:
+    default:
+        return MotorIcType::AW86006;
+    }
 }
 
-ConfigTab::ConfigTab(QWidget *parent)
-    : QWidget(parent) {
+int indexFromMotorIcType(MotorIcType type) {
+    switch (type) {
+    case MotorIcType::DW9786:
+        return 1;
+    case MotorIcType::DW9788:
+        return 2;
+    case MotorIcType::AW86006:
+    default:
+        return 0;
+    }
+}
+
+QString motorIcTypeToString(MotorIcType type) {
+    switch (type) {
+    case MotorIcType::AW86006:
+        return QStringLiteral("AW86006");
+    case MotorIcType::DW9786:
+        return QStringLiteral("DW9786");
+    case MotorIcType::DW9788:
+        return QStringLiteral("DW9788");
+    }
+
+    return QStringLiteral("Unknown");
+}
+}
+
+ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent)
+    : QWidget(parent)
+    , m_serialManager(serialManager)
+    , m_deviceContext(deviceContext) {
     setupUi();
     connectSignals();
 }
@@ -165,6 +209,145 @@ void ConfigTab::setupUi() {
 }
 
 void ConfigTab::connectSignals() {
+    if (m_serialManager == nullptr || m_deviceContext == nullptr) {
+        qWarning() << "ConfigTab dependencies are not fully initialized";
+        return;
+    }
+
+    refreshAvailablePorts();
+    setSerialControlsConnected(false);
+
+    {
+        const QSignalBlocker comboBlocker(m_icCombo);
+        m_icCombo->setCurrentIndex(indexFromMotorIcType(m_deviceContext->icType()));
+    }
+
+    if (m_deviceContext->slaveId() != 0x00) {
+        m_slaveIdEdit->setText(QStringLiteral("0x%1").arg(m_deviceContext->slaveId(), 2, 16, QLatin1Char('0')).toUpper());
+    } else {
+        m_slaveIdEdit->clear();
+    }
+
+    connect(m_scanButton, &QPushButton::clicked, this, [this]() {
+        qDebug() << "Scan started";
+        refreshAvailablePorts();
+    });
+
+    connect(m_connectButton, &QPushButton::clicked, this, [this]() {
+        if (m_serialManager == nullptr) {
+            return;
+        }
+
+        if (m_isSerialConnected) {
+            qDebug() << "Disconnecting...";
+            QMetaObject::invokeMethod(m_serialManager, "closePort", Qt::QueuedConnection);
+            return;
+        }
+
+        const QString portName = m_portCombo->currentText().trimmed();
+        if (portName.isEmpty()) {
+            qWarning() << "Connect failed: no port selected";
+            return;
+        }
+
+        const qint32 baudRate = m_baudRateCombo->currentText().toInt();
+        qDebug().noquote() << QStringLiteral("Connecting to %1 at %2...")
+                                  .arg(portName)
+                                  .arg(baudRate);
+        QMetaObject::invokeMethod(
+            m_serialManager,
+            "openPort",
+            Qt::QueuedConnection,
+            Q_ARG(QString, portName),
+            Q_ARG(qint32, baudRate));
+    });
+
+    connect(m_serialManager, &SerialManager::connected, this, [this]() {
+        qDebug() << "Serial connected";
+        setSerialControlsConnected(true);
+    });
+
+    connect(m_serialManager, &SerialManager::disconnected, this, [this]() {
+        qDebug() << "Serial disconnected";
+        setSerialControlsConnected(false);
+    });
+
+    connect(m_serialManager, &SerialManager::errorOccurred, this, [](const QString &message) {
+        qWarning().noquote() << QStringLiteral("Serial error: %1").arg(message);
+    });
+
+    connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+        const MotorIcType type = motorIcTypeFromIndex(index);
+        qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(motorIcTypeToString(type));
+        m_deviceContext->setIcType(type);
+    });
+
+    connect(m_deviceContext, &DeviceContext::icTypeChanged, this, [this](MotorIcType type) {
+        const QSignalBlocker blocker(m_icCombo);
+        m_icCombo->setCurrentIndex(indexFromMotorIcType(type));
+    });
+
+    connect(m_slaveIdEdit, &QLineEdit::editingFinished, this, [this]() {
+        const QString text = m_slaveIdEdit->text().trimmed();
+        if (text.isEmpty()) {
+            qDebug() << "Slave ID cleared";
+            m_deviceContext->setSlaveId(0x00);
+            return;
+        }
+
+        bool ok = false;
+        const uint value = text.toUInt(&ok, 16);
+        if (!ok || value > 0x7F) {
+            qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
+            return;
+        }
+
+        qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1")
+                                  .arg(value, 2, 16, QLatin1Char('0'))
+                                  .toUpper();
+        m_deviceContext->setSlaveId(static_cast<uint8_t>(value));
+    });
+
+    connect(m_deviceContext, &DeviceContext::slaveIdChanged, this, [this](uint8_t id) {
+        const QSignalBlocker blocker(m_slaveIdEdit);
+        if (id == 0x00) {
+            m_slaveIdEdit->clear();
+            return;
+        }
+
+        m_slaveIdEdit->setText(QStringLiteral("0x%1").arg(id, 2, 16, QLatin1Char('0')).toUpper());
+    });
+}
+
+void ConfigTab::refreshAvailablePorts() {
+    const QString currentPort = m_portCombo->currentText();
+    const QStringList ports = SerialManager::availablePorts();
+
+    const QSignalBlocker blocker(m_portCombo);
+    m_portCombo->clear();
+    m_portCombo->addItems(ports);
+
+    const int currentIndex = m_portCombo->findText(currentPort);
+    if (currentIndex >= 0) {
+        m_portCombo->setCurrentIndex(currentIndex);
+    }
+
+    if (ports.isEmpty()) {
+        qDebug() << "Scan found 0 ports";
+        return;
+    }
+
+    qDebug().noquote() << QStringLiteral("Scan found %1 ports: %2")
+                              .arg(ports.size())
+                              .arg(ports.join(QStringLiteral(", ")));
+}
+
+void ConfigTab::setSerialControlsConnected(bool connected) {
+    m_isSerialConnected = connected;
+    m_connectButton->setText(connected ? tr("Disconnect") : tr("Connect"));
+    m_portCombo->setEnabled(!connected);
+    m_baudRateCombo->setEnabled(!connected);
+    m_scanButton->setEnabled(!connected);
 }
 
 QGroupBox *ConfigTab::createIcGroup() {

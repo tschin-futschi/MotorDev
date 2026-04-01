@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+#include "devicecontext.h"
+#include "serialmanager.h"
 #include "tabs/configtab.h"
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
@@ -21,6 +23,9 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("MotorDev"));
     resize(Style::Size::WindowWidth, Style::Size::WindowHeight);
     setMinimumSize(Style::Size::MinWindowWidth, Style::Size::MinWindowHeight);
+
+    m_serialManager = new SerialManager(this);
+    m_deviceContext = new DeviceContext(this);
 
     auto *central = new QWidget(this);
     auto *rootLayout = new QVBoxLayout(central);
@@ -44,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_activityBar = new ActivityBar(middleWidget);
     m_contentStack = new QStackedWidget(middleWidget);
-    m_contentStack->addWidget(new ConfigTab(m_contentStack));
+    m_contentStack->addWidget(new ConfigTab(m_serialManager, m_deviceContext, m_contentStack));
     m_contentStack->addWidget(new RegisterRwTab(m_contentStack));
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
     m_contentStack->addWidget(new OscilloscopTab(m_contentStack));
