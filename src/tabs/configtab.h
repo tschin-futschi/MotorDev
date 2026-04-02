@@ -1,6 +1,9 @@
 #pragma once
 
+#include <QByteArray>
 #include <QWidget>
+
+#include <cstdint>
 
 class DeviceContext;
 class QComboBox;
@@ -20,6 +23,10 @@ private:
     void connectSignals();
     void refreshAvailablePorts();
     void setSerialControlsConnected(bool connected);
+    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
+    void handleScanResponse(const QByteArray &data);
+    void handleSetAddrResponse();
+    void handleErrorResponse(const QByteArray &data);
 
     QGroupBox *createIcGroup();
     QGroupBox *createSerialGroup();

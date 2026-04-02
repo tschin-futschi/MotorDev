@@ -5,6 +5,7 @@
 #include "ui/style_constants.h"
 #include "widgets/sidebar.h"
 
+#include <QByteArray>
 #include <QColor>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -26,6 +27,11 @@
 using namespace MotorDev;
 
 namespace {
+constexpr uint8_t CmdSetMotorIcAddr = 0x02;
+constexpr uint8_t CmdErrorResponse = 0x01;
+constexpr uint8_t CmdI2cBusScan = 0x07;
+constexpr uint8_t I2cBusIndex = 0x02;
+
 class GroupHoverFilter : public QObject {
 public:
     explicit GroupHoverFilter(QObject *parent = nullptr)
@@ -96,6 +102,7 @@ QPushButton *makePrimaryButton(const QString &text, QWidget *parent) {
     button->setStyleSheet(QStringLiteral(
         "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
         "QPushButton:hover { background:#D5E8C4; }"
+        "QPushButton:disabled { background:#E6E6E6; border:%2px solid #C9C9C9; color:#9A9A9A; }"
         "QPushButton:pressed { background:#C0DD97; padding:1px 12px 0 12px; }")
                               .arg(Style::Color::LightGreen.name())
                               .arg(Style::Size::BorderThin)
@@ -171,6 +178,7 @@ ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext,
     : QWidget(parent)
     , m_serialManager(serialManager)
     , m_deviceContext(deviceContext) {
+    qRegisterMetaType<uint8_t>("uint8_t");
     setupUi();
     connectSignals();
 }
@@ -301,6 +309,7 @@ void ConfigTab::connectSignals() {
     connect(m_serialManager, &SerialManager::errorOccurred, this, [](const QString &message) {
         qWarning().noquote() << QStringLiteral("Serial error: %1").arg(message);
     });
+    connect(m_serialManager, &SerialManager::frameReceived, this, &ConfigTab::onFrameReceived);
 
     connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
         const MotorIcType type = motorIcTypeFromIndex(index);
@@ -313,18 +322,53 @@ void ConfigTab::connectSignals() {
         m_icCombo->setCurrentIndex(indexFromMotorIcType(type));
     });
 
-    connect(m_icScanButton, &QPushButton::clicked, this, []() {
-        qDebug() << "I2C scan started (stub)";
+    connect(m_icScanButton, &QPushButton::clicked, this, [this]() {
+        if (m_serialManager == nullptr || !m_isSerialConnected) {
+            qWarning() << "I2C scan failed: serial not connected";
+            return;
+        }
+
+        qDebug() << "I2C scan started on bus I2C2";
+        QByteArray data;
+        data.append(static_cast<char>(I2cBusIndex));
+        QMetaObject::invokeMethod(
+            m_serialManager,
+            "sendCommand",
+            Qt::QueuedConnection,
+            Q_ARG(uint8_t, CmdI2cBusScan),
+            Q_ARG(QByteArray, data));
     });
 
     connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
-        const QString addr = m_slaveIdCombo->currentText().trimmed();
-        if (addr.isEmpty()) {
+        if (m_serialManager == nullptr || !m_isSerialConnected) {
+            qWarning() << "IC connect failed: serial not connected";
+            return;
+        }
+
+        const QString addrText = m_slaveIdCombo->currentText().trimmed();
+        if (addrText.isEmpty()) {
             qWarning() << "IC connect failed: no slave address selected";
             return;
         }
 
-        qDebug().noquote() << QStringLiteral("IC connect to %1 (stub)").arg(addr);
+        bool ok = false;
+        const uint addr = addrText.toUInt(&ok, 16);
+        if (!ok || addr == 0 || addr > 0x7F) {
+            qWarning().noquote() << QStringLiteral("IC connect failed: invalid address %1").arg(addrText);
+            return;
+        }
+
+        qDebug().noquote() << QStringLiteral("Setting motor IC address to 0x%1")
+                                  .arg(addr, 2, 16, QLatin1Char('0'))
+                                  .toUpper();
+        QByteArray data;
+        data.append(static_cast<char>(addr));
+        QMetaObject::invokeMethod(
+            m_serialManager,
+            "sendCommand",
+            Qt::QueuedConnection,
+            Q_ARG(uint8_t, CmdSetMotorIcAddr),
+            Q_ARG(QByteArray, data));
     });
 
     connect(m_slaveIdCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
@@ -391,6 +435,94 @@ void ConfigTab::setSerialControlsConnected(bool connected) {
     m_portCombo->setEnabled(!connected);
     m_baudRateCombo->setEnabled(!connected);
     m_scanButton->setEnabled(!connected);
+    m_icScanButton->setEnabled(connected);
+    m_icConnectButton->setEnabled(connected);
+}
+
+void ConfigTab::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data) {
+    Q_UNUSED(seq);
+
+    switch (cmd) {
+    case CmdI2cBusScan:
+        handleScanResponse(data);
+        break;
+    case CmdSetMotorIcAddr:
+        handleSetAddrResponse();
+        break;
+    case CmdErrorResponse:
+        handleErrorResponse(data);
+        break;
+    default:
+        qDebug().noquote() << QStringLiteral("Unhandled frame: cmd=0x%1")
+                                  .arg(cmd, 2, 16, QLatin1Char('0'))
+                                  .toUpper();
+        break;
+    }
+}
+
+void ConfigTab::handleScanResponse(const QByteArray &data) {
+    if (data.isEmpty()) {
+        qWarning() << "I2C scan response: empty data";
+        return;
+    }
+
+    const uint8_t count = static_cast<uint8_t>(data.at(0));
+    qDebug().noquote() << QStringLiteral("I2C scan found %1 devices").arg(count);
+
+    const QSignalBlocker blocker(m_slaveIdCombo);
+    m_slaveIdCombo->clear();
+
+    for (int i = 1; i <= count && i < data.size(); ++i) {
+        const uint8_t addr = static_cast<uint8_t>(data.at(i));
+        const QString addrStr = QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
+        m_slaveIdCombo->addItem(addrStr);
+        qDebug().noquote() << QStringLiteral("  Device: %1").arg(addrStr);
+    }
+
+    if (count == 0) {
+        qDebug() << "No I2C devices found";
+    } else if (m_slaveIdCombo->count() > 0) {
+        m_slaveIdCombo->setCurrentIndex(0);
+    }
+}
+
+void ConfigTab::handleSetAddrResponse() {
+    const QString addrText = m_slaveIdCombo->currentText().trimmed();
+    bool ok = false;
+    const uint addr = addrText.toUInt(&ok, 16);
+    if (ok && addr <= 0x7F) {
+        m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
+    }
+
+    qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
+}
+
+void ConfigTab::handleErrorResponse(const QByteArray &data) {
+    uint8_t errorCode = 0;
+    if (!data.isEmpty()) {
+        errorCode = static_cast<uint8_t>(data.at(0));
+    }
+
+    QString errorName;
+    switch (errorCode) {
+    case 0x01:
+        errorName = QStringLiteral("CRC check failed");
+        break;
+    case 0x02:
+        errorName = QStringLiteral("Unknown command");
+        break;
+    case 0x03:
+        errorName = QStringLiteral("Execution failed");
+        break;
+    default:
+        errorName = QStringLiteral("Unknown error");
+        break;
+    }
+
+    qWarning().noquote() << QStringLiteral("Error response: code=0x%1 (%2)")
+                                .arg(errorCode, 2, 16, QLatin1Char('0'))
+                                .toUpper()
+                                .arg(errorName);
 }
 
 QGroupBox *ConfigTab::createIcGroup() {
