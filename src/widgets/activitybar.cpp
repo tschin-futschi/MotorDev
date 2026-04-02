@@ -99,6 +99,22 @@ ActivityBar::ActivityBar(QWidget *parent)
     setActivePage(ConfigPage);
 }
 
+void ActivityBar::setPageEnabled(int page, bool enabled) {
+    switch (page) {
+    case RegisterPage:
+        m_registerButton->setEnabled(enabled);
+        break;
+    case FlashPage:
+        m_flashButton->setEnabled(enabled);
+        break;
+    case ScopePage:
+        m_scopeButton->setEnabled(enabled);
+        break;
+    default:
+        break;
+    }
+}
+
 void ActivityBar::setActivePage(int index) {
     m_configButton->setStyleSheet(activityButtonStyle(index == ConfigPage));
     m_registerButton->setStyleSheet(activityButtonStyle(index == RegisterPage));

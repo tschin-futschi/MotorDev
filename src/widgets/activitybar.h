@@ -16,6 +16,7 @@ public:
     };
 
     explicit ActivityBar(QWidget *parent = nullptr);
+    void setPageEnabled(int page, bool enabled);
 
 signals:
     void pageSelected(int index);

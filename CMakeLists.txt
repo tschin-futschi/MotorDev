@@ -20,11 +20,15 @@ qt_add_executable(MotorDev
     src/frameparser.h
     src/serialmanager.cpp
     src/serialmanager.h
+    src/protocol/motor_protocol.cpp
+    src/protocol/motor_protocol.h
     src/ui/style_constants.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
     src/widgets/logpanel.cpp
     src/widgets/logpanel.h
+    src/widgets/registertable.cpp
+    src/widgets/registertable.h
     src/widgets/sidebar.cpp
     src/widgets/sidebar.h
     src/widgets/topbar.cpp

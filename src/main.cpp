@@ -6,8 +6,10 @@
 #include <QMetaObject>
 #include <QString>
 
+#include <cstdio>
+
 static void motorDevMessageHandler(QtMsgType type,
-                                   const QMessageLogContext &,
+                                   const QMessageLogContext &context,
                                    const QString &msg) {
     if (LogPanel::instance() != nullptr) {
         QMetaObject::invokeMethod(
@@ -17,6 +19,10 @@ static void motorDevMessageHandler(QtMsgType type,
             Q_ARG(QtMsgType, type),
             Q_ARG(QString, msg));
     }
+
+    const QString formatted = qFormatLogMessage(type, context, msg);
+    std::fprintf(stderr, "%s\n", formatted.toLocal8Bit().constData());
+    std::fflush(stderr);
 }
 
 int main(int argc, char *argv[]) {

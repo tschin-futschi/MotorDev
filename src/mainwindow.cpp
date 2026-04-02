@@ -53,7 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_contentStack = new QStackedWidget(middleWidget);
     m_configTab = new ConfigTab(m_serialManager, m_deviceContext, m_contentStack);
     m_contentStack->addWidget(m_configTab);
-    m_contentStack->addWidget(new RegisterRwTab(m_contentStack));
+    m_registerTab = new RegisterRwTab(m_serialManager, m_contentStack);
+    m_contentStack->addWidget(m_registerTab);
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
     m_contentStack->addWidget(new OscilloscopTab(m_contentStack));
     m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
@@ -113,10 +114,36 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_activityBar, &ActivityBar::pageSelected, m_contentStack, &QStackedWidget::setCurrentIndex);
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
+    connect(m_configTab, &ConfigTab::serialConnected, this, [this](const QString &, qint32) {
+        m_registerTab->setConnected(true);
+        m_registerTab->setEnabled(true);
+        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
+        m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
+        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
+        m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(true);
+    });
+    connect(m_configTab, &ConfigTab::serialDisconnected, this, [this]() {
+        m_registerTab->setConnected(false);
+        m_registerTab->setEnabled(false);
+        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
+        m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+        m_activityBar->setPageEnabled(ActivityBar::ScopePage, false);
+        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+        m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(false);
+    });
     connect(m_logToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_logPanel->isVisible();
         m_logPanel->setVisible(visible);
         m_logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
                                            : QStringLiteral("▼ 输出"));
     });
+
+    m_registerTab->setConnected(false);
+    m_registerTab->setEnabled(false);
+    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
+    m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+    m_activityBar->setPageEnabled(ActivityBar::ScopePage, false);
+    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+    m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(false);
 }

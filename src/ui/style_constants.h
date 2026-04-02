@@ -28,6 +28,25 @@ inline const QColor TopBarValueText("#555555");
 inline const QColor PanelBackground("#ffffff");
 inline const QColor White("#ffffff");
 inline const QColor Transparent("transparent");
+inline const QColor ReadButtonBackground("#E6F1FB");
+inline const QColor ReadButtonForeground("#185FA5");
+inline const QColor WriteButtonBackground("#FAEEDA");
+inline const QColor WriteButtonForeground("#854F0B");
+inline const QColor RegisterValueText("#185FA5");
+inline const QColor RegisterErrorText("#E24B4A");
+inline const QColor TableEvenRowBackground("#fafaf8");
+inline const QColor TableHoverRowBackground("#f0f7e8");
+inline const QColor GroupDivider("#aaaaaa");
+inline const QColor TableHeaderBackground("#f0ede8");
+inline const QColor TableHeaderText("#555555");
+inline const QColor PrimaryButtonHover("#D5E8C4");
+inline const QColor DisabledBackground("#E6E6E6");
+inline const QColor DisabledBorder("#C9C9C9");
+inline const QColor DisabledText("#9A9A9A");
+inline const QColor PanelHoverBackground("#f5f5f2");
+inline const QColor SecondaryButtonHover("#f0f0f0");
+inline const QColor SecondaryButtonPressed("#e0e0e0");
+inline const QColor PanelShadow(44, 44, 42, 38);
 }
 
 namespace Size {
@@ -69,6 +88,16 @@ inline constexpr int GroupBoxTopMargin = 8;
 inline constexpr int SplitterHandleWidth = 8;
 inline constexpr int StatusBarHorizontalPadding = 10;
 inline constexpr int StatusBarSpacing = 10;
+inline constexpr int TableRowHeight = 19;
+inline constexpr int TableHeaderHeight = 24;
+inline constexpr int TableGroupCount = 4;
+inline constexpr int TableRowCount = 20;
+inline constexpr int TableGroupDividerWidth = 2;
+inline constexpr int ColDescWidth = 76;
+inline constexpr int ColAddrWidth = 63;
+inline constexpr int ColValueWidth = 67;
+inline constexpr int ColReadWidth = 26;
+inline constexpr int ColWriteWidth = 23;
 }
 
 namespace Text {

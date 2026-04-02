@@ -1,6 +1,7 @@
 #include "tabs/configtab.h"
 
 #include "devicecontext.h"
+#include "protocol/motor_protocol.h"
 #include "serialmanager.h"
 #include "ui/style_constants.h"
 #include "widgets/sidebar.h"
@@ -27,11 +28,6 @@
 using namespace MotorDev;
 
 namespace {
-constexpr uint8_t CmdSetMotorIcAddr = 0x02;
-constexpr uint8_t CmdErrorResponse = 0x01;
-constexpr uint8_t CmdI2cBusScan = 0x07;
-constexpr uint8_t I2cBusIndex = 0x02;
-
 class GroupHoverFilter : public QObject {
 public:
     explicit GroupHoverFilter(QObject *parent = nullptr)
@@ -101,13 +97,17 @@ QPushButton *makePrimaryButton(const QString &text, QWidget *parent) {
     button->setFixedHeight(Style::Size::SidebarButtonHeight);
     button->setStyleSheet(QStringLiteral(
         "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
-        "QPushButton:hover { background:#D5E8C4; }"
-        "QPushButton:disabled { background:#E6E6E6; border:%2px solid #C9C9C9; color:#9A9A9A; }"
+        "QPushButton:hover { background:%5; }"
+        "QPushButton:disabled { background:%6; border:%2px solid %7; color:%8; }"
         "QPushButton:pressed { background:#C0DD97; padding:1px 12px 0 12px; }")
                               .arg(Style::Color::LightGreen.name())
                               .arg(Style::Size::BorderThin)
                               .arg(Style::Color::PrimaryGreen.name())
-                              .arg(Style::Color::PrimaryGreen.name()));
+                              .arg(Style::Color::PrimaryGreen.name())
+                              .arg(Style::Color::PrimaryButtonHover.name())
+                              .arg(Style::Color::DisabledBackground.name())
+                              .arg(Style::Color::DisabledBorder.name())
+                              .arg(Style::Color::DisabledText.name()));
     return button;
 }
 
@@ -115,7 +115,7 @@ void applyPanelShadow(QWidget *widget) {
     auto *effect = new QGraphicsDropShadowEffect(widget);
     effect->setOffset(0, 1);
     effect->setBlurRadius(6);
-    effect->setColor(QColor(44, 44, 42, 38));
+    effect->setColor(Style::Color::PanelShadow);
     widget->setGraphicsEffect(effect);
 }
 
@@ -123,12 +123,13 @@ QGroupBox *makePanelGroup(const QString &title, QWidget *parent) {
     auto *group = new QGroupBox(title, parent);
     group->setStyleSheet(QStringLiteral(
         "QGroupBox { background:%1; border:%2px solid %3; padding-top:28px; color:%4; font-size:14px; font-weight:500; }"
-        "QGroupBox[hovered=\"true\"] { background:#f5f5f2; }"
+        "QGroupBox[hovered=\"true\"] { background:%5; }"
         "QGroupBox::title { subcontrol-origin: padding; subcontrol-position: top center; padding:8px 0 4px 0; }")
                              .arg(Style::Color::PanelBackground.name())
                              .arg(Style::Size::BorderThin)
                              .arg(Style::Color::DefaultBorder.name())
-                             .arg(Style::Color::TopBarValueText.name()));
+                             .arg(Style::Color::TopBarValueText.name())
+                             .arg(Style::Color::PanelHoverBackground.name()));
     group->setAttribute(Qt::WA_Hover, true);
     group->setProperty("hovered", false);
     group->installEventFilter(new GroupHoverFilter(group));
@@ -329,14 +330,12 @@ void ConfigTab::connectSignals() {
         }
 
         qDebug() << "I2C scan started on bus I2C2";
-        QByteArray data;
-        data.append(static_cast<char>(I2cBusIndex));
         QMetaObject::invokeMethod(
             m_serialManager,
             "sendCommand",
             Qt::QueuedConnection,
-            Q_ARG(uint8_t, CmdI2cBusScan),
-            Q_ARG(QByteArray, data));
+            Q_ARG(uint8_t, MotorProtocol::CmdI2cBusScan),
+            Q_ARG(QByteArray, MotorProtocol::encodeI2cBusScan()));
     });
 
     connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
@@ -361,14 +360,12 @@ void ConfigTab::connectSignals() {
         qDebug().noquote() << QStringLiteral("Setting motor IC address to 0x%1")
                                   .arg(addr, 2, 16, QLatin1Char('0'))
                                   .toUpper();
-        QByteArray data;
-        data.append(static_cast<char>(addr));
         QMetaObject::invokeMethod(
             m_serialManager,
             "sendCommand",
             Qt::QueuedConnection,
-            Q_ARG(uint8_t, CmdSetMotorIcAddr),
-            Q_ARG(QByteArray, data));
+            Q_ARG(uint8_t, MotorProtocol::CmdSetMotorIcAddr),
+            Q_ARG(QByteArray, MotorProtocol::encodeSetMotorIcAddr(static_cast<uint8_t>(addr))));
     });
 
     connect(m_slaveIdCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
@@ -449,13 +446,13 @@ void ConfigTab::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data
     Q_UNUSED(seq);
 
     switch (cmd) {
-    case CmdI2cBusScan:
+    case MotorProtocol::CmdI2cBusScan:
         handleScanResponse(data);
         break;
-    case CmdSetMotorIcAddr:
+    case MotorProtocol::CmdSetMotorIcAddr:
         handleSetAddrResponse();
         break;
-    case CmdErrorResponse:
+    case MotorProtocol::CmdErrorResponse:
         handleErrorResponse(data);
         break;
     default:
@@ -472,20 +469,19 @@ void ConfigTab::handleScanResponse(const QByteArray &data) {
         return;
     }
 
-    const uint8_t count = static_cast<uint8_t>(data.at(0));
-    qDebug().noquote() << QStringLiteral("I2C scan found %1 devices").arg(count);
+    const QList<uint8_t> addresses = MotorProtocol::decodeI2cScanResponse(data);
+    qDebug().noquote() << QStringLiteral("I2C scan found %1 devices").arg(addresses.size());
 
     const QSignalBlocker blocker(m_slaveIdCombo);
     m_slaveIdCombo->clear();
 
-    for (int i = 1; i <= count && i < data.size(); ++i) {
-        const uint8_t addr = static_cast<uint8_t>(data.at(i));
+    for (uint8_t addr : addresses) {
         const QString addrStr = QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
         m_slaveIdCombo->addItem(addrStr);
         qDebug().noquote() << QStringLiteral("  Device: %1").arg(addrStr);
     }
 
-    if (count == 0) {
+    if (addresses.isEmpty()) {
         qDebug() << "No I2C devices found";
     } else if (m_slaveIdCombo->count() > 0) {
         m_slaveIdCombo->setCurrentIndex(0);
@@ -504,10 +500,7 @@ void ConfigTab::handleSetAddrResponse() {
 }
 
 void ConfigTab::handleErrorResponse(const QByteArray &data) {
-    uint8_t errorCode = 0;
-    if (!data.isEmpty()) {
-        errorCode = static_cast<uint8_t>(data.at(0));
-    }
+    const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
 
     QString errorName;
     switch (errorCode) {
@@ -671,12 +664,14 @@ QWidget *ConfigTab::createConfigFileRow() {
     m_browseButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_browseButton->setStyleSheet(QStringLiteral(
         "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
-        "QPushButton:hover { background:#f0f0f0; }"
-        "QPushButton:pressed { background:#e0e0e0; padding:1px 12px 0 12px; }")
+        "QPushButton:hover { background:%5; }"
+        "QPushButton:pressed { background:%6; padding:1px 12px 0 12px; }")
                                        .arg(Style::Color::White.name())
                                        .arg(Style::Size::BorderThin)
                                        .arg(Style::Color::DefaultBorder.name())
-                                       .arg(Style::Color::TopBarValueText.name()));
+                                       .arg(Style::Color::TopBarValueText.name())
+                                       .arg(Style::Color::SecondaryButtonHover.name())
+                                       .arg(Style::Color::SecondaryButtonPressed.name()));
     layout->addWidget(m_browseButton);
 
     m_writeButton = makePrimaryButton(tr("Write"), rowWidget);
