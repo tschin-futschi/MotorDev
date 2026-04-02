@@ -23,6 +23,8 @@ qt_add_executable(MotorDev
     src/ui/style_constants.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
+    src/widgets/logpanel.cpp
+    src/widgets/logpanel.h
     src/widgets/sidebar.cpp
     src/widgets/sidebar.h
     src/widgets/topbar.cpp
