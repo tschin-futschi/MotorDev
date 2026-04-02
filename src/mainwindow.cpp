@@ -8,10 +8,12 @@
 #include "tabs/registerrwtab.h"
 #include "ui/style_constants.h"
 #include "widgets/activitybar.h"
+#include "widgets/logpanel.h"
 #include "widgets/topbar.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -49,7 +51,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_activityBar = new ActivityBar(middleWidget);
     m_contentStack = new QStackedWidget(middleWidget);
-    m_contentStack->addWidget(new ConfigTab(m_serialManager, m_deviceContext, m_contentStack));
+    m_configTab = new ConfigTab(m_serialManager, m_deviceContext, m_contentStack);
+    m_contentStack->addWidget(m_configTab);
     m_contentStack->addWidget(new RegisterRwTab(m_contentStack));
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
     m_contentStack->addWidget(new OscilloscopTab(m_contentStack));
@@ -69,21 +72,51 @@ MainWindow::MainWindow(QWidget *parent)
         Style::Size::OuterMargin);
     statusLayout->setSpacing(Style::Size::StatusBarSpacing);
 
-    m_statusLabel = new QLabel(tr("115200 8N1 | 未连接 | RX: 0 | TX: 0 | 就绪"), m_statusBarWidget);
-    m_statusLabel->setStyleSheet(QStringLiteral("color:%1; font-size:12px;")
+    auto *softwareLabel = new QLabel(QStringLiteral("MotorDev · MIT License"), m_statusBarWidget);
+    softwareLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
                                      .arg(Style::Color::StatusBarText.name()));
-    statusLayout->addWidget(m_statusLabel);
+
+    auto *firmwareLabel = new QLabel(QStringLiteral("固件 v0.0.0 · 编译日期 2026-01-01"), m_statusBarWidget);
+    firmwareLabel->setAlignment(Qt::AlignCenter);
+    firmwareLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
+                                     .arg(Style::Color::StatusBarText.name()));
+
+    m_logToggleButton = new QPushButton(QStringLiteral("▼ 输出"), m_statusBarWidget);
+    m_logToggleButton->setFlat(true);
+    m_logToggleButton->setFixedHeight(18);
+    m_logToggleButton->setStyleSheet(QStringLiteral(
+        "QPushButton { background:transparent; border:none; color:%1; font-size:11px; }"
+        "QPushButton:hover { color:%2; }")
+                                         .arg(Style::Color::StatusBarText.name())
+                                         .arg(Style::Color::LightGreen.name()));
+
+    statusLayout->addWidget(softwareLabel);
     statusLayout->addStretch();
+    statusLayout->addWidget(firmwareLabel);
+    statusLayout->addStretch();
+    statusLayout->addWidget(m_logToggleButton);
 
     m_statusBarWidget->setStyleSheet(QStringLiteral("background:%1;")
                                          .arg(Style::Color::PrimaryGreen.name()));
 
+    m_logPanel = new LogPanel(central);
+    m_logPanel->setVisible(false);
+
     rootLayout->addWidget(m_topBar);
     rootLayout->addWidget(middleWidget, 1);
+    rootLayout->addWidget(m_logPanel);
     rootLayout->addWidget(m_statusBarWidget);
 
     central->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
     setCentralWidget(central);
 
     connect(m_activityBar, &ActivityBar::pageSelected, m_contentStack, &QStackedWidget::setCurrentIndex);
+    connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
+    connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
+    connect(m_logToggleButton, &QPushButton::clicked, this, [this]() {
+        const bool visible = !m_logPanel->isVisible();
+        m_logPanel->setVisible(visible);
+        m_logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
+                                           : QStringLiteral("▼ 输出"));
+    });
 }

@@ -30,9 +30,9 @@ TopBar::TopBar(QWidget *parent)
     auto *titleLabel = new QLabel(tr("MotorDev"), this);
     auto *separator = new QFrame(this);
     auto *portLabel = new QLabel(tr("串口"), this);
-    m_portValueLabel = new QLabel(tr("COM1 / 115200"), this);
+    m_portValueLabel = new QLabel(QStringLiteral("– / –"), this);
     m_connectionIndicator = new QLabel(this);
-    auto *connectionLabel = new QLabel(tr("未连接"), this);
+    m_connectionLabel = new QLabel(tr("未连接"), this);
     auto *spacer = new QWidget(this);
     m_languageCombo = new QComboBox(this);
 
@@ -57,8 +57,8 @@ TopBar::TopBar(QWidget *parent)
         "background:%1; border-radius:%2px;")
                                              .arg(Style::Color::DisconnectedIndicator.name())
                                              .arg(Style::Size::IndicatorSize / 2 + 1));
-    connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
-                                       .arg(Style::Color::TopBarValueText.name()));
+    m_connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
+                                         .arg(Style::Color::TopBarValueText.name()));
     m_languageCombo->setStyleSheet(QStringLiteral(
         "QComboBox { background:%1; border:%2px solid %3; padding:2px 6px; color:%4; }")
                                         .arg(Style::Color::White.name())
@@ -77,7 +77,25 @@ TopBar::TopBar(QWidget *parent)
     layout->addWidget(portLabel);
     layout->addWidget(m_portValueLabel);
     layout->addWidget(m_connectionIndicator);
-    layout->addWidget(connectionLabel);
+    layout->addWidget(m_connectionLabel);
     layout->addWidget(spacer);
     layout->addWidget(m_languageCombo);
+}
+
+void TopBar::onSerialConnected(const QString &port, qint32 baudRate) {
+    m_portValueLabel->setText(QStringLiteral("%1 / %2").arg(port).arg(baudRate));
+    m_connectionLabel->setText(tr("已连接"));
+    m_connectionIndicator->setStyleSheet(QStringLiteral(
+        "background:%1; border-radius:%2px;")
+                                             .arg(Style::Color::ConnectedIndicator.name())
+                                             .arg(Style::Size::IndicatorSize / 2 + 1));
+}
+
+void TopBar::onSerialDisconnected() {
+    m_portValueLabel->setText(QStringLiteral("– / –"));
+    m_connectionLabel->setText(tr("未连接"));
+    m_connectionIndicator->setStyleSheet(QStringLiteral(
+        "background:%1; border-radius:%2px;")
+                                             .arg(Style::Color::DisconnectedIndicator.name())
+                                             .arg(Style::Size::IndicatorSize / 2 + 1));
 }

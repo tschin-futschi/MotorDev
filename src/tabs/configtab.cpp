@@ -437,6 +437,12 @@ void ConfigTab::setSerialControlsConnected(bool connected) {
     m_scanButton->setEnabled(!connected);
     m_icScanButton->setEnabled(connected);
     m_icConnectButton->setEnabled(connected);
+
+    if (connected) {
+        emit serialConnected(m_portCombo->currentText().trimmed(), m_baudRateCombo->currentText().toInt());
+    } else {
+        emit serialDisconnected();
+    }
 }
 
 void ConfigTab::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data) {

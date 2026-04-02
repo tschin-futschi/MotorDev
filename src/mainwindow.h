@@ -3,9 +3,11 @@
 #include <QMainWindow>
 
 class ActivityBar;
+class ConfigTab;
 class DeviceContext;
+class LogPanel;
 class TopBar;
-class QLabel;
+class QPushButton;
 class QStackedWidget;
 class SerialManager;
 class QWidget;
@@ -21,7 +23,9 @@ private:
     DeviceContext *m_deviceContext = nullptr;
     TopBar *m_topBar = nullptr;
     ActivityBar *m_activityBar = nullptr;
+    ConfigTab *m_configTab = nullptr;
     QStackedWidget *m_contentStack = nullptr;
+    LogPanel *m_logPanel = nullptr;
     QWidget *m_statusBarWidget = nullptr;
-    QLabel *m_statusLabel = nullptr;
+    QPushButton *m_logToggleButton = nullptr;
 };

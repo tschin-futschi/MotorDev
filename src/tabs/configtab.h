@@ -18,6 +18,10 @@ class ConfigTab : public QWidget {
 public:
     explicit ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent = nullptr);
 
+signals:
+    void serialConnected(const QString &port, qint32 baudRate);
+    void serialDisconnected();
+
 private:
     void setupUi();
     void connectSignals();
