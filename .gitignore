@@ -1,6 +1,7 @@
 # Build directories
 /build/
 /build_qt/
+/build_make_qt/
 /build_*/
 /cmake-build-*/
 
@@ -78,3 +79,11 @@ CMakeLists.txt.user*
 *.autosave
 Thumbs.db
 Desktop.ini
+
+# Agent handoff artifacts
+/tmp_handoff/plan_*.md
+/tmp_handoff/review_*.md
+/tmp_handoff/report_*.md
+
+# Tracking exports
+/TRACKING/*.html

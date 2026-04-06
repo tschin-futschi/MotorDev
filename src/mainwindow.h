@@ -6,6 +6,7 @@ class ActivityBar;
 class ConfigTab;
 class DeviceContext;
 class LogPanel;
+class OscilloscopTab;
 class RegisterRwTab;
 class TopBar;
 class QPushButton;
@@ -26,6 +27,7 @@ private:
     ActivityBar *m_activityBar = nullptr;
     ConfigTab *m_configTab = nullptr;
     RegisterRwTab *m_registerTab = nullptr;
+    OscilloscopTab *m_scopeTab = nullptr;
     QStackedWidget *m_contentStack = nullptr;
     LogPanel *m_logPanel = nullptr;
     QWidget *m_statusBarWidget = nullptr;

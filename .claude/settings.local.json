@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls report_*.md)",
+      "Bash(ls review_*.md)"
+    ]
+  }
+}

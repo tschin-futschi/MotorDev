@@ -84,12 +84,12 @@ void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
     switch (type) {
     case QtWarningMsg:
         prefix = QStringLiteral("[WARN] ");
-        color = QStringLiteral("#B85C00");
+        color = Style::Color::LogWarning.name();
         break;
     case QtCriticalMsg:
     case QtFatalMsg:
         prefix = QStringLiteral("[ERR]  ");
-        color = QStringLiteral("#C0392B");
+        color = Style::Color::LogError.name();
         break;
     default:
         prefix = QStringLiteral("[DBG]  ");

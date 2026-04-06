@@ -14,17 +14,22 @@ public:
 
     bool isCollapsed() const;
     QWidget *contentWidget() const;
+    void setBodyWidth(int width);
 
 public slots:
     void toggleCollapsed();
+    void setCollapsed(bool collapsed);
 
 signals:
     void collapseStateChanged(bool collapsed);
 
 private:
+    void applyExpandedWidth();
+
     QWidget *m_bodyWidget = nullptr;
     QWidget *m_contentWidget = nullptr;
     QPushButton *m_toggleButton = nullptr;
     QPropertyAnimation *m_animation = nullptr;
     bool m_collapsed = false;
+    int m_bodyWidth = 0;
 };

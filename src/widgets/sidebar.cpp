@@ -12,6 +12,7 @@ using namespace MotorDev;
 
 Sidebar::Sidebar(const QString &title, QWidget *contentWidget, QWidget *parent)
     : QWidget(parent) {
+    m_bodyWidth = Style::Size::SidebarWidth;
     setMinimumWidth(Style::Size::SidebarTotalWidth);
     setMaximumWidth(Style::Size::SidebarTotalWidth);
 
@@ -23,7 +24,7 @@ Sidebar::Sidebar(const QString &title, QWidget *contentWidget, QWidget *parent)
     rootLayout->setSpacing(0);
 
     m_bodyWidget = new QWidget(this);
-    m_bodyWidget->setFixedWidth(Style::Size::SidebarWidth);
+    m_bodyWidget->setFixedWidth(m_bodyWidth);
 
     auto *bodyLayout = new QVBoxLayout(m_bodyWidget);
     bodyLayout->setContentsMargins(0, 0, 0, 0);
@@ -77,10 +78,30 @@ QWidget *Sidebar::contentWidget() const {
     return m_contentWidget;
 }
 
+void Sidebar::setBodyWidth(int width) {
+    if (width <= 0 || m_bodyWidth == width) {
+        return;
+    }
+
+    m_bodyWidth = width;
+    m_bodyWidget->setFixedWidth(m_bodyWidth);
+    if (!m_collapsed) {
+        applyExpandedWidth();
+    }
+}
+
 void Sidebar::toggleCollapsed() {
+    setCollapsed(!m_collapsed);
+}
+
+void Sidebar::setCollapsed(bool collapsed) {
+    if (m_collapsed == collapsed) {
+        return;
+    }
+
     const int startWidth = maximumWidth();
-    const int targetWidth = m_collapsed ? Style::Size::SidebarTotalWidth : Style::Size::SidebarHandleWidth;
-    const bool collapsing = !m_collapsed;
+    const int targetWidth = collapsed ? Style::Size::SidebarHandleWidth
+                                      : m_bodyWidth + Style::Size::SidebarHandleWidth;
 
     m_animation->stop();
     m_animation->disconnect(this);
@@ -88,13 +109,13 @@ void Sidebar::toggleCollapsed() {
         const int width = value.toInt();
         setMinimumWidth(width);
     });
-    connect(m_animation, &QPropertyAnimation::finished, this, [this, collapsing] {
-        if (collapsing) {
+    connect(m_animation, &QPropertyAnimation::finished, this, [this, collapsed] {
+        if (collapsed) {
             m_bodyWidget->setVisible(false);
         }
     });
 
-    if (!collapsing) {
+    if (!collapsed) {
         m_bodyWidget->setVisible(true);
     }
 
@@ -102,8 +123,14 @@ void Sidebar::toggleCollapsed() {
     m_animation->setEndValue(targetWidth);
     m_animation->start();
 
-    m_collapsed = collapsing;
+    m_collapsed = collapsed;
     m_toggleButton->setText(m_collapsed ? QStringLiteral(">") : QStringLiteral("<"));
 
     emit collapseStateChanged(m_collapsed);
+}
+
+void Sidebar::applyExpandedWidth() {
+    const int totalWidth = m_bodyWidth + Style::Size::SidebarHandleWidth;
+    setMinimumWidth(totalWidth);
+    setMaximumWidth(totalWidth);
 }

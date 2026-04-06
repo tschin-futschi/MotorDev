@@ -1,6 +1,6 @@
 # MotorDev — 技术概览
 
-> 版本：v0.1 | 日期：2026-03-31
+> 版本：v0.2 | 日期：2026-04-06
 
 ---
 
@@ -39,7 +39,8 @@ MotorDev/
 ├── design_spec.md                   # UI 设计规格（唯一权威）
 ├── docs/
 │   ├── vision.md                    # 项目愿景
-│   └── tech_overview.md             # 技术概览（本文件）
+│   ├── tech_overview.md             # 技术概览（本文件）
+│   └── file_index.md               # src 模块索引（AI 辅助定位）
 ├── resources/
 │   ├── motordev_logo.svg
 │   ├── icons/
@@ -49,25 +50,29 @@ MotorDev/
 │   ├── mainwindow.cpp / .h
 │   ├── serialmanager.cpp / .h       # 串口管理，独立线程
 │   ├── frameparser.cpp / .h         # 二进制帧解析状态机
-│   ├── datalogger.cpp / .h          # 日志与 CSV 导出
+│   ├── devicecontext.cpp / .h       # 当前 IC 类型和从机地址持久状态
+│   ├── protocol/
+│   │   └── motor_protocol.cpp / .h  # 寄存器读写/I2C 扫描等指令编解码
+│   ├── ui/
+│   │   └── style_constants.h        # 所有颜色、尺寸、间距常量
 │   ├── tabs/
+│   │   ├── configtab.cpp / .h       # Tab0 配置（串口/IC/PMIC）
 │   │   ├── registerrwtab.cpp / .h   # Tab1 寄存器读写
-│   │   ├── fwflashtab.cpp / .h      # Tab2 FW 烧录
-│   │   └── oscilloscoptab.cpp / .h  # Tab3 示波器
-│   ├── widgets/
-│   │   ├── registertable.cpp / .h   # 寄存器表格组件
-│   │   ├── activitybar.cpp / .h     # 左侧活动栏
-│   │   └── sidebar.cpp / .h         # 可收缩侧边栏
-│   └── qcustomplot/
-│       ├── qcustomplot.cpp
-│       └── qcustomplot.h
-├── include/
-├── tmp_handoff/                     # agent 协作临时文件
-└── translations/
-    ├── motordev_zh.ts
-    ├── motordev_en.ts
-    ├── motordev_ru.ts
-    └── motordev_ja.ts
+│   │   ├── fwflashtab.cpp / .h      # Tab2 FW 烧录（占位）
+│   │   └── oscilloscoptab.cpp / .h  # Tab3 示波器（UI 原型阶段）
+│   └── widgets/
+│       ├── activitybar.cpp / .h     # 左侧活动栏（页面切换）
+│       ├── topbar.cpp / .h          # 顶栏（Logo、连接状态、语言切换占位）
+│       ├── sidebar.cpp / .h         # 可收缩侧边栏（四个 Tab 共用）
+│       ├── logpanel.cpp / .h        # 底部日志面板（全局单例）
+│       ├── registertable.cpp / .h   # 寄存器表格组件（4组×20行）
+│       ├── scopetoolbar.cpp / .h    # 示波器工具栏
+│       ├── scopeplotwidget.cpp / .h # 示波器波形绘制画布（自绘制）
+│       ├── scopebottompanel.cpp / .h  # 示波器底部面板容器
+│       ├── scopechannelstrip.cpp / .h # 示波器单通道配置条
+│       ├── scoperegisterpanel.cpp / .h # 示波器侧寄存器读写面板
+│       └── scopegeneratorpanel.cpp / .h # 信号发生器配置面板（占位）
+└── tmp_handoff/                     # agent 协作临时文件
 ```
 
 ---

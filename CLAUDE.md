@@ -6,16 +6,11 @@
 
 ## 项目愿景（必读）
 
-> 完整内容见 [`docs/vision.md`](docs/vision.md)，以下为核心约束摘要。
+> 完整定义见 [`docs/vision.md`](docs/vision.md)。Claude Code 在拆解任务、做 Review、判断范围取舍时，必须以该文档为最终愿景依据。
 
-- **定位**：专业的电机驱动模组调试上位机，整合寄存器读写、固件烧录、实时波形观测
-- **演进策略**：先跑通，再做好
-- **设计原则**：
-  1. **结构化解耦** — UI / 业务逻辑 / 通信协议 / 传输层各自独立，换协议或换传输方式只改对应层
-  2. **实用优先** — 只做解决真实痛点的功能
-  3. **稳定可靠** — 通信不丢帧，烧录不出错
-  4. **快速上手** — 新用户 5 分钟内完成第一次操作
-  5. **易维护易扩展** — 新增功能是局部添加，不是全局改动
+- 项目定位：电机驱动模组调试上位机，核心场景为寄存器读写、固件烧录、实时波形观测
+- 当前策略：先跑通，再做好；优先交付可验证、可使用的核心链路
+- 核心原则：结构化解耦、实用优先、稳定可靠、快速上手、易维护易扩展
 
 **所有计划和实现必须符合上述原则，违反时应先与用户对齐再继续。**
 
@@ -23,39 +18,19 @@
 
 ## 协作角色定义
 
-### 角色分工
-
-| 角色 | 工具 | 职责 |
-|------|------|------|
-| 用户 | 人工决策 | 决定产品目标、优先级、需求取舍与最终验收结论 |
-| 技术负责人 | Claude Code | 任务拆解、技术方案把关、接口约束、代码 Review、测试验收、文档维护 |
-| 工程师 | Codex / ChatGPT | 按既定任务边界实现代码、修复问题、反馈阻塞与实现结果 |
-
 ### Claude Code 的职责边界
 
 - Claude Code 在本项目中扮演**技术负责人**，默认**不直接承担主功能代码实现**
-- Claude Code 应优先做以下工作：
-  - 理解并维护项目规格、协议和 UI 设计的一致性
-  - 把用户目标拆解为清晰的阶段任务、模块边界和验收标准
-  - 为工程师提供明确的实现输入，避免模糊需求直接进入编码
-  - 对工程师提交的结果进行 Review、测试、风险检查与回归判断
-  - 在需求、协议、UI 设计变更后，同步更新文档
+- Claude Code 的主职责是：
+  - 维护规格、协议、UI 与当前实现之间的一致性
+  - 把用户目标拆解为清晰阶段、模块边界、约束和验收标准
+  - 在工程师开始实现前，把任务收敛成可执行的 `plan_*.md`
+  - 在工程师提交结果后，基于 `report_*.md` 做 Review、测试和风险判断
+  - 在需求或规格发生变化后，推动相关文档同步更新
 - 仅在以下情况下，Claude Code 才可以修改代码：
   - 用户明确要求 Claude Code 直接改代码
   - 为修复少量阻塞性问题所必须进行的极小范围修正
   - 为补充测试、验证脚本或文档相关文件而进行的非主功能改动
-
-### Codex / ChatGPT 的职责边界
-
-- Codex / ChatGPT 在本项目中扮演**工程师**
-- 默认负责：
-  - 根据 Claude Code 已确认的任务范围实现代码
-  - 修复 Review 中发现的问题
-  - 汇报修改内容、风险点和未完成项
-- 默认不负责：
-  - 擅自修改协议定义
-  - 擅自修改 UI 规格
-  - 在未同步文档的前提下调整公共接口或项目结构
 
 ### 标准协作流程
 
@@ -86,8 +61,33 @@
 - `design_spec.md` 是 UI 设计与交互规格的当前基准
 - `docs/vision.md` 是项目愿景的完整定义
 - `docs/tech_overview.md` 是技术栈、目录结构、开发优先级的完整定义
+- `docs/file_index.md` 是 `src/` 源码导航索引，用于帮助 Claude Code / 工程师按功能场景快速定位相关模块与共享依赖
 - `CLAUDE.md` 负责定义项目协作规则、架构约束与总体实现原则
+- `CLAUDE.md`、`docs/file_index.md`、`docs/tech_overview.md`、`tmp_handoff/README.md` 以及各阶段的 `plan_*.md` / `review_*.md` 属于项目维护性文件，默认由 Claude Code 主导维护
+- 工程师默认不主动修改维护性文件；仅在 Claude Code 明确授权或为保持已确认事实一致而被明确指派时，才可进行最小必要改动
+- 凡是会影响后续 Claude Code / 工程师对项目结构、模块状态、阶段边界或权威结论理解的变化，都应视为维护性文件更新候选
+- 以下情况属于强制触发：新增 / 删除 / 重命名 `src/` 下模块或关键文件；模块职责变化；模块实现状态由 `stub` 变为可用实现或由已实现退化为占位状态；阶段计划、冻结范围、验收标准或 Review 结论发生变化；维护性文档与当前代码现状明显失真
+- Claude Code 在完成计划、Review 或确认实现结果后，必须评估相关维护性文件是否需要同步更新；若需要更新，必须立即修改相关文件，或在对应的临时交接文件中明确记录未更新原因
 - Claude Code 在完成 Review 或确认规格变化后，应同步维护上述文档的一致性
+
+### 任务启动与源码读取策略
+
+- 先确认当前任务是否已有有效的 `plan_*.md`
+- 先读取 `docs/file_index.md`，再决定需要定向读取哪些源码文件
+- 若任务关联既有实现，先确认最近一次 `report_*.md` 与 `review_*.md` 的结论
+- 若任务触及协议、UI 或产品边界，再补读对应权威文档，而不是默认全量读取所有项目文档
+- 若发现文档、计划与源码现状不一致，先分类为“文档滞后”或“实现越界”，在判断清楚前不得直接放行实现
+- Claude Code 默认采用“先索引、后定向读取”的方式理解源码，不默认全量扫描 `src/`
+- 若某文件内容已在当前上下文中，Claude Code 默认直接复用上下文中的最新有效版本，不重复读取同一文件
+- 若当前会话中已对某文件形成修改、补丁、定稿文本或明确结论，应优先以当前会话中的最新版本为准，而不是回退到旧的磁盘内容
+- 在 `docs/file_index.md` 已能覆盖任务定位时，只读取目标模块、入口文件和共享依赖文件
+- 若任务涉及协议边界，补读 `protocol.md`
+- 若任务涉及 UI 布局、交互或视觉约束，补读 `design_spec.md`
+- 若任务涉及产品目标、阶段范围或设计原则判断，补读 `docs/vision.md`
+- 仅在需要确认磁盘最新内容、怀疑上下文已过期或残缺、文件可能被外部修改、或任务要求逐字核对原文时，Claude Code 才重新读取文件
+- 若重新读取后发现文件内容与当前上下文版本不一致，Claude Code 应显式说明差异，并以当前任务应采用的最新有效版本统一后续结论
+- 若 `docs/file_index.md` 与实际源码结构或实现状态不一致，应先判断是索引滞后还是实现越界；在结论明确前，不得基于过期索引直接推进计划、Review 或实现
+- 在确认模块结构、职责边界或实现状态发生变化后，应同步维护 `docs/file_index.md`
 
 ---
 
@@ -95,184 +95,20 @@
 
 > Claude Code 与 Codex / ChatGPT 之间的计划、Review 与实现反馈，统一通过项目内临时文件传递，避免口头描述漂移。
 
-### 目录约定
-
-- 临时协作文件统一存放于项目根目录下：`tmp_handoff/`
-- 该目录仅用于 agent 之间的任务交接、Review 反馈、实现回执，不存放正式设计文档
-- 若目录不存在，可由工程师或技术负责人创建
-
-### 文件类型
-
-| 文件类型 | 创建方 | 用途 |
-|------|------|------|
-| `plan_*.md` | Claude Code | 向工程师下发阶段目标、任务拆解、边界和验收标准 |
-| `review_*.md` | Claude Code | 向工程师反馈 Review 结论、问题清单、修改要求 |
-| `report_*.md` | Codex / ChatGPT | 向技术负责人反馈实现结果、风险、阻塞、待确认项 |
-
-### 命名规则
-
-- 文件名格式统一为：`<type>_<stage>_<yyyymmdd>_<hhmmss>.md`
-- 示例：
-  - `plan_phase1_20260331_140500.md`
-  - `review_phase1_20260331_173000.md`
-  - `report_phase1_20260331_181500.md`
-- `stage` 使用稳定短名，例如：
-  - `bootstrap`
-  - `main_window`
-  - `serial_core`
-  - `register_tab`
-  - `flash_tab`
-  - `scope_tab`
-
-### 当前生效文件
-
-- 同一阶段允许存在多个历史文件，但默认以**同类型最新时间戳文件**为当前生效文件
-- 若 Claude Code 希望明确替代上一版，应在文件头写明：
-  - `Supersedes: <old_filename>`
-- 若工程师实现所依据的文件不是当前最新版本，必须先确认后再继续
-
-### Claude Code -> 工程师：计划文件接口
-
-- 文件类型：`plan_*.md`
-- 必填结构如下：
-
-```md
-# Plan
-
-Stage: <stage_name>
-Status: active
-Priority: high | medium | low
-Source: Claude Code
-Date: YYYY-MM-DD HH:MM:SS
-Depends-On: <none or filenames>
-Supersedes: <none or filename>
-
-## Goal
-<本阶段目标，1-3 句>
-
-## Scope
-- <允许实现的内容 1>
-- <允许实现的内容 2>
-
-## Non-Goals
-- <本阶段明确不做的内容 1>
-- <本阶段明确不做的内容 2>
-
-## Files-In-Scope
-- <允许修改的文件或目录>
-
-## Files-Frozen
-- <禁止修改的文件或目录>
-
-## Constraints
-- <接口、协议、UI 或架构约束>
-
-## Acceptance
-- <验收标准 1>
-- <验收标准 2>
-
-## Notes
-- <补充说明，可为空>
-```
-
-### Claude Code -> 工程师：Review 文件接口
-
-- 文件类型：`review_*.md`
-- 必填结构如下：
-
-```md
-# Review
-
-Stage: <stage_name>
-Status: pass | changes_requested | blocked
-Source: Claude Code
-Date: YYYY-MM-DD HH:MM:SS
-Related-Report: <report filename>
-Related-Plan: <plan filename>
-Supersedes: <none or filename>
-
-## Summary
-<一段话总结当前结论>
-
-## Findings
-1. [severity: critical|major|minor] <问题标题>
-   File: <path>
-   Detail: <问题描述>
-   Required: <必须怎么改>
-
-2. [severity: critical|major|minor] <问题标题>
-   File: <path>
-   Detail: <问题描述>
-   Required: <必须怎么改>
-
-## Test-Result
-- <通过/失败的检查项>
-
-## Decision
-- <通过，或要求修改后重提，或暂时阻塞>
-```
-
-约束：
-- `Status: pass` 时，`Findings` 可写 `None`
-- `Status: changes_requested` 时，`Findings` 不得为空
-- `Status: blocked` 时，必须在 `Decision` 中写清阻塞原因
-
-### 工程师 -> Claude Code：实现回执接口
-
-- 文件类型：`report_*.md`
-- 必填结构如下：
-
-```md
-# Report
-
-Stage: <stage_name>
-Status: implemented | partial | blocked
-Source: Codex
-Date: YYYY-MM-DD HH:MM:SS
-Based-On: <plan filename>
-
-## Completed
-- <已完成项 1>
-- <已完成项 2>
-
-## Files-Changed
-- <修改的文件 1>
-- <修改的文件 2>
-
-## Verification
-- <已执行的验证，如构建、测试、手动检查>
-
-## Risks
-- <当前残留风险，可为空>
-
-## Open-Questions
-- <需要技术负责人确认的问题，可为空>
-```
-
-### 状态流转
-
-标准流转顺序如下：
-
-1. Claude Code 创建 `plan_*.md`
-2. 工程师按计划实现，并提交 `report_*.md`
-3. Claude Code 基于实现结果提交 `review_*.md`
-4. 若 `review` 为 `changes_requested`，工程师继续修改并重新提交新的 `report_*.md`
-5. 若 `review` 为 `pass`，该阶段结束
-
-### 读取规则
-
-- 工程师开始编码前，必须先读取当前阶段最新的 `plan_*.md`
-- 工程师收到新的 `review_*.md` 后，应以该文件为唯一修正依据
-- Claude Code 在做 Review 前，应读取当前阶段最近一次 `report_*.md`
-- 若存在多个阶段并行，必须按 `stage` 名称区分，不得混用
-
-### 写入规则
-
-- 所有临时协作文件必须使用 Markdown
-- 所有文件内容必须简洁、可执行，避免长篇背景描述
-- 结论优先，解释次之
-- 一个文件只表达一个阶段的一次交接，不在单个文件中混入多个阶段
-- 正式结论不得只写在聊天消息中，必须落到临时文件
+- 临时协作文件统一存放于 `tmp_handoff/`
+- 协作文件仅用于阶段交接、Review 反馈和实现回执，不存放正式规格文档
+- 协作文件类型固定为：
+  - `plan_*.md`：由 Claude Code 创建，用于下发阶段目标、边界、约束和验收标准
+  - `review_*.md`：由 Claude Code 创建，用于输出 Review 结论、问题清单、测试结果和修改要求
+  - `report_*.md`：由 Codex / ChatGPT 创建，用于反馈实现结果、验证、风险与阻塞
+- 标准流转顺序固定为：`plan -> report -> review`
+- 同一阶段默认以同类型中最新时间戳文件为当前生效文件；若明确替代上一版，应在文件头写明 `Supersedes`
+- Claude Code 在开始新阶段前，必须确认当前阶段是否已有有效 `plan_*.md`
+- Claude Code 在做 Review 前，必须读取当前阶段最近一次 `report_*.md`
+- 若存在多个并行阶段，Claude Code 必须按 `stage` 名称区分，不得混用不同阶段文件
+- 所有正式结论必须落到 `tmp_handoff/`，不得只停留在聊天消息中
+- 协作文件内容应保持简洁、可执行、结论优先
+- 具体模板、字段格式与命名细节以 `tmp_handoff/README.md` 及目录内模板文件为准；`CLAUDE.md` 只定义高层协作规则
 
 ---
 
@@ -292,13 +128,12 @@ Based-On: <plan filename>
 
 > 完整定义见 [`design_spec.md`](design_spec.md)，该文件是 UI 设计的唯一权威来源。
 
-UI 实现的架构约束：
-- **代码与设计解耦**：所有颜色、尺寸、间距必须提取为具名常量或 QSS 变量，禁止硬编码在业务逻辑中
-- **组件化**：每个 UI 区域独立封装为单独的 Widget 类，互不依赖
-- **布局用相对单位**：使用 `QSplitter`、`QSizePolicy`、比例布局，避免固定像素（除明确标注的固定尺寸外）
-- **UI 与业务逻辑严格分离**：UI 频繁变动不能影响业务逻辑。具体要求：
-  - 所有需要交互的控件必须作为成员变量暴露，不得仅存在于构造函数局部作用域
-  - UI 构建（布局、控件创建）和信号槽连接必须分离为独立方法（如 `setupUi()` / `connectSignals()`）
-  - 业务逻辑不得写在 UI 类中，必须由独立的 Manager / Service 类处理
-  - **Review 时必须检查此项**，发现 UI 与逻辑耦合必须作为 Finding 提出
+UI / Review 红线：
+- 禁止将颜色、尺寸、间距等设计值硬编码进业务逻辑；应提取为具名常量或 QSS 变量
+- 禁止将多个 UI 区域揉在单个大类中；应按区域封装为独立 Widget
+- 禁止以固定像素作为默认布局策略；应优先使用 `QSplitter`、`QSizePolicy` 和比例布局
+- 禁止让交互控件只存在于构造函数局部作用域；需要交互的控件必须作为成员可访问
+- 禁止将 UI 构建和信号槽连接混写成一段；应拆分为独立方法，如 `setupUi()` / `connectSignals()`
+- 禁止将业务逻辑直接写在 UI 类中；业务处理应下沉到独立的 Manager / Service
+- 若发现 UI 与逻辑耦合，Claude Code 在 Review 时必须作为 Finding 提出
 - UI 变更后必须同步更新 `design_spec.md`

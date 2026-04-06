@@ -286,7 +286,6 @@ void RegisterTable::setValueMode(ValueMode mode) {
             continue;
         }
 
-        quint16 value = 0;
         qint16 signedValue = 0;
         Q_UNUSED(oldMode);
         if (parseRegisterValueText(text, &signedValue)) {

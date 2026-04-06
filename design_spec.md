@@ -257,10 +257,18 @@ Sidebar 内容:
 ```
 高度: 22px
 背景: #3B6D11
-文字: 10px #c0dd97
+文字: 11px #c0dd97
 
-内容（左到右，| 为分隔符）:
-串口参数 | 连接状态 | RX: NB | TX: NB | 就绪 || 语言（右对齐）
+从左到右:
+[软件信息 "MotorDev · MIT License"] [stretch]
+[固件版本 "固件 v0.0.0 · 编译日期 2026-01-01"，居中] [stretch]
+[日志面板开关按钮 "▼ 输出" / "▲ 输出"，点击切换 LogPanel 可见性]
+
+日志面板开关按钮:
+  高度: 18px
+  背景: transparent
+  文字: 11px #c0dd97
+  hover: #EAF3DE
 ```
 
 ---
@@ -322,24 +330,94 @@ Sidebar 内容:
 
 ---
 
-## 示波器页面规格（待细化）
+## 示波器页面规格
+
+> 当前为 UI 原型阶段，串口数据流尚未接入。start/stop/viewMode 有实际状态切换，其余工具栏动作及底部面板信号为 stub。
 
 ```
-布局:
-1. 顶部控制栏（高度 40px）
-   - 通道选择（最多 8 个 CheckBox）
-   - 开始/暂停/停止按钮
-   - 时间轴范围选择
+整体布局（水平）:
+[Sidebar 224px（默认收起）] | [主内容区]
 
-2. 波形显示区（主体，QCustomPlot）
-   - 多通道不同颜色曲线
-   - 网格线
-   - X轴：时间（秒）
-   - Y轴：原始值或换算值
+主内容区（垂直）:
+1. ScopeToolBar（顶部工具栏）
+2. ScopePlotWidget（波形绘制画布，stretch=1）
+3. ScopeBottomPanel（底部面板）
+```
 
-3. 游标区（高度 30px）
-   - 游标1位置、游标2位置
-   - ΔX（时间差）、ΔY（幅值差）显示
+### ScopeToolBar（顶部工具栏）
+
+```
+高度: 自适应（约 32px）
+背景: #f6f4ef
+边框: 底部 1px solid #d8d1c7
+
+按钮分组（从左到右，竖线分隔）:
+[|>] [□]  |  [+] [-] [<<] [>>] [F] [Fs]  |  [Ov] [St]  |  [Csv] [Cam]  |  [*]  ← stretch →  [状态徽章]
+
+按钮尺寸: 30×24px，QToolButton
+状态徽章: 圆角标签，RUNNING（绿底）/ STOPPED（红底）
+Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
+```
+
+### ScopePlotWidget（波形绘制画布）
+
+```
+最小尺寸: 720×320px
+绘制方式: QPainter 自绘制（非 QCustomPlot）
+背景: #f4f2ed
+绘图区: 圆角矩形，内部网格 10×8
+
+视图模式:
+  Overlay — 所有通道波形叠加在同一绘图区，右上角显示图例
+  Stacked — 每通道独立 lane，lane 间隔 10px
+
+交互:
+  鼠标左键拖拽 — 水平方向选区缩放 X 轴 / 垂直方向选区缩放 Y 轴
+  双击 — 重置视图为全范围
+
+默认演示通道（4 条正弦波）:
+  CH1 Speed  #e9c46a
+  CH2 Torque #61afef
+  CH3 Temp   #e76f51
+  CH4 Current #98c379
+```
+
+### ScopeBottomPanel（底部面板）
+
+```
+背景: #f1eee8
+边框: 顶部 1px solid #d8d1c7
+
+内容:
+  通道配置条区域（可通过按钮隐藏/显示）
+  三个切换按钮: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator]
+
+通道配置条（ScopeChannelStrip × 8，水平排列）:
+  每条包含: CheckBox "CHn" + 描述 QLineEdit + 寄存器地址 QLineEdit
+  最小宽度: 104px
+  CH1~CH4 默认勾选
+
+寄存器面板（ScopeRegisterPanel）:
+  以独立浮动窗口弹出（Qt::Tool），500×400px
+  8 行 R/W：每行 [描述] [地址] [值] [R] [W]
+  底部: 下发时间间隔 + 启动/停止/清除面板/录入参数
+
+信号发生器面板（ScopeGeneratorPanel）:
+  以独立浮动窗口弹出（Qt::Tool），420×240px
+  当前为占位 UI，无后端逻辑
+```
+
+### 示波器 Sidebar
+
+```
+宽度: 224px（默认收起）
+标题: "示波"
+
+内容:
+  Sample Interval — QComboBox（100us / 500us / 1000us / 2000us）
+  Trigger Mode — QComboBox（Auto / Normal / Single）
+  Capture Note — QLineEdit 占位
+  说明文字: "Sidebar reserved for future sampling channel properties."
 ```
 
 ---

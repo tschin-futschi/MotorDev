@@ -56,7 +56,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_registerTab = new RegisterRwTab(m_serialManager, m_contentStack);
     m_contentStack->addWidget(m_registerTab);
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
-    m_contentStack->addWidget(new OscilloscopTab(m_contentStack));
+    m_scopeTab = new OscilloscopTab(m_contentStack);
+    m_contentStack->addWidget(m_scopeTab);
     m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
     m_contentStack->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
 
@@ -121,16 +122,16 @@ MainWindow::MainWindow(QWidget *parent)
         m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
         m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
-        m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(true);
+        m_scopeTab->setEnabled(true);
     });
     connect(m_configTab, &ConfigTab::serialDisconnected, this, [this]() {
         m_registerTab->setConnected(false);
         m_registerTab->setEnabled(false);
         m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
         m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-        m_activityBar->setPageEnabled(ActivityBar::ScopePage, false);
+        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
-        m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(false);
+        m_scopeTab->setEnabled(true);
     });
     connect(m_logToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_logPanel->isVisible();
@@ -143,7 +144,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_registerTab->setEnabled(false);
     m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
     m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::ScopePage, false);
+    m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
     m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
-    m_contentStack->widget(ActivityBar::ScopePage)->setEnabled(false);
+    m_scopeTab->setEnabled(true);
 }

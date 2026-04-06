@@ -31,6 +31,18 @@ qt_add_executable(MotorDev
     src/widgets/registertable.h
     src/widgets/sidebar.cpp
     src/widgets/sidebar.h
+    src/widgets/scopebottompanel.cpp
+    src/widgets/scopebottompanel.h
+    src/widgets/scopechannelstrip.cpp
+    src/widgets/scopechannelstrip.h
+    src/widgets/scopegeneratorpanel.cpp
+    src/widgets/scopegeneratorpanel.h
+    src/widgets/scopeplotwidget.cpp
+    src/widgets/scopeplotwidget.h
+    src/widgets/scoperegisterpanel.cpp
+    src/widgets/scoperegisterpanel.h
+    src/widgets/scopetoolbar.cpp
+    src/widgets/scopetoolbar.h
     src/widgets/topbar.cpp
     src/widgets/topbar.h
     src/tabs/configtab.cpp
