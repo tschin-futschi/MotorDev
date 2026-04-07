@@ -8,6 +8,7 @@ class DeviceContext;
 class LogPanel;
 class OscilloscopTab;
 class RegisterRwTab;
+class SerialDebugTab;
 class TopBar;
 class QPushButton;
 class QStackedWidget;
@@ -28,6 +29,7 @@ private:
     ConfigTab *m_configTab = nullptr;
     RegisterRwTab *m_registerTab = nullptr;
     OscilloscopTab *m_scopeTab = nullptr;
+    SerialDebugTab *m_debugTab = nullptr;
     QStackedWidget *m_contentStack = nullptr;
     LogPanel *m_logPanel = nullptr;
     QWidget *m_statusBarWidget = nullptr;

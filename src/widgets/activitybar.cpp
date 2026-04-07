@@ -52,13 +52,15 @@ ActivityBar::ActivityBar(QWidget *parent)
     m_registerButton = new QPushButton(tr("读写"), this);
     m_flashButton = new QPushButton(tr("烧录"), this);
     m_scopeButton = new QPushButton(tr("示波"), this);
+    m_debugButton = new QPushButton(tr("调试"), this);
     m_settingsButton = new QPushButton(tr("设置"), this);
 
     const QList<QPushButton *> buttons = {
         m_configButton,
         m_registerButton,
         m_flashButton,
-        m_scopeButton};
+        m_scopeButton,
+        m_debugButton};
     for (auto *button : buttons) {
         button->setFixedSize(
             Style::Size::ActivityButtonSize,
@@ -95,6 +97,10 @@ ActivityBar::ActivityBar(QWidget *parent)
         setActivePage(ScopePage);
         emit pageSelected(ScopePage);
     });
+    connect(m_debugButton, &QPushButton::clicked, this, [this] {
+        setActivePage(DebugPage);
+        emit pageSelected(DebugPage);
+    });
 
     setActivePage(ConfigPage);
 }
@@ -110,6 +116,8 @@ void ActivityBar::setPageEnabled(int page, bool enabled) {
     case ScopePage:
         m_scopeButton->setEnabled(enabled);
         break;
+    case DebugPage:
+        break;
     default:
         break;
     }
@@ -120,5 +128,6 @@ void ActivityBar::setActivePage(int index) {
     m_registerButton->setStyleSheet(activityButtonStyle(index == RegisterPage));
     m_flashButton->setStyleSheet(activityButtonStyle(index == FlashPage));
     m_scopeButton->setStyleSheet(activityButtonStyle(index == ScopePage));
+    m_debugButton->setStyleSheet(activityButtonStyle(index == DebugPage));
     m_settingsButton->setStyleSheet(activityButtonStyle(false));
 }

@@ -43,7 +43,7 @@ MotorDev/
 ├─ CMakeLists.txt
 ├─ README.md
 ├─ CLAUDE.md
-├─ agent.md
+├─ codex.md
 ├─ design_spec.md
 ├─ protocol.md
 ├─ setup_qt_env.ps1
@@ -217,7 +217,7 @@ D:\Qt\Tools\mingw1310_64\bin\mingw32-make.exe
 - `design_spec.md`
 - `protocol.md`
 - `CLAUDE.md`
-- `agent.md`
+- `codex.md`
 
 其中：
 

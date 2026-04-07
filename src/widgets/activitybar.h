@@ -13,6 +13,7 @@ public:
         RegisterPage = 1,
         FlashPage = 2,
         ScopePage = 3,
+        DebugPage = 4,
     };
 
     explicit ActivityBar(QWidget *parent = nullptr);
@@ -28,5 +29,6 @@ private:
     QPushButton *m_registerButton = nullptr;
     QPushButton *m_flashButton = nullptr;
     QPushButton *m_scopeButton = nullptr;
+    QPushButton *m_debugButton = nullptr;
     QPushButton *m_settingsButton = nullptr;
 };

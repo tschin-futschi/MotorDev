@@ -6,6 +6,7 @@
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
 #include "tabs/registerrwtab.h"
+#include "tabs/serialdebugtab.h"
 #include "ui/style_constants.h"
 #include "widgets/activitybar.h"
 #include "widgets/logpanel.h"
@@ -58,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
     m_scopeTab = new OscilloscopTab(m_contentStack);
     m_contentStack->addWidget(m_scopeTab);
+    m_debugTab = new SerialDebugTab(this);
     m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
     m_contentStack->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
 
@@ -112,7 +114,15 @@ MainWindow::MainWindow(QWidget *parent)
     central->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
     setCentralWidget(central);
 
-    connect(m_activityBar, &ActivityBar::pageSelected, m_contentStack, &QStackedWidget::setCurrentIndex);
+    connect(m_activityBar, &ActivityBar::pageSelected, this, [this](int index) {
+        if (index == ActivityBar::DebugPage) {
+            m_debugTab->show();
+            m_debugTab->raise();
+            m_debugTab->activateWindow();
+            return;
+        }
+        m_contentStack->setCurrentIndex(index);
+    });
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
     connect(m_configTab, &ConfigTab::serialConnected, this, [this](const QString &, qint32) {

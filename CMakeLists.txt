@@ -20,6 +20,8 @@ qt_add_executable(MotorDev
     src/frameparser.h
     src/serialmanager.cpp
     src/serialmanager.h
+    src/services/simulatorserial.cpp
+    src/services/simulatorserial.h
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
@@ -49,6 +51,8 @@ qt_add_executable(MotorDev
     src/tabs/configtab.h
     src/tabs/registerrwtab.cpp
     src/tabs/registerrwtab.h
+    src/tabs/serialdebugtab.cpp
+    src/tabs/serialdebugtab.h
     src/tabs/fwflashtab.cpp
     src/tabs/fwflashtab.h
     src/tabs/oscilloscoptab.cpp

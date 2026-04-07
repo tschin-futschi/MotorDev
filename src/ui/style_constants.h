@@ -156,6 +156,7 @@ inline constexpr int SidebarComboMinHeight = 28;
 inline constexpr int ContentPadding = 24;
 inline constexpr int ContentSpacing = 16;
 inline constexpr int FormSpacing = 10;
+inline constexpr int SimulatorLeftPanelWidth = 260;
 inline constexpr int GroupBoxTopMargin = 8;
 inline constexpr int SplitterHandleWidth = 8;
 inline constexpr int StatusBarHorizontalPadding = 10;
