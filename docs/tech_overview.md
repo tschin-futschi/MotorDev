@@ -59,7 +59,10 @@ MotorDev/
 │   │   ├── configtab.cpp / .h       # Tab0 配置（串口/IC/PMIC）
 │   │   ├── registerrwtab.cpp / .h   # Tab1 寄存器读写
 │   │   ├── fwflashtab.cpp / .h      # Tab2 FW 烧录（占位）
-│   │   └── oscilloscoptab.cpp / .h  # Tab3 示波器（UI 原型阶段）
+│   │   ├── oscilloscoptab.cpp / .h  # Tab3 示波器（UI 原型阶段）
+│   │   └── serialdebugtab.cpp / .h  # 串口调试模拟器（浮动窗口，开发工具）
+│   ├── services/
+│   │   └── simulatorserial.cpp / .h # 模拟器串口驱动（独立线程，供 SerialDebugTab 使用）
 │   └── widgets/
 │       ├── activitybar.cpp / .h     # 左侧活动栏（页面切换）
 │       ├── topbar.cpp / .h          # 顶栏（Logo、连接状态、语言切换占位）

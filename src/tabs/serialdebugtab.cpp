@@ -24,6 +24,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <cmath>
+
 using namespace MotorDev;
 
 namespace {
@@ -124,6 +126,53 @@ QByteArray encodeWord(quint16 value) {
     data.append(static_cast<char>(value & 0xFF));
     return data;
 }
+
+int sampleIntervalMs(uint8_t index) {
+    switch (index) {
+    case 0x00:
+        return 20;
+    case 0x01:
+        return 30;
+    case 0x02:
+        return 40;
+    case 0x03:
+        return 60;
+    case 0x04:
+        return 80;
+    case 0x05:
+        return 100;
+    case 0x06:
+        return 150;
+    case 0x07:
+        return 200;
+    default:
+        return 100;
+    }
+}
+
+QByteArray encodeStreamFrame(uint8_t channelMask, const QVector<qint16> &samples) {
+    QByteArray data;
+    data.reserve(samples.size() * 2);
+    for (qint16 sample : samples) {
+        const quint16 raw = static_cast<quint16>(sample);
+        data.append(static_cast<char>((raw >> 8) & 0xFF));
+        data.append(static_cast<char>(raw & 0xFF));
+    }
+
+    QByteArray frame;
+    frame.reserve(data.size() + 4);
+    frame.append(static_cast<char>(0xBB));
+    frame.append(static_cast<char>(channelMask));
+    frame.append(static_cast<char>(data.size()));
+    frame.append(data);
+
+    uint8_t xorValue = channelMask ^ static_cast<uint8_t>(data.size());
+    for (char byte : data) {
+        xorValue ^= static_cast<uint8_t>(byte);
+    }
+    frame.append(static_cast<char>(xorValue));
+    return frame;
+}
 } // namespace
 
 SerialDebugTab::SerialDebugTab(QWidget *parent)
@@ -133,6 +182,8 @@ SerialDebugTab::SerialDebugTab(QWidget *parent)
     qRegisterMetaType<uint8_t>("uint8_t");
 
     m_simulator = new SimulatorSerial();
+    m_channelRegisterMap = QVector<quint16>(8, 0xFFFF);
+    m_channelRegisterMap[0] = 0x0010;
 
     setupUi();
     connectSignals();
@@ -342,6 +393,24 @@ QString SerialDebugTab::describeIncoming(uint8_t cmd, const QByteArray &data) {
                 .arg(formatWord(addr), formatWord(val));
         }
         return QStringLiteral("WRITE");
+    case MotorProtocol::CmdStartSampling:
+        return QStringLiteral("SCOPE_START");
+    case MotorProtocol::CmdStopSampling:
+        return QStringLiteral("SCOPE_STOP");
+    case MotorProtocol::CmdSetSampleInterval:
+        if (!data.isEmpty()) {
+            return QStringLiteral("SCOPE_INTERVAL idx=%1")
+                .arg(formatByte(static_cast<uint8_t>(data.at(0))));
+        }
+        return QStringLiteral("SCOPE_INTERVAL");
+    case MotorProtocol::CmdSetSampleChannels:
+        if (!data.isEmpty()) {
+            return QStringLiteral("SCOPE_CHANNELS mask=%1")
+                .arg(formatByte(static_cast<uint8_t>(data.at(0))));
+        }
+        return QStringLiteral("SCOPE_CHANNELS");
+    case MotorProtocol::CmdSetChannelRegisterMap:
+        return QStringLiteral("SCOPE_MAP");
     default:
         return QStringLiteral("UNKNOWN");
     }
@@ -350,6 +419,8 @@ QString SerialDebugTab::describeIncoming(uint8_t cmd, const QByteArray &data) {
 void SerialDebugTab::connectSignals() {
     connect(m_scanButton, &QPushButton::clicked, this, &SerialDebugTab::refreshPortList);
     connect(m_clearLogButton, &QPushButton::clicked, m_logEdit, &QTextEdit::clear);
+    m_streamTimer = new QTimer(this);
+    connect(m_streamTimer, &QTimer::timeout, this, &SerialDebugTab::sendStreamFrame);
 
     connect(m_connectButton, &QPushButton::clicked, this, [this]() {
         if (m_isConnected) {
@@ -377,6 +448,8 @@ void SerialDebugTab::connectSignals() {
     });
     connect(m_simulator, &SimulatorSerial::disconnected, this, [this]() {
         setConnectedState(false);
+        m_streamTimer->stop();
+        m_sampling = false;
         appendSysLog(tr("模拟器已断开"));
     });
     connect(m_simulator, &SimulatorSerial::errorOccurred, this, [this](const QString &message) {
@@ -409,6 +482,21 @@ void SerialDebugTab::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteArra
             break;
         case MotorProtocol::CmdWriteRegister:
             handleWriteRegister(seq, data);
+            break;
+        case MotorProtocol::CmdStartSampling:
+            handleStartSampling(seq);
+            break;
+        case MotorProtocol::CmdStopSampling:
+            handleStopSampling(seq);
+            break;
+        case MotorProtocol::CmdSetSampleInterval:
+            handleSetSampleInterval(seq, data);
+            break;
+        case MotorProtocol::CmdSetSampleChannels:
+            handleSetSampleChannels(seq, data);
+            break;
+        case MotorProtocol::CmdSetChannelRegisterMap:
+            handleSetChannelRegisterMap(seq, data);
             break;
         default:
             handleUnknownCommand(cmd, seq);
@@ -505,6 +593,91 @@ void SerialDebugTab::handleWriteRegister(uint8_t seq, const QByteArray &data) {
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdWriteRegister, seq, {}, QStringLiteral("WRITE → ACK"));
 }
 
+void SerialDebugTab::handleStartSampling(uint8_t seq) {
+    bool hasValidMapping = false;
+    for (int index = 0; index < m_channelRegisterMap.size(); ++index) {
+        if ((m_channelMask & (1u << index)) != 0 && m_channelRegisterMap.at(index) != 0xFFFF) {
+            hasValidMapping = true;
+            break;
+        }
+    }
+
+    if (!hasValidMapping) {
+        sendErrorFrame(seq, 0x03);
+        sendDebugInfo(QStringLiteral("Start sampling failed: no valid channel mapping"));
+        return;
+    }
+
+    m_sampling = true;
+    m_streamTick = 0;
+    m_streamTimer->start(sampleIntervalMs(m_sampleIntervalIndex));
+    sendResponseFrame(seq, MotorProtocol::CmdStartSampling, {});
+    appendLog(QStringLiteral("TX"), MotorProtocol::CmdStartSampling, seq, {}, QStringLiteral("SCOPE_START → ACK"));
+}
+
+void SerialDebugTab::handleStopSampling(uint8_t seq) {
+    m_sampling = false;
+    m_streamTimer->stop();
+    sendResponseFrame(seq, MotorProtocol::CmdStopSampling, {});
+    appendLog(QStringLiteral("TX"), MotorProtocol::CmdStopSampling, seq, {}, QStringLiteral("SCOPE_STOP → ACK"));
+}
+
+void SerialDebugTab::handleSetSampleInterval(uint8_t seq, const QByteArray &data) {
+    if (data.size() != 1) {
+        sendErrorFrame(seq, 0x03);
+        return;
+    }
+
+    const uint8_t index = static_cast<uint8_t>(data.at(0));
+    if (!MotorProtocol::isValidSampleIntervalIndex(index)) {
+        sendErrorFrame(seq, 0x03);
+        return;
+    }
+
+    m_sampleIntervalIndex = index;
+    if (m_sampling) {
+        m_streamTimer->start(sampleIntervalMs(m_sampleIntervalIndex));
+    }
+    sendResponseFrame(seq, MotorProtocol::CmdSetSampleInterval, {});
+    appendLog(QStringLiteral("TX"), MotorProtocol::CmdSetSampleInterval, seq, {},
+              QStringLiteral("SCOPE_INTERVAL → %1").arg(formatByte(index)));
+}
+
+void SerialDebugTab::handleSetSampleChannels(uint8_t seq, const QByteArray &data) {
+    if (data.size() != 1) {
+        sendErrorFrame(seq, 0x03);
+        return;
+    }
+
+    const uint8_t mask = static_cast<uint8_t>(data.at(0));
+    if (!MotorProtocol::isValidSampleChannelMask(mask)) {
+        sendErrorFrame(seq, 0x03);
+        return;
+    }
+
+    m_channelMask = mask;
+    sendResponseFrame(seq, MotorProtocol::CmdSetSampleChannels, {});
+    appendLog(QStringLiteral("TX"), MotorProtocol::CmdSetSampleChannels, seq, {},
+              QStringLiteral("SCOPE_CHANNELS → %1").arg(formatByte(mask)));
+}
+
+void SerialDebugTab::handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data) {
+    if (data.size() != 16) {
+        sendErrorFrame(seq, 0x03);
+        return;
+    }
+
+    for (int index = 0; index < 8; ++index) {
+        const int offset = index * 2;
+        m_channelRegisterMap[index] = static_cast<quint16>(
+            (static_cast<quint8>(data.at(offset)) << 8) | static_cast<quint8>(data.at(offset + 1)));
+    }
+
+    sendResponseFrame(seq, MotorProtocol::CmdSetChannelRegisterMap, {});
+    appendLog(QStringLiteral("TX"), MotorProtocol::CmdSetChannelRegisterMap, seq, {},
+              QStringLiteral("SCOPE_MAP → ACK"));
+}
+
 void SerialDebugTab::handleUnknownCommand(uint8_t cmd, uint8_t seq) {
     sendErrorFrame(seq, 0x02);
     appendLog(QStringLiteral("TX"), cmd, seq, {}, tr("未知命令"));
@@ -524,6 +697,47 @@ void SerialDebugTab::sendErrorFrame(uint8_t seq, uint8_t errorCode) {
     sendResponseFrame(seq, MotorProtocol::CmdErrorResponse, data);
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdErrorResponse, seq, data,
               QStringLiteral("ERROR %1").arg(formatByte(errorCode)));
+}
+
+void SerialDebugTab::sendDebugInfo(const QString &message) {
+    const QByteArray data = message.toUtf8().left(255);
+    sendResponseFrame(0xFF, 0x06, data);
+    appendLog(QStringLiteral("TX"), 0x06, 0xFF, data, QStringLiteral("DEBUG_INFO"));
+}
+
+void SerialDebugTab::sendStreamFrame() {
+    if (!m_isConnected || !m_sampling || m_simulator == nullptr) {
+        return;
+    }
+
+    QVector<qint16> samples;
+    samples.reserve(8);
+    for (int index = 0; index < m_channelRegisterMap.size(); ++index) {
+        if ((m_channelMask & (1u << index)) == 0) {
+            continue;
+        }
+
+        const quint16 reg = m_channelRegisterMap.at(index);
+        qint16 value = 0;
+        if (reg != 0xFFFF) {
+            const double baseValue = static_cast<double>(registerValueAt(reg));
+            const double phase = (static_cast<double>(m_streamTick) * 0.18) + (index * 0.75);
+            const double amplitude = 28.0 + index * 4.0;
+            const double noisePhase = (static_cast<double>(m_streamTick) * 1.85) + (index * 2.1);
+            const double noise = std::sin(noisePhase) * 0.9 + std::cos(noisePhase * 1.7) * 0.5;
+            value = static_cast<qint16>(std::lround(baseValue + std::sin(phase) * amplitude + noise));
+        }
+        samples.append(value);
+    }
+
+    const QByteArray frame = encodeStreamFrame(m_channelMask, samples);
+    QMetaObject::invokeMethod(
+        m_simulator,
+        "sendRawFrame",
+        Qt::QueuedConnection,
+        Q_ARG(QByteArray, frame));
+
+    ++m_streamTick;
 }
 
 void SerialDebugTab::appendSysLog(const QString &message, bool isError) {

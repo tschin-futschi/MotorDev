@@ -50,6 +50,10 @@
 ### 固件烧录
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab（功能待实现）
 
+### 串口调试模拟器
+- `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器浮动窗口，可模拟 STM32 侧响应（I2C 扫描、寄存器读写、采样启停、流帧上报）；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
+- `src/services/simulatorserial` `[传输]` — 模拟器专用串口驱动，接口与 SerialManager 对称（openPort / closePort / sendRawFrame）；独立线程运行，仅供 SerialDebugTab 使用
+
 ### 主窗口框架与页面导航
 - `src/main.cpp` — 程序入口，创建 QApplication 和 MainWindow，安装全局 Qt 消息处理器（将 qDebug/qWarning 路由至 LogPanel）
 - `src/mainwindow` `[UI-Shell]` — 主窗口，持有并组合所有顶层组件，管理串口连接后部分页面的启用/禁用状态
@@ -80,7 +84,7 @@
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` | UI stub，按钮未连接信号 |
 | 示波器缩放/平移/导出/截图等工具栏操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
-| 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 未实现，无外部数据接口 |
+| 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`setChannelData` 接收外部数据，`OscilloscopTab` 负责接入 stream 帧 |
 | 示波器寄存器面板后端处理 | `src/tabs/oscilloscoptab` | stub，信号仅打 log |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` | UI stub，占位面板 |
 | 固件烧录 | `src/tabs/fwflashtab` | 整体未实现 |
@@ -99,8 +103,9 @@
 | 协议层 | `src/protocol/motor_protocol` |
 | 数据模型层 | `src/devicecontext` |
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
-| UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab` |
+| UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopetoolbar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel` |
+| 开发工具传输层 | `src/services/simulatorserial` |
 | 样式常量 | `src/ui/style_constants.h` |
 
 ---

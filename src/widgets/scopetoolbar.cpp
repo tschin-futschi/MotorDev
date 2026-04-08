@@ -81,61 +81,27 @@ QToolButton *ScopeToolBar::createToolButton(const QString &text, const QString &
     button->setText(text);
     button->setToolTip(toolTip);
     button->setAutoRaise(false);
-    button->setFixedSize(30, 24);
+    button->setFixedHeight(26);
     button->setStyleSheet(makeToolButtonStyle());
     return button;
 }
 
 void ScopeToolBar::setupUi() {
     auto *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(6, 4, 6, 4);
-    layout->setSpacing(3);
+    layout->setContentsMargins(8, 6, 8, 6);
+    layout->setSpacing(4);
 
-    m_startButton = createToolButton(QStringLiteral("|>"), tr("Start acquisition"));
-    m_stopButton = createToolButton(QStringLiteral("[]"), tr("Stop acquisition"));
-    m_zoomInButton = createToolButton(QStringLiteral("+"), tr("Zoom in"));
-    m_zoomOutButton = createToolButton(QStringLiteral("-"), tr("Zoom out"));
-    m_panLeftButton = createToolButton(QStringLiteral("<<"), tr("Pan left"));
-    m_panRightButton = createToolButton(QStringLiteral(">>"), tr("Pan right"));
-    m_fitButton = createToolButton(QStringLiteral("F"), tr("Fit waveform"));
-    m_overlayButton = createToolButton(QStringLiteral("Ov"), tr("Overlay mode"));
-    m_stackedButton = createToolButton(QStringLiteral("St"), tr("Stacked mode"));
-    m_exportButton = createToolButton(QStringLiteral("Csv"), tr("Export CSV"));
-    m_screenshotButton = createToolButton(QStringLiteral("Cam"), tr("Save screenshot"));
-    m_fullScaleButton = createToolButton(QStringLiteral("Fs"), tr("Full scale"));
-    m_settingsButton = createToolButton(QStringLiteral("*"), tr("Settings"));
+    m_overlayButton = createToolButton(QStringLiteral("Overlay"), tr("Overlay mode"));
+    m_stackedButton = createToolButton(QStringLiteral("Stack"), tr("Stacked mode"));
 
     m_overlayButton->setCheckable(true);
     m_stackedButton->setCheckable(true);
-    m_exportButton->setFixedWidth(34);
-    m_screenshotButton->setFixedWidth(34);
+    m_overlayButton->setMinimumWidth(62);
+    m_stackedButton->setMinimumWidth(58);
 
     m_statusLabel = new QLabel(this);
-
-    auto addDivider = [this, layout]() {
-        auto *divider = new QWidget(this);
-        divider->setFixedSize(1, 18);
-        divider->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::ScopeDivider.name()));
-        layout->addWidget(divider, 0, Qt::AlignVCenter);
-    };
-
-    layout->addWidget(m_startButton);
-    layout->addWidget(m_stopButton);
-    addDivider();
-    layout->addWidget(m_zoomInButton);
-    layout->addWidget(m_zoomOutButton);
-    layout->addWidget(m_panLeftButton);
-    layout->addWidget(m_panRightButton);
-    layout->addWidget(m_fitButton);
-    layout->addWidget(m_fullScaleButton);
-    addDivider();
     layout->addWidget(m_overlayButton);
     layout->addWidget(m_stackedButton);
-    addDivider();
-    layout->addWidget(m_exportButton);
-    layout->addWidget(m_screenshotButton);
-    addDivider();
-    layout->addWidget(m_settingsButton);
     layout->addStretch();
     layout->addWidget(m_statusLabel, 0, Qt::AlignVCenter);
 
@@ -145,17 +111,6 @@ void ScopeToolBar::setupUi() {
 }
 
 void ScopeToolBar::connectSignals() {
-    connect(m_startButton, &QToolButton::clicked, this, &ScopeToolBar::startRequested);
-    connect(m_stopButton, &QToolButton::clicked, this, &ScopeToolBar::stopRequested);
-    connect(m_zoomInButton, &QToolButton::clicked, this, &ScopeToolBar::zoomInRequested);
-    connect(m_zoomOutButton, &QToolButton::clicked, this, &ScopeToolBar::zoomOutRequested);
-    connect(m_panLeftButton, &QToolButton::clicked, this, &ScopeToolBar::panLeftRequested);
-    connect(m_panRightButton, &QToolButton::clicked, this, &ScopeToolBar::panRightRequested);
-    connect(m_fitButton, &QToolButton::clicked, this, &ScopeToolBar::fitRequested);
-    connect(m_exportButton, &QToolButton::clicked, this, &ScopeToolBar::exportCsvRequested);
-    connect(m_screenshotButton, &QToolButton::clicked, this, &ScopeToolBar::screenshotRequested);
-    connect(m_fullScaleButton, &QToolButton::clicked, this, &ScopeToolBar::fullScaleRequested);
-    connect(m_settingsButton, &QToolButton::clicked, this, &ScopeToolBar::settingsRequested);
     connect(m_overlayButton, &QToolButton::clicked, this, [this]() {
         setViewMode(ViewMode::Overlay);
         emit viewModeChanged(m_viewMode);
@@ -167,8 +122,6 @@ void ScopeToolBar::connectSignals() {
 }
 
 void ScopeToolBar::refreshState() {
-    m_startButton->setEnabled(!m_running);
-    m_stopButton->setEnabled(m_running);
     m_overlayButton->setChecked(m_viewMode == ViewMode::Overlay);
     m_stackedButton->setChecked(m_viewMode == ViewMode::Stacked);
     m_statusLabel->setText(m_running ? QStringLiteral("RUNNING") : QStringLiteral("STOPPED"));

@@ -388,11 +388,15 @@ Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
 背景: #f1eee8
 边框: 顶部 1px solid #d8d1c7
 
-内容:
-  通道配置条区域（可通过按钮隐藏/显示）
-  三个切换按钮: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator]
+控制行（顶部，横向排列）:
+  [Sample Interval 标签] [QComboBox: 100 us / 500 us / 1000 us / 2000 us]
+  [Y Axis QToolButton（下拉菜单: Auto / Manual...）]
+  [开始采样 / 停止采样 QPushButton（状态切换）]
+  [Capture Note 标签] [QLineEdit]
+  右侧: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
 
-通道配置条（ScopeChannelStrip × 8，水平排列）:
+通道配置条区域（可通过 Hide/Show Channels 按钮折叠）:
+  ScopeChannelStrip × 8，水平排列
   每条包含: CheckBox "CHn" + 描述 QLineEdit + 寄存器地址 QLineEdit
   最小宽度: 104px
   CH1~CH4 默认勾选
@@ -401,10 +405,12 @@ Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
   以独立浮动窗口弹出（Qt::Tool），500×400px
   8 行 R/W：每行 [描述] [地址] [值] [R] [W]
   底部: 下发时间间隔 + 启动/停止/清除面板/录入参数
+  点击 Hide/Show Register 按钮切换显示
 
 信号发生器面板（ScopeGeneratorPanel）:
   以独立浮动窗口弹出（Qt::Tool），420×240px
   当前为占位 UI，无后端逻辑
+  点击 Hide/Show Generator 按钮切换显示
 ```
 
 ### 示波器 Sidebar
@@ -413,11 +419,8 @@ Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
 宽度: 224px（默认收起）
 标题: "示波"
 
-内容:
-  Sample Interval — QComboBox（100us / 500us / 1000us / 2000us）
-  Trigger Mode — QComboBox（Auto / Normal / Single）
-  Capture Note — QLineEdit 占位
-  说明文字: "Sidebar reserved for future sampling channel properties."
+当前状态: 未实现（占位，暂无内容）
+保留作为未来采样通道属性配置入口，具体内容待规格细化后补充。
 ```
 
 ---

@@ -11,29 +11,8 @@
 
 using namespace MotorDev;
 
-namespace {
-QVector<double> makeWave(double phase, double scale, int count) {
-    QVector<double> samples;
-    samples.reserve(count);
-    for (int i = 0; i < count; ++i) {
-        const double x = static_cast<double>(i) / static_cast<double>(count - 1);
-        const double value = std::sin((x * 7.0 + phase) * 3.14159265358979323846) * scale
-                           + std::cos((x * 3.0 + phase * 0.5) * 3.14159265358979323846) * 0.18;
-        samples.append(value);
-    }
-    return samples;
-}
-} // namespace
-
 ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     : QWidget(parent) {
-    m_channels = {
-        {QStringLiteral("CH1 Speed"), Style::Color::ScopeWaveCh1, makeWave(0.05, 0.75, 160)},
-        {QStringLiteral("CH2 Torque"), Style::Color::ScopeWaveCh2, makeWave(0.35, 0.62, 160)},
-        {QStringLiteral("CH3 Temp"), Style::Color::ScopeWaveCh3, makeWave(0.65, 0.50, 160)},
-        {QStringLiteral("CH4 Current"), Style::Color::ScopeWaveCh4, makeWave(0.95, 0.68, 160)},
-    };
-
     setAutoFillBackground(false);
     setMinimumHeight(320);
 }
@@ -58,6 +37,29 @@ void ScopePlotWidget::setViewMode(ScopeToolBar::ViewMode mode) {
     update();
 }
 
+void ScopePlotWidget::setAutoYAxisRange() {
+    m_autoYRange = true;
+    update();
+}
+
+void ScopePlotWidget::setManualYAxisRange(double minValue, double maxValue) {
+    if (minValue >= maxValue) {
+        return;
+    }
+
+    m_autoYRange = false;
+    m_manualYMin = minValue;
+    m_manualYMax = maxValue;
+    m_yViewMin = minValue;
+    m_yViewMax = maxValue;
+    update();
+}
+
+void ScopePlotWidget::setChannelData(const QVector<PlotChannelData> &channels) {
+    m_channels = channels;
+    update();
+}
+
 void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
@@ -71,17 +73,63 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     painter.drawRoundedRect(frameRect, 6, 6);
 
     const QRect plotRect = frameRect.adjusted(44, 14, -14, -32);
+    double yMin = m_yViewMin;
+    double yMax = m_yViewMax;
+    if (m_autoYRange) {
+        calculateAutoYRange(yMin, yMax);
+    }
     paintGrid(&painter, plotRect);
 
     if (m_viewMode == ScopeToolBar::ViewMode::Overlay) {
-        paintOverlay(&painter, plotRect);
+        painter.save();
+        painter.setClipRect(plotRect);
+        for (const PlotChannelData &channel : m_channels) {
+            painter.setPen(QPen(channel.color, 1.6));
+            painter.drawPolyline(waveformPolygon(plotRect, channel.samples, yMin, yMax));
+        }
+        painter.restore();
         paintLegend(&painter, plotRect);
     } else {
-        paintStacked(&painter, plotRect);
+        painter.save();
+        painter.setClipRect(plotRect);
+
+        const int channelCount = m_channels.size();
+        if (channelCount > 0) {
+            const int gap = 10;
+            const int laneHeight = (plotRect.height() - gap * (channelCount - 1)) / channelCount;
+            painter.setFont(QFont(QStringLiteral("Segoe UI"), 9));
+
+            for (int i = 0; i < channelCount; ++i) {
+                const QRect laneRect(plotRect.left(),
+                                     plotRect.top() + i * (laneHeight + gap),
+                                     plotRect.width(),
+                                     laneHeight);
+
+                painter.setPen(QPen(Style::Color::ScopeStackedLaneBorder, 1));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRoundedRect(laneRect, 4, 4);
+
+                painter.setPen(QPen(m_channels.at(i).color, 1.5));
+                painter.drawPolyline(waveformPolygon(laneRect.adjusted(0, 4, 0, -4), m_channels.at(i).samples, yMin, yMax));
+
+                painter.setPen(Style::Color::ScopeTextHeader);
+                painter.drawText(laneRect.adjusted(8, 6, -8, -6),
+                                 Qt::AlignTop | Qt::AlignLeft,
+                                 m_channels.at(i).name);
+            }
+        }
+
+        painter.restore();
     }
 
     paintSelection(&painter, plotRect);
+    const double previousMin = m_yViewMin;
+    const double previousMax = m_yViewMax;
+    m_yViewMin = yMin;
+    m_yViewMax = yMax;
     paintYAxis(&painter, plotRect);
+    m_yViewMin = previousMin;
+    m_yViewMax = previousMax;
     paintTimeAxis(&painter, frameRect);
 
     painter.setPen(Style::Color::ScopeTextMuted);
@@ -154,13 +202,21 @@ void ScopePlotWidget::mouseReleaseEvent(QMouseEvent *event) {
     } else if (m_dragMode == DragZoomMode::Vertical && dragHeight >= 18) {
         const double localTop = static_cast<double>(top - plotRect.top()) / static_cast<double>(plotRect.height());
         const double localBottom = static_cast<double>(bottom - plotRect.top()) / static_cast<double>(plotRect.height());
-        const double currentSpan = m_yViewMax - m_yViewMin;
+        double currentMin = m_yViewMin;
+        double currentMax = m_yViewMax;
+        if (m_autoYRange) {
+            calculateAutoYRange(currentMin, currentMax);
+        }
+        const double currentSpan = currentMax - currentMin;
 
-        const double nextMax = m_yViewMax - currentSpan * localTop;
-        const double nextMin = m_yViewMax - currentSpan * localBottom;
+        const double nextMax = currentMax - currentSpan * localTop;
+        const double nextMin = currentMax - currentSpan * localBottom;
 
-        m_yViewMin = qBound(-1.0, nextMin, 0.95);
-        m_yViewMax = qBound(m_yViewMin + 0.05, nextMax, 1.0);
+        m_autoYRange = false;
+        m_manualYMin = nextMin;
+        m_manualYMax = nextMax;
+        m_yViewMin = nextMin;
+        m_yViewMax = qMax(nextMax, nextMin + 0.05);
     }
 
     m_dragSelecting = false;
@@ -175,8 +231,10 @@ void ScopePlotWidget::mouseDoubleClickEvent(QMouseEvent *event) {
         m_dragMode = DragZoomMode::None;
         m_viewStartRatio = 0.0;
         m_viewEndRatio = 1.0;
-        m_yViewMin = -1.0;
-        m_yViewMax = 1.0;
+        if (!m_autoYRange) {
+            m_yViewMin = m_manualYMin;
+            m_yViewMax = m_manualYMax;
+        }
         update();
         event->accept();
         return;
@@ -212,9 +270,9 @@ void ScopePlotWidget::paintOverlay(QPainter *painter, const QRect &rect) {
     painter->save();
     painter->setClipRect(rect);
 
-    for (const ChannelData &channel : m_channels) {
+    for (const PlotChannelData &channel : m_channels) {
         painter->setPen(QPen(channel.color, 1.6));
-        painter->drawPolyline(waveformPolygon(rect, channel.samples));
+        painter->drawPolyline(waveformPolygon(rect, channel.samples, m_yViewMin, m_yViewMax));
     }
 
     painter->restore();
@@ -245,7 +303,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect) {
         painter->drawRoundedRect(laneRect, 4, 4);
 
         painter->setPen(QPen(m_channels.at(i).color, 1.5));
-        painter->drawPolyline(waveformPolygon(laneRect.adjusted(0, 4, 0, -4), m_channels.at(i).samples));
+        painter->drawPolyline(waveformPolygon(laneRect.adjusted(0, 4, 0, -4), m_channels.at(i).samples, m_yViewMin, m_yViewMax));
 
         painter->setPen(Style::Color::ScopeTextHeader);
         painter->drawText(laneRect.adjusted(8, 6, -8, -6),
@@ -299,7 +357,7 @@ void ScopePlotWidget::paintLegend(QPainter *painter, const QRect &rect) {
     int left = rect.left() + 10;
 
     painter->setFont(QFont(QStringLiteral("Segoe UI"), 8));
-    for (const ChannelData &channel : m_channels) {
+    for (const PlotChannelData &channel : m_channels) {
         painter->setPen(Qt::NoPen);
         painter->setBrush(Style::Color::ScopeLegendBackground);
         painter->drawRoundedRect(QRect(left, top, itemWidth, itemHeight), 4, 4);
@@ -347,32 +405,96 @@ QRect ScopePlotWidget::currentPlotRect() const {
     return frameRect.adjusted(44, 14, -14, -32);
 }
 
+int ScopePlotWidget::longestSampleCount() const {
+    int maxCount = 0;
+    for (const PlotChannelData &channel : m_channels) {
+        maxCount = qMax(maxCount, channel.samples.size());
+    }
+    return maxCount;
+}
+
+int ScopePlotWidget::baseWindowSampleCount() const {
+    constexpr int DefaultVisibleSamples = 160;
+    const int total = longestSampleCount();
+    if (total <= 0) {
+        return 0;
+    }
+    return qMin(DefaultVisibleSamples, total);
+}
+
+void ScopePlotWidget::calculateAutoYRange(double &minValue, double &maxValue) const {
+    if (m_channels.isEmpty()) {
+        minValue = -1.0;
+        maxValue = 1.0;
+        return;
+    }
+
+    const int startIndex = visibleSampleStart();
+    const int endIndex = qMax(startIndex, visibleSampleEnd());
+    bool hasValue = false;
+    double dataMin = 0.0;
+    double dataMax = 0.0;
+
+    for (const PlotChannelData &channel : m_channels) {
+        for (int i = startIndex; i <= endIndex && i < channel.samples.size(); ++i) {
+            const double value = channel.samples.at(i);
+            if (!hasValue) {
+                dataMin = value;
+                dataMax = value;
+                hasValue = true;
+            } else {
+                dataMin = qMin(dataMin, value);
+                dataMax = qMax(dataMax, value);
+            }
+        }
+    }
+
+    if (!hasValue) {
+        minValue = -1.0;
+        maxValue = 1.0;
+        return;
+    }
+
+    const double span = qMax(0.1, dataMax - dataMin);
+    const double padding = qMax(0.05, span * 0.1);
+    minValue = dataMin - padding;
+    maxValue = dataMax + padding;
+}
+
 int ScopePlotWidget::visibleSampleStart() const {
-    if (m_channels.isEmpty() || m_channels.first().samples.isEmpty()) {
+    const int total = longestSampleCount();
+    const int windowSamples = baseWindowSampleCount();
+    if (total <= 0 || windowSamples <= 0) {
         return 0;
     }
 
-    const int total = m_channels.first().samples.size();
-    return qBound(0, static_cast<int>(std::floor(m_viewStartRatio * (total - 1))), total - 1);
+    const int baseStart = qMax(0, total - windowSamples);
+    const int windowLastIndex = qMax(0, windowSamples - 1);
+    const int offset = static_cast<int>(std::floor(m_viewStartRatio * windowLastIndex));
+    return qBound(0, baseStart + offset, total - 1);
 }
 
 int ScopePlotWidget::visibleSampleEnd() const {
-    if (m_channels.isEmpty() || m_channels.first().samples.isEmpty()) {
+    const int total = longestSampleCount();
+    const int windowSamples = baseWindowSampleCount();
+    if (total <= 0 || windowSamples <= 0) {
         return 0;
     }
 
-    const int total = m_channels.first().samples.size();
-    return qBound(0, static_cast<int>(std::ceil(m_viewEndRatio * (total - 1))), total - 1);
+    const int baseStart = qMax(0, total - windowSamples);
+    const int windowLastIndex = qMax(0, windowSamples - 1);
+    const int offset = static_cast<int>(std::ceil(m_viewEndRatio * windowLastIndex));
+    return qBound(0, baseStart + offset, total - 1);
 }
 
-QPolygonF ScopePlotWidget::waveformPolygon(const QRect &rect, const QVector<double> &samples) const {
+QPolygonF ScopePlotWidget::waveformPolygon(const QRect &rect, const QVector<double> &samples, double minValue, double maxValue) const {
     QPolygonF polygon;
     if (samples.isEmpty()) {
         return polygon;
     }
 
-    const int startIndex = visibleSampleStart();
-    const int endIndex = qMax(startIndex + 1, visibleSampleEnd());
+    const int startIndex = qMin(visibleSampleStart(), qMax(0, samples.size() - 1));
+    const int endIndex = qMin(qMax(startIndex + 1, visibleSampleEnd()), qMax(0, samples.size() - 1));
     const int visibleCount = endIndex - startIndex + 1;
     polygon.reserve(visibleCount);
 
@@ -381,7 +503,7 @@ QPolygonF ScopePlotWidget::waveformPolygon(const QRect &rect, const QVector<doub
                               ? 0.0
                               : static_cast<double>(i - startIndex) / static_cast<double>(visibleCount - 1);
         const double x = rect.left() + tx * rect.width();
-        const double normalized = (samples.at(i) - m_yViewMin) / (m_yViewMax - m_yViewMin);
+        const double normalized = (samples.at(i) - minValue) / (maxValue - minValue);
         const double clamped = qBound(0.0, normalized, 1.0);
         const double y = rect.bottom() - clamped * rect.height();
         polygon.append(QPointF(x, y));

@@ -2,6 +2,14 @@
 
 namespace MotorProtocol {
 
+bool isValidSampleIntervalIndex(uint8_t intervalIndex) {
+    return intervalIndex <= 0x07;
+}
+
+bool isValidSampleChannelMask(uint8_t channelMask) {
+    return channelMask != 0x00;
+}
+
 QByteArray encodeReadRegister(quint16 addr) {
     QByteArray payload;
     payload.append(static_cast<char>(addr >> 8));
@@ -26,6 +34,48 @@ QByteArray encodeI2cBusScan() {
 QByteArray encodeSetMotorIcAddr(uint8_t addr) {
     QByteArray payload;
     payload.append(static_cast<char>(addr));
+    return payload;
+}
+
+QByteArray encodeStartSampling() {
+    return {};
+}
+
+QByteArray encodeStopSampling() {
+    return {};
+}
+
+QByteArray encodeSetSampleInterval(uint8_t intervalIndex) {
+    if (!isValidSampleIntervalIndex(intervalIndex)) {
+        return {};
+    }
+
+    QByteArray payload;
+    payload.append(static_cast<char>(intervalIndex));
+    return payload;
+}
+
+QByteArray encodeSetSampleChannels(uint8_t channelMask) {
+    if (!isValidSampleChannelMask(channelMask)) {
+        return {};
+    }
+
+    QByteArray payload;
+    payload.append(static_cast<char>(channelMask));
+    return payload;
+}
+
+QByteArray encodeSetChannelRegisterMap(const QVector<quint16> &registers) {
+    if (registers.size() != 8) {
+        return {};
+    }
+
+    QByteArray payload;
+    payload.reserve(16);
+    for (quint16 reg : registers) {
+        payload.append(static_cast<char>((reg >> 8) & 0xFF));
+        payload.append(static_cast<char>(reg & 0xFF));
+    }
     return payload;
 }
 

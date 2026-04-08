@@ -57,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_registerTab = new RegisterRwTab(m_serialManager, m_contentStack);
     m_contentStack->addWidget(m_registerTab);
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
-    m_scopeTab = new OscilloscopTab(m_contentStack);
+    m_scopeTab = new OscilloscopTab(m_serialManager, m_contentStack);
     m_contentStack->addWidget(m_scopeTab);
     m_debugTab = new SerialDebugTab(this);
     m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
