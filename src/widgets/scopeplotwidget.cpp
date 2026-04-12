@@ -142,6 +142,7 @@ void ScopePlotWidget::setChannelData(const QVector<PlotChannelData> &channels) {
         target.enabled = channel.enabled;
         target.lineWidth = channel.lineWidth;
         target.lineStyle = channel.lineStyle;
+        target.showDataPoints = channel.showDataPoints;
     }
     markAutoYDirty();
 }
@@ -435,7 +436,7 @@ void ScopePlotWidget::paintOverlay(QPainter *painter, const QRect &rect, double 
         QPen pen;
         configureScopePen(pen, m_channels[c].color, baseWidth, m_channels[c].lineStyle);
         painter->setPen(pen);
-        drawWaveformLane(painter, rect, c, yMin, yMax, startIndex, endIndex);
+        const int drawnPoints = drawWaveformLane(painter, rect, c, yMin, yMax, startIndex, endIndex);
 
         const int shellCount = extraThicknessShells(requestedWidth, baseWidth);
         if (shellCount >= 1) {
@@ -455,6 +456,9 @@ void ScopePlotWidget::paintOverlay(QPainter *painter, const QRect &rect, double 
                 drawWaveformLane(painter, rect, c, yMin, yMax, startIndex, endIndex);
                 painter->restore();
             }
+        }
+        if (m_channels[c].showDataPoints) {
+            drawDataPointDots(painter, m_channels[c].color, drawnPoints);
         }
     }
 }
@@ -498,10 +502,9 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
         QPen pen;
         configureScopePen(pen, channel.color, baseWidth, channel.lineStyle);
         painter->setPen(pen);
-        drawWaveformLane(painter, laneRect.adjusted(0, 4, 0, -4), c,
-                         yMin, yMax, startIndex, endIndex);
-
         const QRect waveformRect = laneRect.adjusted(0, 4, 0, -4);
+        const int drawnPoints = drawWaveformLane(painter, waveformRect, c,
+                                                 yMin, yMax, startIndex, endIndex);
         const int shellCount = extraThicknessShells(requestedWidth, baseWidth);
         if (shellCount >= 1) {
             for (const QPoint &offset : kShellOneOffsets) {
@@ -521,6 +524,9 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
                 painter->restore();
             }
         }
+        if (channel.showDataPoints) {
+            drawDataPointDots(painter, channel.color, drawnPoints);
+        }
 
         painter->setPen(Style::Color::ScopeTextHeader);
         painter->drawText(laneRect.adjusted(8, 6, -8, -6),
@@ -530,20 +536,20 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
     }
 }
 
-void ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
-                                       int channelIndex, double yMin, double yMax,
-                                       int startIndex, int endIndex) {
+int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
+                                      int channelIndex, double yMin, double yMax,
+                                      int startIndex, int endIndex) {
     const int visibleWindowCount = endIndex - startIndex + 1;
     const int liveCount = m_paintSnapshotCount[channelIndex];
     const int liveOffset = m_paintSnapshotOffset[channelIndex];
     if (visibleWindowCount <= 1 || liveCount <= 0 || laneRect.width() <= 0 || laneRect.height() <= 0) {
-        return;
+        return 0;
     }
 
     const int actualStart = qMax(startIndex, liveOffset);
     const int actualEnd = qMin(endIndex, liveOffset + liveCount - 1);
     if (actualEnd < actualStart) {
-        return;
+        return 0;
     }
 
     const double span = qMax(yMax - yMin, 1e-9);
@@ -575,6 +581,33 @@ void ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
     }
 
     painter->drawPolyline(m_pointBuffer.data(), pointCount);
+    return pointCount;
+}
+
+void ScopePlotWidget::drawDataPointDots(QPainter *painter, const QColor &color, int pointCount) {
+    constexpr qreal kDotRadius = 3.0;
+    constexpr qreal kMinDotSpacingPx = 8.0;
+    constexpr qreal kMinSpacingSq = kMinDotSpacingPx * kMinDotSpacingPx;
+
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(color);
+
+    qreal lastDrawnX = -1e9;
+    qreal lastDrawnY = -1e9;
+
+    for (int i = 0; i < pointCount; ++i) {
+        const qreal px = m_pointBuffer[i].x();
+        const qreal py = m_pointBuffer[i].y();
+        const qreal dx = px - lastDrawnX;
+        const qreal dy = py - lastDrawnY;
+        if (dx * dx + dy * dy < kMinSpacingSq) {
+            continue;
+        }
+
+        painter->drawEllipse(m_pointBuffer[i], kDotRadius, kDotRadius);
+        lastDrawnX = px;
+        lastDrawnY = py;
+    }
 }
 
 void ScopePlotWidget::buildPaintSnapshot(int channelIndex) {

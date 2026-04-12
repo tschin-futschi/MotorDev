@@ -75,6 +75,7 @@ private:
         QColor color;
         qreal lineWidth = 4.0;
         Qt::PenStyle lineStyle = Qt::SolidLine;
+        bool showDataPoints = false;
     };
 
     void setupUi();
@@ -87,6 +88,7 @@ private:
     void updateChannelColor(int index, const QColor &color);
     void updateChannelLineWidth(int index, int width);
     void updateChannelLineStyle(int index, Qt::PenStyle style);
+    void updateChannelShowDataPoints(int index, bool show);
     void resetChannelStylesToDefault();
     void updateSampleInterval(const QString &text);
     void updateDisplayWindow(const QString &text);

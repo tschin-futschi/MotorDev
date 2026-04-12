@@ -122,6 +122,7 @@ void OscilloscopTab::setupUi() {
         m_stylePanel->setChannelColor(i, m_channels[i].color);
         m_stylePanel->setChannelLineWidth(i, static_cast<int>(m_channels[i].lineWidth));
         m_stylePanel->setChannelLineStyle(i, m_channels[i].lineStyle);
+        m_stylePanel->setChannelShowDataPoints(i, m_channels[i].showDataPoints);
     }
 
     m_splitter = new QSplitter(Qt::Horizontal, this);
@@ -198,6 +199,8 @@ void OscilloscopTab::connectSignals() {
             this, &OscilloscopTab::updateChannelLineWidth);
     connect(m_stylePanel, &ScopeStylePanel::lineStyleChanged,
             this, &OscilloscopTab::updateChannelLineStyle);
+    connect(m_stylePanel, &ScopeStylePanel::dataPointsChanged,
+            this, &OscilloscopTab::updateChannelShowDataPoints);
     connect(m_stylePanel, &ScopeStylePanel::defaultSettingsRequested,
             this, &OscilloscopTab::resetChannelStylesToDefault);
 
@@ -324,16 +327,27 @@ void OscilloscopTab::updateChannelLineStyle(int index, Qt::PenStyle style) {
     refreshPlotData();
 }
 
+void OscilloscopTab::updateChannelShowDataPoints(int index, bool show) {
+    if (index < 0 || index >= m_channels.size()) {
+        return;
+    }
+
+    m_channels[index].showDataPoints = show;
+    refreshPlotData();
+}
+
 void OscilloscopTab::resetChannelStylesToDefault() {
     const int count = qMin(m_channels.size(), m_defaultChannels.size());
     for (int index = 0; index < count; ++index) {
         m_channels[index].color = m_defaultChannels[index].color;
         m_channels[index].lineWidth = m_defaultChannels[index].lineWidth;
         m_channels[index].lineStyle = m_defaultChannels[index].lineStyle;
+        m_channels[index].showDataPoints = m_defaultChannels[index].showDataPoints;
 
         m_stylePanel->setChannelColor(index, m_channels[index].color);
         m_stylePanel->setChannelLineWidth(index, static_cast<int>(m_channels[index].lineWidth));
         m_stylePanel->setChannelLineStyle(index, m_channels[index].lineStyle);
+        m_stylePanel->setChannelShowDataPoints(index, m_channels[index].showDataPoints);
     }
 
     refreshPlotData();
@@ -629,6 +643,7 @@ void OscilloscopTab::refreshPlotData() {
         plotChannel.enabled = channel.enabled;
         plotChannel.lineWidth = channel.lineWidth;
         plotChannel.lineStyle = channel.lineStyle;
+        plotChannel.showDataPoints = channel.showDataPoints;
         plotChannels.append(plotChannel);
     }
 

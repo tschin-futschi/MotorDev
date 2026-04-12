@@ -27,6 +27,7 @@ public:
         bool enabled = false;
         qreal lineWidth = 4.0;
         Qt::PenStyle lineStyle = Qt::SolidLine;
+        bool showDataPoints = false;
     };
 
     explicit ScopePlotWidget(QWidget *parent = nullptr);
@@ -87,6 +88,7 @@ private:
         bool enabled = false;
         qreal lineWidth = 4.0;
         Qt::PenStyle lineStyle = Qt::SolidLine;
+        bool showDataPoints = false;
     };
 
     void paintGrid(QPainter *painter, const QRect &rect);
@@ -111,9 +113,10 @@ private:
     void computeAutoYFromSnapshot(int startIndex, int endIndex,
                                   double &minValue, double &maxValue) const;
 
-    void drawWaveformLane(QPainter *painter, const QRect &laneRect,
-                          int channelIndex, double yMin, double yMax,
-                          int startIndex, int endIndex);
+    int drawWaveformLane(QPainter *painter, const QRect &laneRect,
+                         int channelIndex, double yMin, double yMax,
+                         int startIndex, int endIndex);
+    void drawDataPointDots(QPainter *painter, const QColor &color, int pointCount);
 
     void markAutoYDirty();
     QRect currentPlotRect() const;

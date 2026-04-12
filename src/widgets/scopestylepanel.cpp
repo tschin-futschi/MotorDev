@@ -127,6 +127,19 @@ void ScopeStylePanel::setChannelLineStyle(int index, Qt::PenStyle style) {
     m_rows[index].styleCombo->setCurrentIndex(styleIndexFor(style));
 }
 
+void ScopeStylePanel::setChannelShowDataPoints(int index, bool show) {
+    if (index < 0 || index >= kChannelCount) {
+        return;
+    }
+
+    QSignalBlocker blocker(m_rows[index].styleCombo);
+    if (show) {
+        m_rows[index].styleCombo->setCurrentIndex(4);
+    } else if (m_rows[index].styleCombo->currentIndex() == 4) {
+        m_rows[index].styleCombo->setCurrentIndex(0);
+    }
+}
+
 void ScopeStylePanel::setupUi() {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(Style::Size::ScopeStylePanelMargin,
@@ -175,6 +188,7 @@ void ScopeStylePanel::setupUi() {
         m_rows[index].styleCombo->addItem(QStringLiteral("Dash"), static_cast<int>(Qt::DashLine));
         m_rows[index].styleCombo->addItem(QStringLiteral("Dot"), static_cast<int>(Qt::DotLine));
         m_rows[index].styleCombo->addItem(QStringLiteral("DashDot"), static_cast<int>(Qt::DashDotLine));
+        m_rows[index].styleCombo->addItem(QStringLiteral("SolidDot"), static_cast<int>(Qt::SolidLine) | (1 << 16));
         m_rows[index].styleCombo->setCurrentIndex(0);
         m_rows[index].styleCombo->setStyleSheet(commonInputStyle);
 
@@ -219,9 +233,11 @@ void ScopeStylePanel::connectSignals() {
             emit lineWidthChanged(index, width);
         });
         connect(m_rows[index].styleCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this, index](int comboIndex) {
-            const Qt::PenStyle style = static_cast<Qt::PenStyle>(
-                m_rows[index].styleCombo->itemData(comboIndex).toInt());
+            const int rawData = m_rows[index].styleCombo->itemData(comboIndex).toInt();
+            const bool dots = (rawData >> 16) != 0;
+            const Qt::PenStyle style = static_cast<Qt::PenStyle>(rawData & 0xFFFF);
             emit lineStyleChanged(index, style);
+            emit dataPointsChanged(index, dots);
         });
     }
 }

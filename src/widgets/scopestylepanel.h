@@ -16,11 +16,13 @@ public:
     void setChannelColor(int index, const QColor &color);
     void setChannelLineWidth(int index, int width);
     void setChannelLineStyle(int index, Qt::PenStyle style);
+    void setChannelShowDataPoints(int index, bool show);
 
 signals:
     void colorChanged(int index, const QColor &color);
     void lineWidthChanged(int index, int width);
     void lineStyleChanged(int index, Qt::PenStyle style);
+    void dataPointsChanged(int index, bool showDataPoints);
     void defaultSettingsRequested();
 
 private:
