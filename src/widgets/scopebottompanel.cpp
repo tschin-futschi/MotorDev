@@ -73,6 +73,14 @@ void ScopeBottomPanel::setRunning(bool running) {
     }
 
     m_running = running;
+    const bool configEditable = !running;
+    m_intervalCombo->setEnabled(configEditable);
+    m_windowCombo->setEnabled(configEditable);
+    for (ScopeChannelStrip *channel : m_channels) {
+        if (channel != nullptr) {
+            channel->setEnabled(configEditable);
+        }
+    }
     refreshSamplingButton();
 }
 
@@ -250,6 +258,8 @@ void ScopeBottomPanel::setupUi() {
 
     auto *intervalLabel = new QLabel(tr("Sample Interval"), m_channelFrame);
     intervalLabel->setStyleSheet(makeSectionTitleStyle());
+    auto *windowLabel = new QLabel(tr("Display Window"), m_channelFrame);
+    windowLabel->setStyleSheet(makeSectionTitleStyle());
     auto *noteLabel = new QLabel(tr("Capture Note"), m_channelFrame);
     noteLabel->setStyleSheet(makeSectionTitleStyle());
 
@@ -262,15 +272,20 @@ void ScopeBottomPanel::setupUi() {
                                         Style::Color::ScopeTextAlt.name());
 
     m_intervalCombo = new QComboBox(m_channelFrame);
-    m_intervalCombo->addItems({QStringLiteral("100 us"), QStringLiteral("500 us"), QStringLiteral("1000 us"),
-                               QStringLiteral("2000 us")});
-    m_intervalCombo->setCurrentIndex(2);
+    m_intervalCombo->addItems({QStringLiteral("100 us"), QStringLiteral("200 us"), QStringLiteral("300 us"),
+                               QStringLiteral("500 us"), QStringLiteral("750 us"), QStringLiteral("1000 us"),
+                               QStringLiteral("1500 us"), QStringLiteral("2000 us")});
+    m_intervalCombo->setCurrentIndex(5);
     m_intervalCombo->setMinimumWidth(110);
     m_intervalCombo->setStyleSheet(fieldStyle);
 
-    m_samplingButton = new QPushButton(m_channelFrame);
-    m_samplingButton->setMinimumWidth(96);
-    m_samplingButton->setStyleSheet(fieldStyle);
+    m_windowCombo = new QComboBox(m_channelFrame);
+    m_windowCombo->addItems({QStringLiteral("50 ms"), QStringLiteral("200 ms"), QStringLiteral("500 ms"),
+                             QStringLiteral("1000 ms"), QStringLiteral("2000 ms"), QStringLiteral("4000 ms")});
+    m_windowCombo->setCurrentIndex(0);
+    m_windowCombo->setMinimumWidth(110);
+    m_windowCombo->setStyleSheet(fieldStyle);
+
 
     m_yAxisButton = new QToolButton(m_channelFrame);
     m_yAxisButton->setPopupMode(QToolButton::InstantPopup);
@@ -297,7 +312,8 @@ void ScopeBottomPanel::setupUi() {
     channelHeaderLayout->addWidget(intervalLabel);
     channelHeaderLayout->addWidget(m_intervalCombo);
     channelHeaderLayout->addWidget(m_yAxisButton);
-    channelHeaderLayout->addWidget(m_samplingButton);
+    channelHeaderLayout->addWidget(windowLabel);
+    channelHeaderLayout->addWidget(m_windowCombo);
     channelHeaderLayout->addWidget(noteLabel);
     channelHeaderLayout->addWidget(m_noteEdit, 1);
     channelLayout->addLayout(channelHeaderLayout);
@@ -339,12 +355,15 @@ void ScopeBottomPanel::connectSignals() {
     connect(m_registerPanel, &ScopeRegisterPanel::clearPanelRequested, this, &ScopeBottomPanel::clearPanelRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::loadParamsRequested, this, &ScopeBottomPanel::loadParamsRequested);
     connect(m_intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
+    connect(m_windowCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::displayWindowChanged);
     connect(m_noteEdit, &QLineEdit::textChanged, this, &ScopeBottomPanel::captureNoteChanged);
-    connect(m_samplingButton, &QPushButton::clicked, this, [this]() {
-        m_running = !m_running;
-        refreshSamplingButton();
-        emit runningToggled(m_running);
-    });
+    if (m_samplingButton != nullptr) {
+        connect(m_samplingButton, &QPushButton::clicked, this, [this]() {
+            m_running = !m_running;
+            refreshSamplingButton();
+            emit runningToggled(m_running);
+        });
+    }
     connect(m_yAxisMenu, &QMenu::triggered, this, [this](QAction *action) {
         if (action == nullptr) {
             return;

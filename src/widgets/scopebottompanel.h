@@ -31,6 +31,7 @@ signals:
     void channelDescriptionChanged(int index, const QString &text);
     void channelAddressChanged(int index, const QString &text);
     void sampleIntervalChanged(const QString &text);
+    void displayWindowChanged(const QString &text);
     void runningToggled(bool running);
     void captureNoteChanged(const QString &text);
     void yAxisAutoRequested();
@@ -58,6 +59,7 @@ private:
     QWidget *m_registerWindow = nullptr;
     QWidget *m_generatorWindow = nullptr;
     QComboBox *m_intervalCombo = nullptr;
+    QComboBox *m_windowCombo = nullptr;
     QPushButton *m_samplingButton = nullptr;
     QToolButton *m_yAxisButton = nullptr;
     QMenu *m_yAxisMenu = nullptr;

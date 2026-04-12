@@ -22,6 +22,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+    void setupUi();
+    void connectSignals();
+
     SerialManager *m_serialManager = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     TopBar *m_topBar = nullptr;

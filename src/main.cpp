@@ -2,6 +2,7 @@
 #include "widgets/logpanel.h"
 
 #include <QApplication>
+#include <QIcon>
 #include <QMessageLogContext>
 #include <QMetaObject>
 #include <QString>
@@ -30,7 +31,10 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<QtMsgType>("QtMsgType");
 
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(QStringLiteral(":/motordev_logo.svg")));
+
     MainWindow window;
+    window.setWindowIcon(QIcon(QStringLiteral(":/motordev_logo.svg")));
     qInstallMessageHandler(motorDevMessageHandler);
     window.show();
     return app.exec();

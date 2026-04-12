@@ -113,10 +113,14 @@ inline const QColor ScopeToggleText("#5a554d");
 inline const QColor ScopeToggleBorder("#d5cec4");
 inline const QColor ScopeToggleHover("#f2eee8");
 inline const QColor ScopeToggleHoverBorder("#bbb2a6");
-inline const QColor ScopeWaveCh1("#e9c46a");
-inline const QColor ScopeWaveCh2("#61afef");
-inline const QColor ScopeWaveCh3("#e76f51");
-inline const QColor ScopeWaveCh4("#98c379");
+inline const QColor ScopeWaveCh1(255,  90,  90);   // bright red
+inline const QColor ScopeWaveCh2( 90, 220,  90);   // bright green
+inline const QColor ScopeWaveCh3( 90, 170, 255);   // bright blue
+inline const QColor ScopeWaveCh4(255, 220,  80);   // bright yellow
+inline const QColor ScopeWaveCh5(255,  90, 230);   // magenta
+inline const QColor ScopeWaveCh6( 90, 230, 230);   // cyan
+inline const QColor ScopeWaveCh7(255, 160,  60);   // orange
+inline const QColor ScopeWaveCh8(220, 220, 220);   // light grey
 inline const QColor LogWarning("#B85C00");
 inline const QColor LogError("#C0392B");
 }
@@ -171,6 +175,17 @@ inline constexpr int ColAddrWidth = 63;
 inline constexpr int ColValueWidth = 67;
 inline constexpr int ColReadWidth = 26;
 inline constexpr int ColWriteWidth = 23;
+inline constexpr int ScopeStylePanelWidth = 200;
+inline constexpr int ScopeStylePanelMargin = 8;
+inline constexpr int ScopeStylePanelRowSpacing = 2;
+inline constexpr int ScopeStyleColorButtonSize = 20;
+inline constexpr int ScopeStyleChannelLabelWidth = 30;
+inline constexpr int ScopeStyleWidthSpinWidth = 92;
+inline constexpr int ScopeStyleToolButtonMinWidth = 52;
+inline constexpr int ScopeStyleInputMinHeight = 24;
+inline constexpr int ScopeStyleButtonRadius = 3;
+inline constexpr int ScopeStyleTitleFontPx = 10;
+inline constexpr int ScopeStyleRowFontPx = 9;
 }
 
 namespace Text {

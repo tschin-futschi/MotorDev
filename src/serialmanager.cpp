@@ -158,6 +158,7 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
                               .arg(formatByte(cmd))
                               .arg(data.size());
     m_serial->write(m_pendingFrame);
+    emit commandSent(cmd, seq);
     if (m_retryTimer != nullptr) {
         m_retryTimer->start(RetryTimeoutMs);
     }
@@ -175,9 +176,6 @@ void SerialManager::onReadyRead() {
             handleControlFrame(m_parser.controlFrame());
         } else if (frameType == FrameParser::FrameType::Stream) {
             const StreamFrame &frame = m_parser.streamFrame();
-            qDebug().noquote() << QStringLiteral("RX stream frame: channels=%1 samples=%2")
-                                      .arg(formatByte(frame.channelMask))
-                                      .arg(frame.samples.size());
             emit streamDataReceived(frame.channelMask, frame.samples);
         }
     }

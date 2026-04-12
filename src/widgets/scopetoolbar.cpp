@@ -4,6 +4,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QToolButton>
 
 using namespace MotorDev;
@@ -31,6 +32,18 @@ QString makeToolButtonStyle() {
              Style::Color::ScopeToolButtonDisabled.name(),
              Style::Color::ScopeToolButtonDisabledBorder.name(),
              Style::Color::ScopeToolButtonDisabledText.name());
+}
+
+QString makeSamplingButtonStyle(bool running) {
+    return QStringLiteral(
+               "QPushButton { background:%1; border:1px solid %2; border-radius:5px; color:%3; padding:0 14px; font-size:11px; min-height:26px; }"
+               "QPushButton:hover { background:%4; }"
+               "QPushButton:pressed { background:%5; padding-top:1px; }")
+        .arg(running ? Style::Color::ScopeStatusStoppedBackground.name() : Style::Color::LightGreen.name(),
+             running ? Style::Color::ScopeStatusStoppedBorder.name() : Style::Color::PrimaryGreen.name(),
+             running ? Style::Color::ScopeStatusStoppedText.name() : Style::Color::PrimaryGreen.name(),
+             running ? Style::Color::ScopeStatusStoppedBackground.name() : Style::Color::PrimaryButtonHover.name(),
+             running ? Style::Color::ScopeStatusStoppedBackground.name() : Style::Color::BorderGreen.name());
 }
 
 QString makeStatusStyle(bool running) {
@@ -93,15 +106,23 @@ void ScopeToolBar::setupUi() {
 
     m_overlayButton = createToolButton(QStringLiteral("Overlay"), tr("Overlay mode"));
     m_stackedButton = createToolButton(QStringLiteral("Stack"), tr("Stacked mode"));
+    m_styleButton = createToolButton(QStringLiteral("Style"), tr("Toggle channel style panel"));
+    m_samplingButton = new QPushButton(this);
 
     m_overlayButton->setCheckable(true);
     m_stackedButton->setCheckable(true);
+    m_styleButton->setCheckable(true);
     m_overlayButton->setMinimumWidth(62);
     m_stackedButton->setMinimumWidth(58);
+    m_styleButton->setMinimumWidth(Style::Size::ScopeStyleToolButtonMinWidth);
+    m_samplingButton->setMinimumWidth(108);
 
     m_statusLabel = new QLabel(this);
     layout->addWidget(m_overlayButton);
     layout->addWidget(m_stackedButton);
+    layout->addWidget(m_styleButton);
+    layout->addStretch();
+    layout->addWidget(m_samplingButton, 0, Qt::AlignVCenter);
     layout->addStretch();
     layout->addWidget(m_statusLabel, 0, Qt::AlignVCenter);
 
@@ -119,11 +140,19 @@ void ScopeToolBar::connectSignals() {
         setViewMode(ViewMode::Stacked);
         emit viewModeChanged(m_viewMode);
     });
+    connect(m_samplingButton, &QPushButton::clicked, this, [this]() {
+        emit samplingToggleRequested(!m_running);
+    });
+    connect(m_styleButton, &QToolButton::clicked, this, [this]() {
+        emit styleToggleRequested();
+    });
 }
 
 void ScopeToolBar::refreshState() {
     m_overlayButton->setChecked(m_viewMode == ViewMode::Overlay);
     m_stackedButton->setChecked(m_viewMode == ViewMode::Stacked);
+    m_samplingButton->setText(m_running ? tr("停止采样") : tr("开始采样"));
+    m_samplingButton->setStyleSheet(makeSamplingButtonStyle(m_running));
     m_statusLabel->setText(m_running ? QStringLiteral("RUNNING") : QStringLiteral("STOPPED"));
     m_statusLabel->setStyleSheet(makeStatusStyle(m_running));
 }

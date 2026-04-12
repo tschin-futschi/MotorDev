@@ -37,11 +37,11 @@
 - `src/widgets/registertable` `[UI-Widget]` — `loadConfig`/`saveConfig` 实现，读写 JSON 格式的地址-描述-值配置
 
 ### 示波器/波形观测
-> **注意：示波器整体为 UI 原型阶段。** start/stop/viewMode 有实际状态，其余工具栏动作（缩放、导出等）及所有 bottomPanel 信号均为 stub（仅输出 debug log），串口数据流尚未接入。
+> 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、调试模拟器端到端数据路径。寄存器面板后端处理、导出/截图等为 stub。
 
-- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态和 viewMode
-- `src/widgets/scopetoolbar` `[UI-Widget]` — 工具栏（启动/停止/缩放/视图模式/导出等按钮）
-- `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（overlay/stacked 模式，支持拖拽缩放；当前硬编码 4 条正弦波演示数据，**无公开接口接收外部数据**）
+- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态、viewMode、PendingCommand 采样序列状态机、ScopeStreamBatcher 批量数据接收
+- `src/widgets/scopetoolbar` `[UI-Widget]` — 工具栏（Overlay/Stacked 视图切换、采样启停按钮、运行状态标签）
+- `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击重置视图）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔 + 4x MSAA，8 通道稳定 60fps
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
 - `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 启动/停止/清除/录入参数，UI 完整，信号已连接；后端处理在 oscilloscoptab 中为 stub）
@@ -83,8 +83,9 @@
 | PMIC 电压配置 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` | UI stub，按钮未连接信号 |
-| 示波器缩放/平移/导出/截图等工具栏操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
-| 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`setChannelData` 接收外部数据，`OscilloscopTab` 负责接入 stream 帧 |
+| 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击重置视图 |
+| 示波器导出/截图等工具栏操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
+| 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`appendSamples` 接收外部数据，16ms 定时器驱动渲染，零堆分配 paintEvent |
 | 示波器寄存器面板后端处理 | `src/tabs/oscilloscoptab` | stub，信号仅打 log |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` | UI stub，占位面板 |
 | 固件烧录 | `src/tabs/fwflashtab` | 整体未实现 |

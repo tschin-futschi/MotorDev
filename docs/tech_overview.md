@@ -24,7 +24,8 @@
 - Qt6::Widgets
 - Qt6::SerialPort
 - Qt6::Svg
-- Qt6::PrintSupport（用于 QCustomPlot）
+- Qt6::SvgWidgets
+- Qt6::OpenGLWidgets（用于 ScopePlotWidget 的 QOpenGLWidget + QPainter 渲染）
 - CMake 3.16+，启用 CMAKE_AUTOMOC / CMAKE_AUTORCC / CMAKE_AUTOUIC
 
 ---
@@ -59,7 +60,7 @@ MotorDev/
 │   │   ├── configtab.cpp / .h       # Tab0 配置（串口/IC/PMIC）
 │   │   ├── registerrwtab.cpp / .h   # Tab1 寄存器读写
 │   │   ├── fwflashtab.cpp / .h      # Tab2 FW 烧录（占位）
-│   │   ├── oscilloscoptab.cpp / .h  # Tab3 示波器（UI 原型阶段）
+│   │   ├── oscilloscoptab.cpp / .h  # Tab3 示波器（数据流已接入，8ch 60fps 渲染）
 │   │   └── serialdebugtab.cpp / .h  # 串口调试模拟器（浮动窗口，开发工具）
 │   ├── services/
 │   │   └── simulatorserial.cpp / .h # 模拟器串口驱动（独立线程，供 SerialDebugTab 使用）
@@ -87,7 +88,7 @@ MotorDev/
 3. SerialManager + FrameParser（核心通信）
 4. Tab 1 寄存器读写（RegisterTable）
 5. Tab 2 FW 烧录
-6. Tab 3 示波器（QCustomPlot 集成）
+6. Tab 3 示波器（QPainter + QOpenGLWidget 自研渲染）
 7. 多语言支持
 8. 配置持久化
 9. 打包发布（windeployqt）

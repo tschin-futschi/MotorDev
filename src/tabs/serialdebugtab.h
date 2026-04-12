@@ -1,10 +1,14 @@
 #pragma once
 
 #include <QByteArray>
+#include <QElapsedTimer>
 #include <QVector>
 #include <QWidget>
 
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
+#include <thread>
 
 class QComboBox;
 class QLabel;
@@ -21,7 +25,16 @@ public:
     explicit SerialDebugTab(QWidget *parent = nullptr);
     ~SerialDebugTab() override;
 
+signals:
+    void debugStreamGenerated(uint8_t channelMask, const QVector<int16_t> &samples);
+    void debugStreamActiveChanged(bool active);
+
 private:
+    struct PendingDebugFrame {
+        uint8_t channelMask = 0x00;
+        QVector<int16_t> samples;
+    };
+
     void setupUi();
     void connectSignals();
     QWidget *createConnectionBar();
@@ -42,11 +55,14 @@ private:
     void handleSetSampleChannels(uint8_t seq, const QByteArray &data);
     void handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data);
     void handleUnknownCommand(uint8_t cmd, uint8_t seq);
+    void streamWorkerLoop();
 
     void sendResponseFrame(uint8_t seq, uint8_t cmd, const QByteArray &data);
     void sendErrorFrame(uint8_t seq, uint8_t errorCode);
     void sendDebugInfo(const QString &message);
-    void sendStreamFrame();
+    void emitOneStreamFrame();
+    void queueDebugStreamFrame(uint8_t channelMask, const QVector<int16_t> &samples);
+    void flushPendingDebugStream();
     void appendSysLog(const QString &message, bool isError = false);
     void appendLog(const QString &dir, uint8_t cmd, uint8_t seq, const QByteArray &data, const QString &note = {});
     void refreshPortList();
@@ -69,7 +85,6 @@ private:
 
     QTextEdit *m_logEdit = nullptr;
     QPushButton *m_clearLogButton = nullptr;
-    QTimer *m_streamTimer = nullptr;
 
     bool m_isConnected = false;
     bool m_sampling = false;
@@ -77,4 +92,16 @@ private:
     uint8_t m_channelMask = 0x01;
     QVector<quint16> m_channelRegisterMap;
     quint32 m_streamTick = 0;
+    qint16 m_streamBaseValue = 0;
+    QElapsedTimer m_streamElapsedTimer;
+    qint64 m_lastStreamActualUs = -1;
+    qint64 m_streamActualUsAccumulator = 0;
+    int m_streamActualUsSamples = 0;
+
+    std::thread m_streamThread;
+    std::mutex m_streamMutex;
+    std::condition_variable m_streamCv;
+    bool m_streamStopRequested = false;
+    QVector<PendingDebugFrame> m_pendingDebugFrames;
+    bool m_debugFlushQueued = false;
 };

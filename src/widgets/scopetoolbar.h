@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QLabel;
+class QPushButton;
 class QToolButton;
 
 class ScopeToolBar : public QWidget {
@@ -20,6 +21,8 @@ public:
 
 signals:
     void viewModeChanged(ScopeToolBar::ViewMode mode);
+    void samplingToggleRequested(bool running);
+    void styleToggleRequested();
 
 public slots:
     void setRunning(bool running);
@@ -33,6 +36,8 @@ private:
 
     QToolButton *m_overlayButton = nullptr;
     QToolButton *m_stackedButton = nullptr;
+    QToolButton *m_styleButton = nullptr;
+    QPushButton *m_samplingButton = nullptr;
     QLabel *m_statusLabel = nullptr;
     bool m_running = false;
     ViewMode m_viewMode = ViewMode::Overlay;

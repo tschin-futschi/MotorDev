@@ -25,10 +25,16 @@
 #include <QVBoxLayout>
 
 #include <cmath>
+#include <chrono>
 
 using namespace MotorDev;
 
 namespace {
+constexpr uint8_t kFixedSampleIntervalIndex = 0x05;
+constexpr int kFixedSampleIntervalUs = 1000;
+constexpr int kStreamWakeBlockUs = 10000;
+constexpr int kMaxWakeBlocksPerCycle = 4;
+
 QString makePrimaryButtonStyle() {
     return QStringLiteral(
                "QPushButton { background:%1; border:%2px solid %3; border-radius:5px; color:%4; font-size:13px; padding:0 12px; }"
@@ -127,27 +133,9 @@ QByteArray encodeWord(quint16 value) {
     return data;
 }
 
-int sampleIntervalMs(uint8_t index) {
-    switch (index) {
-    case 0x00:
-        return 20;
-    case 0x01:
-        return 30;
-    case 0x02:
-        return 40;
-    case 0x03:
-        return 60;
-    case 0x04:
-        return 80;
-    case 0x05:
-        return 100;
-    case 0x06:
-        return 150;
-    case 0x07:
-        return 200;
-    default:
-        return 100;
-    }
+int sampleIntervalUs(uint8_t index) {
+    Q_UNUSED(index);
+    return kFixedSampleIntervalUs;
 }
 
 QByteArray encodeStreamFrame(uint8_t channelMask, const QVector<qint16> &samples) {
@@ -180,18 +168,33 @@ SerialDebugTab::SerialDebugTab(QWidget *parent)
     setWindowTitle(tr("串口调试模拟器"));
     resize(820, 560);
     qRegisterMetaType<uint8_t>("uint8_t");
+    qRegisterMetaType<QVector<int16_t>>("QVector<int16_t>");
 
     m_simulator = new SimulatorSerial();
     m_channelRegisterMap = QVector<quint16>(8, 0xFFFF);
     m_channelRegisterMap[0] = 0x0010;
+    m_streamBaseValue = 0;
 
     setupUi();
+    m_streamBaseValue = registerValueAt(0x0010);
     connectSignals();
     refreshPortList();
     setConnectedState(false);
+    m_streamThread = std::thread(&SerialDebugTab::streamWorkerLoop, this);
 }
 
 SerialDebugTab::~SerialDebugTab() {
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_streamStopRequested = true;
+        m_sampling = false;
+        m_pendingDebugFrames.clear();
+        m_debugFlushQueued = false;
+    }
+    m_streamCv.notify_all();
+    if (m_streamThread.joinable()) {
+        m_streamThread.join();
+    }
     delete m_simulator;
     m_simulator = nullptr;
 }
@@ -419,8 +422,10 @@ QString SerialDebugTab::describeIncoming(uint8_t cmd, const QByteArray &data) {
 void SerialDebugTab::connectSignals() {
     connect(m_scanButton, &QPushButton::clicked, this, &SerialDebugTab::refreshPortList);
     connect(m_clearLogButton, &QPushButton::clicked, m_logEdit, &QTextEdit::clear);
-    m_streamTimer = new QTimer(this);
-    connect(m_streamTimer, &QTimer::timeout, this, &SerialDebugTab::sendStreamFrame);
+    connect(m_regReadValueEdit, &QLineEdit::textChanged, this, [this]() {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_streamBaseValue = registerValueAt(0x0010);
+    });
 
     connect(m_connectButton, &QPushButton::clicked, this, [this]() {
         if (m_isConnected) {
@@ -448,8 +453,14 @@ void SerialDebugTab::connectSignals() {
     });
     connect(m_simulator, &SimulatorSerial::disconnected, this, [this]() {
         setConnectedState(false);
-        m_streamTimer->stop();
-        m_sampling = false;
+        {
+            std::lock_guard<std::mutex> lock(m_streamMutex);
+            m_sampling = false;
+            m_pendingDebugFrames.clear();
+            m_debugFlushQueued = false;
+        }
+        emit debugStreamActiveChanged(false);
+        m_streamCv.notify_all();
         appendSysLog(tr("模拟器已断开"));
     });
     connect(m_simulator, &SimulatorSerial::errorOccurred, this, [this](const QString &message) {
@@ -608,17 +619,36 @@ void SerialDebugTab::handleStartSampling(uint8_t seq) {
         return;
     }
 
-    m_sampling = true;
-    m_streamTick = 0;
-    m_streamTimer->start(sampleIntervalMs(m_sampleIntervalIndex));
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_sampling = true;
+        m_streamTick = 0;
+        m_pendingDebugFrames.clear();
+        m_debugFlushQueued = false;
+        m_lastStreamActualUs = -1;
+        m_streamActualUsAccumulator = 0;
+        m_streamActualUsSamples = 0;
+    }
+    m_streamElapsedTimer.restart();
+    m_streamCv.notify_all();
     sendResponseFrame(seq, MotorProtocol::CmdStartSampling, {});
+    emit debugStreamActiveChanged(true);
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdStartSampling, seq, {}, QStringLiteral("SCOPE_START → ACK"));
 }
 
 void SerialDebugTab::handleStopSampling(uint8_t seq) {
-    m_sampling = false;
-    m_streamTimer->stop();
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_sampling = false;
+        m_pendingDebugFrames.clear();
+        m_debugFlushQueued = false;
+        m_lastStreamActualUs = -1;
+        m_streamActualUsAccumulator = 0;
+        m_streamActualUsSamples = 0;
+    }
+    m_streamCv.notify_all();
     sendResponseFrame(seq, MotorProtocol::CmdStopSampling, {});
+    emit debugStreamActiveChanged(false);
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdStopSampling, seq, {}, QStringLiteral("SCOPE_STOP → ACK"));
 }
 
@@ -634,13 +664,14 @@ void SerialDebugTab::handleSetSampleInterval(uint8_t seq, const QByteArray &data
         return;
     }
 
-    m_sampleIntervalIndex = index;
-    if (m_sampling) {
-        m_streamTimer->start(sampleIntervalMs(m_sampleIntervalIndex));
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_sampleIntervalIndex = kFixedSampleIntervalIndex;
     }
+    m_streamCv.notify_all();
     sendResponseFrame(seq, MotorProtocol::CmdSetSampleInterval, {});
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdSetSampleInterval, seq, {},
-              QStringLiteral("SCOPE_INTERVAL → %1").arg(formatByte(index)));
+              QStringLiteral("SCOPE_INTERVAL → %1").arg(formatByte(kFixedSampleIntervalIndex)));
 }
 
 void SerialDebugTab::handleSetSampleChannels(uint8_t seq, const QByteArray &data) {
@@ -655,7 +686,10 @@ void SerialDebugTab::handleSetSampleChannels(uint8_t seq, const QByteArray &data
         return;
     }
 
-    m_channelMask = mask;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_channelMask = mask;
+    }
     sendResponseFrame(seq, MotorProtocol::CmdSetSampleChannels, {});
     appendLog(QStringLiteral("TX"), MotorProtocol::CmdSetSampleChannels, seq, {},
               QStringLiteral("SCOPE_CHANNELS → %1").arg(formatByte(mask)));
@@ -667,10 +701,13 @@ void SerialDebugTab::handleSetChannelRegisterMap(uint8_t seq, const QByteArray &
         return;
     }
 
-    for (int index = 0; index < 8; ++index) {
-        const int offset = index * 2;
-        m_channelRegisterMap[index] = static_cast<quint16>(
-            (static_cast<quint8>(data.at(offset)) << 8) | static_cast<quint8>(data.at(offset + 1)));
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        for (int index = 0; index < 8; ++index) {
+            const int offset = index * 2;
+            m_channelRegisterMap[index] = static_cast<quint16>(
+                (static_cast<quint8>(data.at(offset)) << 8) | static_cast<quint8>(data.at(offset + 1)));
+        }
     }
 
     sendResponseFrame(seq, MotorProtocol::CmdSetChannelRegisterMap, {});
@@ -705,39 +742,157 @@ void SerialDebugTab::sendDebugInfo(const QString &message) {
     appendLog(QStringLiteral("TX"), 0x06, 0xFF, data, QStringLiteral("DEBUG_INFO"));
 }
 
-void SerialDebugTab::sendStreamFrame() {
-    if (!m_isConnected || !m_sampling || m_simulator == nullptr) {
-        return;
+void SerialDebugTab::emitOneStreamFrame() {
+    QVector<quint16> channelRegisterMap;
+    uint8_t channelMask = 0x00;
+    quint32 streamTick = 0;
+    qint16 baseValue = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        if (!m_isConnected || !m_sampling || m_simulator == nullptr) {
+            return;
+        }
+        channelRegisterMap = m_channelRegisterMap;
+        channelMask = m_channelMask;
+        streamTick = m_streamTick;
+        baseValue = m_streamBaseValue;
     }
 
     QVector<qint16> samples;
     samples.reserve(8);
-    for (int index = 0; index < m_channelRegisterMap.size(); ++index) {
-        if ((m_channelMask & (1u << index)) == 0) {
+    for (int index = 0; index < channelRegisterMap.size(); ++index) {
+        if ((channelMask & (1u << index)) == 0) {
             continue;
         }
 
-        const quint16 reg = m_channelRegisterMap.at(index);
+        const quint16 reg = channelRegisterMap.at(index);
         qint16 value = 0;
         if (reg != 0xFFFF) {
-            const double baseValue = static_cast<double>(registerValueAt(reg));
-            const double phase = (static_cast<double>(m_streamTick) * 0.18) + (index * 0.75);
-            const double amplitude = 28.0 + index * 4.0;
-            const double noisePhase = (static_cast<double>(m_streamTick) * 1.85) + (index * 2.1);
-            const double noise = std::sin(noisePhase) * 0.9 + std::cos(noisePhase * 1.7) * 0.5;
-            value = static_cast<qint16>(std::lround(baseValue + std::sin(phase) * amplitude + noise));
+            constexpr double kSampleIntervalSeconds = 0.001;
+            constexpr double kFundamentalHz = 1.0;
+            constexpr double kFundamentalAmplitude = 2000.0;
+            constexpr double kRippleHz = 100.0;
+            constexpr double kRippleAmplitude = 100.0;
+            constexpr double kChannelPhaseStep = 0.35;
+
+            const double timeSeconds = static_cast<double>(streamTick) * kSampleIntervalSeconds;
+            const double base = static_cast<double>(baseValue);
+            const double channelPhase = static_cast<double>(index) * kChannelPhaseStep;
+            const double fundamental = std::sin((2.0 * M_PI * kFundamentalHz * timeSeconds) + channelPhase)
+                                       * kFundamentalAmplitude;
+            const double ripple = std::sin((2.0 * M_PI * kRippleHz * timeSeconds) + channelPhase)
+                                  * kRippleAmplitude;
+            value = static_cast<qint16>(std::lround(base + fundamental + ripple));
         }
         samples.append(value);
     }
 
-    const QByteArray frame = encodeStreamFrame(m_channelMask, samples);
-    QMetaObject::invokeMethod(
-        m_simulator,
-        "sendRawFrame",
-        Qt::QueuedConnection,
-        Q_ARG(QByteArray, frame));
+    queueDebugStreamFrame(channelMask, samples);
+    const qint64 nowUs = m_streamElapsedTimer.isValid() ? m_streamElapsedTimer.nsecsElapsed() / 1000 : -1;
+    const qint64 actualDeltaUs = (m_lastStreamActualUs >= 0 && nowUs >= 0) ? (nowUs - m_lastStreamActualUs) : -1;
+    if (actualDeltaUs >= 0) {
+        m_streamActualUsAccumulator += actualDeltaUs;
+        ++m_streamActualUsSamples;
+    }
+    const qint64 averageDeltaUs = m_streamActualUsSamples > 0
+                                      ? (m_streamActualUsAccumulator / m_streamActualUsSamples)
+                                      : -1;
+    m_lastStreamActualUs = nowUs;
 
-    ++m_streamTick;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        ++m_streamTick;
+    }
+}
+
+void SerialDebugTab::queueDebugStreamFrame(uint8_t channelMask, const QVector<int16_t> &samples) {
+    bool shouldScheduleFlush = false;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        if (!m_sampling || m_streamStopRequested) {
+            return;
+        }
+
+        PendingDebugFrame frame;
+        frame.channelMask = channelMask;
+        frame.samples = samples;
+        m_pendingDebugFrames.append(std::move(frame));
+        if (!m_debugFlushQueued) {
+            m_debugFlushQueued = true;
+            shouldScheduleFlush = true;
+        }
+    }
+
+    if (!shouldScheduleFlush) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(this, &SerialDebugTab::flushPendingDebugStream, Qt::QueuedConnection);
+}
+
+void SerialDebugTab::flushPendingDebugStream() {
+    QVector<PendingDebugFrame> frames;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        frames.swap(m_pendingDebugFrames);
+        m_debugFlushQueued = false;
+    }
+
+    for (const PendingDebugFrame &frame : frames) {
+        emit debugStreamGenerated(frame.channelMask, frame.samples);
+    }
+
+    bool shouldScheduleAgain = false;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        if (!m_pendingDebugFrames.isEmpty() && !m_debugFlushQueued) {
+            m_debugFlushQueued = true;
+            shouldScheduleAgain = true;
+        }
+    }
+
+    if (shouldScheduleAgain) {
+        QMetaObject::invokeMethod(this, &SerialDebugTab::flushPendingDebugStream, Qt::QueuedConnection);
+    }
+}
+
+void SerialDebugTab::streamWorkerLoop() {
+    using clock = std::chrono::steady_clock;
+    const auto wakeBlock = std::chrono::microseconds(kStreamWakeBlockUs);
+    auto nextWake = clock::now();
+
+    std::unique_lock<std::mutex> lock(m_streamMutex);
+    while (!m_streamStopRequested) {
+        m_streamCv.wait(lock, [this]() { return m_streamStopRequested || (m_sampling && m_isConnected); });
+        if (m_streamStopRequested) {
+            break;
+        }
+
+        nextWake = clock::now();
+        while (!m_streamStopRequested && m_sampling && m_isConnected) {
+            const int intervalUs = sampleIntervalUs(m_sampleIntervalIndex);
+            const int framesPerBlock = qMax(1, kStreamWakeBlockUs / qMax(1, intervalUs));
+
+            nextWake += wakeBlock;
+            lock.unlock();
+            std::this_thread::sleep_until(nextWake);
+            const auto wakeTime = clock::now();
+
+            int blocksToEmit = 1;
+            if (wakeTime > nextWake) {
+                blocksToEmit += static_cast<int>((wakeTime - nextWake) / wakeBlock);
+            }
+            blocksToEmit = qBound(1, blocksToEmit, kMaxWakeBlocksPerCycle);
+
+            const int framesToEmit = framesPerBlock * blocksToEmit;
+            for (int frameIndex = 0; frameIndex < framesToEmit; ++frameIndex) {
+                emitOneStreamFrame();
+            }
+
+            nextWake += wakeBlock * (blocksToEmit - 1);
+            lock.lock();
+        }
+    }
 }
 
 void SerialDebugTab::appendSysLog(const QString &message, bool isError) {
@@ -802,6 +957,11 @@ void SerialDebugTab::refreshPortList() {
 
 void SerialDebugTab::setConnectedState(bool connected) {
     m_isConnected = connected;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_isConnected = connected;
+    }
+    m_streamCv.notify_all();
     m_connectButton->setText(connected ? tr("断开") : tr("连接"));
     m_portCombo->setEnabled(!connected);
     m_baudCombo->setEnabled(!connected);

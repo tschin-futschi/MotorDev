@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Svg SvgWidgets SerialPort PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Svg SvgWidgets SerialPort PrintSupport OpenGLWidgets)
 
 qt_add_executable(MotorDev
     src/main.cpp
@@ -43,6 +43,8 @@ qt_add_executable(MotorDev
     src/widgets/scopeplotwidget.h
     src/widgets/scoperegisterpanel.cpp
     src/widgets/scoperegisterpanel.h
+    src/widgets/scopestylepanel.cpp
+    src/widgets/scopestylepanel.h
     src/widgets/scopetoolbar.cpp
     src/widgets/scopetoolbar.h
     src/widgets/topbar.cpp
@@ -72,4 +74,5 @@ target_link_libraries(MotorDev PRIVATE
     Qt6::SvgWidgets
     Qt6::SerialPort
     Qt6::PrintSupport
+    Qt6::OpenGLWidgets
 )

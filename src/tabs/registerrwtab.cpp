@@ -107,10 +107,10 @@ QString makeBatchLineEditStyle(bool readOnly) {
 RegisterRwTab::RegisterRwTab(SerialManager *serialManager, QWidget *parent)
     : QWidget(parent)
     , m_serialManager(serialManager) {
-    setupUi();
-    connectSignals();
     m_timeoutTimer = new QTimer(this);
     m_timeoutTimer->setSingleShot(true);
+    setupUi();
+    connectSignals();
     m_registerTable->loadConfig(configFilePath());
 }
 

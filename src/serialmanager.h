@@ -33,6 +33,7 @@ public slots:
 signals:
     void connected();
     void disconnected();
+    void commandSent(uint8_t cmd, uint8_t seq);
     void frameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
     void streamDataReceived(uint8_t channelMask, const QVector<int16_t> &samples);
     void errorOccurred(const QString &message);

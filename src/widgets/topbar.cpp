@@ -1,4 +1,4 @@
-﻿#include "widgets/topbar.h"
+#include "widgets/topbar.h"
 
 #include "ui/style_constants.h"
 

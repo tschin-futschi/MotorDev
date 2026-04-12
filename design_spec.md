@@ -59,7 +59,7 @@
 
 | 用途 | 字号 | 字重 | 颜色 |
 |------|------|------|------|
-| 应用名称 | 13px | 500 | `#2c2c2a` |
+| 应用名称 | 15px | 500 | `#2c2c2a` |
 | 侧边栏标题 | 10px | 500 | `#888`，大写 |
 | 侧边栏标签 | 11px | 400 | `#666` |
 | 侧边栏分组标题 | 10px | 500 | `#aaa` |
@@ -351,12 +351,12 @@ Sidebar 内容:
 背景: #f6f4ef
 边框: 底部 1px solid #d8d1c7
 
-按钮分组（从左到右，竖线分隔）:
-[|>] [□]  |  [+] [-] [<<] [>>] [F] [Fs]  |  [Ov] [St]  |  [Csv] [Cam]  |  [*]  ← stretch →  [状态徽章]
+按钮分组（从左到右）:
+[Overlay] [Stacked]  ← stretch →  [开始采样/停止采样]  ← stretch →  [状态徽章]
 
-按钮尺寸: 30×24px，QToolButton
+Overlay / Stacked: QToolButton，互斥 checkable，切换视图模式
+采样按钮: QPushButton，文字随状态切换（"开始采样" / "停止采样"），绿色/红色风格
 状态徽章: 圆角标签，RUNNING（绿底）/ STOPPED（红底）
-Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
 ```
 
 ### ScopePlotWidget（波形绘制画布）
@@ -375,11 +375,15 @@ Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
   鼠标左键拖拽 — 水平方向选区缩放 X 轴 / 垂直方向选区缩放 Y 轴
   双击 — 重置视图为全范围
 
-默认演示通道（4 条正弦波）:
-  CH1 Speed  #e9c46a
-  CH2 Torque #61afef
-  CH3 Temp   #e76f51
-  CH4 Current #98c379
+默认通道颜色（定义在 style_constants.h）:
+  CH1 Speed   rgb(255, 90, 90)    // bright red — ScopeWaveCh1
+  CH2 Torque  rgb(90, 220, 90)    // bright green — ScopeWaveCh2
+  CH3 Temp    rgb(90, 170, 255)   // bright blue — ScopeWaveCh3
+  CH4 Current rgb(255, 220, 80)   // bright yellow — ScopeWaveCh4
+  CH5         rgb(255, 90, 230)   // magenta — ScopeWaveCh5
+  CH6         rgb(90, 230, 230)   // cyan — ScopeWaveCh6
+  CH7         rgb(255, 160, 60)   // orange — ScopeWaveCh7
+  CH8         rgb(220, 220, 220)  // light grey — ScopeWaveCh8
 ```
 
 ### ScopeBottomPanel（底部面板）
@@ -389,11 +393,12 @@ Ov / St 按钮为互斥 checkable，切换 Overlay / Stacked 视图模式
 边框: 顶部 1px solid #d8d1c7
 
 控制行（顶部，横向排列）:
-  [Sample Interval 标签] [QComboBox: 100 us / 500 us / 1000 us / 2000 us]
+  [Sample Interval 标签] [QComboBox: 100 us / 200 us / 300 us / 500 us / 750 us / 1000 us / 1500 us / 2000 us]
   [Y Axis QToolButton（下拉菜单: Auto / Manual...）]
-  [开始采样 / 停止采样 QPushButton（状态切换）]
+  [Display Window 标签] [QComboBox: 50 ms / 200 ms / 500 ms / 1000 ms / 2000 ms / 4000 ms]
   [Capture Note 标签] [QLineEdit]
-  右侧: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
+  注：采样启停按钮已移至 ScopeToolBar
+  底部按钮行（右对齐）: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
 
 通道配置条区域（可通过 Hide/Show Channels 按钮折叠）:
   ScopeChannelStrip × 8，水平排列

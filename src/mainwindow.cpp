@@ -30,6 +30,19 @@ MainWindow::MainWindow(QWidget *parent)
     m_serialManager = new SerialManager(this);
     m_deviceContext = new DeviceContext(this);
 
+    setupUi();
+    connectSignals();
+
+    m_registerTab->setConnected(false);
+    m_registerTab->setEnabled(false);
+    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
+    m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+    m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+    m_scopeTab->setEnabled(true);
+}
+
+void MainWindow::setupUi() {
     auto *central = new QWidget(this);
     auto *rootLayout = new QVBoxLayout(central);
     rootLayout->setContentsMargins(
@@ -113,7 +126,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     central->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
     setCentralWidget(central);
+}
 
+void MainWindow::connectSignals() {
     connect(m_activityBar, &ActivityBar::pageSelected, this, [this](int index) {
         if (index == ActivityBar::DebugPage) {
             m_debugTab->show();
@@ -125,6 +140,10 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
+    connect(m_debugTab, &SerialDebugTab::debugStreamGenerated,
+            m_scopeTab, &OscilloscopTab::ingestDebugStream);
+    connect(m_debugTab, &SerialDebugTab::debugStreamActiveChanged,
+            m_scopeTab, &OscilloscopTab::setDebugStreamActive);
     connect(m_configTab, &ConfigTab::serialConnected, this, [this](const QString &, qint32) {
         m_registerTab->setConnected(true);
         m_registerTab->setEnabled(true);
@@ -149,12 +168,4 @@ MainWindow::MainWindow(QWidget *parent)
         m_logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
                                            : QStringLiteral("▼ 输出"));
     });
-
-    m_registerTab->setConnected(false);
-    m_registerTab->setEnabled(false);
-    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
-    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
-    m_scopeTab->setEnabled(true);
 }
