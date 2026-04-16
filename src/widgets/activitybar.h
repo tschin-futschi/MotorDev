@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <QWidget>
 
-class QPushButton;
+namespace Ui {
+class ActivityBar;
+}
 
 class ActivityBar : public QWidget {
     Q_OBJECT
@@ -17,6 +20,7 @@ public:
     };
 
     explicit ActivityBar(QWidget *parent = nullptr);
+    ~ActivityBar() override;
     void setPageEnabled(int page, bool enabled);
 
 signals:
@@ -25,10 +29,5 @@ signals:
 private:
     void setActivePage(int index);
 
-    QPushButton *m_configButton = nullptr;
-    QPushButton *m_registerButton = nullptr;
-    QPushButton *m_flashButton = nullptr;
-    QPushButton *m_scopeButton = nullptr;
-    QPushButton *m_debugButton = nullptr;
-    QPushButton *m_settingsButton = nullptr;
+    std::unique_ptr<Ui::ActivityBar> ui;
 };

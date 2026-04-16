@@ -8,21 +8,19 @@
 #include "tabs/registerrwtab.h"
 #include "tabs/serialdebugtab.h"
 #include "ui/style_constants.h"
+#include "ui_mainwindow.h"
 #include "widgets/activitybar.h"
 #include "widgets/logpanel.h"
 #include "widgets/topbar.h"
 
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QPushButton>
-#include <QStackedWidget>
-#include <QVBoxLayout>
-#include <QWidget>
+#include <utility>
 
 using namespace MotorDev;
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent) {
+    : QMainWindow(parent)
+    , ui(std::make_unique<Ui::MainWindow>()) {
     setWindowTitle(tr("MotorDev"));
     resize(Style::Size::WindowWidth, Style::Size::WindowHeight);
     setMinimumSize(Style::Size::MinWindowWidth, Style::Size::MinWindowHeight);
@@ -35,137 +33,78 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_registerTab->setConnected(false);
     m_registerTab->setEnabled(false);
-    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
-    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+    ui->activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
+    ui->activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+    ui->activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+    ui->contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
     m_scopeTab->setEnabled(true);
 }
 
+MainWindow::~MainWindow() = default;
+
 void MainWindow::setupUi() {
-    auto *central = new QWidget(this);
-    auto *rootLayout = new QVBoxLayout(central);
-    rootLayout->setContentsMargins(
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin);
-    rootLayout->setSpacing(Style::Size::MainSpacing);
+    auto *centralWidget = new QWidget(this);
+    ui->setupUi(centralWidget);
+    setCentralWidget(centralWidget);
 
-    m_topBar = new TopBar(central);
+    m_configTab = new ConfigTab(m_serialManager, m_deviceContext, ui->contentStack);
+    ui->contentStack->addWidget(m_configTab);
 
-    auto *middleWidget = new QWidget(central);
-    auto *middleLayout = new QHBoxLayout(middleWidget);
-    middleLayout->setContentsMargins(
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin,
-        Style::Size::OuterMargin);
-    middleLayout->setSpacing(Style::Size::MainSpacing);
+    m_registerTab = new RegisterRwTab(m_serialManager, ui->contentStack);
+    ui->contentStack->addWidget(m_registerTab);
 
-    m_activityBar = new ActivityBar(middleWidget);
-    m_contentStack = new QStackedWidget(middleWidget);
-    m_configTab = new ConfigTab(m_serialManager, m_deviceContext, m_contentStack);
-    m_contentStack->addWidget(m_configTab);
-    m_registerTab = new RegisterRwTab(m_serialManager, m_contentStack);
-    m_contentStack->addWidget(m_registerTab);
-    m_contentStack->addWidget(new FwFlashTab(m_contentStack));
-    m_scopeTab = new OscilloscopTab(m_serialManager, m_contentStack);
-    m_contentStack->addWidget(m_scopeTab);
+    ui->contentStack->addWidget(new FwFlashTab(ui->contentStack));
+
+    m_scopeTab = new OscilloscopTab(m_serialManager, ui->contentStack);
+    ui->contentStack->addWidget(m_scopeTab);
+
     m_debugTab = new SerialDebugTab(this);
-    m_contentStack->setCurrentIndex(ActivityBar::ConfigPage);
-    m_contentStack->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
-
-    middleLayout->addWidget(m_activityBar);
-    middleLayout->addWidget(m_contentStack, 1);
-
-    m_statusBarWidget = new QWidget(central);
-    m_statusBarWidget->setFixedHeight(Style::Size::StatusBarHeight);
-    auto *statusLayout = new QHBoxLayout(m_statusBarWidget);
-    statusLayout->setContentsMargins(
-        Style::Size::StatusBarHorizontalPadding,
-        Style::Size::OuterMargin,
-        Style::Size::StatusBarHorizontalPadding,
-        Style::Size::OuterMargin);
-    statusLayout->setSpacing(Style::Size::StatusBarSpacing);
-
-    auto *softwareLabel = new QLabel(QStringLiteral("MotorDev · MIT License"), m_statusBarWidget);
-    softwareLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
-                                     .arg(Style::Color::StatusBarText.name()));
-
-    auto *firmwareLabel = new QLabel(QStringLiteral("固件 v0.0.0 · 编译日期 2026-01-01"), m_statusBarWidget);
-    firmwareLabel->setAlignment(Qt::AlignCenter);
-    firmwareLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
-                                     .arg(Style::Color::StatusBarText.name()));
-
-    m_logToggleButton = new QPushButton(QStringLiteral("▼ 输出"), m_statusBarWidget);
-    m_logToggleButton->setFlat(true);
-    m_logToggleButton->setFixedHeight(18);
-    m_logToggleButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background:transparent; border:none; color:%1; font-size:11px; }"
-        "QPushButton:hover { color:%2; }")
-                                         .arg(Style::Color::StatusBarText.name())
-                                         .arg(Style::Color::LightGreen.name()));
-
-    statusLayout->addWidget(softwareLabel);
-    statusLayout->addStretch();
-    statusLayout->addWidget(firmwareLabel);
-    statusLayout->addStretch();
-    statusLayout->addWidget(m_logToggleButton);
-
-    m_statusBarWidget->setStyleSheet(QStringLiteral("background:%1;")
-                                         .arg(Style::Color::PrimaryGreen.name()));
-
-    m_logPanel = new LogPanel(central);
-    m_logPanel->setVisible(false);
-
-    rootLayout->addWidget(m_topBar);
-    rootLayout->addWidget(middleWidget, 1);
-    rootLayout->addWidget(m_logPanel);
-    rootLayout->addWidget(m_statusBarWidget);
-
-    central->setStyleSheet(QStringLiteral("background:%1;").arg(Style::Color::WindowBackground.name()));
-    setCentralWidget(central);
+    ui->contentStack->setCurrentIndex(ActivityBar::ConfigPage);
+    ui->logPanel->setVisible(false);
 }
 
 void MainWindow::connectSignals() {
-    connect(m_activityBar, &ActivityBar::pageSelected, this, [this](int index) {
+    connect(ui->activityBar, &ActivityBar::pageSelected, this, [this](int index) {
         if (index == ActivityBar::DebugPage) {
             m_debugTab->show();
             m_debugTab->raise();
             m_debugTab->activateWindow();
             return;
         }
-        m_contentStack->setCurrentIndex(index);
+        ui->contentStack->setCurrentIndex(index);
     });
-    connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
-    connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
+
+    connect(m_configTab, &ConfigTab::serialConnected, ui->topBar, &TopBar::onSerialConnected);
+    connect(m_configTab, &ConfigTab::serialDisconnected, ui->topBar, &TopBar::onSerialDisconnected);
     connect(m_debugTab, &SerialDebugTab::debugStreamGenerated,
             m_scopeTab, &OscilloscopTab::ingestDebugStream);
     connect(m_debugTab, &SerialDebugTab::debugStreamActiveChanged,
             m_scopeTab, &OscilloscopTab::setDebugStreamActive);
+
     connect(m_configTab, &ConfigTab::serialConnected, this, [this](const QString &, qint32) {
         m_registerTab->setConnected(true);
         m_registerTab->setEnabled(true);
-        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
-        m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
-        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
-        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
+        ui->activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
+        ui->activityBar->setPageEnabled(ActivityBar::FlashPage, true);
+        ui->activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        ui->contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
     });
+
     connect(m_configTab, &ConfigTab::serialDisconnected, this, [this]() {
         m_registerTab->setConnected(false);
         m_registerTab->setEnabled(false);
-        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
-        m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
-        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+        ui->activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
+        ui->activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+        ui->activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        ui->contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
         m_scopeTab->setEnabled(true);
     });
-    connect(m_logToggleButton, &QPushButton::clicked, this, [this]() {
-        const bool visible = !m_logPanel->isVisible();
-        m_logPanel->setVisible(visible);
-        m_logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
-                                           : QStringLiteral("▼ 输出"));
+
+    connect(ui->logToggleButton, &QPushButton::clicked, this, [this]() {
+        const bool visible = !ui->logPanel->isVisible();
+        ui->logPanel->setVisible(visible);
+        ui->logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
+                                             : QStringLiteral("▼ 输出"));
     });
 }

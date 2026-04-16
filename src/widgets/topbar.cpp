@@ -1,101 +1,43 @@
 #include "widgets/topbar.h"
 
 #include "ui/style_constants.h"
+#include "ui_topbar.h"
 
-#include <QComboBox>
-#include <QFrame>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QSizePolicy>
-#include <QSvgWidget>
+#include <QStyle>
+#include <utility>
 
 using namespace MotorDev;
 
-TopBar::TopBar(QWidget *parent)
-    : QWidget(parent) {
-    setFixedHeight(Style::Size::TopBarHeight);
-    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-    auto *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(
-        Style::Size::HeaderHorizontalPadding,
-        Style::Size::OuterMargin,
-        Style::Size::HeaderHorizontalPadding,
-        Style::Size::OuterMargin);
-    layout->setSpacing(Style::Size::ActivityBarSpacing);
-
-    auto *logo = new QSvgWidget(Style::Text::LogoResource, this);
-    logo->setFixedSize(Style::Size::LogoSize, Style::Size::LogoSize);
-
-    auto *titleLabel = new QLabel(tr("MotorDev"), this);
-    auto *separator = new QFrame(this);
-    auto *portLabel = new QLabel(tr("串口"), this);
-    m_portValueLabel = new QLabel(QStringLiteral("– / –"), this);
-    m_connectionIndicator = new QLabel(this);
-    m_connectionLabel = new QLabel(tr("未连接"), this);
-    auto *spacer = new QWidget(this);
-    m_languageCombo = new QComboBox(this);
-
-    separator->setFrameShape(QFrame::VLine);
-    separator->setFrameShadow(QFrame::Plain);
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-    m_connectionIndicator->setFixedSize(
-        Style::Size::IndicatorSize,
-        Style::Size::IndicatorSize);
-    m_languageCombo->setFixedWidth(Style::Size::LanguageComboWidth);
-    m_languageCombo->addItems({tr("中文"), tr("English")});
-
-    titleLabel->setStyleSheet(QStringLiteral("color:%1; font-size:15px; font-weight:500;")
-                                  .arg(Style::Color::AppText.name()));
-    separator->setStyleSheet(QStringLiteral("color:%1;").arg(Style::Color::TableRowBorder.name()));
-    portLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
-                                 .arg(Style::Color::TopBarLabelText.name()));
-    m_portValueLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
-                                        .arg(Style::Color::TopBarValueText.name()));
-    m_connectionIndicator->setStyleSheet(QStringLiteral(
-        "background:%1; border-radius:%2px;")
-                                             .arg(Style::Color::DisconnectedIndicator.name())
-                                             .arg(Style::Size::IndicatorSize / 2 + 1));
-    m_connectionLabel->setStyleSheet(QStringLiteral("color:%1; font-size:13px;")
-                                         .arg(Style::Color::TopBarValueText.name()));
-    m_languageCombo->setStyleSheet(QStringLiteral(
-        "QComboBox { background:%1; border:%2px solid %3; padding:2px 6px; color:%4; }")
-                                        .arg(Style::Color::White.name())
-                                        .arg(Style::Size::BorderThin)
-                                        .arg(Style::Color::InputBorder.name())
-                                        .arg(Style::Color::TopBarValueText.name()));
-
-    setStyleSheet(QStringLiteral("background:%1; border-bottom:%2px solid %3;")
-                      .arg(Style::Color::TopBarBackground.name())
-                      .arg(Style::Size::BorderThin)
-                      .arg(Style::Color::TableRowBorder.name()));
-
-    layout->addWidget(logo);
-    layout->addWidget(titleLabel);
-    layout->addWidget(separator);
-    layout->addWidget(portLabel);
-    layout->addWidget(m_portValueLabel);
-    layout->addWidget(m_connectionIndicator);
-    layout->addWidget(m_connectionLabel);
-    layout->addWidget(spacer);
-    layout->addWidget(m_languageCombo);
+namespace {
+void repolish(QWidget *widget) {
+    if (widget == nullptr) {
+        return;
+    }
+    widget->style()->unpolish(widget);
+    widget->style()->polish(widget);
+    widget->update();
+}
 }
 
+TopBar::TopBar(QWidget *parent)
+    : QWidget(parent)
+    , ui(std::make_unique<Ui::TopBar>()) {
+    ui->setupUi(this);
+    ui->logo->load(Style::Text::LogoResource);
+}
+
+TopBar::~TopBar() = default;
+
 void TopBar::onSerialConnected(const QString &port, qint32 baudRate) {
-    m_portValueLabel->setText(QStringLiteral("%1 / %2").arg(port).arg(baudRate));
-    m_connectionLabel->setText(tr("已连接"));
-    m_connectionIndicator->setStyleSheet(QStringLiteral(
-        "background:%1; border-radius:%2px;")
-                                             .arg(Style::Color::ConnectedIndicator.name())
-                                             .arg(Style::Size::IndicatorSize / 2 + 1));
+    ui->portValueLabel->setText(QStringLiteral("%1 / %2").arg(port).arg(baudRate));
+    ui->connectionLabel->setText(tr("已连接"));
+    ui->connectionIndicator->setProperty("connected", true);
+    repolish(ui->connectionIndicator);
 }
 
 void TopBar::onSerialDisconnected() {
-    m_portValueLabel->setText(QStringLiteral("– / –"));
-    m_connectionLabel->setText(tr("未连接"));
-    m_connectionIndicator->setStyleSheet(QStringLiteral(
-        "background:%1; border-radius:%2px;")
-                                             .arg(Style::Color::DisconnectedIndicator.name())
-                                             .arg(Style::Size::IndicatorSize / 2 + 1));
+    ui->portValueLabel->setText(QStringLiteral("– / –"));
+    ui->connectionLabel->setText(tr("未连接"));
+    ui->connectionIndicator->setProperty("connected", false);
+    repolish(ui->connectionIndicator);
 }

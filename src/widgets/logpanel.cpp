@@ -1,65 +1,26 @@
 #include "widgets/logpanel.h"
 
 #include "ui/style_constants.h"
+#include "ui_logpanel.h"
 
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QMetaObject>
 #include <QPushButton>
-#include <QTextEdit>
 #include <QTextCursor>
 #include <QThread>
-#include <QVBoxLayout>
+#include <utility>
 
 using namespace MotorDev;
 
 LogPanel *LogPanel::s_instance = nullptr;
 
 LogPanel::LogPanel(QWidget *parent)
-    : QWidget(parent) {
+    : QWidget(parent)
+    , ui(std::make_unique<Ui::LogPanel>()) {
     s_instance = this;
+    ui->setupUi(this);
 
-    setFixedHeight(200);
-    setStyleSheet(QStringLiteral("background:%1; border-top:%2px solid %3;")
-                      .arg(Style::Color::PanelBackground.name())
-                      .arg(Style::Size::BorderThin)
-                      .arg(Style::Color::DefaultBorder.name()));
-
-    auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(8, 4, 8, 4);
-    rootLayout->setSpacing(4);
-
-    auto *headerLayout = new QHBoxLayout;
-    headerLayout->setContentsMargins(0, 0, 0, 0);
-
-    auto *titleLabel = new QLabel(tr("输出"), this);
-    titleLabel->setStyleSheet(QStringLiteral("color:%1; font-size:12px; font-weight:500;")
-                                  .arg(Style::Color::AppText.name()));
-
-    auto *clearButton = new QPushButton(tr("清空"), this);
-    clearButton->setFixedHeight(20);
-    clearButton->setStyleSheet(QStringLiteral(
-        "QPushButton { background:transparent; border:none; color:%1; font-size:11px; }"
-        "QPushButton:hover { color:%2; }")
-                                   .arg(Style::Color::MutedText.name())
-                                   .arg(Style::Color::AppText.name()));
-
-    headerLayout->addWidget(titleLabel);
-    headerLayout->addStretch();
-    headerLayout->addWidget(clearButton);
-
-    m_textEdit = new QTextEdit(this);
-    m_textEdit->setReadOnly(true);
-    m_textEdit->document()->setMaximumBlockCount(500);
-    m_textEdit->setStyleSheet(QStringLiteral(
-        "QTextEdit { background:%1; border:none; color:%2; font-family:Consolas,monospace; font-size:11px; }")
-                                   .arg(Style::Color::PanelBackground.name())
-                                   .arg(Style::Color::AppText.name()));
-
-    rootLayout->addLayout(headerLayout);
-    rootLayout->addWidget(m_textEdit);
-
-    connect(clearButton, &QPushButton::clicked, m_textEdit, &QTextEdit::clear);
+    ui->textEdit->document()->setMaximumBlockCount(500);
+    connect(ui->clearButton, &QPushButton::clicked, ui->textEdit, &QTextEdit::clear);
 }
 
 LogPanel::~LogPanel() {
@@ -101,6 +62,6 @@ void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
                              .arg(color)
                              .arg(prefix.toHtmlEscaped())
                              .arg(msg.toHtmlEscaped());
-    m_textEdit->append(html);
-    m_textEdit->moveCursor(QTextCursor::End);
+    ui->textEdit->append(html);
+    ui->textEdit->moveCursor(QTextCursor::End);
 }

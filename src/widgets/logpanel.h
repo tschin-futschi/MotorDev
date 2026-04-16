@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <QWidget>
 #include <QtGlobal>
 
-class QTextEdit;
+namespace Ui {
+class LogPanel;
+}
 
 class LogPanel : public QWidget {
     Q_OBJECT
@@ -18,6 +21,6 @@ public slots:
     void appendMessage(QtMsgType type, const QString &msg);
 
 private:
-    QTextEdit *m_textEdit = nullptr;
+    std::unique_ptr<Ui::LogPanel> ui;
     static LogPanel *s_instance;
 };

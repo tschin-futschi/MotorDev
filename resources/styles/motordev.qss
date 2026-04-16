@@ -1,0 +1,142 @@
+/* ===== App Shell ===== */
+QWidget#centralWidget {
+    background: #f5f5f3;
+}
+
+QStackedWidget#contentStack {
+    background: #f5f5f3;
+}
+
+QWidget#statusBarWidget {
+    background: #3B6D11;
+}
+
+QWidget#statusBarWidget QLabel {
+    color: #c0dd97;
+    font-size: 11px;
+}
+
+QWidget#statusBarWidget QPushButton {
+    background: transparent;
+    border: none;
+    color: #c0dd97;
+    font-size: 11px;
+}
+
+QWidget#statusBarWidget QPushButton:hover {
+    color: #EAF3DE;
+}
+
+/* ===== TopBar ===== */
+TopBar {
+    background: #f8f7f5;
+    border-bottom: 1px solid #eeeeee;
+}
+
+TopBar #titleLabel {
+    color: #2c2c2a;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+TopBar #separator {
+    color: #eeeeee;
+}
+
+TopBar #portLabel {
+    color: #aaaaaa;
+    font-size: 13px;
+}
+
+TopBar #portValueLabel,
+TopBar #connectionLabel {
+    color: #555555;
+    font-size: 13px;
+}
+
+TopBar #connectionIndicator[connected="false"] {
+    background: #E24B4A;
+    border-radius: 4px;
+}
+
+TopBar #connectionIndicator[connected="true"] {
+    background: #639922;
+    border-radius: 4px;
+}
+
+TopBar #languageCombo {
+    background: #ffffff;
+    border: 1px solid #dddddd;
+    padding: 2px 6px;
+    color: #555555;
+}
+
+/* ===== ActivityBar ===== */
+ActivityBar {
+    background: #e8e5e0;
+    border-right: 1px solid #cccccc;
+}
+
+ActivityBar QPushButton {
+    font-size: 11px;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+ActivityBar QPushButton[active="false"] {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #888888;
+}
+
+ActivityBar QPushButton[active="true"] {
+    background: #ffffff;
+    border: 1px solid #c0dd97;
+    color: #3B6D11;
+}
+
+ActivityBar QPushButton[active="false"]:hover {
+    background: #f8f7f5;
+}
+
+ActivityBar QPushButton:pressed {
+    background: #dddbd6;
+    padding: 5px 4px 3px 4px;
+}
+
+ActivityBar QPushButton:disabled {
+    background: #E6E6E6;
+    border: 1px solid #C9C9C9;
+    color: #9A9A9A;
+}
+
+/* ===== LogPanel ===== */
+LogPanel {
+    background: #ffffff;
+    border-top: 1px solid #cccccc;
+}
+
+LogPanel #titleLabel {
+    color: #2c2c2a;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+LogPanel #clearButton {
+    background: transparent;
+    border: none;
+    color: #888888;
+    font-size: 11px;
+}
+
+LogPanel #clearButton:hover {
+    color: #2c2c2a;
+}
+
+LogPanel #textEdit {
+    background: #ffffff;
+    border: none;
+    color: #2c2c2a;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+}

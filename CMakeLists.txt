@@ -14,6 +14,7 @@ qt_add_executable(MotorDev
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    src/mainwindow.ui
     src/devicecontext.cpp
     src/devicecontext.h
     src/frameparser.cpp
@@ -27,8 +28,10 @@ qt_add_executable(MotorDev
     src/ui/style_constants.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
+    src/widgets/activitybar.ui
     src/widgets/logpanel.cpp
     src/widgets/logpanel.h
+    src/widgets/logpanel.ui
     src/widgets/registertable.cpp
     src/widgets/registertable.h
     src/widgets/sidebar.cpp
@@ -49,6 +52,7 @@ qt_add_executable(MotorDev
     src/widgets/scopetoolbar.h
     src/widgets/topbar.cpp
     src/widgets/topbar.h
+    src/widgets/topbar.ui
     src/tabs/configtab.cpp
     src/tabs/configtab.h
     src/tabs/registerrwtab.cpp

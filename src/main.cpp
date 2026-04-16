@@ -2,6 +2,7 @@
 #include "widgets/logpanel.h"
 
 #include <QApplication>
+#include <QFile>
 #include <QIcon>
 #include <QMessageLogContext>
 #include <QMetaObject>
@@ -32,6 +33,10 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
     app.setWindowIcon(QIcon(QStringLiteral(":/motordev_logo.svg")));
+    QFile qssFile(QStringLiteral(":/styles/motordev.qss"));
+    if (qssFile.open(QFile::ReadOnly)) {
+        app.setStyleSheet(QString::fromUtf8(qssFile.readAll()));
+    }
 
     MainWindow window;
     window.setWindowIcon(QIcon(QStringLiteral(":/motordev_logo.svg")));
