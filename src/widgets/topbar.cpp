@@ -15,7 +15,6 @@ TopBar::TopBar(QWidget *parent)
     ui->logo->load(Style::Text::LogoResource);
     connectSignals();
     setScopeControlsVisible(false);
-    setRunning(false);
     setViewMode(0);
 }
 
@@ -29,9 +28,6 @@ void TopBar::connectSignals() {
         const int nextMode = m_viewMode == 0 ? 1 : 0;
         setViewMode(nextMode);
         emit viewModeChanged(m_viewMode);
-    });
-    connect(ui->samplingButton, &QPushButton::clicked, this, [this]() {
-        emit samplingToggleRequested(!m_running);
     });
     connect(ui->styleButton, &QToolButton::clicked, this, [this]() {
         emit styleToggleRequested();
@@ -55,14 +51,6 @@ void TopBar::onSerialDisconnected() {
 void TopBar::setScopeControlsVisible(bool visible) {
     ui->viewModeButton->setVisible(visible);
     ui->styleButton->setVisible(visible);
-    ui->samplingButton->setVisible(visible);
-}
-
-void TopBar::setRunning(bool running) {
-    m_running = running;
-    ui->samplingButton->setText(m_running ? tr("停止采样") : tr("开始采样"));
-    ui->samplingButton->setProperty("running", m_running);
-    UiUtil::repolish(ui->samplingButton);
 }
 
 void TopBar::setViewMode(int mode) {

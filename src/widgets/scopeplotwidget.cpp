@@ -12,6 +12,7 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QSurfaceFormat>
+#include <QStyle>
 
 using namespace MotorDev;
 
@@ -82,8 +83,20 @@ ScopePlotWidget::ScopePlotWidget(QWidget *parent)
             this, QOverload<>::of(&QOpenGLWidget::update));
     m_renderTimer->start();
 
+    m_samplingButton = new QPushButton(this);
+    m_samplingButton->setObjectName(QStringLiteral("samplingButton"));
+    m_samplingButton->setProperty("running", false);
+    m_samplingButton->setMinimumSize(92, 24);
+    m_samplingButton->setCursor(Qt::PointingHandCursor);
+    m_samplingButton->raise();
+    connect(m_samplingButton, &QPushButton::clicked, this, [this]() {
+        emit samplingToggleRequested(!m_running);
+    });
+
     clearData();
     setMinimumHeight(320);
+    updateSamplingButton();
+    updateSamplingButtonGeometry();
 }
 
 QSize ScopePlotWidget::minimumSizeHint() const {
@@ -91,14 +104,42 @@ QSize ScopePlotWidget::minimumSizeHint() const {
 }
 
 void ScopePlotWidget::setRunning(bool running) {
-    if (m_running == running) {
+    if (m_running != running) {
+        m_running = running;
+        // Slow the timer down a bit when idle to save CPU, but never stop it
+        // entirely so the last frame stays visible and any state change still
+        // gets repainted on the next tick.
+        m_renderTimer->setInterval(running ? 16 : 100);
+    }
+    updateSamplingButton();
+}
+
+void ScopePlotWidget::updateSamplingButton() {
+    if (m_samplingButton == nullptr) {
         return;
     }
-    m_running = running;
-    // Slow the timer down a bit when idle to save CPU, but never stop it
-    // entirely so the last frame stays visible and any state change still
-    // gets repainted on the next tick.
-    m_renderTimer->setInterval(running ? 16 : 100);
+    m_samplingButton->setText(m_running ? tr("停止采样") : tr("开始采样"));
+    m_samplingButton->setProperty("running", m_running);
+    m_samplingButton->raise();
+    m_samplingButton->style()->unpolish(m_samplingButton);
+    m_samplingButton->style()->polish(m_samplingButton);
+    m_samplingButton->update();
+}
+
+void ScopePlotWidget::updateSamplingButtonGeometry() {
+    if (m_samplingButton == nullptr) {
+        return;
+    }
+    constexpr int kTopMargin = 8;
+    const QSize hint = m_samplingButton->sizeHint().expandedTo(QSize(92, 24));
+    m_samplingButton->resize(hint);
+    m_samplingButton->move((width() - hint.width()) / 2, kTopMargin);
+    m_samplingButton->raise();
+}
+
+void ScopePlotWidget::resizeEvent(QResizeEvent *event) {
+    QOpenGLWidget::resizeEvent(event);
+    updateSamplingButtonGeometry();
 }
 
 void ScopePlotWidget::setViewMode(ScopeViewMode mode) {

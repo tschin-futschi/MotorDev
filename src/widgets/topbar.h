@@ -17,20 +17,17 @@ public:
 
 signals:
     void viewModeChanged(int mode);
-    void samplingToggleRequested(bool running);
     void styleToggleRequested();
 
 public slots:
     void onSerialConnected(const QString &port, qint32 baudRate);
     void onSerialDisconnected();
     void setScopeControlsVisible(bool visible);
-    void setRunning(bool running);
     void setViewMode(int mode);
 
 private:
     void connectSignals();
 
     std::unique_ptr<Ui::TopBar> ui;
-    bool m_running = false;
     int m_viewMode = 0;
 };

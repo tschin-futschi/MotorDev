@@ -52,7 +52,6 @@ ScopePreviewWidget::ScopePreviewWidget(QWidget *parent)
     refreshPlotData();
     connectSignals();
     ui->topBar->setScopeControlsVisible(true);
-    ui->topBar->setRunning(false);
     ui->topBar->setViewMode(0);
 
     m_previewTimer = new QTimer(this);
@@ -63,7 +62,7 @@ ScopePreviewWidget::ScopePreviewWidget(QWidget *parent)
 ScopePreviewWidget::~ScopePreviewWidget() = default;
 
 void ScopePreviewWidget::connectSignals() {
-    connect(ui->topBar, &TopBar::samplingToggleRequested, this, &ScopePreviewWidget::setRunning);
+    connect(ui->plotWidget, &ScopePlotWidget::samplingToggleRequested, this, &ScopePreviewWidget::setRunning);
     connect(ui->topBar, &TopBar::viewModeChanged, this, [this](int mode) {
         ui->plotWidget->setViewMode(mode == 1 ? ScopeViewMode::Stacked : ScopeViewMode::Overlay);
     });
@@ -146,7 +145,6 @@ void ScopePreviewWidget::refreshPlotData() {
 
 void ScopePreviewWidget::setRunning(bool running) {
     if (m_running == running) {
-        ui->topBar->setRunning(running);
         if (m_bottomPanel != nullptr) {
             m_bottomPanel->setRunning(running);
         }
@@ -155,7 +153,6 @@ void ScopePreviewWidget::setRunning(bool running) {
     }
 
     m_running = running;
-    ui->topBar->setRunning(running);
     if (m_bottomPanel != nullptr) {
         m_bottomPanel->setRunning(running);
     }

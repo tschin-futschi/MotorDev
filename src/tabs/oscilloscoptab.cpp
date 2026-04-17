@@ -139,6 +139,7 @@ void OscilloscopTab::setupUi() {
 
 void OscilloscopTab::connectSignals() {
     connect(ui->plotWidget, &ScopePlotWidget::fullscreenToggleRequested, this, &OscilloscopTab::togglePlotFullscreen);
+    connect(ui->plotWidget, &ScopePlotWidget::samplingToggleRequested, this, &OscilloscopTab::onSamplingToggleRequested);
 
     connect(m_bottomPanel, &ScopeBottomPanel::registerReadRequested, this, [this](int row) {
         logPlaceholderAction(QStringLiteral("Register R row %1").arg(row + 1));

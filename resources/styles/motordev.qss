@@ -443,7 +443,7 @@ TopBar #styleButton:disabled {
     color: #a7a097;
 }
 
-TopBar #samplingButton[running="false"] {
+ScopePlotWidget #samplingButton[running="false"] {
     background: #EAF3DE;
     border: 1px solid #3B6D11;
     border-radius: 5px;
@@ -453,16 +453,16 @@ TopBar #samplingButton[running="false"] {
     min-height: 24px;
 }
 
-TopBar #samplingButton[running="false"]:hover {
+ScopePlotWidget #samplingButton[running="false"]:hover {
     background: #D5E8C4;
 }
 
-TopBar #samplingButton[running="false"]:pressed {
+ScopePlotWidget #samplingButton[running="false"]:pressed {
     background: #c0dd97;
     padding-top: 1px;
 }
 
-TopBar #samplingButton[running="true"] {
+ScopePlotWidget #samplingButton[running="true"] {
     background: #f7ece9;
     border: 1px solid #d8b0a5;
     border-radius: 5px;

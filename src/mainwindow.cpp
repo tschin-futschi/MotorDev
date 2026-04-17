@@ -61,7 +61,6 @@ void MainWindow::setupUi() {
     m_debugTab = new SerialDebugTab(this);
     ui->contentStack->setCurrentIndex(ActivityBar::ConfigPage);
     ui->topBar->setScopeControlsVisible(false);
-    ui->topBar->setRunning(false);
     ui->topBar->setViewMode(0);
     ui->logPanel->setVisible(false);
 }
@@ -81,9 +80,7 @@ void MainWindow::connectSignals() {
     connect(m_configTab, &ConfigTab::serialConnected, ui->topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, ui->topBar, &TopBar::onSerialDisconnected);
     connect(ui->topBar, &TopBar::viewModeChanged, m_scopeTab, &OscilloscopTab::onViewModeChangeRequested);
-    connect(ui->topBar, &TopBar::samplingToggleRequested, m_scopeTab, &OscilloscopTab::onSamplingToggleRequested);
     connect(ui->topBar, &TopBar::styleToggleRequested, m_scopeTab, &OscilloscopTab::onStyleToggleRequested);
-    connect(m_scopeTab, &OscilloscopTab::runningChanged, ui->topBar, &TopBar::setRunning);
     connect(m_scopeTab, &OscilloscopTab::viewModeChanged, ui->topBar, &TopBar::setViewMode);
     connect(m_debugTab, &SerialDebugTab::debugStreamGenerated,
             m_scopeTab, &OscilloscopTab::ingestDebugStream);

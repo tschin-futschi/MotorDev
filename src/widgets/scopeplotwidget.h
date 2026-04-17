@@ -13,7 +13,9 @@
 #include <QOpenGLWidget>
 #include <QPoint>
 #include <QPointF>
+#include <QPushButton>
 #include <QRect>
+#include <QResizeEvent>
 #include <QString>
 #include <QTimer>
 #include <QVector>
@@ -36,7 +38,6 @@ public:
 
     QSize minimumSizeHint() const override;
 
-    // Performance counters exposed for the OscilloscopTab 1 Hz log.
     double paintAverageMs() const { return m_avgFrameMs; }
     double paintFps() const { return m_avgFrameMs > 0.0 ? 1000.0 / m_avgFrameMs : 0.0; }
 
@@ -53,9 +54,11 @@ public slots:
 
 signals:
     void fullscreenToggleRequested();
+    void samplingToggleRequested(bool running);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -117,8 +120,11 @@ private:
     int visibleSampleEnd() const;
     void resetChannelBuffers(ChannelData &channel);
     void writeDisplaySample(ChannelData &channel, double value);
+    void updateSamplingButton();
+    void updateSamplingButtonGeometry();
 
     QVector<ChannelData> m_channels;
+    QPushButton *m_samplingButton = nullptr;
     ScopeViewMode m_viewMode = ScopeViewMode::Overlay;
     bool m_running = false;
     bool m_autoYRange = true;
