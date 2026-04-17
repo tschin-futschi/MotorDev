@@ -1,20 +1,22 @@
 #pragma once
 
-#include "widgets/scopetoolbar.h"
+#include "ui/scopeviewmode.h"
 
 #include <QColor>
+#include <QKeyEvent>
 #include <QObject>
 #include <QString>
 #include <QVector>
 #include <QWidget>
+#include <memory>
 
 class ScopeBottomPanel;
-class ScopePlotWidget;
-class ScopeStylePanel;
-class ScopeToolBar;
 class SerialManager;
-class QSplitter;
 class QTimer;
+
+namespace Ui {
+class OscilloscopTab;
+}
 
 struct ScopeStreamPacket {
     uint8_t channelMask = 0x00;
@@ -50,10 +52,21 @@ class OscilloscopTab : public QWidget {
 
 public:
     explicit OscilloscopTab(SerialManager *serialManager, QWidget *parent = nullptr);
+    ~OscilloscopTab() override;
+
+signals:
+    void runningChanged(bool running);
+    void viewModeChanged(int mode);
 
 public slots:
     void setDebugStreamActive(bool active);
     void ingestDebugStream(uint8_t channelMask, const QVector<int16_t> &samples);
+    void onViewModeChangeRequested(int mode);
+    void onSamplingToggleRequested(bool running);
+    void onStyleToggleRequested();
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     static constexpr uint8_t InvalidSeq = 0xFF;
@@ -93,6 +106,7 @@ private:
     void updateSampleInterval(const QString &text);
     void updateDisplayWindow(const QString &text);
     void toggleStylePanel();
+    void togglePlotFullscreen();
     void startSamplingSequence();
     void sendNextStartCommand();
     void finishPendingCommand();
@@ -113,16 +127,15 @@ private:
     static uint8_t sampleIntervalIndexForText(const QString &text);
     static int sampleIntervalUsForIndex(uint8_t index);
     static int displayWindowMsForText(const QString &text);
+    static ScopeViewMode viewModeFromInt(int mode);
+    static int viewModeToInt(ScopeViewMode mode);
     bool sendCommand(uint8_t cmd, const QByteArray &data);
     void logPlaceholderAction(const QString &action);
     void onPerfTimerTick();
 
+    std::unique_ptr<Ui::OscilloscopTab> ui;
     SerialManager *m_serialManager = nullptr;
-    ScopeToolBar *m_toolBar = nullptr;
-    ScopePlotWidget *m_plotWidget = nullptr;
     ScopeBottomPanel *m_bottomPanel = nullptr;
-    ScopeStylePanel *m_stylePanel = nullptr;
-    QSplitter *m_splitter = nullptr;
     ScopeStreamBatcher *m_streamBatcher = nullptr;
     QVector<ScopeChannelState> m_channels;
     QVector<ScopeChannelState> m_defaultChannels;
@@ -137,10 +150,10 @@ private:
     bool m_debugStreamActive = false;
     QString m_lastError;
     bool m_running = false;
-    ScopeToolBar::ViewMode m_viewMode = ScopeToolBar::ViewMode::Overlay;
-
-    // 1 Hz performance counters (Step 1)
+    ScopeViewMode m_viewMode = ScopeViewMode::Overlay;
     QTimer *m_perfTimer = nullptr;
+    QWidget *m_fullscreenWindow = nullptr;
+    int m_plotLayoutIndex = -1;
     int m_perfBatchCount = 0;
     int m_perfSampleCount = 0;
 };

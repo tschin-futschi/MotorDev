@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include <QVector>
 #include <QWidget>
+#include <memory>
 
 #include <condition_variable>
 #include <cstdint>
@@ -17,6 +18,10 @@ class QPushButton;
 class QSpinBox;
 class QTextEdit;
 class SimulatorSerial;
+
+namespace Ui {
+class SerialDebugTab;
+}
 
 class SerialDebugTab : public QWidget {
     Q_OBJECT
@@ -35,11 +40,7 @@ private:
         QVector<int16_t> samples;
     };
 
-    void setupUi();
     void connectSignals();
-    QWidget *createConnectionBar();
-    QWidget *createLeftPanel();
-    QWidget *createLogPanel();
     static QString describeIncoming(uint8_t cmd, const QByteArray &data);
 
     void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
@@ -69,23 +70,20 @@ private:
     void setConnectedState(bool connected);
     qint16 registerValueAt(quint16 addr) const;
 
+    std::unique_ptr<Ui::SerialDebugTab> ui;
     SimulatorSerial *m_simulator = nullptr;
-
     QComboBox *m_portCombo = nullptr;
     QComboBox *m_baudCombo = nullptr;
     QPushButton *m_scanButton = nullptr;
     QPushButton *m_connectButton = nullptr;
     QLabel *m_statusBadge = nullptr;
-
     QLineEdit *m_scanAddrEdit = nullptr;
     QComboBox *m_icAddrResultCombo = nullptr;
     QLineEdit *m_regReadValueEdit = nullptr;
     QComboBox *m_writeResultCombo = nullptr;
     QSpinBox *m_delaySpinBox = nullptr;
-
     QTextEdit *m_logEdit = nullptr;
     QPushButton *m_clearLogButton = nullptr;
-
     bool m_isConnected = false;
     bool m_sampling = false;
     uint8_t m_sampleIntervalIndex = 0x05;
@@ -97,7 +95,6 @@ private:
     qint64 m_lastStreamActualUs = -1;
     qint64 m_streamActualUsAccumulator = 0;
     int m_streamActualUsSamples = 0;
-
     std::thread m_streamThread;
     std::mutex m_streamMutex;
     std::condition_variable m_streamCv;

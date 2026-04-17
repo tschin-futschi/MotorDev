@@ -1,84 +1,15 @@
 #include "widgets/scopestylepanel.h"
 
-#include "ui/style_constants.h"
+#include "ui_scopestylepanel.h"
 
 #include <QColorDialog>
 #include <QComboBox>
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QPushButton>
-#include <QAbstractSpinBox>
 #include <QSignalBlocker>
-#include <QSizePolicy>
 #include <QSpinBox>
-#include <QVBoxLayout>
-
-using namespace MotorDev;
+#include <utility>
 
 namespace {
-QString colorButtonStyle(const QColor &color) {
-    return QStringLiteral(
-               "QPushButton { background:%1; border:1px solid %2; border-radius:%3px; }"
-               "QPushButton:hover { border-color:%4; }")
-        .arg(color.name(),
-             Style::Color::ScopeInputBorder.name(),
-             QString::number(Style::Size::ScopeStyleButtonRadius),
-             Style::Color::ScopeInputBorderAlt.name());
-}
-
-QString inputStyle() {
-    return QStringLiteral(
-               "QSpinBox, QComboBox { background:%1; border:1px solid %2; border-radius:%3px; "
-               "color:%4; font-size:%5px; padding:1px 3px; min-height:%6px; }"
-               "QSpinBox:focus, QComboBox:focus { border-color:%7; }")
-        .arg(Style::Color::ScopeChannelBackground.name(),
-             Style::Color::ScopeChannelInputBorder.name(),
-             QString::number(Style::Size::ScopeStyleButtonRadius),
-             Style::Color::ScopeText.name(),
-             QString::number(Style::Size::ScopeStyleRowFontPx),
-             QString::number(Style::Size::ScopeStyleInputMinHeight),
-             Style::Color::ScopeChannelInputFocus.name());
-}
-
-QString widthSpinStyle() {
-    return QStringLiteral(
-               "QSpinBox { background:%1; border:1px solid %2; border-radius:%3px; "
-               "color:%4; font-size:%5px; padding:1px 24px 1px 6px; min-height:%6px; }"
-               "QSpinBox:focus { border-color:%7; }"
-               "QSpinBox::up-button, QSpinBox::down-button { width:22px; subcontrol-origin:border; "
-               "background:%8; border-left:1px solid %2; }"
-               "QSpinBox::up-button { subcontrol-position:top right; border-top-right-radius:%3px; }"
-               "QSpinBox::down-button { subcontrol-position:bottom right; border-top:1px solid %2; "
-               "border-bottom-right-radius:%3px; }"
-               "QSpinBox::up-button:hover, QSpinBox::down-button:hover { background:%9; }"
-               "QSpinBox::up-arrow, QSpinBox::down-arrow { width:10px; height:10px; }")
-        .arg(Style::Color::ScopeChannelBackground.name(),
-             Style::Color::ScopeChannelInputBorder.name(),
-             QString::number(Style::Size::ScopeStyleButtonRadius),
-             Style::Color::ScopeText.name(),
-             QString::number(Style::Size::ScopeStyleRowFontPx),
-             QString::number(Style::Size::ScopeStyleInputMinHeight),
-             Style::Color::ScopeChannelInputFocus.name(),
-             Style::Color::ScopeToolButtonBackground.name(),
-             Style::Color::ScopeToolButtonHover.name());
-}
-
-QString defaultButtonStyle() {
-    return QStringLiteral(
-               "QPushButton { background:%1; border:1px solid %2; border-radius:%3px; color:%4; "
-               "font-size:%5px; font-weight:600; min-height:24px; padding:0 8px; }"
-               "QPushButton:hover { background:%6; border-color:%7; }"
-               "QPushButton:pressed { background:%8; }")
-        .arg(Style::Color::ScopeToolButtonBackground.name(),
-             Style::Color::ScopeToolButtonBorder.name(),
-             QString::number(Style::Size::ScopeStyleButtonRadius),
-             Style::Color::ScopeText.name(),
-             QString::number(Style::Size::ScopeStyleRowFontPx),
-             Style::Color::ScopeToolButtonHover.name(),
-             Style::Color::ScopeToolButtonHoverBorder.name(),
-             Style::Color::ScopeToolButtonPressed.name());
-}
-
 int styleIndexFor(Qt::PenStyle style) {
     switch (style) {
     case Qt::DashLine:
@@ -92,13 +23,24 @@ int styleIndexFor(Qt::PenStyle style) {
         return 0;
     }
 }
-} // namespace
+}
 
 ScopeStylePanel::ScopeStylePanel(QWidget *parent)
-    : QWidget(parent) {
-    setupUi();
+    : QWidget(parent)
+    , ui(std::make_unique<Ui::ScopeStylePanel>()) {
+    ui->setupUi(this);
+    m_rows[0].colorButton = ui->colorButton0; m_rows[0].widthSpin = ui->widthSpin0; m_rows[0].styleCombo = ui->styleCombo0;
+    m_rows[1].colorButton = ui->colorButton1; m_rows[1].widthSpin = ui->widthSpin1; m_rows[1].styleCombo = ui->styleCombo1;
+    m_rows[2].colorButton = ui->colorButton2; m_rows[2].widthSpin = ui->widthSpin2; m_rows[2].styleCombo = ui->styleCombo2;
+    m_rows[3].colorButton = ui->colorButton3; m_rows[3].widthSpin = ui->widthSpin3; m_rows[3].styleCombo = ui->styleCombo3;
+    m_rows[4].colorButton = ui->colorButton4; m_rows[4].widthSpin = ui->widthSpin4; m_rows[4].styleCombo = ui->styleCombo4;
+    m_rows[5].colorButton = ui->colorButton5; m_rows[5].widthSpin = ui->widthSpin5; m_rows[5].styleCombo = ui->styleCombo5;
+    m_rows[6].colorButton = ui->colorButton6; m_rows[6].widthSpin = ui->widthSpin6; m_rows[6].styleCombo = ui->styleCombo6;
+    m_rows[7].colorButton = ui->colorButton7; m_rows[7].widthSpin = ui->widthSpin7; m_rows[7].styleCombo = ui->styleCombo7;
     connectSignals();
 }
+
+ScopeStylePanel::~ScopeStylePanel() = default;
 
 void ScopeStylePanel::setChannelColor(int index, const QColor &color) {
     if (index < 0 || index >= kChannelCount || !color.isValid()) {
@@ -140,78 +82,8 @@ void ScopeStylePanel::setChannelShowDataPoints(int index, bool show) {
     }
 }
 
-void ScopeStylePanel::setupUi() {
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(Style::Size::ScopeStylePanelMargin,
-                               Style::Size::ScopeStylePanelMargin,
-                               Style::Size::ScopeStylePanelMargin,
-                               Style::Size::ScopeStylePanelMargin);
-    layout->setSpacing(Style::Size::ScopeStylePanelRowSpacing);
-
-    auto *title = new QLabel(tr("Channel Style"), this);
-    title->setStyleSheet(QStringLiteral("color:%1; font-size:%2px; font-weight:700;")
-                             .arg(Style::Color::ScopeTextHeader.name())
-                             .arg(Style::Size::ScopeStyleTitleFontPx));
-    layout->addWidget(title);
-
-    m_defaultButton = new QPushButton(tr("Default Setting"), this);
-    m_defaultButton->setStyleSheet(defaultButtonStyle());
-    layout->addWidget(m_defaultButton);
-
-    const QString commonInputStyle = inputStyle();
-
-    for (int index = 0; index < kChannelCount; ++index) {
-        auto *rowLayout = new QHBoxLayout();
-        rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(Style::Size::ScopeStylePanelRowSpacing);
-
-        auto *label = new QLabel(QStringLiteral("CH%1").arg(index + 1), this);
-        label->setFixedWidth(Style::Size::ScopeStyleChannelLabelWidth);
-        label->setStyleSheet(QStringLiteral("color:%1; font-size:%2px;")
-                                 .arg(Style::Color::ScopeTextLabel.name())
-                                 .arg(Style::Size::ScopeStyleRowFontPx));
-
-        m_rows[index].colorButton = new QPushButton(this);
-        m_rows[index].colorButton->setFixedSize(Style::Size::ScopeStyleColorButtonSize,
-                                                Style::Size::ScopeStyleColorButtonSize);
-
-        m_rows[index].widthSpin = new QSpinBox(this);
-        m_rows[index].widthSpin->setRange(1, 8);
-        m_rows[index].widthSpin->setValue(4);
-        m_rows[index].widthSpin->setButtonSymbols(QAbstractSpinBox::PlusMinus);
-        m_rows[index].widthSpin->setSuffix(QStringLiteral("px"));
-        m_rows[index].widthSpin->setFixedWidth(Style::Size::ScopeStyleWidthSpinWidth);
-        m_rows[index].widthSpin->setStyleSheet(widthSpinStyle());
-
-        m_rows[index].styleCombo = new QComboBox(this);
-        m_rows[index].styleCombo->addItem(QStringLiteral("Solid"), static_cast<int>(Qt::SolidLine));
-        m_rows[index].styleCombo->addItem(QStringLiteral("Dash"), static_cast<int>(Qt::DashLine));
-        m_rows[index].styleCombo->addItem(QStringLiteral("Dot"), static_cast<int>(Qt::DotLine));
-        m_rows[index].styleCombo->addItem(QStringLiteral("DashDot"), static_cast<int>(Qt::DashDotLine));
-        m_rows[index].styleCombo->addItem(QStringLiteral("SolidDot"), static_cast<int>(Qt::SolidLine) | (1 << 16));
-        m_rows[index].styleCombo->setCurrentIndex(0);
-        m_rows[index].styleCombo->setStyleSheet(commonInputStyle);
-
-        rowLayout->addWidget(label);
-        rowLayout->addWidget(m_rows[index].colorButton);
-        rowLayout->addWidget(m_rows[index].widthSpin);
-        rowLayout->addWidget(m_rows[index].styleCombo, 1);
-
-        layout->addLayout(rowLayout);
-    }
-
-    layout->addStretch();
-
-    setFixedWidth(Style::Size::ScopeStylePanelWidth);
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    setStyleSheet(QStringLiteral("background:%1; border-left:%2px solid %3;")
-                      .arg(Style::Color::ScopePanelBackground.name())
-                      .arg(Style::Size::BorderThin)
-                      .arg(Style::Color::ScopePanelBorder.name()));
-}
-
 void ScopeStylePanel::connectSignals() {
-    connect(m_defaultButton, &QPushButton::clicked, this, [this]() {
+    connect(ui->defaultButton, &QPushButton::clicked, this, [this]() {
         emit defaultSettingsRequested();
     });
 
@@ -233,9 +105,15 @@ void ScopeStylePanel::connectSignals() {
             emit lineWidthChanged(index, width);
         });
         connect(m_rows[index].styleCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this, index](int comboIndex) {
-            const int rawData = m_rows[index].styleCombo->itemData(comboIndex).toInt();
-            const bool dots = (rawData >> 16) != 0;
-            const Qt::PenStyle style = static_cast<Qt::PenStyle>(rawData & 0xFFFF);
+            Qt::PenStyle style = Qt::SolidLine;
+            bool dots = false;
+            switch (comboIndex) {
+            case 1: style = Qt::DashLine; break;
+            case 2: style = Qt::DotLine; break;
+            case 3: style = Qt::DashDotLine; break;
+            case 4: style = Qt::SolidLine; dots = true; break;
+            default: break;
+            }
             emit lineStyleChanged(index, style);
             emit dataPointsChanged(index, dots);
         });
@@ -247,5 +125,6 @@ void ScopeStylePanel::updateColorButton(int index) {
         return;
     }
 
-    m_rows[index].colorButton->setStyleSheet(colorButtonStyle(m_rows[index].currentColor));
+    // Runtime-selected color cannot be expressed in static QSS.
+    m_rows[index].colorButton->setStyleSheet(QStringLiteral("background:%1;").arg(m_rows[index].currentColor.name()));
 }

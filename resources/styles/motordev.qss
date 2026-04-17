@@ -27,6 +27,167 @@ QWidget#statusBarWidget QPushButton:hover {
     color: #EAF3DE;
 }
 
+/* ===== Shared Components ===== */
+QPushButton[buttonRole="primary"] {
+    background: #EAF3DE;
+    border: 1px solid #3B6D11;
+    border-radius: 5px;
+    color: #3B6D11;
+    font-size: 13px;
+    padding: 0 12px;
+}
+
+QPushButton[buttonRole="primary"]:hover {
+    background: #D5E8C4;
+}
+
+QPushButton[buttonRole="primary"]:pressed {
+    background: #C0DD97;
+    padding: 1px 12px 0 12px;
+}
+
+QPushButton[buttonRole="primary"]:disabled {
+    background: #E6E6E6;
+    border: 1px solid #C9C9C9;
+    color: #9A9A9A;
+}
+
+QPushButton[buttonRole="primary-sidebar"] {
+    background: #EAF3DE;
+    border: 1px solid #3B6D11;
+    border-radius: 5px;
+    color: #3B6D11;
+    font-size: 11px;
+}
+
+QPushButton[buttonRole="primary-sidebar"]:hover {
+    background: #3B6D11;
+    color: #ffffff;
+}
+
+QPushButton[buttonRole="primary-sidebar"]:disabled {
+    background: #f8f7f5;
+    border: 1px solid #cccccc;
+    color: #888888;
+}
+
+QPushButton[buttonRole="write-sidebar"] {
+    background: #FAEEDA;
+    border: 1px solid #854F0B;
+    border-radius: 5px;
+    color: #854F0B;
+    font-size: 11px;
+}
+
+QPushButton[buttonRole="write-sidebar"]:hover {
+    background: #854F0B;
+    color: #ffffff;
+}
+
+QPushButton[buttonRole="write-sidebar"]:disabled {
+    background: #f8f7f5;
+    border: 1px solid #cccccc;
+    color: #888888;
+}
+
+QPushButton[buttonRole="secondary"] {
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    color: #555555;
+    font-size: 13px;
+    padding: 0 12px;
+}
+
+QPushButton[buttonRole="secondary"]:hover {
+    background: #f0f0f0;
+}
+
+QPushButton[buttonRole="secondary"]:pressed {
+    background: #e0e0e0;
+    padding: 1px 12px 0 12px;
+}
+
+QPushButton[buttonRole="secondary"]:disabled {
+    background: #E6E6E6;
+    border: 1px solid #C9C9C9;
+    color: #9A9A9A;
+}
+
+RegisterRwTab QPushButton[buttonRole="secondary"] {
+    font-size: 11px;
+    padding: 0 10px;
+}
+
+RegisterRwTab QPushButton[buttonRole="secondary"]:pressed {
+    padding: 1px 10px 0 10px;
+}
+
+QPushButton[buttonRole="mode"] {
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    color: #555555;
+    font-size: 11px;
+    padding: 0 8px;
+}
+
+QPushButton[buttonRole="mode"]:hover {
+    border: 1px solid #3B6D11;
+    color: #3B6D11;
+}
+
+QPushButton[buttonRole="mode"]:checked {
+    background: #EAF3DE;
+    border: 1px solid #3B6D11;
+    color: #3B6D11;
+}
+
+QComboBox[inputRole="form"],
+QLineEdit[inputRole="form"],
+QDoubleSpinBox[inputRole="form"],
+QSpinBox[inputRole="form"] {
+    background: #ffffff;
+    border: 1px solid #dddddd;
+    padding: 4px 6px;
+    color: #555555;
+    min-height: 28px;
+}
+
+QDoubleSpinBox[inputRole="form"]::up-button,
+QDoubleSpinBox[inputRole="form"]::down-button {
+    width: 16px;
+}
+
+QSpinBox[inputRole="form"]::up-button,
+QSpinBox[inputRole="form"]::down-button {
+    width: 18px;
+}
+
+QLineEdit[inputRole="form"]:read-only {
+    background: #f8f7f5;
+    color: #888888;
+}
+
+QGroupBox[panelRole="card"] {
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    padding-top: 28px;
+    color: #555555;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+QGroupBox[panelRole="card"]::title {
+    subcontrol-origin: padding;
+    subcontrol-position: top center;
+    padding: 8px 0 4px 0;
+}
+
+QGroupBox[panelRole="card"][hovered="true"] {
+    background: #f5f5f2;
+}
+
 /* ===== TopBar ===== */
 TopBar {
     background: #f8f7f5;
@@ -139,4 +300,519 @@ LogPanel #textEdit {
     color: #2c2c2a;
     font-family: Consolas, monospace;
     font-size: 11px;
+}
+
+/* ===== Sidebar ===== */
+Sidebar {
+    background: #f0ede8;
+    border-right: 1px solid #cccccc;
+}
+
+Sidebar #headerLabel {
+    color: #888888;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+Sidebar #toggleButton {
+    background: #f0ede8;
+    border-left: none;
+    border-right: 1px solid #cccccc;
+    color: #888888;
+}
+
+/* ===== ConfigTab ===== */
+ConfigTab QFormLayout QLabel {
+    color: #555555;
+    font-size: 13px;
+}
+
+ConfigTab QSplitter::handle {
+    background: #f5f5f3;
+}
+
+/* ===== RegisterRwTab ===== */
+RegisterRwTab #valueModeLabel {
+    color: #888888;
+    font-size: 11px;
+}
+
+RegisterRwTab QGroupBox[panelRole="card"] {
+    padding-top: 24px;
+}
+
+RegisterRwTab QGroupBox[panelRole="card"]::title {
+    subcontrol-position: top left;
+    padding: 6px 10px 4px 10px;
+}
+
+RegisterRwTab QSplitter::handle {
+    background: #f5f5f3;
+}
+
+/* ===== OscilloscopTab ===== */
+OscilloscopTab {
+    background: #f4f2ed;
+}
+
+/* ===== FwFlashTab ===== */
+FwFlashTab #sidebarLabel {
+    color: #666666;
+    font-size: 13px;
+}
+
+FwFlashTab #placeholderLabel {
+    color: #555555;
+    font-size: 20px;
+}
+
+/* ===== SerialDebugTab ===== */
+SerialDebugTab #connectionBar {
+    border-bottom: 1px solid #cccccc;
+}
+
+SerialDebugTab #responseTitle,
+SerialDebugTab #logTitle {
+    color: #666666;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+SerialDebugTab QLabel[labelRole="form"] {
+    color: #555555;
+    font-size: 13px;
+}
+
+SerialDebugTab #statusBadge[connected="false"] {
+    color: #E24B4A;
+    font-size: 12px;
+}
+
+SerialDebugTab #statusBadge[connected="true"] {
+    color: #639922;
+    font-size: 12px;
+}
+
+SerialDebugTab #logEdit {
+    background: #ffffff;
+    border: none;
+    color: #2c2c2a;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+}
+
+SerialDebugTab QSplitter::handle {
+    background: #f5f5f3;
+}
+
+/* ===== Scope Sub-Widgets ===== */
+TopBar #viewModeButton,
+TopBar #styleButton {
+    background: #fbfaf8;
+    border: 1px solid #d5cec4;
+    border-radius: 4px;
+    color: #4d4942;
+    padding: 1px 4px;
+    font-size: 10px;
+    min-height: 22px;
+}
+
+TopBar #viewModeButton:hover,
+TopBar #styleButton:hover {
+    background: #f2eee8;
+    border-color: #bbb2a6;
+}
+
+TopBar #viewModeButton:pressed,
+TopBar #styleButton:pressed {
+    background: #ebe5dc;
+    padding-top: 3px;
+    padding-bottom: 1px;
+}
+
+TopBar #styleButton:checked {
+    background: #e5f0df;
+    border-color: #9ab781;
+    color: #35541c;
+}
+
+TopBar #viewModeButton:disabled,
+TopBar #styleButton:disabled {
+    background: #f0ede7;
+    border-color: #ddd7ce;
+    color: #a7a097;
+}
+
+TopBar #samplingButton[running="false"] {
+    background: #EAF3DE;
+    border: 1px solid #3B6D11;
+    border-radius: 5px;
+    color: #3B6D11;
+    padding: 0 14px;
+    font-size: 11px;
+    min-height: 24px;
+}
+
+TopBar #samplingButton[running="false"]:hover {
+    background: #D5E8C4;
+}
+
+TopBar #samplingButton[running="false"]:pressed {
+    background: #c0dd97;
+    padding-top: 1px;
+}
+
+TopBar #samplingButton[running="true"] {
+    background: #f7ece9;
+    border: 1px solid #d8b0a5;
+    border-radius: 5px;
+    color: #995548;
+    padding: 0 14px;
+    font-size: 11px;
+    min-height: 24px;
+}
+
+ScopeBottomPanel {
+    background: #f1eee8;
+    border-top: 1px solid #d8d1c7;
+}
+
+ScopeBottomPanel #channelFrame {
+    background: #fcfbf8;
+    border: 1px solid #ddd6cb;
+    border-radius: 8px;
+}
+
+ScopeBottomPanel QLabel {
+    color: #555049;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+ScopeBottomPanel QComboBox,
+ScopeBottomPanel QLineEdit,
+ScopeBottomPanel QToolButton {
+    background: #ffffff;
+    border: 1px solid #d2ccc3;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #45423c;
+    font-size: 11px;
+    min-height: 28px;
+}
+
+ScopeBottomPanel QMenu {
+    background: #ffffff;
+    color: #45423c;
+    border: 1px solid #d2ccc3;
+}
+
+ScopeBottomPanel QMenu::item:selected {
+    background: #f8f6f1;
+}
+
+ScopeBottomPanel QPushButton[buttonRole="toggle"] {
+    background: #fbfaf8;
+    color: #5a554d;
+    border: 1px solid #d5cec4;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+ScopeBottomPanel QPushButton[buttonRole="toggle"]:hover {
+    background: #f2eee8;
+    border-color: #bbb2a6;
+}
+
+QWidget[scopeOverlayWindow="true"] {
+    background: #fcfbf8;
+    border: 1px solid #cfc7bb;
+    border-radius: 8px;
+}
+
+ScopeChannelStrip {
+    background: #fbfaf8;
+    border: 1px solid #d8d1c7;
+    border-radius: 6px;
+}
+
+ScopeChannelStrip QCheckBox {
+    color: #56514a;
+    font-size: 11px;
+    spacing: 4px;
+    margin: 0;
+    padding: 0;
+}
+
+ScopeChannelStrip QCheckBox::indicator {
+    width: 12px;
+    height: 12px;
+}
+
+ScopeChannelStrip QCheckBox::indicator:unchecked {
+    background: #ffffff;
+    border: 1px solid #bfb7ab;
+}
+
+ScopeChannelStrip QCheckBox::indicator:checked {
+    background: #dcead0;
+    border: 1px solid #9ab781;
+}
+
+ScopeChannelStrip QLineEdit {
+    background: #ffffff;
+    color: #4d4942;
+    border: 1px solid #d5cec4;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 10px;
+}
+
+ScopeChannelStrip QLineEdit:focus {
+    border-color: #9ab781;
+}
+
+ScopeStylePanel {
+    background: #f8f6f1;
+    border-left: 1px solid #ddd6cb;
+}
+
+ScopeStylePanel #titleLabel {
+    color: #57524b;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+ScopeStylePanel QLabel {
+    color: #6d6a63;
+    font-size: 9px;
+}
+
+ScopeStylePanel QPushButton[buttonRole="default"] {
+    background: #fbfaf8;
+    border: 1px solid #d5cec4;
+    border-radius: 3px;
+    color: #4d4942;
+    font-size: 9px;
+    font-weight: 600;
+    min-height: 24px;
+    padding: 0 8px;
+}
+
+ScopeStylePanel QPushButton[buttonRole="default"]:hover {
+    background: #f2eee8;
+    border-color: #bbb2a6;
+}
+
+ScopeStylePanel QPushButton[buttonRole="color"] {
+    border: 1px solid #d5cec4;
+    border-radius: 3px;
+}
+
+ScopeStylePanel QPushButton[buttonRole="color"]:hover {
+    border-color: #d2ccc3;
+}
+
+ScopeStylePanel QSpinBox,
+ScopeStylePanel QComboBox {
+    background: #fbfaf8;
+    border: 1px solid #d5cec4;
+    border-radius: 3px;
+    color: #4d4942;
+    font-size: 9px;
+    padding: 1px 3px;
+    min-height: 24px;
+}
+
+ScopeStylePanel QSpinBox {
+    padding: 1px 24px 1px 6px;
+}
+
+ScopeStylePanel QSpinBox::up-button,
+ScopeStylePanel QSpinBox::down-button {
+    width: 22px;
+    subcontrol-origin: border;
+    background: #fbfaf8;
+    border-left: 1px solid #d5cec4;
+}
+
+ScopeStylePanel QSpinBox::up-button {
+    subcontrol-position: top right;
+    border-top-right-radius: 3px;
+}
+
+ScopeStylePanel QSpinBox::down-button {
+    subcontrol-position: bottom right;
+    border-top: 1px solid #d5cec4;
+    border-bottom-right-radius: 3px;
+}
+
+ScopeStylePanel QSpinBox::up-button:hover,
+ScopeStylePanel QSpinBox::down-button:hover {
+    background: #f2eee8;
+}
+
+ScopeStylePanel QSpinBox::up-arrow,
+ScopeStylePanel QSpinBox::down-arrow {
+    width: 10px;
+    height: 10px;
+}
+
+ScopeStylePanel QSpinBox:focus,
+ScopeStylePanel QComboBox:focus {
+    border-color: #9ab781;
+}
+
+ScopeRegisterPanel {
+    background: #f8f6f1;
+    border: 1px solid #ddd6cb;
+    border-radius: 6px;
+}
+
+ScopeRegisterPanel QLabel {
+    color: #555049;
+    font-size: 11px;
+}
+
+QLineEdit[inputRole="scope-register"] {
+    background: #ffffff;
+    color: #4d4942;
+    border: 1px solid #d5cec4;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    min-height: 24px;
+}
+
+ScopeRegisterPanel QPushButton {
+    color: #4d4942;
+    border-radius: 4px;
+    padding: 0;
+    font-size: 11px;
+    min-width: 28px;
+    min-height: 24px;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="read"] {
+    background: #e8f1fa;
+    border: 1px solid #bdd1e5;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="write"] {
+    background: #f7eddd;
+    border: 1px solid #e1c89c;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="action-start"] {
+    background: #e8f1fa;
+    border: 1px solid #bdd1e5;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="action-stop"] {
+    background: #f7eddd;
+    border: 1px solid #e1c89c;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="action-clear"] {
+    background: #f2f0eb;
+    border: 1px solid #d5cec4;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="action-load"] {
+    background: #edf6e7;
+    border: 1px solid #b8d2a6;
+}
+
+ScopeGeneratorPanel {
+    background: #f8f6f1;
+    border: 1px solid #ddd6cb;
+    border-radius: 6px;
+}
+
+ScopeGeneratorPanel #titleLabel {
+    color: #555049;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+ScopeGeneratorPanel #placeholderLabel {
+    color: #8a867e;
+    font-size: 11px;
+}
+
+
+/* ===== Register Table ===== */
+RegisterTable QTableWidget {
+    background: #ffffff;
+    alternate-background-color: #fafaf8;
+    gridline-color: #eeeeee;
+    color: #2c2c2a;
+}
+
+RegisterTable QTableWidget QHeaderView::section {
+    background: #f0ede8;
+    color: #555555;
+    border: 0;
+    border-bottom: 1px solid #eeeeee;
+    padding: 2px 4px;
+    font-size: 11px;
+}
+
+RegisterTable QTableWidget::item {
+    padding: 1px 4px;
+}
+
+RegisterTable QTableWidget::item:hover {
+    background: #f0f7e8;
+}
+
+RegisterTable QPushButton[buttonType="read"] {
+    background: #E6F1FB;
+    border: 1px solid #185FA5;
+    color: #185FA5;
+    font-size: 10px;
+    border-radius: 2px;
+}
+
+RegisterTable QPushButton[buttonType="read"]:hover {
+    background: #185FA5;
+    color: #ffffff;
+}
+
+RegisterTable QPushButton[buttonType="read"]:disabled {
+    background: #f8f7f5;
+    border: 1px solid #cccccc;
+    color: #888888;
+}
+
+RegisterTable QPushButton[buttonType="write"] {
+    background: #FAEEDA;
+    border: 1px solid #854F0B;
+    color: #854F0B;
+    font-size: 10px;
+    border-radius: 2px;
+}
+
+RegisterTable QPushButton[buttonType="write"]:hover {
+    background: #854F0B;
+    color: #ffffff;
+}
+
+RegisterTable QPushButton[buttonType="write"]:disabled {
+    background: #f8f7f5;
+    border: 1px solid #cccccc;
+    color: #888888;
+}
+
+RegisterTable QPushButton[buttonType="write"][feedback="success"] {
+    background: #3B6D11;
+    border: 1px solid #3B6D11;
+    color: #ffffff;
+}
+
+RegisterTable QPushButton[buttonType="write"][feedback="error"] {
+    background: #888888;
+    border: 1px solid #888888;
+    color: #ffffff;
 }

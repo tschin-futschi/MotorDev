@@ -1,122 +1,41 @@
 #include "widgets/scoperegisterpanel.h"
 
-#include "ui/style_constants.h"
+#include "ui_scoperegisterpanel.h"
 
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QVBoxLayout>
-
-using namespace MotorDev;
-
-namespace {
-QString makePanelStyle() {
-    return QStringLiteral("background:%1; border:1px solid %2; border-radius:6px;")
-        .arg(Style::Color::ScopePanelBackground.name(), Style::Color::ScopePanelBorder.name());
-}
-
-QString makeTextStyle() {
-    return QStringLiteral("QLineEdit { background:%1; color:%2; border:1px solid %3; "
-                          "border-radius:4px; padding:3px 6px; font-size:11px; min-height:24px; }")
-        .arg(Style::Color::White.name(), Style::Color::ScopeText.name(), Style::Color::ScopeInputBorder.name());
-}
-
-QString makeActionStyle(const QColor &bg, const QColor &border) {
-    return QStringLiteral(
-               "QPushButton { background:%1; color:%2; border:1px solid %3; border-radius:4px; "
-               "padding:0; font-size:11px; min-width:28px; min-height:24px; }"
-               "QPushButton:hover { background:%3; }")
-        .arg(bg.name(), Style::Color::ScopeText.name(), border.name());
-}
-} // namespace
+#include <utility>
 
 ScopeRegisterPanel::ScopeRegisterPanel(QWidget *parent)
-    : QWidget(parent) {
-    setupUi();
+    : QWidget(parent)
+    , ui(std::make_unique<Ui::ScopeRegisterPanel>()) {
+    ui->setupUi(this);
+    m_descEdits[0] = ui->descEdit0; m_addrEdits[0] = ui->addrEdit0; m_valueEdits[0] = ui->valueEdit0; m_readButtons[0] = ui->readButton0; m_writeButtons[0] = ui->writeButton0;
+    m_descEdits[1] = ui->descEdit1; m_addrEdits[1] = ui->addrEdit1; m_valueEdits[1] = ui->valueEdit1; m_readButtons[1] = ui->readButton1; m_writeButtons[1] = ui->writeButton1;
+    m_descEdits[2] = ui->descEdit2; m_addrEdits[2] = ui->addrEdit2; m_valueEdits[2] = ui->valueEdit2; m_readButtons[2] = ui->readButton2; m_writeButtons[2] = ui->writeButton2;
+    m_descEdits[3] = ui->descEdit3; m_addrEdits[3] = ui->addrEdit3; m_valueEdits[3] = ui->valueEdit3; m_readButtons[3] = ui->readButton3; m_writeButtons[3] = ui->writeButton3;
+    m_descEdits[4] = ui->descEdit4; m_addrEdits[4] = ui->addrEdit4; m_valueEdits[4] = ui->valueEdit4; m_readButtons[4] = ui->readButton4; m_writeButtons[4] = ui->writeButton4;
+    m_descEdits[5] = ui->descEdit5; m_addrEdits[5] = ui->addrEdit5; m_valueEdits[5] = ui->valueEdit5; m_readButtons[5] = ui->readButton5; m_writeButtons[5] = ui->writeButton5;
+    m_descEdits[6] = ui->descEdit6; m_addrEdits[6] = ui->addrEdit6; m_valueEdits[6] = ui->valueEdit6; m_readButtons[6] = ui->readButton6; m_writeButtons[6] = ui->writeButton6;
+    m_descEdits[7] = ui->descEdit7; m_addrEdits[7] = ui->addrEdit7; m_valueEdits[7] = ui->valueEdit7; m_readButtons[7] = ui->readButton7; m_writeButtons[7] = ui->writeButton7;
+    for (int row = 0; row < RowCount; ++row) {
+        auto *rowLayout = qobject_cast<QHBoxLayout *>(ui->rootLayout->itemAt(row)->layout());
+        if (rowLayout != nullptr) {
+            rowLayout->setStretch(0, 3);
+            rowLayout->setStretch(1, 2);
+            rowLayout->setStretch(2, 2);
+        }
+    }
+    m_intervalEdit = ui->intervalEdit;
+    m_startButton = ui->startButton;
+    m_stopButton = ui->stopButton;
+    m_clearButton = ui->clearButton;
+    m_loadButton = ui->loadButton;
     connectSignals();
 }
 
-void ScopeRegisterPanel::setupUi() {
-    auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(6, 6, 6, 6);
-    rootLayout->setSpacing(4);
-    rootLayout->setSizeConstraint(QLayout::SetMinimumSize);
-
-    for (int row = 0; row < RowCount; ++row) {
-        auto *rowLayout = new QHBoxLayout;
-        rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(8);
-
-        m_descEdits[row] = new QLineEdit(this);
-        m_addrEdits[row] = new QLineEdit(this);
-        m_valueEdits[row] = new QLineEdit(this);
-        m_readButtons[row] = new QPushButton(QStringLiteral("R"), this);
-        m_writeButtons[row] = new QPushButton(QStringLiteral("W"), this);
-
-        m_descEdits[row]->setText(QStringLiteral("REG%1").arg(row + 1));
-        m_addrEdits[row]->setText(QStringLiteral("0x%1").arg(0x0020 + row * 2, 4, 16, QLatin1Char('0')).toUpper());
-        m_valueEdits[row]->setText(QStringLiteral("0x0000"));
-        m_descEdits[row]->setMinimumWidth(124);
-        m_addrEdits[row]->setMinimumWidth(92);
-        m_valueEdits[row]->setMinimumWidth(92);
-        m_descEdits[row]->setFixedHeight(24);
-        m_addrEdits[row]->setFixedHeight(24);
-        m_valueEdits[row]->setFixedHeight(24);
-        m_readButtons[row]->setFixedSize(28, 24);
-        m_writeButtons[row]->setFixedSize(28, 24);
-
-        m_descEdits[row]->setStyleSheet(makeTextStyle());
-        m_addrEdits[row]->setStyleSheet(makeTextStyle());
-        m_valueEdits[row]->setStyleSheet(makeTextStyle());
-        m_readButtons[row]->setStyleSheet(
-            makeActionStyle(Style::Color::ScopeRegReadBackground, Style::Color::ScopeRegReadBorder));
-        m_writeButtons[row]->setStyleSheet(
-            makeActionStyle(Style::Color::ScopeRegWriteBackground, Style::Color::ScopeRegWriteBorder));
-
-        rowLayout->addWidget(m_descEdits[row], 3, Qt::AlignVCenter);
-        rowLayout->addWidget(m_addrEdits[row], 2, Qt::AlignVCenter);
-        rowLayout->addWidget(m_valueEdits[row], 2, Qt::AlignVCenter);
-        rowLayout->addWidget(m_readButtons[row], 0, Qt::AlignVCenter);
-        rowLayout->addWidget(m_writeButtons[row], 0, Qt::AlignVCenter);
-
-        rootLayout->addLayout(rowLayout);
-    }
-
-    auto *intervalRow = new QHBoxLayout;
-    intervalRow->setContentsMargins(0, 10, 0, 0);
-    intervalRow->setSpacing(6);
-
-    auto *intervalLabel = new QLabel(tr("下发时间间隔"), this);
-    intervalLabel->setStyleSheet(QStringLiteral("color:%1; font-size:11px;")
-                                     .arg(Style::Color::ScopeTextSecondary.name()));
-
-    m_intervalEdit = new QLineEdit(this);
-    m_intervalEdit->setPlaceholderText(QStringLiteral("100"));
-    m_intervalEdit->setFixedWidth(68);
-    m_intervalEdit->setStyleSheet(makeTextStyle());
-
-    m_startButton = new QPushButton(tr("启动"), this);
-    m_stopButton = new QPushButton(tr("停止"), this);
-    m_clearButton = new QPushButton(tr("清除面板"), this);
-    m_loadButton = new QPushButton(tr("录入参数"), this);
-    m_startButton->setStyleSheet(makeActionStyle(Style::Color::ScopeRegReadBackground, Style::Color::ScopeRegReadBorder));
-    m_stopButton->setStyleSheet(makeActionStyle(Style::Color::ScopeRegWriteBackground, Style::Color::ScopeRegWriteBorder));
-    m_clearButton->setStyleSheet(makeActionStyle(Style::Color::ScopeRegClearBackground, Style::Color::ScopeRegClearBorder));
-    m_loadButton->setStyleSheet(makeActionStyle(Style::Color::ScopeRegLoadBackground, Style::Color::ScopeRegLoadBorder));
-
-    intervalRow->addWidget(intervalLabel);
-    intervalRow->addWidget(m_intervalEdit);
-    intervalRow->addWidget(m_startButton);
-    intervalRow->addWidget(m_stopButton);
-    intervalRow->addStretch();
-    intervalRow->addWidget(m_clearButton);
-    intervalRow->addWidget(m_loadButton);
-
-    rootLayout->addLayout(intervalRow);
-    setMinimumSize(430, 292);
-    setStyleSheet(makePanelStyle());
-}
+ScopeRegisterPanel::~ScopeRegisterPanel() = default;
 
 void ScopeRegisterPanel::connectSignals() {
     for (int row = 0; row < RowCount; ++row) {

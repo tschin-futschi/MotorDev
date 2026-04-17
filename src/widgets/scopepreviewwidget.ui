@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ScopePreviewWidget</class>
+ <widget class="QWidget" name="ScopePreviewWidget">
+  <layout class="QVBoxLayout" name="rootLayout">
+   <property name="spacing"><number>0</number></property>
+   <property name="leftMargin"><number>0</number></property>
+   <property name="topMargin"><number>0</number></property>
+   <property name="rightMargin"><number>0</number></property>
+   <property name="bottomMargin"><number>0</number></property>
+   <item>
+    <widget class="TopBar" name="topBar"/>
+   </item>
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation"><enum>Qt::Horizontal</enum></property>
+     <property name="childrenCollapsible"><bool>false</bool></property>
+     <property name="handleWidth"><number>0</number></property>
+     <widget class="QWidget" name="plotArea">
+      <layout class="QVBoxLayout" name="plotAreaLayout">
+       <property name="spacing"><number>0</number></property>
+       <property name="leftMargin"><number>0</number></property>
+       <property name="topMargin"><number>0</number></property>
+       <property name="rightMargin"><number>0</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+       <item>
+        <widget class="ScopePlotWidget" name="plotWidget"/>
+       </item>
+       <item>
+        <widget class="QWidget" name="bottomPanelHost">
+         <layout class="QVBoxLayout" name="bottomPanelHostLayout">
+          <property name="spacing"><number>0</number></property>
+          <property name="leftMargin"><number>0</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>0</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="ScopeStylePanel" name="stylePanel"/>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TopBar</class>
+   <extends>QWidget</extends>
+   <header>widgets/topbar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ScopePlotWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>widgets/scopeplotwidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ScopeStylePanel</class>
+   <extends>QWidget</extends>
+   <header>widgets/scopestylepanel.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

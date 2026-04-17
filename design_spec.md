@@ -332,31 +332,33 @@ Sidebar 内容:
 
 ## 示波器页面规格
 
-> 当前为 UI 原型阶段，串口数据流尚未接入。start/stop/viewMode 有实际状态切换，其余工具栏动作及底部面板信号为 stub。
+> 数据流已接入，支持 8 通道 60fps 实时渲染。示波器工具栏控件已迁移至 TopBar（仅示波器页面可见），底部面板信号部分为 stub。
 
 ```
 整体布局（水平）:
 [Sidebar 224px（默认收起）] | [主内容区]
 
 主内容区（垂直）:
-1. ScopeToolBar（顶部工具栏）
-2. ScopePlotWidget（波形绘制画布，stretch=1）
-3. ScopeBottomPanel（底部面板）
+1. ScopePlotWidget（波形绘制画布，stretch=1）
+2. ScopeBottomPanel（底部面板）
+
+注：原 ScopeToolBar 已移除。视图模式切换、Style、采样启停按钮现位于 TopBar，
+仅在示波器页面可见，由 MainWindow 在页面切换时控制显隐。
 ```
 
-### ScopeToolBar（顶部工具栏）
+### TopBar 示波器控件
 
 ```
-高度: 自适应（约 32px）
-背景: #f6f4ef
-边框: 底部 1px solid #d8d1c7
+位置: TopBar 中 connectionLabel 之后、弹性空白之前
+仅在示波器页面可见（其他页面隐藏）
 
-按钮分组（从左到右）:
-[Overlay] [Stacked]  ← stretch →  [开始采样/停止采样]  ← stretch →  [状态徽章]
+控件（从左到右）:
+[Overlay/Stacked] [Style] [开始采样/停止采样]
 
-Overlay / Stacked: QToolButton，互斥 checkable，切换视图模式
+Overlay/Stacked: QToolButton，单按钮点击切换，文字显示当前模式
+Style: QToolButton，checkable，切换通道样式面板
 采样按钮: QPushButton，文字随状态切换（"开始采样" / "停止采样"），绿色/红色风格
-状态徽章: 圆角标签，RUNNING（绿底）/ STOPPED（红底）
+注：原 STOPPED/RUNNING 状态标签已移除，采样状态仅通过采样按钮文字和样式区分
 ```
 
 ### ScopePlotWidget（波形绘制画布）
@@ -397,7 +399,7 @@ Overlay / Stacked: QToolButton，互斥 checkable，切换视图模式
   [Y Axis QToolButton（下拉菜单: Auto / Manual...）]
   [Display Window 标签] [QComboBox: 50 ms / 200 ms / 500 ms / 1000 ms / 2000 ms / 4000 ms]
   [Capture Note 标签] [QLineEdit]
-  注：采样启停按钮已移至 ScopeToolBar
+  注：采样启停按钮已移至 TopBar
   底部按钮行（右对齐）: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
 
 通道配置条区域（可通过 Hide/Show Channels 按钮折叠）:

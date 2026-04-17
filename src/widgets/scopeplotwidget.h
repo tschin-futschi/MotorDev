@@ -1,13 +1,15 @@
 #pragma once
 
-#include "widgets/scopetoolbar.h"
+#include "ui/scopeviewmode.h"
 
 #include <array>
 #include <cstdint>
 #include <vector>
 
 #include <QColor>
+#include <QContextMenuEvent>
 #include <QElapsedTimer>
+#include <QKeyEvent>
 #include <QOpenGLWidget>
 #include <QPoint>
 #include <QPointF>
@@ -40,7 +42,7 @@ public:
 
 public slots:
     void setRunning(bool running);
-    void setViewMode(ScopeToolBar::ViewMode mode);
+    void setViewMode(ScopeViewMode mode);
     void setAutoYAxisRange();
     void setManualYAxisRange(double minValue, double maxValue);
     void setChannelData(const QVector<PlotChannelData> &channels);
@@ -49,12 +51,17 @@ public slots:
     void clearData();
     void resetView();
 
+signals:
+    void fullscreenToggleRequested();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     enum class DragZoomMode {
@@ -70,19 +77,12 @@ private:
     struct ChannelData {
         QString name;
         QColor color;
-        // Raw ring is kept for compatibility with previous design and possible
-        // future inspection use. It is NOT read in the paint hot path.
         QVector<double> rawRing;
         int rawHead = 0;
         int rawCount = 0;
-        // Committed median values used by the renderer. Fixed capacity ring,
-        // time order is recovered via uiHead / uiCount in buildPaintSnapshot.
         std::array<float, kUiRingSize> uiRing {};
         int uiHead = 0;
         int uiCount = 0;
-        // Bucket accumulator. Fixed capacity = bucketWidth, set in
-        // configureAcquisition. The hot path only writes into bucketBuffer
-        // by index, never appends, so there is no allocation per sample.
         std::vector<double> bucketBuffer;
         int bucketFill = 0;
         bool enabled = false;
@@ -100,24 +100,14 @@ private:
     void paintSelection(QPainter *painter, const QRect &rect);
     void paintFrameTimeReadout(QPainter *painter, const QRect &rect);
     void paintStaticFrame(QPainter *painter, const QRect &frameRect, const QRect &plotRect);
-
-    // Build the time-ordered, fixed length [kUiRingSize] view of channel `c`
-    // into m_paintSnapshot[c]. Leading slots (when uiCount < kUiRingSize)
-    // are zero-filled. After this call the visible-window code can index by
-    // [start..end] without any extra modulo arithmetic.
     void buildPaintSnapshot(int channelIndex);
-
-    // Compute auto Y range from m_paintSnapshot for all currently enabled
-    // channels within [start, end]. Operates on the very same buffer the
-    // renderer is about to draw, so it is a single linear scan.
     void computeAutoYFromSnapshot(int startIndex, int endIndex,
                                   double &minValue, double &maxValue) const;
-
     int drawWaveformLane(QPainter *painter, const QRect &laneRect,
                          int channelIndex, double yMin, double yMax,
                          int startIndex, int endIndex);
     void drawDataPointDots(QPainter *painter, const QColor &color, int pointCount);
-
+    void resetZoom();
     void markAutoYDirty();
     QRect currentPlotRect() const;
     int rawWindowSampleCount() const;
@@ -129,7 +119,7 @@ private:
     void writeDisplaySample(ChannelData &channel, double value);
 
     QVector<ChannelData> m_channels;
-    ScopeToolBar::ViewMode m_viewMode = ScopeToolBar::ViewMode::Overlay;
+    ScopeViewMode m_viewMode = ScopeViewMode::Overlay;
     bool m_running = false;
     bool m_autoYRange = true;
     bool m_yRangeSettingAuto = true;
@@ -149,26 +139,13 @@ private:
     double m_cachedAutoYMin = -1.0;
     double m_cachedAutoYMax = 1.0;
     bool m_staticCacheDirty = true;
-
-    // Reused across frames to avoid per-frame allocation.
-    // m_paintSnapshot is channel-major and time-ordered (oldest .. newest).
-    // m_pointBuffer is rebuilt per channel via index-only writes.
     mutable std::array<std::array<float, kUiRingSize>, kMaxChannels> m_paintSnapshot {};
     mutable std::array<int, kMaxChannels> m_paintSnapshotCount {};
     mutable std::array<int, kMaxChannels> m_paintSnapshotOffset {};
     mutable std::vector<QPointF> m_pointBuffer;
-
-    // UI-driven render timer. Always running; interval is faster while the
-    // scope is running and slower while idle. Per project plan, all data and
-    // state changes never call update() directly -- the timer is the only
-    // trigger.
     QTimer *m_renderTimer = nullptr;
-
-    // Frame time measurement. Exponential moving average, alpha = 0.1.
     mutable QElapsedTimer m_frameClock;
     mutable double m_avgFrameMs = 0.0;
     mutable int m_frameSamples = 0;
-
-    // Auto Y throttle clock.
     mutable QElapsedTimer m_autoYClock;
 };

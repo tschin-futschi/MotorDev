@@ -1,13 +1,14 @@
 #include "widgets/registertable.h"
 
 #include "ui/style_constants.h"
+#include "ui/repolish.h"
+#include "ui_registertable.h"
 
 #include <QAbstractItemView>
 #include <QBrush>
 #include <QFile>
 #include <QFont>
 #include <QHeaderView>
-#include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -19,7 +20,6 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QTimer>
-#include <QVBoxLayout>
 
 using namespace MotorDev;
 
@@ -94,79 +94,33 @@ bool parseRegisterValueText(const QString &text, qint16 *value) {
     }
     return true;
 }
-
-QString makeReadButtonStyle() {
-    return QStringLiteral(
-               "QPushButton { background:%1; border:%2px solid %3; color:%3; font-size:10px; border-radius:2px; }"
-               "QPushButton:hover { background:%3; color:%4; }"
-               "QPushButton:disabled { background:%5; border:%2px solid %6; color:%7; }")
-        .arg(Style::Color::ReadButtonBackground.name())
-        .arg(Style::Size::BorderThin)
-        .arg(Style::Color::ReadButtonForeground.name())
-        .arg(Style::Color::White.name())
-        .arg(Style::Color::TopBarBackground.name())
-        .arg(Style::Color::DefaultBorder.name())
-        .arg(Style::Color::MutedText.name());
-}
-
-QString makeWriteButtonStyle() {
-    return QStringLiteral(
-               "QPushButton { background:%1; border:%2px solid %3; color:%3; font-size:10px; border-radius:2px; }"
-               "QPushButton:hover { background:%3; color:%4; }"
-               "QPushButton:disabled { background:%5; border:%2px solid %6; color:%7; }")
-        .arg(Style::Color::WriteButtonBackground.name())
-        .arg(Style::Size::BorderThin)
-        .arg(Style::Color::WriteButtonForeground.name())
-        .arg(Style::Color::White.name())
-        .arg(Style::Color::TopBarBackground.name())
-        .arg(Style::Color::DefaultBorder.name())
-        .arg(Style::Color::MutedText.name());
-}
 } // namespace
 
 RegisterTable::RegisterTable(QWidget *parent)
-    : QWidget(parent) {
+    : QWidget(parent)
+    , ui(std::make_unique<Ui::RegisterTable>()) {
     setupUi();
     connectSignals();
 }
 
-void RegisterTable::setupUi() {
-    auto *rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(0, 0, 0, 0);
-    rootLayout->setSpacing(0);
+RegisterTable::~RegisterTable() = default;
 
-    m_table = new QTableWidget(Style::Size::TableRowCount, Style::Size::TableGroupCount * 5, this);
-    m_table->verticalHeader()->setVisible(false);
-    m_table->horizontalHeader()->setVisible(true);
-    m_table->setShowGrid(true);
-    m_table->setSelectionMode(QAbstractItemView::NoSelection);
-    m_table->setSelectionBehavior(QAbstractItemView::SelectItems);
-    m_table->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
-    m_table->setAlternatingRowColors(true);
-    m_table->setFocusPolicy(Qt::StrongFocus);
-    m_table->verticalHeader()->setDefaultSectionSize(Style::Size::TableRowHeight);
-    m_table->horizontalHeader()->setFixedHeight(Style::Size::TableHeaderHeight);
-    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    m_table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    m_table->setItemDelegate(new GroupDividerDelegate(m_table));
-    m_table->setStyleSheet(QStringLiteral(
-        "QTableWidget { background:%1; alternate-background-color:%2; gridline-color:%3; color:%4; }"
-        "QHeaderView::section { background:%5; color:%6; border:0; border-bottom:%7px solid %3; padding:2px 4px; font-size:11px; }"
-        "QTableWidget::item { padding:1px 4px; }"
-        "QTableWidget::item:hover { background:%8; }")
-                               .arg(Style::Color::PanelBackground.name())
-                               .arg(Style::Color::TableEvenRowBackground.name())
-                               .arg(Style::Color::TableRowBorder.name())
-                               .arg(Style::Color::AppText.name())
-                               .arg(Style::Color::TableHeaderBackground.name())
-                               .arg(Style::Color::TableHeaderText.name())
-                               .arg(Style::Size::BorderThin)
-                               .arg(Style::Color::TableHoverRowBackground.name()));
+void RegisterTable::setupUi() {
+    ui->setupUi(this);
+
+    auto *table = ui->tableWidget;
+    table->verticalHeader()->setVisible(false);
+    table->horizontalHeader()->setVisible(true);
+    table->verticalHeader()->setDefaultSectionSize(Style::Size::TableRowHeight);
+    table->horizontalHeader()->setFixedHeight(Style::Size::TableHeaderHeight);
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    table->setItemDelegate(new GroupDividerDelegate(table));
 
     const QStringList groupHeaders = {tr("描述"), tr("地址"), tr("值"), QStringLiteral("R"), QStringLiteral("W")};
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
         for (int column = 0; column < groupHeaders.size(); ++column) {
-            m_table->setHorizontalHeaderItem(group * 5 + column, new QTableWidgetItem(groupHeaders[column]));
+            table->setHorizontalHeaderItem(group * 5 + column, new QTableWidgetItem(groupHeaders[column]));
         }
     }
 
@@ -180,35 +134,34 @@ void RegisterTable::setupUi() {
 
             auto *descItem = new QTableWidgetItem(QString{});
             descItem->setTextAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-            m_table->setItem(row, descCol(group), descItem);
+            table->setItem(row, descCol(group), descItem);
 
             auto *addrItem = new QTableWidgetItem(QString{});
             addrItem->setTextAlignment(Qt::AlignCenter);
             addrItem->setFont(monoFont);
-            m_table->setItem(row, addrCol(group), addrItem);
+            table->setItem(row, addrCol(group), addrItem);
 
             auto *valueItem = new QTableWidgetItem(QString{});
             valueItem->setTextAlignment(Qt::AlignCenter);
             valueItem->setFont(monoFont);
             valueItem->setForeground(QBrush(Style::Color::RegisterValueText));
-            m_table->setItem(row, valueCol(group), valueItem);
+            table->setItem(row, valueCol(group), valueItem);
 
-            auto *readButton = new QPushButton(QStringLiteral("R"), m_table);
+            auto *readButton = new QPushButton(QStringLiteral("R"), table);
             readButton->setFixedHeight(Style::Size::TableRowHeight - 2);
-            readButton->setStyleSheet(makeReadButtonStyle());
-            m_table->setCellWidget(row, readCol(group), readButton);
+            readButton->setProperty("buttonType", QStringLiteral("read"));
+            table->setCellWidget(row, readCol(group), readButton);
             m_readButtons[globalRow] = readButton;
 
-            auto *writeButton = new QPushButton(QStringLiteral("W"), m_table);
+            auto *writeButton = new QPushButton(QStringLiteral("W"), table);
             writeButton->setFixedHeight(Style::Size::TableRowHeight - 2);
-            writeButton->setStyleSheet(makeWriteButtonStyle());
-            m_table->setCellWidget(row, writeCol(group), writeButton);
+            writeButton->setProperty("buttonType", QStringLiteral("write"));
+            table->setCellWidget(row, writeCol(group), writeButton);
             m_writeButtons[globalRow] = writeButton;
         }
     }
 
     applyColumnWidths();
-    rootLayout->addWidget(m_table);
 }
 
 void RegisterTable::connectSignals() {
@@ -225,7 +178,7 @@ void RegisterTable::connectSignals() {
         });
     }
 
-    connect(m_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
+    connect(ui->tableWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
         if (item == nullptr) {
             return;
         }
@@ -245,12 +198,13 @@ void RegisterTable::connectSignals() {
 }
 
 void RegisterTable::applyColumnWidths() {
+    auto *table = ui->tableWidget;
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
-        m_table->setColumnWidth(descCol(group), Style::Size::ColDescWidth);
-        m_table->setColumnWidth(addrCol(group), Style::Size::ColAddrWidth);
-        m_table->setColumnWidth(valueCol(group), Style::Size::ColValueWidth);
-        m_table->setColumnWidth(readCol(group), Style::Size::ColReadWidth);
-        m_table->setColumnWidth(writeCol(group), Style::Size::ColWriteWidth);
+        table->setColumnWidth(descCol(group), Style::Size::ColDescWidth);
+        table->setColumnWidth(addrCol(group), Style::Size::ColAddrWidth);
+        table->setColumnWidth(valueCol(group), Style::Size::ColValueWidth);
+        table->setColumnWidth(readCol(group), Style::Size::ColReadWidth);
+        table->setColumnWidth(writeCol(group), Style::Size::ColWriteWidth);
     }
 }
 
@@ -276,7 +230,7 @@ void RegisterTable::setValueMode(ValueMode mode) {
     for (int globalRow = 0; globalRow < TotalRows; ++globalRow) {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
-        auto *item = m_table->item(row, valueCol(group));
+        auto *item = ui->tableWidget->item(row, valueCol(group));
         if (item == nullptr) {
             continue;
         }
@@ -300,11 +254,11 @@ void RegisterTable::updateRowValue(int globalRow, qint16 value) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, valueCol(group));
+    auto *item = ui->tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(m_table);
+    const QSignalBlocker blocker(ui->tableWidget);
     if (m_valueMode == ValueMode::Hex) {
         const quint16 rawValue = static_cast<quint16>(value);
         item->setText(QStringLiteral("0x") + QString::number(rawValue, 16).toUpper().rightJustified(4, QLatin1Char('0')));
@@ -320,11 +274,11 @@ void RegisterTable::markRowError(int globalRow) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, valueCol(group));
+    auto *item = ui->tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(m_table);
+    const QSignalBlocker blocker(ui->tableWidget);
     item->setText(QStringLiteral("--"));
     item->setForeground(QBrush(Style::Color::RegisterErrorText));
 }
@@ -335,11 +289,11 @@ void RegisterTable::markRowPending(int globalRow) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, valueCol(group));
+    auto *item = ui->tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(m_table);
+    const QSignalBlocker blocker(ui->tableWidget);
     item->setText(QStringLiteral("..."));
     item->setForeground(QBrush(Style::Color::MutedText));
 }
@@ -354,16 +308,12 @@ void RegisterTable::markWriteButtonFeedback(int globalRow, bool success) {
         return;
     }
 
-    const QString feedbackStyle = QStringLiteral(
-        "QPushButton { background:%1; border:%2px solid %3; color:%4; font-size:10px; border-radius:2px; }")
-                                      .arg(success ? Style::Color::PrimaryGreen.name() : Style::Color::MutedText.name())
-                                      .arg(Style::Size::BorderThin)
-                                      .arg(success ? Style::Color::PrimaryGreen.name() : Style::Color::MutedText.name())
-                                      .arg(Style::Color::White.name());
-    button->setStyleSheet(feedbackStyle);
+    button->setProperty("feedback", success ? QStringLiteral("success") : QStringLiteral("error"));
+    UiUtil::repolish(button);
 
     QTimer::singleShot(200, button, [button]() {
-        button->setStyleSheet(makeWriteButtonStyle());
+        button->setProperty("feedback", QString());
+        UiUtil::repolish(button);
     });
 }
 
@@ -373,7 +323,7 @@ bool RegisterTable::rowHasAddress(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, addrCol(group));
+    auto *item = ui->tableWidget->item(row, addrCol(group));
     if (item == nullptr || item->text().trimmed().isEmpty()) {
         return false;
     }
@@ -387,7 +337,7 @@ bool RegisterTable::rowHasValue(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, valueCol(group));
+    auto *item = ui->tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return false;
     }
@@ -401,7 +351,7 @@ quint16 RegisterTable::rowAddress(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, addrCol(group));
+    auto *item = ui->tableWidget->item(row, addrCol(group));
     if (item == nullptr) {
         return 0;
     }
@@ -415,7 +365,7 @@ qint16 RegisterTable::rowValue(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = m_table->item(row, valueCol(group));
+    auto *item = ui->tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return 0;
     }
@@ -429,9 +379,9 @@ void RegisterTable::saveConfig(const QString &path) const {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
         QJsonObject entry;
-        auto *descItem = m_table->item(row, descCol(group));
-        auto *addrItem = m_table->item(row, addrCol(group));
-        auto *valueItem = m_table->item(row, valueCol(group));
+        auto *descItem = ui->tableWidget->item(row, descCol(group));
+        auto *addrItem = ui->tableWidget->item(row, addrCol(group));
+        auto *valueItem = ui->tableWidget->item(row, valueCol(group));
         entry[QStringLiteral("desc")] = descItem != nullptr ? descItem->text() : QString{};
         entry[QStringLiteral("addr")] = addrItem != nullptr ? addrItem->text() : QString{};
         entry[QStringLiteral("val")] = valueItem != nullptr ? valueItem->text() : QString{};
@@ -460,18 +410,18 @@ void RegisterTable::loadConfig(const QString &path) {
     }
 
     const QJsonArray registers = document.object().value(QStringLiteral("registers")).toArray();
-    const QSignalBlocker blocker(m_table);
+    const QSignalBlocker blocker(ui->tableWidget);
     for (int globalRow = 0; globalRow < TotalRows && globalRow < registers.size(); ++globalRow) {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
         const QJsonObject entry = registers.at(globalRow).toObject();
-        if (auto *descItem = m_table->item(row, descCol(group)); descItem != nullptr) {
+        if (auto *descItem = ui->tableWidget->item(row, descCol(group)); descItem != nullptr) {
             descItem->setText(entry.value(QStringLiteral("desc")).toString());
         }
-        if (auto *addrItem = m_table->item(row, addrCol(group)); addrItem != nullptr) {
+        if (auto *addrItem = ui->tableWidget->item(row, addrCol(group)); addrItem != nullptr) {
             addrItem->setText(entry.value(QStringLiteral("addr")).toString());
         }
-        if (auto *valueItem = m_table->item(row, valueCol(group)); valueItem != nullptr) {
+        if (auto *valueItem = ui->tableWidget->item(row, valueCol(group)); valueItem != nullptr) {
             valueItem->setText(entry.value(QStringLiteral("val")).toString());
         }
     }

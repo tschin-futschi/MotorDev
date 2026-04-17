@@ -2,28 +2,32 @@
 
 #include <QByteArray>
 #include <QWidget>
+#include <memory>
 
 #include <cstdint>
 
 class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
-class QGroupBox;
 class QPushButton;
 class SerialManager;
+
+namespace Ui {
+class ConfigTab;
+}
 
 class ConfigTab : public QWidget {
     Q_OBJECT
 
 public:
     explicit ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent = nullptr);
+    ~ConfigTab() override;
 
 signals:
     void serialConnected(const QString &port, qint32 baudRate);
     void serialDisconnected();
 
 private:
-    void setupUi();
     void connectSignals();
     void refreshAvailablePorts();
     void setSerialControlsConnected(bool connected);
@@ -32,11 +36,7 @@ private:
     void handleSetAddrResponse();
     void handleErrorResponse(const QByteArray &data);
 
-    QGroupBox *createIcGroup();
-    QGroupBox *createSerialGroup();
-    QGroupBox *createPmicGroup();
-    QWidget *createConfigFileRow();
-
+    std::unique_ptr<Ui::ConfigTab> ui;
     SerialManager *m_serialManager = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     bool m_isSerialConnected = false;

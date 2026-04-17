@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QColor>
 #include <QString>
@@ -80,7 +80,6 @@ inline const QColor ScopeToolButtonCheckedText("#35541c");
 inline const QColor ScopeToolButtonDisabled("#f0ede7");
 inline const QColor ScopeToolButtonDisabledBorder("#ddd7ce");
 inline const QColor ScopeToolButtonDisabledText("#a7a097");
-inline const QColor ScopeToolBarBackground("#f6f4ef");
 inline const QColor ScopeStatusRunningBackground("#edf6e7");
 inline const QColor ScopeStatusRunningText("#46702a");
 inline const QColor ScopeStatusRunningBorder("#b8d2a6");

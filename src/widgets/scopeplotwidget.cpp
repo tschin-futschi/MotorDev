@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include <QList>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
@@ -100,7 +101,7 @@ void ScopePlotWidget::setRunning(bool running) {
     m_renderTimer->setInterval(running ? 16 : 100);
 }
 
-void ScopePlotWidget::setViewMode(ScopeToolBar::ViewMode mode) {
+void ScopePlotWidget::setViewMode(ScopeViewMode mode) {
     if (m_viewMode == mode) {
         return;
     }
@@ -201,14 +202,23 @@ void ScopePlotWidget::clearData() {
 }
 
 void ScopePlotWidget::resetView() {
+    resetZoom();
+}
+
+void ScopePlotWidget::resetZoom() {
+    m_dragSelecting = false;
+    m_dragMode = DragZoomMode::None;
     m_viewStartRatio = 0.0;
     m_viewEndRatio = 1.0;
-    if (!m_autoYRange) {
+    if (m_yRangeSettingAuto) {
+        m_autoYRange = true;
+        m_yViewMin = m_cachedAutoYMin;
+        m_yViewMax = m_cachedAutoYMax;
+        m_autoYDirty = true;
+    } else {
+        m_autoYRange = false;
         m_yViewMin = m_manualYMin;
         m_yViewMax = m_manualYMax;
-    }
-    if (m_autoYRange) {
-        m_autoYDirty = true;
     }
 }
 
@@ -267,7 +277,7 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
         yMax = m_cachedAutoYMax;
     }
 
-    if (m_viewMode == ScopeToolBar::ViewMode::Overlay) {
+    if (m_viewMode == ScopeViewMode::Overlay) {
         painter.save();
         painter.setClipRect(plotRect);
         paintOverlay(&painter, plotRect, yMin, yMax);
@@ -378,26 +388,30 @@ void ScopePlotWidget::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void ScopePlotWidget::mouseDoubleClickEvent(QMouseEvent *event) {
-    if (event->button() == Qt::LeftButton && currentPlotRect().contains(event->position().toPoint())) {
-        m_dragSelecting = false;
-        m_dragMode = DragZoomMode::None;
-        m_viewStartRatio = 0.0;
-        m_viewEndRatio = 1.0;
-        if (m_yRangeSettingAuto) {
-            m_autoYRange = true;
-            m_yViewMin = m_cachedAutoYMin;
-            m_yViewMax = m_cachedAutoYMax;
-            m_autoYDirty = true;
-        } else {
-            m_autoYRange = false;
-            m_yViewMin = m_manualYMin;
-            m_yViewMax = m_manualYMax;
-        }
+    if (event->button() == Qt::LeftButton) {
+        emit fullscreenToggleRequested();
         event->accept();
         return;
     }
 
     QWidget::mouseDoubleClickEvent(event);
+}
+
+void ScopePlotWidget::contextMenuEvent(QContextMenuEvent *event) {
+    QMenu menu(this);
+    QAction *resetAction = menu.addAction(tr("重置缩放"));
+    connect(resetAction, &QAction::triggered, this, &ScopePlotWidget::resetZoom);
+    menu.exec(event->globalPos());
+}
+
+void ScopePlotWidget::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Escape && window()->isFullScreen()) {
+        emit fullscreenToggleRequested();
+        event->accept();
+        return;
+    }
+
+    QOpenGLWidget::keyPressEvent(event);
 }
 
 void ScopePlotWidget::paintGrid(QPainter *painter, const QRect &rect) {

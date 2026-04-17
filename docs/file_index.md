@@ -38,9 +38,9 @@
 
 ### 示波器/波形观测
 > 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、调试模拟器端到端数据路径。寄存器面板后端处理、导出/截图等为 stub。
+> 示波器工具栏控件（视图模式切换、Style、采样启停）已迁移至 TopBar，仅在示波器页面可见。
 
-- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态、viewMode、PendingCommand 采样序列状态机、ScopeStreamBatcher 批量数据接收
-- `src/widgets/scopetoolbar` `[UI-Widget]` — 工具栏（Overlay/Stacked 视图切换、采样启停按钮、运行状态标签）
+- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态、viewMode、PendingCommand 采样序列状态机、ScopeStreamBatcher 批量数据接收；通过 MainWindow 桥接与 TopBar 上的示波器控件交互
 - `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击重置视图）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔 + 4x MSAA，8 通道稳定 60fps
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
@@ -58,7 +58,7 @@
 - `src/main.cpp` — 程序入口，创建 QApplication 和 MainWindow，安装全局 Qt 消息处理器（将 qDebug/qWarning 路由至 LogPanel）
 - `src/mainwindow` `[UI-Shell]` — 主窗口，持有并组合所有顶层组件，管理串口连接后部分页面的启用/禁用状态
 - `src/widgets/activitybar` `[UI-Shell]` — 左侧活动栏（配置/读写/烧录/示波四个页面切换按钮；另有"设置"按钮为 UI 占位，未连接信号）
-- `src/widgets/topbar` `[UI-Shell]` — 顶栏（Logo、串口连接状态显示；语言切换 combo 为 UI 占位，**i18n 未实现**）
+- `src/widgets/topbar` `[UI-Shell]` — 顶栏（Logo、串口连接状态显示、示波器页面专属控件：视图模式切换/Style/采样启停；语言切换 combo 为 UI 占位，**i18n 未实现**）
 
 ### 日志面板
 - `src/widgets/logpanel` `[UI-Shell]` — 底部日志面板，全局单例，接收 Qt 消息输出
@@ -69,6 +69,7 @@
 
 | 文件 | 用途 |
 |------|------|
+| `src/ui/scopeviewmode.h` | ScopeViewMode 枚举（Overlay/Stacked），供 ScopePlotWidget 和 OscilloscopTab 共用 |
 | `src/ui/style_constants.h` | 所有颜色、尺寸、间距常量，禁止在其他文件硬编码 |
 | `CMakeLists.txt` | 项目构建定义，新增源文件必须在此注册 |
 
@@ -84,7 +85,7 @@
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` | UI stub，按钮未连接信号 |
 | 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击重置视图 |
-| 示波器导出/截图等工具栏操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
+| 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
 | 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`appendSamples` 接收外部数据，16ms 定时器驱动渲染，零堆分配 paintEvent |
 | 示波器寄存器面板后端处理 | `src/tabs/oscilloscoptab` | stub，信号仅打 log |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` | UI stub，占位面板 |
@@ -105,8 +106,9 @@
 | 数据模型层 | `src/devicecontext` |
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
-| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopetoolbar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel` |
+| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel` |
 | 开发工具传输层 | `src/services/simulatorserial` |
+| 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |
 
 ---

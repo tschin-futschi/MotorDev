@@ -34,35 +34,48 @@ qt_add_executable(MotorDev
     src/widgets/logpanel.ui
     src/widgets/registertable.cpp
     src/widgets/registertable.h
+    src/widgets/registertable.ui
     src/widgets/sidebar.cpp
     src/widgets/sidebar.h
+    src/widgets/sidebar.ui
     src/widgets/scopebottompanel.cpp
     src/widgets/scopebottompanel.h
+    src/widgets/scopebottompanel.ui
     src/widgets/scopechannelstrip.cpp
     src/widgets/scopechannelstrip.h
+    src/widgets/scopechannelstrip.ui
     src/widgets/scopegeneratorpanel.cpp
     src/widgets/scopegeneratorpanel.h
+    src/widgets/scopegeneratorpanel.ui
     src/widgets/scopeplotwidget.cpp
     src/widgets/scopeplotwidget.h
+    src/widgets/scopepreviewwidget.cpp
+    src/widgets/scopepreviewwidget.h
+    src/widgets/scopepreviewwidget.ui
     src/widgets/scoperegisterpanel.cpp
     src/widgets/scoperegisterpanel.h
+    src/widgets/scoperegisterpanel.ui
     src/widgets/scopestylepanel.cpp
     src/widgets/scopestylepanel.h
-    src/widgets/scopetoolbar.cpp
-    src/widgets/scopetoolbar.h
+    src/widgets/scopestylepanel.ui
     src/widgets/topbar.cpp
     src/widgets/topbar.h
     src/widgets/topbar.ui
     src/tabs/configtab.cpp
     src/tabs/configtab.h
+    src/tabs/configtab.ui
     src/tabs/registerrwtab.cpp
     src/tabs/registerrwtab.h
+    src/tabs/registerrwtab.ui
     src/tabs/serialdebugtab.cpp
     src/tabs/serialdebugtab.h
+    src/tabs/serialdebugtab.ui
     src/tabs/fwflashtab.cpp
     src/tabs/fwflashtab.h
+    src/tabs/fwflashtab.ui
     src/tabs/oscilloscoptab.cpp
     src/tabs/oscilloscoptab.h
+    src/tabs/oscilloscoptab.ui
     resources/resources.qrc
 )
 

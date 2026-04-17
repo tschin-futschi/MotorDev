@@ -3,6 +3,7 @@
 #include <QByteArray>
 #include <QQueue>
 #include <QWidget>
+#include <memory>
 
 #include <cstdint>
 
@@ -12,11 +13,16 @@ class RegisterTable;
 class SerialManager;
 class QTimer;
 
+namespace Ui {
+class RegisterRwTab;
+}
+
 class RegisterRwTab : public QWidget {
     Q_OBJECT
 
 public:
     explicit RegisterRwTab(SerialManager *serialManager, QWidget *parent = nullptr);
+    ~RegisterRwTab() override;
 
 public slots:
     void setConnected(bool connected);
@@ -32,11 +38,11 @@ private slots:
     void onTimeout();
 
 private:
-    void setupUi();
     void connectSignals();
     void processNextInQueue();
     QString configFilePath() const;
 
+    std::unique_ptr<Ui::RegisterRwTab> ui;
     SerialManager *m_serialManager = nullptr;
     RegisterTable *m_registerTable = nullptr;
     QPushButton *m_readAllButton = nullptr;

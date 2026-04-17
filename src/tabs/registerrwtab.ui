@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RegisterRwTab</class>
+ <widget class="QWidget" name="RegisterRwTab">
+  <layout class="QHBoxLayout" name="topLayout">
+   <property name="spacing"><number>0</number></property>
+   <property name="leftMargin"><number>0</number></property>
+   <property name="topMargin"><number>0</number></property>
+   <property name="rightMargin"><number>0</number></property>
+   <property name="bottomMargin"><number>0</number></property>
+   <item>
+    <widget class="QWidget" name="sidebarContent">
+     <layout class="QVBoxLayout" name="sidebarLayout">
+      <property name="spacing"><number>8</number></property>
+      <property name="leftMargin"><number>10</number></property>
+      <property name="topMargin"><number>8</number></property>
+      <property name="rightMargin"><number>10</number></property>
+      <property name="bottomMargin"><number>8</number></property>
+      <item><widget class="QPushButton" name="readAllButton"><property name="minimumSize"><size><width>0</width><height>32</height></size></property><property name="maximumSize"><size><width>16777215</width><height>32</height></size></property><property name="text"><string>全部读取</string></property><property name="buttonRole" stdset="0"><string>primary-sidebar</string></property></widget></item>
+      <item><widget class="QPushButton" name="writeAllButton"><property name="minimumSize"><size><width>0</width><height>32</height></size></property><property name="maximumSize"><size><width>16777215</width><height>32</height></size></property><property name="text"><string>全部写入</string></property><property name="buttonRole" stdset="0"><string>write-sidebar</string></property></widget></item>
+      <item><spacer name="modeSpacerSmall"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
+      <item><widget class="QLabel" name="valueModeLabel"><property name="text"><string>数值表示</string></property></widget></item>
+      <item><layout class="QHBoxLayout" name="modeRow"><property name="spacing"><number>10</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QPushButton" name="decButton"><property name="text"><string>DEC</string></property><property name="checkable"><bool>true</bool></property><property name="buttonRole" stdset="0"><string>mode</string></property></widget></item><item><widget class="QPushButton" name="hexButton"><property name="text"><string>HEX</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property><property name="buttonRole" stdset="0"><string>mode</string></property></widget></item></layout></item>
+      <item><spacer name="sidebarSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="mainContent">
+     <layout class="QVBoxLayout" name="mainLayout">
+      <property name="spacing"><number>0</number></property>
+      <property name="leftMargin"><number>24</number></property>
+      <property name="topMargin"><number>24</number></property>
+      <property name="rightMargin"><number>24</number></property>
+      <property name="bottomMargin"><number>24</number></property>
+      <item>
+       <widget class="QSplitter" name="mainSplitter">
+        <property name="orientation"><enum>Qt::Vertical</enum></property>
+        <property name="childrenCollapsible"><bool>false</bool></property>
+        <property name="handleWidth"><number>8</number></property>
+        <widget class="QWidget" name="topWidget">
+         <layout class="QVBoxLayout" name="topWidgetLayout">
+          <property name="spacing"><number>0</number></property>
+          <property name="leftMargin"><number>0</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>0</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+          <item><widget class="RegisterTable" name="registerTable"/></item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="bottomWidget">
+         <layout class="QHBoxLayout" name="bottomLayout">
+          <property name="spacing"><number>16</number></property>
+          <property name="leftMargin"><number>0</number></property>
+          <property name="topMargin"><number>0</number></property>
+          <property name="rightMargin"><number>0</number></property>
+          <property name="bottomMargin"><number>0</number></property>
+          <item>
+           <widget class="QGroupBox" name="batchGroup">
+            <property name="title"><string>批量读写</string></property>
+            <property name="panelRole" stdset="0"><string>card</string></property>
+            <layout class="QVBoxLayout" name="batchLayout">
+             <property name="spacing"><number>10</number></property>
+             <property name="leftMargin"><number>24</number></property>
+             <property name="topMargin"><number>24</number></property>
+             <property name="rightMargin"><number>24</number></property>
+             <property name="bottomMargin"><number>24</number></property>
+             <item><layout class="QHBoxLayout" name="batchRow0"><property name="spacing"><number>10</number></property><item><widget class="QPushButton" name="batchBtn0"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>批量写入</string></property><property name="buttonRole" stdset="0"><string>primary-sidebar</string></property></widget></item><item><widget class="QLineEdit" name="batchDescEdit0"><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QLineEdit" name="batchPathEdit0"><property name="readOnly"><bool>true</bool></property><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QPushButton" name="batchBrowseBtn0"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>浏览</string></property><property name="buttonRole" stdset="0"><string>secondary</string></property></widget></item></layout></item>
+             <item><layout class="QHBoxLayout" name="batchRow1"><property name="spacing"><number>10</number></property><item><widget class="QPushButton" name="batchBtn1"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>批量写入</string></property><property name="buttonRole" stdset="0"><string>primary-sidebar</string></property></widget></item><item><widget class="QLineEdit" name="batchDescEdit1"><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QLineEdit" name="batchPathEdit1"><property name="readOnly"><bool>true</bool></property><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QPushButton" name="batchBrowseBtn1"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>浏览</string></property><property name="buttonRole" stdset="0"><string>secondary</string></property></widget></item></layout></item>
+             <item><layout class="QHBoxLayout" name="batchRow2"><property name="spacing"><number>10</number></property><item><widget class="QPushButton" name="batchBtn2"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>批量读出</string></property><property name="buttonRole" stdset="0"><string>primary-sidebar</string></property></widget></item><item><widget class="QLineEdit" name="batchDescEdit2"><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QLineEdit" name="batchPathEdit2"><property name="readOnly"><bool>true</bool></property><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QPushButton" name="batchBrowseBtn2"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>浏览</string></property><property name="buttonRole" stdset="0"><string>secondary</string></property></widget></item></layout></item>
+             <item><layout class="QHBoxLayout" name="batchRow3"><property name="spacing"><number>10</number></property><item><widget class="QPushButton" name="batchBtn3"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>批量读出</string></property><property name="buttonRole" stdset="0"><string>primary-sidebar</string></property></widget></item><item><widget class="QLineEdit" name="batchDescEdit3"><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QLineEdit" name="batchPathEdit3"><property name="readOnly"><bool>true</bool></property><property name="inputRole" stdset="0"><string>form</string></property></widget></item><item><widget class="QPushButton" name="batchBrowseBtn3"><property name="minimumSize"><size><width>96</width><height>32</height></size></property><property name="maximumSize"><size><width>96</width><height>32</height></size></property><property name="text"><string>浏览</string></property><property name="buttonRole" stdset="0"><string>secondary</string></property></widget></item></layout></item>
+             <item><spacer name="batchSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+            </layout>
+           </widget>
+          </item>
+          <item><widget class="QGroupBox" name="placeholderGroup1"><property name="title"><string/></property><property name="panelRole" stdset="0"><string>card</string></property><layout class="QVBoxLayout" name="placeholderLayout1"><property name="leftMargin"><number>24</number></property><property name="topMargin"><number>24</number></property><property name="rightMargin"><number>24</number></property><property name="bottomMargin"><number>24</number></property><item><spacer name="placeholderSpacer1"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item></layout></widget></item>
+          <item><widget class="QGroupBox" name="placeholderGroup2"><property name="title"><string/></property><property name="panelRole" stdset="0"><string>card</string></property><layout class="QVBoxLayout" name="placeholderLayout2"><property name="leftMargin"><number>24</number></property><property name="topMargin"><number>24</number></property><property name="rightMargin"><number>24</number></property><property name="bottomMargin"><number>24</number></property><item><spacer name="placeholderSpacer2"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item></layout></widget></item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>RegisterTable</class>
+   <extends>QWidget</extends>
+   <header>widgets/registertable.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,18 +1,17 @@
 #pragma once
 
+#include <memory>
 #include <QWidget>
 
 class ScopeChannelStrip;
 class QEvent;
 class ScopeGeneratorPanel;
 class ScopeRegisterPanel;
-class QComboBox;
-class QLineEdit;
 class QMenu;
-class QPushButton;
-class QPoint;
-class QToolButton;
 class QWidget;
+namespace Ui {
+class ScopeBottomPanel;
+}
 
 class ScopeBottomPanel : public QWidget {
     Q_OBJECT
@@ -39,34 +38,24 @@ signals:
 
 private:
     bool eventFilter(QObject *watched, QEvent *event) override;
-    void setupUi();
     void connectSignals();
     QWidget *createOverlayWindow(const QString &title, QWidget *content, const QSize &size);
     void refreshPanels();
-    void refreshSamplingButton();
     void refreshYAxisButton();
     bool promptManualYAxisRange(double &minValue, double &maxValue);
 
+    std::unique_ptr<Ui::ScopeBottomPanel> ui;
     QWidget *m_overlayHost = nullptr;
-    QWidget *m_channelFrame = nullptr;
     ScopeRegisterPanel *m_registerPanel = nullptr;
     ScopeGeneratorPanel *m_generatorPanel = nullptr;
     ScopeChannelStrip *m_channels[8] = {};
-    QPushButton *m_channelsToggleButton = nullptr;
-    QPushButton *m_registerToggleButton = nullptr;
-    QPushButton *m_generatorToggleButton = nullptr;
-    QWidget *m_channelsWindow = nullptr;
     QWidget *m_registerWindow = nullptr;
     QWidget *m_generatorWindow = nullptr;
-    QComboBox *m_intervalCombo = nullptr;
-    QComboBox *m_windowCombo = nullptr;
-    QPushButton *m_samplingButton = nullptr;
-    QToolButton *m_yAxisButton = nullptr;
     QMenu *m_yAxisMenu = nullptr;
-    QLineEdit *m_noteEdit = nullptr;
-    bool m_channelsVisible = true;
+    bool m_channelsVisible = false;
     bool m_running = false;
     bool m_yAxisAuto = true;
     double m_manualYMin = -1000.0;
     double m_manualYMax = 1000.0;
 };
+
