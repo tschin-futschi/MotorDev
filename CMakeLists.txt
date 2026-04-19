@@ -14,68 +14,61 @@ qt_add_executable(MotorDev
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
-    src/mainwindow.ui
     src/devicecontext.cpp
     src/devicecontext.h
     src/frameparser.cpp
     src/frameparser.h
     src/serialmanager.cpp
     src/serialmanager.h
+    src/models/scopechannelmodel.cpp
+    src/models/scopechannelmodel.h
+    src/services/configservice.cpp
+    src/services/configservice.h
+    src/services/registerservice.cpp
+    src/services/registerservice.h
+    src/services/scopeservice.cpp
+    src/services/scopeservice.h
     src/services/simulatorserial.cpp
     src/services/simulatorserial.h
+    src/services/simulatorservice.cpp
+    src/services/simulatorservice.h
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
-    src/widgets/activitybar.ui
     src/widgets/logpanel.cpp
     src/widgets/logpanel.h
-    src/widgets/logpanel.ui
     src/widgets/registertable.cpp
     src/widgets/registertable.h
-    src/widgets/registertable.ui
     src/widgets/sidebar.cpp
     src/widgets/sidebar.h
-    src/widgets/sidebar.ui
     src/widgets/scopebottompanel.cpp
     src/widgets/scopebottompanel.h
-    src/widgets/scopebottompanel.ui
     src/widgets/scopechannelstrip.cpp
     src/widgets/scopechannelstrip.h
-    src/widgets/scopechannelstrip.ui
     src/widgets/scopegeneratorpanel.cpp
     src/widgets/scopegeneratorpanel.h
-    src/widgets/scopegeneratorpanel.ui
     src/widgets/scopeplotwidget.cpp
     src/widgets/scopeplotwidget.h
     src/widgets/scopepreviewwidget.cpp
     src/widgets/scopepreviewwidget.h
-    src/widgets/scopepreviewwidget.ui
     src/widgets/scoperegisterpanel.cpp
     src/widgets/scoperegisterpanel.h
-    src/widgets/scoperegisterpanel.ui
     src/widgets/scopestylepanel.cpp
     src/widgets/scopestylepanel.h
-    src/widgets/scopestylepanel.ui
     src/widgets/topbar.cpp
     src/widgets/topbar.h
-    src/widgets/topbar.ui
     src/tabs/configtab.cpp
     src/tabs/configtab.h
-    src/tabs/configtab.ui
     src/tabs/registerrwtab.cpp
     src/tabs/registerrwtab.h
-    src/tabs/registerrwtab.ui
     src/tabs/serialdebugtab.cpp
     src/tabs/serialdebugtab.h
-    src/tabs/serialdebugtab.ui
     src/tabs/fwflashtab.cpp
     src/tabs/fwflashtab.h
-    src/tabs/fwflashtab.ui
     src/tabs/oscilloscoptab.cpp
     src/tabs/oscilloscoptab.h
-    src/tabs/oscilloscoptab.ui
     resources/resources.qrc
 )
 

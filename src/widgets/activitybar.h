@@ -1,11 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <QWidget>
-
-namespace Ui {
-class ActivityBar;
-}
+class QPushButton;
 
 class ActivityBar : public QWidget {
     Q_OBJECT
@@ -27,7 +23,14 @@ signals:
     void pageSelected(int index);
 
 private:
+    void setupUi();
+    void connectSignals();
     void setActivePage(int index);
 
-    std::unique_ptr<Ui::ActivityBar> ui;
+    QPushButton *m_configButton = nullptr;
+    QPushButton *m_registerButton = nullptr;
+    QPushButton *m_flashButton = nullptr;
+    QPushButton *m_scopeButton = nullptr;
+    QPushButton *m_debugButton = nullptr;
+    QPushButton *m_settingsButton = nullptr;
 };

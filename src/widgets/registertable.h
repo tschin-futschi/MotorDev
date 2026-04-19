@@ -3,13 +3,9 @@
 #include <QWidget>
 
 #include <cstdint>
-#include <memory>
 
 class QPushButton;
-
-namespace Ui {
-class RegisterTable;
-}
+class QTableWidget;
 
 class RegisterTable : public QWidget {
     Q_OBJECT
@@ -54,7 +50,7 @@ private:
     static int readCol(int group) { return group * 5 + 3; }
     static int writeCol(int group) { return group * 5 + 4; }
 
-    std::unique_ptr<Ui::RegisterTable> ui;
+    QTableWidget *m_tableWidget = nullptr;
     QPushButton *m_readButtons[80] = {};
     QPushButton *m_writeButtons[80] = {};
     ValueMode m_valueMode = ValueMode::Hex;

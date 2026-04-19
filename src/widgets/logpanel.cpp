@@ -1,26 +1,28 @@
 #include "widgets/logpanel.h"
 
 #include "ui/style_constants.h"
-#include "ui_logpanel.h"
 
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMetaObject>
 #include <QPushButton>
 #include <QTextCursor>
+#include <QTextDocument>
+#include <QTextEdit>
 #include <QThread>
-#include <utility>
+#include <QVBoxLayout>
 
 using namespace MotorDev;
 
 LogPanel *LogPanel::s_instance = nullptr;
 
 LogPanel::LogPanel(QWidget *parent)
-    : QWidget(parent)
-    , ui(std::make_unique<Ui::LogPanel>()) {
+    : QWidget(parent) {
     s_instance = this;
-    ui->setupUi(this);
+    setupUi();
 
-    ui->textEdit->document()->setMaximumBlockCount(500);
-    connect(ui->clearButton, &QPushButton::clicked, ui->textEdit, &QTextEdit::clear);
+    m_textEdit->document()->setMaximumBlockCount(500);
+    connect(m_clearButton, &QPushButton::clicked, m_textEdit, &QTextEdit::clear);
 }
 
 LogPanel::~LogPanel() {
@@ -62,6 +64,40 @@ void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
                              .arg(color)
                              .arg(prefix.toHtmlEscaped())
                              .arg(msg.toHtmlEscaped());
-    ui->textEdit->append(html);
-    ui->textEdit->moveCursor(QTextCursor::End);
+    m_textEdit->append(html);
+    m_textEdit->moveCursor(QTextCursor::End);
+}
+
+void LogPanel::setupUi() {
+    setObjectName(QStringLiteral("LogPanel"));
+    setMinimumSize(QSize(0, Style::Size::LogPanelHeight));
+    setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::LogPanelHeight));
+
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setObjectName(QStringLiteral("rootLayout"));
+    rootLayout->setSpacing(4);
+    rootLayout->setContentsMargins(8, 4, 8, 4);
+
+    auto *headerLayout = new QHBoxLayout();
+    headerLayout->setObjectName(QStringLiteral("headerLayout"));
+    headerLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->addLayout(headerLayout);
+
+    m_titleLabel = new QLabel(this);
+    m_titleLabel->setObjectName(QStringLiteral("titleLabel"));
+    m_titleLabel->setText(tr("输出"));
+    headerLayout->addWidget(m_titleLabel);
+    headerLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+    m_clearButton = new QPushButton(this);
+    m_clearButton->setObjectName(QStringLiteral("clearButton"));
+    m_clearButton->setMinimumSize(QSize(0, 20));
+    m_clearButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 20));
+    m_clearButton->setText(tr("清空"));
+    headerLayout->addWidget(m_clearButton);
+
+    m_textEdit = new QTextEdit(this);
+    m_textEdit->setObjectName(QStringLiteral("textEdit"));
+    m_textEdit->setReadOnly(true);
+    rootLayout->addWidget(m_textEdit);
 }

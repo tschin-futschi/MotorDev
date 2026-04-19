@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
+#include <QLabel>
+#include <QPushButton>
+#include <QTextEdit>
 #include <QWidget>
 #include <QtGlobal>
-
-namespace Ui {
-class LogPanel;
-}
 
 class LogPanel : public QWidget {
     Q_OBJECT
@@ -21,6 +19,10 @@ public slots:
     void appendMessage(QtMsgType type, const QString &msg);
 
 private:
-    std::unique_ptr<Ui::LogPanel> ui;
+    void setupUi();
+
+    QLabel *m_titleLabel = nullptr;
+    QPushButton *m_clearButton = nullptr;
+    QTextEdit *m_textEdit = nullptr;
     static LogPanel *s_instance;
 };

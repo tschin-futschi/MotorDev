@@ -1,15 +1,11 @@
 #pragma once
 
-#include <memory>
 #include <QColor>
 #include <QWidget>
 
 class QComboBox;
 class QPushButton;
 class QSpinBox;
-namespace Ui {
-class ScopeStylePanel;
-}
 
 class ScopeStylePanel : public QWidget {
     Q_OBJECT
@@ -41,8 +37,9 @@ private:
     };
 
     void connectSignals();
+    void setupUi();
     void updateColorButton(int index);
 
-    std::unique_ptr<Ui::ScopeStylePanel> ui;
+    QPushButton *m_defaultButton = nullptr;
     ChannelRow m_rows[kChannelCount];
 };

@@ -361,6 +361,33 @@ Style: QToolButton，checkable，切换通道样式面板
 注：原 STOPPED/RUNNING 状态标签已移除，采样状态仅通过采样按钮文字和样式区分
 ```
 
+### ScopeStylePanel（通道样式面板）
+
+```
+触发方式: TopBar 中 Style 按钮（checkable），点击弹出/关闭
+位置: 锚定在 ScopePlotWidget 右上角下方，与 Style 按钮对齐
+宽度: 200px
+背景: Style::Color::ScopePanelBackground
+
+内容:
+  标题行: "Channel Styles" (10px bold)
+  每通道一行 (CH1~CH8):
+    [颜色按钮 20×20px] [CHn 标签 30px] [线宽 QDoubleSpinBox 92px] [线型 QToolButton 52px] [数据点 QToolButton 52px]
+  底部: [Default Settings 按钮]
+
+线型选项: Solid / Dash / Dot / SolidDot
+数据点选项: On / Off
+线宽范围: 0.5 ~ 8.0, 步进 0.5
+```
+
+### ScopePreviewWidget（通道波形预览）
+
+```
+位置: ScopeStylePanel 中每个通道行的波形预览区域
+用途: 展示当前通道的线型/线宽/颜色效果预览
+绘制: QPainter 自绘制，绘制一段正弦波示例
+```
+
 ### ScopePlotWidget（波形绘制画布）
 
 ```

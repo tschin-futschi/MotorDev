@@ -1,12 +1,12 @@
 #pragma once
 
-#include <memory>
 #include <QtTypes>
 #include <QWidget>
-
-namespace Ui {
-class TopBar;
-}
+class QComboBox;
+class QFrame;
+class QLabel;
+class QToolButton;
+class QSvgWidget;
 
 class TopBar : public QWidget {
     Q_OBJECT
@@ -26,8 +26,15 @@ public slots:
     void setViewMode(int mode);
 
 private:
+    void setupUi();
     void connectSignals();
 
-    std::unique_ptr<Ui::TopBar> ui;
+    QSvgWidget *m_logo = nullptr;
+    QLabel *m_portValueLabel = nullptr;
+    QLabel *m_connectionIndicator = nullptr;
+    QLabel *m_connectionLabel = nullptr;
+    QToolButton *m_viewModeButton = nullptr;
+    QToolButton *m_styleButton = nullptr;
+    QComboBox *m_languageCombo = nullptr;
     int m_viewMode = 0;
 };

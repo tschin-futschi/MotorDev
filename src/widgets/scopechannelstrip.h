@@ -1,11 +1,8 @@
 #pragma once
 
-#include <memory>
+#include <QCheckBox>
+#include <QLineEdit>
 #include <QWidget>
-
-namespace Ui {
-class ScopeChannelStrip;
-}
 
 class ScopeChannelStrip : public QWidget {
     Q_OBJECT
@@ -22,8 +19,11 @@ signals:
     void addressChanged(int index, const QString &text);
 
 private:
+    void setupUi();
     void connectSignals();
 
-    std::unique_ptr<Ui::ScopeChannelStrip> ui;
+    QCheckBox *m_checkBox = nullptr;
+    QLineEdit *m_descEdit = nullptr;
+    QLineEdit *m_addrEdit = nullptr;
     int m_index = 0;
 };

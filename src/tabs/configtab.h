@@ -1,20 +1,17 @@
 #pragma once
 
-#include <QByteArray>
 #include <QWidget>
-#include <memory>
 
 #include <cstdint>
 
+class ConfigService;
 class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
+class QGroupBox;
 class QPushButton;
 class SerialManager;
-
-namespace Ui {
-class ConfigTab;
-}
+class QSplitter;
 
 class ConfigTab : public QWidget {
     Q_OBJECT
@@ -28,18 +25,19 @@ signals:
     void serialDisconnected();
 
 private:
+    void setupUi();
     void connectSignals();
     void refreshAvailablePorts();
     void setSerialControlsConnected(bool connected);
-    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
-    void handleScanResponse(const QByteArray &data);
-    void handleSetAddrResponse();
-    void handleErrorResponse(const QByteArray &data);
 
-    std::unique_ptr<Ui::ConfigTab> ui;
-    SerialManager *m_serialManager = nullptr;
+    ConfigService *m_service = nullptr;
     DeviceContext *m_deviceContext = nullptr;
-    bool m_isSerialConnected = false;
+    QWidget *m_sidebarContent = nullptr;
+    QWidget *m_mainContent = nullptr;
+    QSplitter *m_mainSplitter = nullptr;
+    QGroupBox *m_icGroup = nullptr;
+    QGroupBox *m_serialGroup = nullptr;
+    QGroupBox *m_pmicGroup = nullptr;
 
     QComboBox *m_icCombo = nullptr;
     QComboBox *m_slaveIdCombo = nullptr;

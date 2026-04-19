@@ -17,6 +17,16 @@
 using namespace MotorDev;
 
 namespace {
+// --- Plot geometry constants ---
+constexpr int FramePadding = 8;      // outer frame to plot frame
+constexpr int AxisLeftMargin = 58;   // Y-axis label width
+constexpr int AxisTopMargin = 14;    // top padding inside frame
+constexpr int AxisRightMargin = 14;  // right padding inside frame
+constexpr int AxisBottomMargin = 32; // X-axis label height
+constexpr int StackedLaneGap = 10;   // gap between stacked lanes
+constexpr int RenderIntervalMs = 16; // ~60fps active render
+constexpr int IdleIntervalMs = 100;  // idle render interval
+
 // nth_element-based median over a fixed-size buffer (no allocation).
 double medianValueInPlace(std::vector<double> &values, int count) {
     if (count <= 0) {
@@ -78,7 +88,7 @@ ScopePlotWidget::ScopePlotWidget(QWidget *parent)
 
     m_renderTimer = new QTimer(this);
     m_renderTimer->setTimerType(Qt::PreciseTimer);
-    m_renderTimer->setInterval(16); // ~60 fps
+    m_renderTimer->setInterval(RenderIntervalMs);
     connect(m_renderTimer, &QTimer::timeout,
             this, QOverload<>::of(&QOpenGLWidget::update));
     m_renderTimer->start();
@@ -109,7 +119,7 @@ void ScopePlotWidget::setRunning(bool running) {
         // Slow the timer down a bit when idle to save CPU, but never stop it
         // entirely so the last frame stays visible and any state change still
         // gets repainted on the next tick.
-        m_renderTimer->setInterval(running ? 16 : 100);
+        m_renderTimer->setInterval(running ? RenderIntervalMs : IdleIntervalMs);
     }
     updateSamplingButton();
 }
@@ -282,8 +292,8 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, false);
-    const QRect frameRect = rect().adjusted(8, 8, -8, -8);
-    const QRect plotRect = frameRect.adjusted(58, 14, -14, -32);
+    const QRect frameRect = rect().adjusted(FramePadding, FramePadding, -FramePadding, -FramePadding);
+    const QRect plotRect = currentPlotRect();
 
     // GL backend redraws every frame; static frame is cheap on GPU.
     paintStaticFrame(&painter, frameRect, plotRect);
@@ -339,7 +349,7 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     paintYAxis(&painter, plotRect);
     m_yViewMin = previousMin;
     m_yViewMax = previousMax;
-    paintTimeAxis(&painter, frameRect);
+    paintTimeAxis(&painter, plotRect);
     paintFrameTimeReadout(&painter, frameRect);
 }
 
@@ -529,8 +539,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
         return;
     }
 
-    const int gap = 10;
-    const int laneHeight = (rect.height() - gap * (channelCount - 1)) / channelCount;
+    const int laneHeight = (rect.height() - StackedLaneGap * (channelCount - 1)) / channelCount;
     painter->setFont(QFont(QStringLiteral("Segoe UI"), 9));
 
     const int startIndex = visibleSampleStart();
@@ -544,7 +553,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
         }
 
         const QRect laneRect(rect.left(),
-                             rect.top() + laneIndex * (laneHeight + gap),
+                             rect.top() + laneIndex * (laneHeight + StackedLaneGap),
                              rect.width(),
                              laneHeight);
 
@@ -746,8 +755,11 @@ void ScopePlotWidget::computeAutoYFromSnapshot(int startIndex, int endIndex,
     }
 }
 
-void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &rect) {
-    const QRect axisRect(rect.left() + 62, rect.bottom() - 24, rect.width() - 76, 20);
+void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
+    const QRect axisRect(plotRect.left(),
+                         plotRect.bottom() + 4,
+                         plotRect.width(),
+                         AxisBottomMargin - 8);
     painter->setPen(Style::Color::ScopeTextSubtle);
     painter->setFont(QFont(QStringLiteral("Segoe UI"), 8));
 
@@ -873,8 +885,8 @@ void ScopePlotWidget::markAutoYDirty() {
 }
 
 QRect ScopePlotWidget::currentPlotRect() const {
-    const QRect frameRect = rect().adjusted(8, 8, -8, -8);
-    return frameRect.adjusted(58, 14, -14, -32);
+    const QRect frameRect = rect().adjusted(FramePadding, FramePadding, -FramePadding, -FramePadding);
+    return frameRect.adjusted(AxisLeftMargin, AxisTopMargin, -AxisRightMargin, -AxisBottomMargin);
 }
 
 int ScopePlotWidget::rawWindowSampleCount() const {

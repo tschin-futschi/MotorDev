@@ -42,6 +42,7 @@
 
 - `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态、viewMode、PendingCommand 采样序列状态机、ScopeStreamBatcher 批量数据接收；通过 MainWindow 桥接与 TopBar 上的示波器控件交互
 - `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击重置视图）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔 + 4x MSAA，8 通道稳定 60fps
+- `src/widgets/scopestylepanel` `[UI-Widget]` — 示波器通道样式面板（颜色选择、线宽、线型、数据点开关）；由 TopBar 的 Style 按钮触发显隐
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
 - `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 启动/停止/清除/录入参数，UI 完整，信号已连接；后端处理在 oscilloscoptab 中为 stub）
@@ -70,6 +71,7 @@
 | 文件 | 用途 |
 |------|------|
 | `src/ui/scopeviewmode.h` | ScopeViewMode 枚举（Overlay/Stacked），供 ScopePlotWidget 和 OscilloscopTab 共用 |
+| `src/ui/repolish.h` | QSS repolish 工具函数（unpolish + polish + update），供 Widget 动态样式切换使用 |
 | `src/ui/style_constants.h` | 所有颜色、尺寸、间距常量，禁止在其他文件硬编码 |
 | `CMakeLists.txt` | 项目构建定义，新增源文件必须在此注册 |
 

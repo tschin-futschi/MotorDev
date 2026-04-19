@@ -1,13 +1,9 @@
 #pragma once
 
-#include <memory>
 #include <QWidget>
 
 class QLineEdit;
 class QPushButton;
-namespace Ui {
-class ScopeRegisterPanel;
-}
 
 class ScopeRegisterPanel : public QWidget {
     Q_OBJECT
@@ -27,9 +23,9 @@ signals:
 private:
     static constexpr int RowCount = 8;
 
+    void setupUi();
     void connectSignals();
 
-    std::unique_ptr<Ui::ScopeRegisterPanel> ui;
     QLineEdit *m_descEdits[RowCount] = {};
     QLineEdit *m_addrEdits[RowCount] = {};
     QLineEdit *m_valueEdits[RowCount] = {};

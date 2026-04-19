@@ -1,13 +1,14 @@
 #include "widgets/scopestylepanel.h"
 
-#include "ui_scopestylepanel.h"
-
 #include <QColorDialog>
 #include <QComboBox>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSpinBox>
-#include <utility>
+#include <QSpacerItem>
+#include <QVBoxLayout>
 
 namespace {
 int styleIndexFor(Qt::PenStyle style) {
@@ -26,17 +27,8 @@ int styleIndexFor(Qt::PenStyle style) {
 }
 
 ScopeStylePanel::ScopeStylePanel(QWidget *parent)
-    : QWidget(parent)
-    , ui(std::make_unique<Ui::ScopeStylePanel>()) {
-    ui->setupUi(this);
-    m_rows[0].colorButton = ui->colorButton0; m_rows[0].widthSpin = ui->widthSpin0; m_rows[0].styleCombo = ui->styleCombo0;
-    m_rows[1].colorButton = ui->colorButton1; m_rows[1].widthSpin = ui->widthSpin1; m_rows[1].styleCombo = ui->styleCombo1;
-    m_rows[2].colorButton = ui->colorButton2; m_rows[2].widthSpin = ui->widthSpin2; m_rows[2].styleCombo = ui->styleCombo2;
-    m_rows[3].colorButton = ui->colorButton3; m_rows[3].widthSpin = ui->widthSpin3; m_rows[3].styleCombo = ui->styleCombo3;
-    m_rows[4].colorButton = ui->colorButton4; m_rows[4].widthSpin = ui->widthSpin4; m_rows[4].styleCombo = ui->styleCombo4;
-    m_rows[5].colorButton = ui->colorButton5; m_rows[5].widthSpin = ui->widthSpin5; m_rows[5].styleCombo = ui->styleCombo5;
-    m_rows[6].colorButton = ui->colorButton6; m_rows[6].widthSpin = ui->widthSpin6; m_rows[6].styleCombo = ui->styleCombo6;
-    m_rows[7].colorButton = ui->colorButton7; m_rows[7].widthSpin = ui->widthSpin7; m_rows[7].styleCombo = ui->styleCombo7;
+    : QWidget(parent) {
+    setupUi();
     connectSignals();
 }
 
@@ -83,7 +75,7 @@ void ScopeStylePanel::setChannelShowDataPoints(int index, bool show) {
 }
 
 void ScopeStylePanel::connectSignals() {
-    connect(ui->defaultButton, &QPushButton::clicked, this, [this]() {
+    connect(m_defaultButton, &QPushButton::clicked, this, [this]() {
         emit defaultSettingsRequested();
     });
 
@@ -127,4 +119,66 @@ void ScopeStylePanel::updateColorButton(int index) {
 
     // Runtime-selected color cannot be expressed in static QSS.
     m_rows[index].colorButton->setStyleSheet(QStringLiteral("background:%1;").arg(m_rows[index].currentColor.name()));
+}
+
+void ScopeStylePanel::setupUi() {
+    setObjectName(QStringLiteral("ScopeStylePanel"));
+    setMinimumSize(QSize(200, 0));
+    setMaximumSize(QSize(200, QWIDGETSIZE_MAX));
+
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setObjectName(QStringLiteral("rootLayout"));
+    rootLayout->setSpacing(2);
+    rootLayout->setContentsMargins(8, 8, 8, 8);
+
+    auto *titleLabel = new QLabel(this);
+    titleLabel->setObjectName(QStringLiteral("titleLabel"));
+    titleLabel->setText(tr("Channel Style"));
+    rootLayout->addWidget(titleLabel);
+
+    m_defaultButton = new QPushButton(this);
+    m_defaultButton->setObjectName(QStringLiteral("defaultButton"));
+    m_defaultButton->setProperty("buttonRole", QStringLiteral("default"));
+    m_defaultButton->setText(tr("Default Setting"));
+    rootLayout->addWidget(m_defaultButton);
+
+    const QStringList comboItems = {tr("Solid"), tr("Dash"), tr("Dot"), tr("DashDot"), tr("SolidDot")};
+    for (int index = 0; index < kChannelCount; ++index) {
+        auto *rowLayout = new QHBoxLayout();
+        rowLayout->setObjectName(QStringLiteral("row%1Layout").arg(index));
+        rowLayout->setSpacing(2);
+
+        auto *label = new QLabel(this);
+        label->setObjectName(QStringLiteral("ch%1Label").arg(index));
+        label->setMinimumSize(QSize(30, 0));
+        label->setMaximumSize(QSize(30, QWIDGETSIZE_MAX));
+        label->setText(QStringLiteral("CH%1").arg(index + 1));
+        rowLayout->addWidget(label);
+
+        m_rows[index].colorButton = new QPushButton(this);
+        m_rows[index].colorButton->setObjectName(QStringLiteral("colorButton%1").arg(index));
+        m_rows[index].colorButton->setMinimumSize(QSize(20, 20));
+        m_rows[index].colorButton->setMaximumSize(QSize(20, 20));
+        m_rows[index].colorButton->setProperty("buttonRole", QStringLiteral("color"));
+        m_rows[index].colorButton->setText(QString());
+        rowLayout->addWidget(m_rows[index].colorButton);
+
+        m_rows[index].widthSpin = new QSpinBox(this);
+        m_rows[index].widthSpin->setObjectName(QStringLiteral("widthSpin%1").arg(index));
+        m_rows[index].widthSpin->setMinimumSize(QSize(92, 24));
+        m_rows[index].widthSpin->setMaximumSize(QSize(92, 24));
+        m_rows[index].widthSpin->setRange(1, 8);
+        m_rows[index].widthSpin->setValue(4);
+        m_rows[index].widthSpin->setSuffix(QStringLiteral("px"));
+        rowLayout->addWidget(m_rows[index].widthSpin);
+
+        m_rows[index].styleCombo = new QComboBox(this);
+        m_rows[index].styleCombo->setObjectName(QStringLiteral("styleCombo%1").arg(index));
+        m_rows[index].styleCombo->addItems(comboItems);
+        rowLayout->addWidget(m_rows[index].styleCombo);
+
+        rootLayout->addLayout(rowLayout);
+    }
+
+    rootLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }

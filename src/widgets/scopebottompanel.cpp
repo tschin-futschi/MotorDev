@@ -1,6 +1,6 @@
 #include "widgets/scopebottompanel.h"
 
-#include "ui_scopebottompanel.h"
+#include "ui/style_constants.h"
 #include "widgets/scopechannelstrip.h"
 #include "widgets/scopegeneratorpanel.h"
 #include "widgets/scoperegisterpanel.h"
@@ -17,37 +17,44 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QSizePolicy>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QWindow>
-#include <utility>
+
+using namespace MotorDev;
 
 ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     : QWidget(parent)
-    , ui(std::make_unique<Ui::ScopeBottomPanel>())
     , m_overlayHost(overlayHost) {
-    ui->setupUi(this);
+    setupUi();
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-    ui->channelFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-    ui->channelHeaderLayout->setStretch(ui->channelHeaderLayout->indexOf(ui->noteEdit), 1);
+    m_channelFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    if (auto *channelHeaderLayout = qobject_cast<QHBoxLayout *>(m_channelFrame->layout()->itemAt(0)->layout())) {
+        channelHeaderLayout->setStretch(channelHeaderLayout->indexOf(m_noteEdit), 1);
+    }
 
-    auto *stripRowLayout = qobject_cast<QHBoxLayout *>(ui->channelStripRow->layout());
+    auto *stripRowLayout = qobject_cast<QHBoxLayout *>(m_channelStripRow->layout());
     for (int i = 0; i < 8; ++i) {
-        m_channels[i] = new ScopeChannelStrip(i, ui->channelStripRow);
+        m_channels[i] = new ScopeChannelStrip(i, m_channelStripRow);
         stripRowLayout->addWidget(m_channels[i], 1);
     }
 
-    m_registerPanel = new ScopeRegisterPanel;
-    m_generatorPanel = new ScopeGeneratorPanel;
+    // Panels are created without parent — ownership is transferred to
+    // the overlay QWidget via layout->addWidget() in createOverlayWindow().
+    // The overlay windows are top-level Qt::Tool widgets, manually
+    // deleted in ~ScopeBottomPanel().
+    m_registerPanel = new ScopeRegisterPanel(nullptr);
+    m_generatorPanel = new ScopeGeneratorPanel(nullptr);
     m_registerWindow = createOverlayWindow(tr("Register R/W"), m_registerPanel, QSize(500, 400));
     m_generatorWindow = createOverlayWindow(tr("Wave Generator"), m_generatorPanel, QSize(420, 240));
 
-    m_yAxisMenu = new QMenu(ui->yAxisButton);
+    m_yAxisMenu = new QMenu(m_yAxisButton);
     m_yAxisMenu->addAction(tr("Auto"));
     m_yAxisMenu->addAction(tr("Manual..."));
-    ui->yAxisButton->setMenu(m_yAxisMenu);
+    m_yAxisButton->setMenu(m_yAxisMenu);
 
-    ui->intervalCombo->setCurrentIndex(5);
-    ui->windowCombo->setCurrentIndex(0);
+    m_intervalCombo->setCurrentIndex(5);
+    m_windowCombo->setCurrentIndex(0);
 
     connectSignals();
     refreshPanels();
@@ -68,8 +75,8 @@ void ScopeBottomPanel::setRunning(bool running) {
 
     m_running = running;
     const bool configEditable = !running;
-    ui->intervalCombo->setEnabled(configEditable);
-    ui->windowCombo->setEnabled(configEditable);
+    m_intervalCombo->setEnabled(configEditable);
+    m_windowCombo->setEnabled(configEditable);
     for (ScopeChannelStrip *channel : m_channels) {
         if (channel != nullptr) {
             channel->setEnabled(configEditable);
@@ -139,24 +146,26 @@ QWidget *ScopeBottomPanel::createOverlayWindow(const QString &title, QWidget *co
 }
 
 void ScopeBottomPanel::refreshPanels() {
-    ui->channelFrame->setVisible(m_channelsVisible);
-    setMinimumHeight(m_channelsVisible ? 132 : 40);
-    setMaximumHeight(m_channelsVisible ? 240 : 40);
+    m_channelFrame->setVisible(m_channelsVisible);
+    setMinimumHeight(m_channelsVisible ? Style::Size::ScopeBottomPanelMinExpanded
+                                       : Style::Size::ScopeBottomPanelMinCollapsed);
+    setMaximumHeight(m_channelsVisible ? Style::Size::ScopeBottomPanelMaxExpanded
+                                       : Style::Size::ScopeBottomPanelMinCollapsed);
 
-    ui->channelsToggleButton->setText(m_channelsVisible ? tr("Hide Channels") : tr("Show Channels"));
-    ui->registerToggleButton->setText(m_registerWindow->isVisible() ? tr("Hide Register") : tr("Show Register"));
-    ui->generatorToggleButton->setText(m_generatorWindow->isVisible() ? tr("Hide Generator") : tr("Show Generator"));
+    m_channelsToggleButton->setText(m_channelsVisible ? tr("Hide Channels") : tr("Show Channels"));
+    m_registerToggleButton->setText(m_registerWindow->isVisible() ? tr("Hide Register") : tr("Show Register"));
+    m_generatorToggleButton->setText(m_generatorWindow->isVisible() ? tr("Hide Generator") : tr("Show Generator"));
 
     updateGeometry();
 }
 
 void ScopeBottomPanel::refreshYAxisButton() {
     if (m_yAxisAuto) {
-        ui->yAxisButton->setText(tr("Y Axis: Auto"));
+        m_yAxisButton->setText(tr("Y Axis: Auto"));
         return;
     }
 
-    ui->yAxisButton->setText(tr("Y Axis: %1 ~ %2")
+    m_yAxisButton->setText(tr("Y Axis: %1 ~ %2")
                                  .arg(QString::number(m_manualYMin, 'f', 1))
                                  .arg(QString::number(m_manualYMax, 'f', 1)));
 }
@@ -215,9 +224,9 @@ void ScopeBottomPanel::connectSignals() {
     connect(m_registerPanel, &ScopeRegisterPanel::writeRequested, this, &ScopeBottomPanel::registerWriteRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::clearPanelRequested, this, &ScopeBottomPanel::clearPanelRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::loadParamsRequested, this, &ScopeBottomPanel::loadParamsRequested);
-    connect(ui->intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
-    connect(ui->windowCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::displayWindowChanged);
-    connect(ui->noteEdit, &QLineEdit::textChanged, this, &ScopeBottomPanel::captureNoteChanged);
+    connect(m_intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
+    connect(m_windowCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::displayWindowChanged);
+    connect(m_noteEdit, &QLineEdit::textChanged, this, &ScopeBottomPanel::captureNoteChanged);
     connect(m_yAxisMenu, &QMenu::triggered, this, [this](QAction *action) {
         if (action == nullptr) {
             return;
@@ -243,11 +252,11 @@ void ScopeBottomPanel::connectSignals() {
         emit yAxisManualRequested(minValue, maxValue);
     });
 
-    connect(ui->channelsToggleButton, &QPushButton::clicked, this, [this]() {
+    connect(m_channelsToggleButton, &QPushButton::clicked, this, [this]() {
         m_channelsVisible = !m_channelsVisible;
         refreshPanels();
     });
-    connect(ui->registerToggleButton, &QPushButton::clicked, this, [this]() {
+    connect(m_registerToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_registerWindow->isVisible();
         m_registerWindow->setVisible(visible);
         if (visible) {
@@ -256,7 +265,7 @@ void ScopeBottomPanel::connectSignals() {
         }
         refreshPanels();
     });
-    connect(ui->generatorToggleButton, &QPushButton::clicked, this, [this]() {
+    connect(m_generatorToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_generatorWindow->isVisible();
         m_generatorWindow->setVisible(visible);
         if (visible) {
@@ -267,3 +276,99 @@ void ScopeBottomPanel::connectSignals() {
     });
 }
 
+void ScopeBottomPanel::setupUi() {
+    setObjectName(QStringLiteral("ScopeBottomPanel"));
+
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setObjectName(QStringLiteral("rootLayout"));
+    rootLayout->setSpacing(6);
+    rootLayout->setContentsMargins(8, 6, 8, 6);
+
+    m_channelFrame = new QWidget(this);
+    m_channelFrame->setObjectName(QStringLiteral("channelFrame"));
+    auto *channelLayout = new QVBoxLayout(m_channelFrame);
+    channelLayout->setObjectName(QStringLiteral("channelLayout"));
+    channelLayout->setSpacing(6);
+    channelLayout->setContentsMargins(8, 8, 8, 8);
+    rootLayout->addWidget(m_channelFrame);
+
+    auto *channelHeaderLayout = new QHBoxLayout();
+    channelHeaderLayout->setObjectName(QStringLiteral("channelHeaderLayout"));
+    channelHeaderLayout->setSpacing(6);
+    channelLayout->addLayout(channelHeaderLayout);
+
+    auto *intervalLabel = new QLabel(m_channelFrame);
+    intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
+    intervalLabel->setText(QStringLiteral("Sample Interval"));
+    channelHeaderLayout->addWidget(intervalLabel);
+
+    m_intervalCombo = new QComboBox(m_channelFrame);
+    m_intervalCombo->setObjectName(QStringLiteral("intervalCombo"));
+    m_intervalCombo->setMinimumSize(QSize(110, 0));
+    m_intervalCombo->addItems({QStringLiteral("100 us"), QStringLiteral("200 us"), QStringLiteral("300 us"), QStringLiteral("500 us"),
+                               QStringLiteral("750 us"), QStringLiteral("1000 us"), QStringLiteral("1500 us"), QStringLiteral("2000 us")});
+    channelHeaderLayout->addWidget(m_intervalCombo);
+
+    m_yAxisButton = new QToolButton(m_channelFrame);
+    m_yAxisButton->setObjectName(QStringLiteral("yAxisButton"));
+    m_yAxisButton->setMinimumSize(QSize(132, 0));
+    m_yAxisButton->setPopupMode(QToolButton::InstantPopup);
+    m_yAxisButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_yAxisButton->setText(QStringLiteral("Y Axis: Auto"));
+    channelHeaderLayout->addWidget(m_yAxisButton);
+
+    auto *windowLabel = new QLabel(m_channelFrame);
+    windowLabel->setObjectName(QStringLiteral("windowLabel"));
+    windowLabel->setText(QStringLiteral("Display Window"));
+    channelHeaderLayout->addWidget(windowLabel);
+
+    m_windowCombo = new QComboBox(m_channelFrame);
+    m_windowCombo->setObjectName(QStringLiteral("windowCombo"));
+    m_windowCombo->setMinimumSize(QSize(110, 0));
+    m_windowCombo->addItems({QStringLiteral("50 ms"), QStringLiteral("200 ms"), QStringLiteral("500 ms"),
+                             QStringLiteral("1000 ms"), QStringLiteral("2000 ms"), QStringLiteral("4000 ms")});
+    channelHeaderLayout->addWidget(m_windowCombo);
+
+    auto *noteLabel = new QLabel(m_channelFrame);
+    noteLabel->setObjectName(QStringLiteral("noteLabel"));
+    noteLabel->setText(QStringLiteral("Capture Note"));
+    channelHeaderLayout->addWidget(noteLabel);
+
+    m_noteEdit = new QLineEdit(m_channelFrame);
+    m_noteEdit->setObjectName(QStringLiteral("noteEdit"));
+    m_noteEdit->setMinimumSize(QSize(220, 0));
+    m_noteEdit->setPlaceholderText(QStringLiteral("Add capture note"));
+    channelHeaderLayout->addWidget(m_noteEdit);
+
+    m_channelStripRow = new QWidget(m_channelFrame);
+    m_channelStripRow->setObjectName(QStringLiteral("channelStripRow"));
+    auto *channelStripRowLayout = new QHBoxLayout(m_channelStripRow);
+    channelStripRowLayout->setObjectName(QStringLiteral("channelStripRowLayout"));
+    channelStripRowLayout->setSpacing(4);
+    channelStripRowLayout->setContentsMargins(0, 0, 0, 0);
+    channelLayout->addWidget(m_channelStripRow);
+
+    auto *buttonLayout = new QHBoxLayout();
+    buttonLayout->setObjectName(QStringLiteral("buttonLayout"));
+    buttonLayout->setSpacing(6);
+    rootLayout->addLayout(buttonLayout);
+    buttonLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+    m_channelsToggleButton = new QPushButton(this);
+    m_channelsToggleButton->setObjectName(QStringLiteral("channelsToggleButton"));
+    m_channelsToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
+    m_channelsToggleButton->setText(QStringLiteral("Hide Channels"));
+    buttonLayout->addWidget(m_channelsToggleButton);
+
+    m_registerToggleButton = new QPushButton(this);
+    m_registerToggleButton->setObjectName(QStringLiteral("registerToggleButton"));
+    m_registerToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
+    m_registerToggleButton->setText(QStringLiteral("Show Register"));
+    buttonLayout->addWidget(m_registerToggleButton);
+
+    m_generatorToggleButton = new QPushButton(this);
+    m_generatorToggleButton->setObjectName(QStringLiteral("generatorToggleButton"));
+    m_generatorToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
+    m_generatorToggleButton->setText(QStringLiteral("Show Generator"));
+    buttonLayout->addWidget(m_generatorToggleButton);
+}

@@ -1,0 +1,104 @@
+// SimulatorService — 模拟器协议调度、波形生成、流线程管理
+#pragma once
+
+#include <QByteArray>
+#include <QElapsedTimer>
+#include <QObject>
+#include <QVector>
+
+#include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <thread>
+
+class SimulatorSerial;
+
+class SimulatorService : public QObject {
+    Q_OBJECT
+
+public:
+    explicit SimulatorService(QObject *parent = nullptr);
+    ~SimulatorService() override;
+
+    SimulatorSerial *simulator() const { return m_simulator; }
+
+    void connectToPort(const QString &portName, qint32 baudRate);
+    void disconnectPort();
+    bool isConnected() const { return m_isConnected; }
+
+    void setResponseDelay(int delayMs) { m_responseDelayMs = delayMs; }
+    void setScanAddresses(const QString &text) { m_scanAddressText = text; }
+    void setIcAddrResultSuccess(bool success) { m_icAddrSuccess = success; }
+    void setWriteResultSuccess(bool success) { m_writeSuccess = success; }
+    void setRegisterReadValue(const QString &text);
+
+signals:
+    void connected();
+    void disconnected();
+    void errorOccurred(const QString &message);
+    void logEntry(const QString &dir, uint8_t cmd, uint8_t seq, const QByteArray &data, const QString &note);
+    void sysLogEntry(const QString &message, bool isError);
+    void debugStreamGenerated(uint8_t channelMask, const QVector<int16_t> &samples);
+    void debugStreamActiveChanged(bool active);
+
+private slots:
+    void onSimulatorConnected();
+    void onSimulatorDisconnected();
+    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
+
+private:
+    struct PendingDebugFrame {
+        uint8_t channelMask = 0x00;
+        QVector<int16_t> samples;
+    };
+
+    static QString describeIncoming(uint8_t cmd, const QByteArray &data);
+
+    void dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteArray &data);
+    void handleHeartbeat(uint8_t seq);
+    void handleI2cScan(uint8_t seq, const QByteArray &data);
+    void handleSetIcAddr(uint8_t seq, const QByteArray &data);
+    void handleReadRegister(uint8_t seq, const QByteArray &data);
+    void handleWriteRegister(uint8_t seq, const QByteArray &data);
+    void handleStartSampling(uint8_t seq);
+    void handleStopSampling(uint8_t seq);
+    void handleSetSampleInterval(uint8_t seq, const QByteArray &data);
+    void handleSetSampleChannels(uint8_t seq, const QByteArray &data);
+    void handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data);
+    void handleUnknownCommand(uint8_t cmd, uint8_t seq);
+
+    void streamWorkerLoop();
+    void emitOneStreamFrame();
+    void sendResponseFrame(uint8_t seq, uint8_t cmd, const QByteArray &data);
+    void sendErrorFrame(uint8_t seq, uint8_t errorCode);
+    void sendDebugInfo(const QString &message);
+    void queueDebugStreamFrame(uint8_t channelMask, const QVector<int16_t> &samples);
+    void flushPendingDebugStream();
+    qint16 registerReadValue() const;
+
+    SimulatorSerial *m_simulator = nullptr;
+    bool m_isConnected = false;
+    int m_responseDelayMs = 0;
+    QString m_scanAddressText = QStringLiteral("0x5A");
+    bool m_icAddrSuccess = true;
+    bool m_writeSuccess = true;
+    qint16 m_regReadValue = 0;
+    mutable std::mutex m_regReadMutex;
+
+    bool m_sampling = false;
+    uint8_t m_sampleIntervalIndex = 0x05;
+    uint8_t m_channelMask = 0x01;
+    QVector<quint16> m_channelRegisterMap;
+    quint32 m_streamTick = 0;
+    qint16 m_streamBaseValue = 0;
+    QElapsedTimer m_streamElapsedTimer;
+    qint64 m_lastStreamActualUs = -1;
+    qint64 m_streamActualUsAccumulator = 0;
+    int m_streamActualUsSamples = 0;
+    std::thread m_streamThread;
+    std::mutex m_streamMutex;
+    std::condition_variable m_streamCv;
+    bool m_streamStopRequested = false;
+    QVector<PendingDebugFrame> m_pendingDebugFrames;
+    bool m_debugFlushQueued = false;
+};

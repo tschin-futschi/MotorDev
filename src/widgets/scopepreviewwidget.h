@@ -1,16 +1,16 @@
 ﻿#pragma once
 
-#include <memory>
 #include <QColor>
 #include <QWidget>
 #include <QVector>
 
 class ScopeBottomPanel;
+class ScopePlotWidget;
+class ScopeStylePanel;
 class QTimer;
-
-namespace Ui {
-class ScopePreviewWidget;
-}
+class QSplitter;
+class TopBar;
+class QWidget;
 
 class ScopePreviewWidget : public QWidget {
     Q_OBJECT
@@ -30,6 +30,7 @@ private:
         bool showDataPoints = false;
     };
 
+    void setupUi();
     void connectSignals();
     void refreshPlotData();
     void setRunning(bool running);
@@ -39,7 +40,12 @@ private:
     int displayWindowMsForText(const QString &text) const;
     uint8_t currentChannelMask() const;
 
-    std::unique_ptr<Ui::ScopePreviewWidget> ui;
+    TopBar *m_topBar = nullptr;
+    QSplitter *m_splitter = nullptr;
+    QWidget *m_plotArea = nullptr;
+    ScopePlotWidget *m_plotWidget = nullptr;
+    QWidget *m_bottomPanelHost = nullptr;
+    ScopeStylePanel *m_stylePanel = nullptr;
     ScopeBottomPanel *m_bottomPanel = nullptr;
     QTimer *m_previewTimer = nullptr;
     QVector<ChannelState> m_channels;

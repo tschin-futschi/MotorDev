@@ -1,21 +1,14 @@
 #pragma once
 
-#include <QByteArray>
-#include <QQueue>
 #include <QWidget>
-#include <memory>
 
-#include <cstdint>
-
+class QLabel;
 class QPushButton;
 class QLineEdit;
+class QSplitter;
+class RegisterService;
 class RegisterTable;
 class SerialManager;
-class QTimer;
-
-namespace Ui {
-class RegisterRwTab;
-}
 
 class RegisterRwTab : public QWidget {
     Q_OBJECT
@@ -27,23 +20,16 @@ public:
 public slots:
     void setConnected(bool connected);
 
-private slots:
-    void onReadRowRequested(int globalRow, quint16 addr);
-    void onWriteRowRequested(int globalRow, quint16 addr, qint16 value);
-    void onReadAllClicked();
-    void onWriteAllClicked();
-    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
-    void onSerialError(const QString &message);
-    void onConfigChanged();
-    void onTimeout();
-
 private:
+    void setupUi();
     void connectSignals();
-    void processNextInQueue();
     QString configFilePath() const;
 
-    std::unique_ptr<Ui::RegisterRwTab> ui;
+    RegisterService *m_service = nullptr;
     SerialManager *m_serialManager = nullptr;
+    QWidget *m_sidebarContent = nullptr;
+    QWidget *m_mainContent = nullptr;
+    QSplitter *m_mainSplitter = nullptr;
     RegisterTable *m_registerTable = nullptr;
     QPushButton *m_readAllButton = nullptr;
     QPushButton *m_writeAllButton = nullptr;
@@ -53,8 +39,4 @@ private:
     QLineEdit *m_batchDescEdit[4] = {};
     QLineEdit *m_batchPathEdit[4] = {};
     QPushButton *m_batchBrowseBtn[4] = {};
-    QTimer *m_timeoutTimer = nullptr;
-    QQueue<int> m_pendingQueue;
-    int m_pendingRow = -1;
-    bool m_isWriteOp = false;
 };

@@ -26,6 +26,9 @@ SerialManager::SerialManager(QObject *parent)
 
     qRegisterMetaType<QVector<int16_t>>("QVector<int16_t>");
 
+    // QThread must not have a parent when the QObject using it calls
+    // moveToThread() — Qt forbids moving objects with a parent to
+    // another thread. Manually deleted in ~SerialManager().
     m_thread = new QThread();
     connect(m_thread, &QThread::started, this, &SerialManager::init);
 
@@ -187,9 +190,10 @@ void SerialManager::onRetryTimeout() {
     }
 
     if (m_retryCount >= MaxRetries) {
-        qWarning().noquote() << QStringLiteral("Command timeout: seq=%1 cmd=%2 after 3 attempts")
+        qWarning().noquote() << QStringLiteral("Command timeout: seq=%1 cmd=%2 after %3 attempts")
                                     .arg(formatByte(m_pendingSeq))
-                                    .arg(formatByte(m_pendingCmd));
+                                    .arg(formatByte(m_pendingCmd))
+                                    .arg(MaxRetries + 1);
         clearPendingCommand();
         emit errorOccurred(QStringLiteral("Command timeout"));
         return;
@@ -211,7 +215,11 @@ void SerialManager::onHeartbeatTimeout() {
         return;
     }
 
-    const QByteArray heartbeatFrame = FrameParser::encodeControlFrame(m_nextSeq++, HeartbeatCommand, {});
+    // Heartbeat is sent regardless of pending command state.
+    // Response matching is safe: handleControlFrame() dispatches heartbeat
+    // responses by cmd==0x00 before checking seq, so no conflict with
+    // pending command responses.
+    const QByteArray heartbeatFrame = FrameParser::encodeControlFrame(m_nextSeq++, MotorProtocol::CmdHeartbeat, {});
     m_serial->write(heartbeatFrame);
 
     ++m_missedHeartbeats;
@@ -265,7 +273,7 @@ void SerialManager::stopHeartbeatTimer() {
 }
 
 void SerialManager::handleControlFrame(const ControlFrame &frame) {
-    if (frame.cmd == HeartbeatCommand) {
+    if (frame.cmd == MotorProtocol::CmdHeartbeat) {
         qDebug() << "Heartbeat response received";
         m_missedHeartbeats = 0;
         return;
@@ -276,7 +284,7 @@ void SerialManager::handleControlFrame(const ControlFrame &frame) {
                               .arg(formatByte(frame.cmd))
                               .arg(frame.data.size());
 
-    if (frame.cmd == ErrorResponseCommand) {
+    if (frame.cmd == MotorProtocol::CmdErrorResponse) {
         clearPendingCommand();
         emit frameReceived(frame.cmd, frame.seq, frame.data);
         return;

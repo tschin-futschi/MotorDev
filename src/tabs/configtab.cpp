@@ -1,25 +1,27 @@
 #include "tabs/configtab.h"
 
 #include "devicecontext.h"
-#include "protocol/motor_protocol.h"
-#include "serialmanager.h"
+#include "services/configservice.h"
 #include "ui/repolish.h"
 #include "ui/style_constants.h"
-#include "ui_configtab.h"
 #include "widgets/sidebar.h"
 
-#include <QByteArray>
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QEvent>
 #include <QGraphicsDropShadowEffect>
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
-#include <QMetaObject>
+#include <QFormLayout>
+#include <QLabel>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QSplitter>
+#include <QSpacerItem>
 #include <QStyle>
+#include <QVBoxLayout>
 #include <QDebug>
-#include <utility>
 
 using namespace MotorDev;
 
@@ -86,50 +88,16 @@ QString motorIcTypeToString(MotorIcType type) {
 
 ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent)
     : QWidget(parent)
-    , ui(std::make_unique<Ui::ConfigTab>())
-    , m_serialManager(serialManager)
     , m_deviceContext(deviceContext) {
     qRegisterMetaType<uint8_t>("uint8_t");
-    ui->setupUi(this);
-    for (int column = 0; column < 4; ++column) {
-        ui->upperLayout->setColumnStretch(column, 1);
-    }
-    for (int row = 0; row < 3; ++row) {
-        ui->upperLayout->setRowStretch(row, 1);
-    }
-
-    auto *topLayout = qobject_cast<QHBoxLayout *>(layout());
-    if (topLayout != nullptr) {
-        topLayout->removeWidget(ui->sidebarContent);
-        auto *sidebar = new Sidebar(tr("配置"), ui->sidebarContent, this);
-        topLayout->insertWidget(0, sidebar);
-    }
-
-    ui->mainSplitter->setStretchFactor(0, 4);
-    ui->mainSplitter->setStretchFactor(1, 1);
-    for (auto *group : {ui->icGroup, ui->serialGroup, ui->pmicGroup}) {
+    m_service = new ConfigService(serialManager, deviceContext, this);
+    setupUi();
+    for (auto *group : {m_icGroup, m_serialGroup, m_pmicGroup}) {
         group->setAttribute(Qt::WA_Hover, true);
         group->setProperty("hovered", false);
         group->installEventFilter(new GroupHoverFilter(group));
         applyPanelShadow(group);
     }
-
-    m_icCombo = ui->icCombo;
-    m_slaveIdCombo = ui->slaveIdCombo;
-    m_icScanButton = ui->icScanButton;
-    m_icConnectButton = ui->icConnectButton;
-    m_portCombo = ui->portCombo;
-    m_baudRateCombo = ui->baudRateCombo;
-    m_scanButton = ui->scanButton;
-    m_connectButton = ui->connectButton;
-    m_drvddSpin = ui->drvddSpin;
-    m_vcmvddSpin = ui->vcmvddSpin;
-    m_iovddSpin = ui->iovddSpin;
-    m_pmicConfigButton = ui->pmicConfigButton;
-    m_fileCombo = ui->fileCombo;
-    m_browseButton = ui->browseButton;
-    m_writeButton = ui->writeButton;
-    m_readButton = ui->readButton;
 
     m_slaveIdCombo->setPlaceholderText(QStringLiteral("Scan first"));
     m_slaveIdCombo->setCurrentIndex(-1);
@@ -149,7 +117,7 @@ ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext,
 ConfigTab::~ConfigTab() = default;
 
 void ConfigTab::connectSignals() {
-    if (m_serialManager == nullptr || m_deviceContext == nullptr) {
+    if (m_service == nullptr || m_deviceContext == nullptr) {
         qWarning() << "ConfigTab dependencies are not fully initialized";
         return;
     }
@@ -161,40 +129,63 @@ void ConfigTab::connectSignals() {
         m_icCombo->setCurrentIndex(indexFromMotorIcType(m_deviceContext->icType()));
     }
 
-    connect(m_scanButton, &QPushButton::clicked, this, [this]() { qDebug() << "Scan started"; refreshAvailablePorts(); });
-    connect(m_connectButton, &QPushButton::clicked, this, [this]() {
-        if (m_serialManager == nullptr) return;
-        if (m_isSerialConnected) { qDebug() << "Disconnecting..."; QMetaObject::invokeMethod(m_serialManager, "closePort", Qt::QueuedConnection); return; }
-        const QString portName = m_portCombo->currentText().trimmed();
-        if (portName.isEmpty()) { qWarning() << "Connect failed: no port selected"; return; }
-        const qint32 baudRate = m_baudRateCombo->currentText().toInt();
-        qDebug().noquote() << QStringLiteral("Connecting to %1 at %2...").arg(portName).arg(baudRate);
-        QMetaObject::invokeMethod(m_serialManager, "openPort", Qt::QueuedConnection, Q_ARG(QString, portName), Q_ARG(qint32, baudRate));
+    // UI → Service
+    connect(m_scanButton, &QPushButton::clicked, this, [this]() {
+        qDebug() << "Scan started";
+        refreshAvailablePorts();
     });
-    connect(m_serialManager, &SerialManager::connected, this, [this]() { qDebug() << "Serial connected"; setSerialControlsConnected(true); });
-    connect(m_serialManager, &SerialManager::disconnected, this, [this]() { qDebug() << "Serial disconnected"; setSerialControlsConnected(false); });
-    connect(m_serialManager, &SerialManager::errorOccurred, this, [](const QString &message) { qWarning().noquote() << QStringLiteral("Serial error: %1").arg(message); });
-    connect(m_serialManager, &SerialManager::frameReceived, this, &ConfigTab::onFrameReceived);
-    connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) { const MotorIcType type = motorIcTypeFromIndex(index); qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(motorIcTypeToString(type)); m_deviceContext->setIcType(type); });
-    connect(m_deviceContext, &DeviceContext::icTypeChanged, this, [this](MotorIcType type) { const QSignalBlocker blocker(m_icCombo); m_icCombo->setCurrentIndex(indexFromMotorIcType(type)); });
+    connect(m_connectButton, &QPushButton::clicked, this, [this]() {
+        if (m_service->isConnected()) {
+            m_service->disconnectPort();
+            return;
+        }
+        const QString portName = m_portCombo->currentText().trimmed();
+        if (portName.isEmpty()) {
+            qWarning() << "Connect failed: no port selected";
+            return;
+        }
+        const qint32 baudRate = m_baudRateCombo->currentText().toInt();
+        m_service->connectToPort(portName, baudRate);
+    });
     connect(m_icScanButton, &QPushButton::clicked, this, [this]() {
-        if (m_serialManager == nullptr || !m_isSerialConnected) { qWarning() << "I2C scan failed: serial not connected"; return; }
-        qDebug() << "I2C scan started on bus I2C2";
-        QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection, Q_ARG(uint8_t, MotorProtocol::CmdI2cBusScan), Q_ARG(QByteArray, MotorProtocol::encodeI2cBusScan()));
+        m_service->startI2cScan();
     });
     connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
-        if (m_serialManager == nullptr || !m_isSerialConnected) { qWarning() << "IC connect failed: serial not connected"; return; }
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
-        if (addrText.isEmpty()) { qWarning() << "IC connect failed: no slave address selected"; return; }
-        bool ok = false; const uint addr = addrText.toUInt(&ok, 16);
-        if (!ok || addr == 0 || addr > 0x7F) { qWarning().noquote() << QStringLiteral("IC connect failed: invalid address %1").arg(addrText); return; }
-        qDebug().noquote() << QStringLiteral("Setting motor IC address to 0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
-        QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection, Q_ARG(uint8_t, MotorProtocol::CmdSetMotorIcAddr), Q_ARG(QByteArray, MotorProtocol::encodeSetMotorIcAddr(static_cast<uint8_t>(addr))));
+        if (addrText.isEmpty()) {
+            qWarning() << "IC connect failed: no slave address selected";
+            return;
+        }
+        bool ok = false;
+        const uint addr = addrText.toUInt(&ok, 16);
+        if (!ok || addr == 0 || addr > 0x7F) {
+            qWarning().noquote() << QStringLiteral("IC connect failed: invalid address %1").arg(addrText);
+            return;
+        }
+        m_service->setMotorIcAddress(static_cast<uint8_t>(addr));
     });
+
+    // IC type combo → DeviceContext
+    connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+        const MotorIcType type = motorIcTypeFromIndex(index);
+        qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(motorIcTypeToString(type));
+        m_deviceContext->setIcType(type);
+    });
+    connect(m_deviceContext, &DeviceContext::icTypeChanged, this, [this](MotorIcType type) {
+        const QSignalBlocker blocker(m_icCombo);
+        m_icCombo->setCurrentIndex(indexFromMotorIcType(type));
+    });
+
+    // Slave ID combo → DeviceContext
     connect(m_slaveIdCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
         if (text.isEmpty()) return;
-        bool ok = false; const uint value = text.toUInt(&ok, 16);
-        if (ok && value <= 0x7F) { qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper(); m_deviceContext->setSlaveId(static_cast<uint8_t>(value)); return; }
+        bool ok = false;
+        const uint value = text.toUInt(&ok, 16);
+        if (ok && value <= 0x7F) {
+            qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
+            m_deviceContext->setSlaveId(static_cast<uint8_t>(value));
+            return;
+        }
         if (!ok || value > 0x7F) qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
     });
     connect(m_deviceContext, &DeviceContext::slaveIdChanged, this, [this](uint8_t id) {
@@ -204,11 +195,37 @@ void ConfigTab::connectSignals() {
         const int index = m_slaveIdCombo->findText(text);
         if (index >= 0) m_slaveIdCombo->setCurrentIndex(index);
     });
+
+    // Service → UI
+    connect(m_service, &ConfigService::serialConnected, this, [this](const QString &port, qint32 baudRate) {
+        setSerialControlsConnected(true);
+        emit serialConnected(port, baudRate);
+    });
+    connect(m_service, &ConfigService::serialDisconnected, this, [this]() {
+        setSerialControlsConnected(false);
+        emit serialDisconnected();
+    });
+    connect(m_service, &ConfigService::i2cScanResult, this, [this](const QList<uint8_t> &addresses) {
+        const QSignalBlocker blocker(m_slaveIdCombo);
+        m_slaveIdCombo->clear();
+        for (uint8_t addr : addresses) {
+            const QString addrStr = QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
+            m_slaveIdCombo->addItem(addrStr);
+        }
+        if (m_slaveIdCombo->count() > 0) m_slaveIdCombo->setCurrentIndex(0);
+    });
+    connect(m_service, &ConfigService::setAddrSuccess, this, [this]() {
+        const QString addrText = m_slaveIdCombo->currentText().trimmed();
+        bool ok = false;
+        const uint addr = addrText.toUInt(&ok, 16);
+        if (ok && addr <= 0x7F) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
+        qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
+    });
 }
 
 void ConfigTab::refreshAvailablePorts() {
     const QString currentPort = m_portCombo->currentText();
-    const QStringList ports = SerialManager::availablePorts();
+    const QStringList ports = m_service->availablePorts();
     const QSignalBlocker blocker(m_portCombo);
     m_portCombo->clear();
     m_portCombo->addItems(ports);
@@ -219,58 +236,257 @@ void ConfigTab::refreshAvailablePorts() {
 }
 
 void ConfigTab::setSerialControlsConnected(bool connected) {
-    m_isSerialConnected = connected;
     m_connectButton->setText(connected ? tr("Disconnect") : tr("Connect"));
     m_portCombo->setEnabled(!connected);
     m_baudRateCombo->setEnabled(!connected);
     m_scanButton->setEnabled(!connected);
     m_icScanButton->setEnabled(connected);
     m_icConnectButton->setEnabled(connected);
-    if (connected) emit serialConnected(m_portCombo->currentText().trimmed(), m_baudRateCombo->currentText().toInt());
-    else emit serialDisconnected();
 }
 
-void ConfigTab::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data) {
-    Q_UNUSED(seq);
-    switch (cmd) {
-    case MotorProtocol::CmdI2cBusScan: handleScanResponse(data); break;
-    case MotorProtocol::CmdSetMotorIcAddr: handleSetAddrResponse(); break;
-    case MotorProtocol::CmdErrorResponse: handleErrorResponse(data); break;
-    default: qDebug().noquote() << QStringLiteral("Unhandled frame: cmd=0x%1").arg(cmd, 2, 16, QLatin1Char('0')).toUpper(); break;
+void ConfigTab::setupUi() {
+    setObjectName(QStringLiteral("ConfigTab"));
+
+    auto *topLayout = new QHBoxLayout(this);
+    topLayout->setObjectName(QStringLiteral("topLayout"));
+    topLayout->setSpacing(0);
+    topLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_sidebarContent = new QWidget(this);
+    m_sidebarContent->setObjectName(QStringLiteral("sidebarContent"));
+    auto *sidebarLayout = new QVBoxLayout(m_sidebarContent);
+    sidebarLayout->setObjectName(QStringLiteral("sidebarLayout"));
+    sidebarLayout->setSpacing(8);
+    sidebarLayout->setContentsMargins(10, 8, 10, 8);
+    sidebarLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+    auto *sidebar = new Sidebar(tr("配置"), m_sidebarContent, this);
+    topLayout->addWidget(sidebar);
+
+    m_mainContent = new QWidget(this);
+    m_mainContent->setObjectName(QStringLiteral("mainContent"));
+    auto *mainContentLayout = new QVBoxLayout(m_mainContent);
+    mainContentLayout->setObjectName(QStringLiteral("mainContentLayout"));
+    mainContentLayout->setSpacing(16);
+    mainContentLayout->setContentsMargins(24, 24, 24, 24);
+    topLayout->addWidget(m_mainContent);
+
+    m_mainSplitter = new QSplitter(Qt::Vertical, m_mainContent);
+    m_mainSplitter->setObjectName(QStringLiteral("mainSplitter"));
+    m_mainSplitter->setChildrenCollapsible(false);
+    m_mainSplitter->setHandleWidth(8);
+    mainContentLayout->addWidget(m_mainSplitter);
+
+    auto *upperArea = new QWidget(m_mainSplitter);
+    upperArea->setObjectName(QStringLiteral("upperArea"));
+    auto *upperLayout = new QGridLayout(upperArea);
+    upperLayout->setObjectName(QStringLiteral("upperLayout"));
+    upperLayout->setHorizontalSpacing(16);
+    upperLayout->setVerticalSpacing(16);
+    upperLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto makeCard = [&](QGroupBox *&group, const QString &objectName, const QString &title) {
+        group = new QGroupBox(upperArea);
+        group->setObjectName(objectName);
+        group->setTitle(title);
+        group->setProperty("panelRole", QStringLiteral("card"));
+    };
+
+    makeCard(m_icGroup, QStringLiteral("icGroup"), QStringLiteral("IC"));
+    upperLayout->addWidget(m_icGroup, 0, 0);
+    auto *icGroupLayout = new QVBoxLayout(m_icGroup);
+    icGroupLayout->setObjectName(QStringLiteral("icGroupLayout"));
+    icGroupLayout->setSpacing(10);
+    icGroupLayout->setContentsMargins(24, 8, 24, 24);
+    auto *icFormLayout = new QFormLayout();
+    icFormLayout->setObjectName(QStringLiteral("icFormLayout"));
+    icFormLayout->setHorizontalSpacing(16);
+    icFormLayout->setVerticalSpacing(10);
+    icGroupLayout->addLayout(icFormLayout);
+    auto *icLabel = new QLabel(m_icGroup);
+    icLabel->setObjectName(QStringLiteral("icLabel"));
+    icLabel->setText(QStringLiteral("Select IC"));
+    icFormLayout->setWidget(0, QFormLayout::LabelRole, icLabel);
+    m_icCombo = new QComboBox(m_icGroup);
+    m_icCombo->setObjectName(QStringLiteral("icCombo"));
+    m_icCombo->setProperty("inputRole", QStringLiteral("form"));
+    m_icCombo->addItems({QStringLiteral("AW86006"), QStringLiteral("DW9786"), QStringLiteral("DW9788")});
+    icFormLayout->setWidget(0, QFormLayout::FieldRole, m_icCombo);
+    auto *slaveIdLabel = new QLabel(m_icGroup);
+    slaveIdLabel->setObjectName(QStringLiteral("slaveIdLabel"));
+    slaveIdLabel->setText(QStringLiteral("Slave ID"));
+    icFormLayout->setWidget(1, QFormLayout::LabelRole, slaveIdLabel);
+    m_slaveIdCombo = new QComboBox(m_icGroup);
+    m_slaveIdCombo->setObjectName(QStringLiteral("slaveIdCombo"));
+    m_slaveIdCombo->setProperty("inputRole", QStringLiteral("form"));
+    icFormLayout->setWidget(1, QFormLayout::FieldRole, m_slaveIdCombo);
+    icGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+    auto *icButtonRow = new QHBoxLayout();
+    icButtonRow->setObjectName(QStringLiteral("icButtonRow"));
+    icButtonRow->setSpacing(10);
+    icGroupLayout->addLayout(icButtonRow);
+    m_icScanButton = new QPushButton(m_icGroup);
+    m_icScanButton->setObjectName(QStringLiteral("icScanButton"));
+    m_icScanButton->setMinimumSize(QSize(0, 32));
+    m_icScanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_icScanButton->setText(QStringLiteral("Scan"));
+    m_icScanButton->setProperty("buttonRole", QStringLiteral("primary"));
+    icButtonRow->addWidget(m_icScanButton);
+    m_icConnectButton = new QPushButton(m_icGroup);
+    m_icConnectButton->setObjectName(QStringLiteral("icConnectButton"));
+    m_icConnectButton->setMinimumSize(QSize(0, 32));
+    m_icConnectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_icConnectButton->setText(QStringLiteral("Connect"));
+    m_icConnectButton->setProperty("buttonRole", QStringLiteral("primary"));
+    icButtonRow->addWidget(m_icConnectButton);
+    icButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+    makeCard(m_serialGroup, QStringLiteral("serialGroup"), QStringLiteral("Serial"));
+    upperLayout->addWidget(m_serialGroup, 0, 1);
+    auto *serialGroupLayout = new QVBoxLayout(m_serialGroup);
+    serialGroupLayout->setObjectName(QStringLiteral("serialGroupLayout"));
+    serialGroupLayout->setSpacing(10);
+    serialGroupLayout->setContentsMargins(24, 8, 24, 24);
+    auto *serialFormLayout = new QFormLayout();
+    serialFormLayout->setObjectName(QStringLiteral("serialFormLayout"));
+    serialFormLayout->setHorizontalSpacing(16);
+    serialFormLayout->setVerticalSpacing(10);
+    serialGroupLayout->addLayout(serialFormLayout);
+    auto *portLabel = new QLabel(m_serialGroup);
+    portLabel->setObjectName(QStringLiteral("portLabel"));
+    portLabel->setText(QStringLiteral("Port"));
+    serialFormLayout->setWidget(0, QFormLayout::LabelRole, portLabel);
+    m_portCombo = new QComboBox(m_serialGroup);
+    m_portCombo->setObjectName(QStringLiteral("portCombo"));
+    m_portCombo->setProperty("inputRole", QStringLiteral("form"));
+    serialFormLayout->setWidget(0, QFormLayout::FieldRole, m_portCombo);
+    auto *baudRateLabel = new QLabel(m_serialGroup);
+    baudRateLabel->setObjectName(QStringLiteral("baudRateLabel"));
+    baudRateLabel->setText(QStringLiteral("Baud Rate"));
+    serialFormLayout->setWidget(1, QFormLayout::LabelRole, baudRateLabel);
+    m_baudRateCombo = new QComboBox(m_serialGroup);
+    m_baudRateCombo->setObjectName(QStringLiteral("baudRateCombo"));
+    m_baudRateCombo->setProperty("inputRole", QStringLiteral("form"));
+    m_baudRateCombo->addItems({QStringLiteral("9600"), QStringLiteral("19200"), QStringLiteral("38400"), QStringLiteral("57600"),
+                               QStringLiteral("115200"), QStringLiteral("230400"), QStringLiteral("460800"), QStringLiteral("921600")});
+    serialFormLayout->setWidget(1, QFormLayout::FieldRole, m_baudRateCombo);
+    serialGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+    auto *serialButtonRow = new QHBoxLayout();
+    serialButtonRow->setObjectName(QStringLiteral("serialButtonRow"));
+    serialButtonRow->setSpacing(10);
+    serialGroupLayout->addLayout(serialButtonRow);
+    m_scanButton = new QPushButton(m_serialGroup);
+    m_scanButton->setObjectName(QStringLiteral("scanButton"));
+    m_scanButton->setMinimumSize(QSize(0, 32));
+    m_scanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_scanButton->setText(QStringLiteral("Scan"));
+    m_scanButton->setProperty("buttonRole", QStringLiteral("primary"));
+    serialButtonRow->addWidget(m_scanButton);
+    m_connectButton = new QPushButton(m_serialGroup);
+    m_connectButton->setObjectName(QStringLiteral("connectButton"));
+    m_connectButton->setMinimumSize(QSize(0, 32));
+    m_connectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_connectButton->setText(QStringLiteral("Connect"));
+    m_connectButton->setProperty("buttonRole", QStringLiteral("primary"));
+    serialButtonRow->addWidget(m_connectButton);
+    serialButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+    makeCard(m_pmicGroup, QStringLiteral("pmicGroup"), QStringLiteral("PMIC"));
+    upperLayout->addWidget(m_pmicGroup, 0, 2);
+    auto *pmicGroupLayout = new QVBoxLayout(m_pmicGroup);
+    pmicGroupLayout->setObjectName(QStringLiteral("pmicGroupLayout"));
+    pmicGroupLayout->setSpacing(10);
+    pmicGroupLayout->setContentsMargins(24, 8, 24, 24);
+    auto *pmicFormLayout = new QFormLayout();
+    pmicFormLayout->setObjectName(QStringLiteral("pmicFormLayout"));
+    pmicFormLayout->setHorizontalSpacing(16);
+    pmicFormLayout->setVerticalSpacing(10);
+    pmicGroupLayout->addLayout(pmicFormLayout);
+    auto addVoltageRow = [&](int row, const QString &labelName, const QString &labelText, QDoubleSpinBox *&spin,
+                             const QString &spinName, const QString &rowName, const QString &unitName, const QString &spacerName) {
+        auto *label = new QLabel(m_pmicGroup);
+        label->setObjectName(labelName);
+        label->setText(labelText);
+        pmicFormLayout->setWidget(row, QFormLayout::LabelRole, label);
+        auto *rowLayout = new QHBoxLayout();
+        rowLayout->setObjectName(rowName);
+        rowLayout->setSpacing(10);
+        spin = new QDoubleSpinBox(m_pmicGroup);
+        spin->setObjectName(spinName);
+        spin->setProperty("inputRole", QStringLiteral("form"));
+        rowLayout->addWidget(spin);
+        auto *unitLabel = new QLabel(m_pmicGroup);
+        unitLabel->setObjectName(unitName);
+        unitLabel->setText(QStringLiteral("V"));
+        rowLayout->addWidget(unitLabel);
+        auto *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        Q_UNUSED(spacerName);
+        rowLayout->addItem(spacer);
+        pmicFormLayout->setLayout(row, QFormLayout::FieldRole, rowLayout);
+    };
+    addVoltageRow(0, QStringLiteral("drvddLabel"), QStringLiteral("DRVDD"), m_drvddSpin, QStringLiteral("drvddSpin"), QStringLiteral("drvddRow"), QStringLiteral("drvddUnitLabel"), QStringLiteral("drvddSpacer"));
+    addVoltageRow(1, QStringLiteral("vcmvddLabel"), QStringLiteral("VCMVDD"), m_vcmvddSpin, QStringLiteral("vcmvddSpin"), QStringLiteral("vcmvddRow"), QStringLiteral("vcmvddUnitLabel"), QStringLiteral("vcmvddSpacer"));
+    addVoltageRow(2, QStringLiteral("iovddLabel"), QStringLiteral("IOVDD"), m_iovddSpin, QStringLiteral("iovddSpin"), QStringLiteral("iovddRow"), QStringLiteral("iovddUnitLabel"), QStringLiteral("iovddSpacer"));
+    pmicGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+    m_pmicConfigButton = new QPushButton(m_pmicGroup);
+    m_pmicConfigButton->setObjectName(QStringLiteral("pmicConfigButton"));
+    m_pmicConfigButton->setMinimumSize(QSize(0, 32));
+    m_pmicConfigButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_pmicConfigButton->setText(tr("配置 PMIC"));
+    m_pmicConfigButton->setProperty("buttonRole", QStringLiteral("primary"));
+    pmicGroupLayout->addWidget(m_pmicConfigButton);
+
+    auto *lowerArea = new QWidget(m_mainSplitter);
+    lowerArea->setObjectName(QStringLiteral("lowerArea"));
+    auto *lowerLayout = new QVBoxLayout(lowerArea);
+    lowerLayout->setObjectName(QStringLiteral("lowerLayout"));
+    lowerLayout->setSpacing(16);
+    lowerLayout->setContentsMargins(0, 0, 0, 0);
+    auto *configFileRow = new QWidget(lowerArea);
+    configFileRow->setObjectName(QStringLiteral("configFileRow"));
+    auto *configFileLayout = new QHBoxLayout(configFileRow);
+    configFileLayout->setObjectName(QStringLiteral("configFileLayout"));
+    configFileLayout->setSpacing(10);
+    configFileLayout->setContentsMargins(0, 0, 0, 0);
+    lowerLayout->addWidget(configFileRow);
+    auto *configFileLabel = new QLabel(configFileRow);
+    configFileLabel->setObjectName(QStringLiteral("configFileLabel"));
+    configFileLabel->setText(QStringLiteral("Config File"));
+    configFileLayout->addWidget(configFileLabel);
+    m_fileCombo = new QComboBox(configFileRow);
+    m_fileCombo->setObjectName(QStringLiteral("fileCombo"));
+    m_fileCombo->setEditable(true);
+    m_fileCombo->setProperty("inputRole", QStringLiteral("form"));
+    configFileLayout->addWidget(m_fileCombo);
+    m_browseButton = new QPushButton(configFileRow);
+    m_browseButton->setObjectName(QStringLiteral("browseButton"));
+    m_browseButton->setMinimumSize(QSize(0, 32));
+    m_browseButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_browseButton->setText(QStringLiteral("Browse"));
+    m_browseButton->setProperty("buttonRole", QStringLiteral("secondary"));
+    configFileLayout->addWidget(m_browseButton);
+    m_writeButton = new QPushButton(configFileRow);
+    m_writeButton->setObjectName(QStringLiteral("writeButton"));
+    m_writeButton->setMinimumSize(QSize(0, 32));
+    m_writeButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_writeButton->setText(QStringLiteral("Write"));
+    m_writeButton->setProperty("buttonRole", QStringLiteral("primary"));
+    configFileLayout->addWidget(m_writeButton);
+    m_readButton = new QPushButton(configFileRow);
+    m_readButton->setObjectName(QStringLiteral("readButton"));
+    m_readButton->setMinimumSize(QSize(0, 32));
+    m_readButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_readButton->setText(QStringLiteral("Read"));
+    m_readButton->setProperty("buttonRole", QStringLiteral("primary"));
+    configFileLayout->addWidget(m_readButton);
+    lowerLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+    for (int column = 0; column < 4; ++column) {
+        upperLayout->setColumnStretch(column, 1);
     }
-}
-
-void ConfigTab::handleScanResponse(const QByteArray &data) {
-    if (data.isEmpty()) { qWarning() << "I2C scan response: empty data"; return; }
-    const QList<uint8_t> addresses = MotorProtocol::decodeI2cScanResponse(data);
-    qDebug().noquote() << QStringLiteral("I2C scan found %1 devices").arg(addresses.size());
-    const QSignalBlocker blocker(m_slaveIdCombo);
-    m_slaveIdCombo->clear();
-    for (uint8_t addr : addresses) {
-        const QString addrStr = QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
-        m_slaveIdCombo->addItem(addrStr);
-        qDebug().noquote() << QStringLiteral("  Device: %1").arg(addrStr);
+    for (int row = 0; row < 3; ++row) {
+        upperLayout->setRowStretch(row, 1);
     }
-    if (addresses.isEmpty()) qDebug() << "No I2C devices found";
-    else if (m_slaveIdCombo->count() > 0) m_slaveIdCombo->setCurrentIndex(0);
-}
 
-void ConfigTab::handleSetAddrResponse() {
-    const QString addrText = m_slaveIdCombo->currentText().trimmed();
-    bool ok = false;
-    const uint addr = addrText.toUInt(&ok, 16);
-    if (ok && addr <= 0x7F) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
-    qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
-}
-
-void ConfigTab::handleErrorResponse(const QByteArray &data) {
-    const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
-    QString errorName;
-    switch (errorCode) {
-    case 0x01: errorName = QStringLiteral("CRC check failed"); break;
-    case 0x02: errorName = QStringLiteral("Unknown command"); break;
-    case 0x03: errorName = QStringLiteral("Execution failed"); break;
-    default: errorName = QStringLiteral("Unknown error"); break;
-    }
-    qWarning().noquote() << QStringLiteral("Error response: code=0x%1 (%2)").arg(errorCode, 2, 16, QLatin1Char('0')).toUpper().arg(errorName);
+    m_mainSplitter->setStretchFactor(0, 4);
+    m_mainSplitter->setStretchFactor(1, 1);
 }

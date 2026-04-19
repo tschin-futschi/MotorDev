@@ -1,25 +1,22 @@
 #include "widgets/scopepreviewwidget.h"
 
-#include "ui_scopepreviewwidget.h"
 #include "ui/style_constants.h"
 #include "widgets/scopebottompanel.h"
 #include "widgets/scopeplotwidget.h"
 #include "widgets/scopestylepanel.h"
 #include "widgets/topbar.h"
 
+#include <QHBoxLayout>
+#include <QSplitter>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QtMath>
-#include <utility>
 
 using namespace MotorDev;
 
 ScopePreviewWidget::ScopePreviewWidget(QWidget *parent)
-    : QWidget(parent)
-    , ui(std::make_unique<Ui::ScopePreviewWidget>()) {
-    ui->setupUi(this);
-    ui->rootLayout->setStretch(0, 0);
-    ui->rootLayout->setStretch(1, 1);
+    : QWidget(parent) {
+    setupUi();
     m_channels.resize(8);
     m_channels[0] = {true,  QStringLiteral("Speed"),   QStringLiteral("0x0010"), Style::Color::ScopeWaveCh1, 4.0, Qt::SolidLine, false};
     m_channels[1] = {true,  QStringLiteral("Torque"),  QStringLiteral("0x0012"), Style::Color::ScopeWaveCh2, 4.0, Qt::SolidLine, false};
@@ -31,28 +28,30 @@ ScopePreviewWidget::ScopePreviewWidget(QWidget *parent)
     m_channels[7] = {false, QString(),                  QStringLiteral("0x001E"), Style::Color::ScopeWaveCh8, 4.0, Qt::SolidLine, false};
     m_defaultChannels = m_channels;
 
-    auto *bottomLayout = qobject_cast<QVBoxLayout *>(ui->bottomPanelHost->layout());
-    m_bottomPanel = new ScopeBottomPanel(ui->plotArea, ui->bottomPanelHost);
+    auto *bottomLayout = qobject_cast<QVBoxLayout *>(m_bottomPanelHost->layout());
+    m_bottomPanel = new ScopeBottomPanel(m_plotArea, m_bottomPanelHost);
     bottomLayout->addWidget(m_bottomPanel);
-    ui->plotAreaLayout->setStretch(0, 1);
-    ui->plotAreaLayout->setStretch(1, 0);
-
-    ui->stylePanel->setVisible(false);
-    ui->splitter->setStretchFactor(0, 1);
-    ui->splitter->setStretchFactor(1, 0);
-
-    for (int i = 0; i < m_channels.size(); ++i) {
-        ui->stylePanel->setChannelColor(i, m_channels[i].color);
-        ui->stylePanel->setChannelLineWidth(i, static_cast<int>(m_channels[i].lineWidth));
-        ui->stylePanel->setChannelLineStyle(i, m_channels[i].lineStyle);
-        ui->stylePanel->setChannelShowDataPoints(i, m_channels[i].showDataPoints);
+    if (auto *plotAreaLayout = qobject_cast<QVBoxLayout *>(m_plotArea->layout())) {
+        plotAreaLayout->setStretch(0, 1);
+        plotAreaLayout->setStretch(1, 0);
     }
 
-    ui->plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
+    m_stylePanel->setVisible(false);
+    m_splitter->setStretchFactor(0, 1);
+    m_splitter->setStretchFactor(1, 0);
+
+    for (int i = 0; i < m_channels.size(); ++i) {
+        m_stylePanel->setChannelColor(i, m_channels[i].color);
+        m_stylePanel->setChannelLineWidth(i, static_cast<int>(m_channels[i].lineWidth));
+        m_stylePanel->setChannelLineStyle(i, m_channels[i].lineStyle);
+        m_stylePanel->setChannelShowDataPoints(i, m_channels[i].showDataPoints);
+    }
+
+    m_plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
     refreshPlotData();
     connectSignals();
-    ui->topBar->setScopeControlsVisible(true);
-    ui->topBar->setViewMode(0);
+    m_topBar->setScopeControlsVisible(true);
+    m_topBar->setViewMode(0);
 
     m_previewTimer = new QTimer(this);
     m_previewTimer->setInterval(33);
@@ -62,12 +61,12 @@ ScopePreviewWidget::ScopePreviewWidget(QWidget *parent)
 ScopePreviewWidget::~ScopePreviewWidget() = default;
 
 void ScopePreviewWidget::connectSignals() {
-    connect(ui->plotWidget, &ScopePlotWidget::samplingToggleRequested, this, &ScopePreviewWidget::setRunning);
-    connect(ui->topBar, &TopBar::viewModeChanged, this, [this](int mode) {
-        ui->plotWidget->setViewMode(mode == 1 ? ScopeViewMode::Stacked : ScopeViewMode::Overlay);
+    connect(m_plotWidget, &ScopePlotWidget::samplingToggleRequested, this, &ScopePreviewWidget::setRunning);
+    connect(m_topBar, &TopBar::viewModeChanged, this, [this](int mode) {
+        m_plotWidget->setViewMode(mode == 1 ? ScopeViewMode::Stacked : ScopeViewMode::Overlay);
     });
-    connect(ui->topBar, &TopBar::styleToggleRequested, this, [this]() {
-        ui->stylePanel->setVisible(!ui->stylePanel->isVisible());
+    connect(m_topBar, &TopBar::styleToggleRequested, this, [this]() {
+        m_stylePanel->setVisible(!m_stylePanel->isVisible());
     });
 
     connect(m_bottomPanel, &ScopeBottomPanel::channelToggled, this, [this](int index, bool enabled) {
@@ -86,38 +85,38 @@ void ScopePreviewWidget::connectSignals() {
     });
     connect(m_bottomPanel, &ScopeBottomPanel::sampleIntervalChanged, this, [this](const QString &text) {
         m_sampleIntervalUs = sampleIntervalUsForText(text);
-        ui->plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
+        m_plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
         refreshPlotData();
     });
     connect(m_bottomPanel, &ScopeBottomPanel::displayWindowChanged, this, [this](const QString &text) {
         m_displayWindowMs = displayWindowMsForText(text);
-        ui->plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
+        m_plotWidget->configureAcquisition(m_sampleIntervalUs, m_displayWindowMs);
         refreshPlotData();
     });
-    connect(m_bottomPanel, &ScopeBottomPanel::yAxisAutoRequested, ui->plotWidget, &ScopePlotWidget::setAutoYAxisRange);
-    connect(m_bottomPanel, &ScopeBottomPanel::yAxisManualRequested, ui->plotWidget, &ScopePlotWidget::setManualYAxisRange);
+    connect(m_bottomPanel, &ScopeBottomPanel::yAxisAutoRequested, m_plotWidget, &ScopePlotWidget::setAutoYAxisRange);
+    connect(m_bottomPanel, &ScopeBottomPanel::yAxisManualRequested, m_plotWidget, &ScopePlotWidget::setManualYAxisRange);
 
-    connect(ui->stylePanel, &ScopeStylePanel::colorChanged, this, [this](int index, const QColor &color) {
+    connect(m_stylePanel, &ScopeStylePanel::colorChanged, this, [this](int index, const QColor &color) {
         if (index < 0 || index >= m_channels.size()) return;
         m_channels[index].color = color;
         refreshPlotData();
     });
-    connect(ui->stylePanel, &ScopeStylePanel::lineWidthChanged, this, [this](int index, int width) {
+    connect(m_stylePanel, &ScopeStylePanel::lineWidthChanged, this, [this](int index, int width) {
         if (index < 0 || index >= m_channels.size()) return;
         m_channels[index].lineWidth = static_cast<qreal>(width);
         refreshPlotData();
     });
-    connect(ui->stylePanel, &ScopeStylePanel::lineStyleChanged, this, [this](int index, Qt::PenStyle style) {
+    connect(m_stylePanel, &ScopeStylePanel::lineStyleChanged, this, [this](int index, Qt::PenStyle style) {
         if (index < 0 || index >= m_channels.size()) return;
         m_channels[index].lineStyle = style;
         refreshPlotData();
     });
-    connect(ui->stylePanel, &ScopeStylePanel::dataPointsChanged, this, [this](int index, bool show) {
+    connect(m_stylePanel, &ScopeStylePanel::dataPointsChanged, this, [this](int index, bool show) {
         if (index < 0 || index >= m_channels.size()) return;
         m_channels[index].showDataPoints = show;
         refreshPlotData();
     });
-    connect(ui->stylePanel, &ScopeStylePanel::defaultSettingsRequested, this, &ScopePreviewWidget::resetStyleDefaults);
+    connect(m_stylePanel, &ScopeStylePanel::defaultSettingsRequested, this, &ScopePreviewWidget::resetStyleDefaults);
 }
 
 void ScopePreviewWidget::refreshPlotData() {
@@ -140,7 +139,7 @@ void ScopePreviewWidget::refreshPlotData() {
         plotChannel.showDataPoints = channel.showDataPoints;
         plotChannels.append(plotChannel);
     }
-    ui->plotWidget->setChannelData(plotChannels);
+    m_plotWidget->setChannelData(plotChannels);
 }
 
 void ScopePreviewWidget::setRunning(bool running) {
@@ -148,7 +147,7 @@ void ScopePreviewWidget::setRunning(bool running) {
         if (m_bottomPanel != nullptr) {
             m_bottomPanel->setRunning(running);
         }
-        ui->plotWidget->setRunning(running);
+        m_plotWidget->setRunning(running);
         return;
     }
 
@@ -156,10 +155,10 @@ void ScopePreviewWidget::setRunning(bool running) {
     if (m_bottomPanel != nullptr) {
         m_bottomPanel->setRunning(running);
     }
-    ui->plotWidget->setRunning(running);
+    m_plotWidget->setRunning(running);
     if (running) {
-        ui->plotWidget->clearData();
-        ui->plotWidget->resetView();
+        m_plotWidget->clearData();
+        m_plotWidget->resetView();
         m_phase = 0;
         m_previewTimer->start();
     } else {
@@ -185,7 +184,7 @@ void ScopePreviewWidget::appendPreviewFrame() {
         const double value = (carrier * (300.0 + index * 55.0)) + (harmonic * 90.0);
         samples.append(static_cast<int16_t>(qRound(value)));
     }
-    ui->plotWidget->appendSamples(mask, samples);
+    m_plotWidget->appendSamples(mask, samples);
     m_phase += 1;
 }
 
@@ -195,12 +194,55 @@ void ScopePreviewWidget::resetStyleDefaults() {
         m_channels[index].lineWidth = m_defaultChannels[index].lineWidth;
         m_channels[index].lineStyle = m_defaultChannels[index].lineStyle;
         m_channels[index].showDataPoints = m_defaultChannels[index].showDataPoints;
-        ui->stylePanel->setChannelColor(index, m_channels[index].color);
-        ui->stylePanel->setChannelLineWidth(index, static_cast<int>(m_channels[index].lineWidth));
-        ui->stylePanel->setChannelLineStyle(index, m_channels[index].lineStyle);
-        ui->stylePanel->setChannelShowDataPoints(index, m_channels[index].showDataPoints);
+        m_stylePanel->setChannelColor(index, m_channels[index].color);
+        m_stylePanel->setChannelLineWidth(index, static_cast<int>(m_channels[index].lineWidth));
+        m_stylePanel->setChannelLineStyle(index, m_channels[index].lineStyle);
+        m_stylePanel->setChannelShowDataPoints(index, m_channels[index].showDataPoints);
     }
     refreshPlotData();
+}
+
+void ScopePreviewWidget::setupUi() {
+    setObjectName(QStringLiteral("ScopePreviewWidget"));
+
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setObjectName(QStringLiteral("rootLayout"));
+    rootLayout->setSpacing(0);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_topBar = new TopBar(this);
+    m_topBar->setObjectName(QStringLiteral("topBar"));
+    rootLayout->addWidget(m_topBar);
+
+    m_splitter = new QSplitter(Qt::Horizontal, this);
+    m_splitter->setObjectName(QStringLiteral("splitter"));
+    m_splitter->setChildrenCollapsible(false);
+    m_splitter->setHandleWidth(0);
+    rootLayout->addWidget(m_splitter);
+    rootLayout->setStretch(0, 0);
+    rootLayout->setStretch(1, 1);
+
+    m_plotArea = new QWidget(m_splitter);
+    m_plotArea->setObjectName(QStringLiteral("plotArea"));
+    auto *plotAreaLayout = new QVBoxLayout(m_plotArea);
+    plotAreaLayout->setObjectName(QStringLiteral("plotAreaLayout"));
+    plotAreaLayout->setSpacing(0);
+    plotAreaLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_plotWidget = new ScopePlotWidget(m_plotArea);
+    m_plotWidget->setObjectName(QStringLiteral("plotWidget"));
+    plotAreaLayout->addWidget(m_plotWidget);
+
+    m_bottomPanelHost = new QWidget(m_plotArea);
+    m_bottomPanelHost->setObjectName(QStringLiteral("bottomPanelHost"));
+    auto *bottomPanelHostLayout = new QVBoxLayout(m_bottomPanelHost);
+    bottomPanelHostLayout->setObjectName(QStringLiteral("bottomPanelHostLayout"));
+    bottomPanelHostLayout->setSpacing(0);
+    bottomPanelHostLayout->setContentsMargins(0, 0, 0, 0);
+    plotAreaLayout->addWidget(m_bottomPanelHost);
+
+    m_stylePanel = new ScopeStylePanel(m_splitter);
+    m_stylePanel->setObjectName(QStringLiteral("stylePanel"));
 }
 
 int ScopePreviewWidget::sampleIntervalUsForText(const QString &text) const {

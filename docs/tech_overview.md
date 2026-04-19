@@ -26,7 +26,7 @@
 - Qt6::Svg
 - Qt6::SvgWidgets
 - Qt6::OpenGLWidgets（用于 ScopePlotWidget 的 QOpenGLWidget + QPainter 渲染）
-- CMake 3.16+，启用 CMAKE_AUTOMOC / CMAKE_AUTORCC / CMAKE_AUTOUIC
+- CMake 3.16+，启用 CMAKE_AUTOMOC / CMAKE_AUTORCC（AUTOUIC 保留但项目已无 .ui 文件）
 
 ---
 
@@ -55,6 +55,7 @@ MotorDev/
 │   ├── protocol/
 │   │   └── motor_protocol.cpp / .h  # 寄存器读写/I2C 扫描等指令编解码
 │   ├── ui/
+│   │   ├── repolish.h               # QSS 重新 polish 工具函数
 │   │   └── style_constants.h        # 所有颜色、尺寸、间距常量
 │   ├── tabs/
 │   │   ├── configtab.cpp / .h       # Tab0 配置（串口/IC/PMIC）
@@ -70,8 +71,9 @@ MotorDev/
 │       ├── sidebar.cpp / .h         # 可收缩侧边栏（四个 Tab 共用）
 │       ├── logpanel.cpp / .h        # 底部日志面板（全局单例）
 │       ├── registertable.cpp / .h   # 寄存器表格组件（4组×20行）
-│       ├── scopetoolbar.cpp / .h    # 示波器工具栏
 │       ├── scopeplotwidget.cpp / .h # 示波器波形绘制画布（自绘制）
+│       ├── scopepreviewwidget.cpp / .h # 示波器通道预览控件
+│       ├── scopestylepanel.cpp / .h # 示波器通道样式面板（颜色/线宽/线型）
 │       ├── scopebottompanel.cpp / .h  # 示波器底部面板容器
 │       ├── scopechannelstrip.cpp / .h # 示波器单通道配置条
 │       ├── scoperegisterpanel.cpp / .h # 示波器侧寄存器读写面板

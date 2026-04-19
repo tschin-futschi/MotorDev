@@ -8,12 +8,17 @@
 
 namespace MotorProtocol {
 
+inline constexpr uint8_t CmdHeartbeat = 0x00;
 inline constexpr uint8_t CmdErrorResponse = 0x01;
 inline constexpr uint8_t CmdSetMotorIcAddr = 0x02;
+inline constexpr uint8_t CmdSetBaudrate = 0x03;
+inline constexpr uint8_t CmdReset = 0x04;
+inline constexpr uint8_t CmdMotorTest = 0x05;
 inline constexpr uint8_t CmdDebugInfo = 0x06;
 inline constexpr uint8_t CmdI2cBusScan = 0x07;
 inline constexpr uint8_t CmdReadRegister = 0x20;
 inline constexpr uint8_t CmdWriteRegister = 0x21;
+inline constexpr uint8_t CmdBulkRead = 0x22;
 inline constexpr uint8_t CmdStartSampling = 0x50;
 inline constexpr uint8_t CmdStopSampling = 0x51;
 inline constexpr uint8_t CmdSetSampleInterval = 0x52;

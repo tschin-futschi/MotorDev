@@ -1,13 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <QWidget>
 
 class QPropertyAnimation;
-
-namespace Ui {
-class Sidebar;
-}
+class QLabel;
+class QPushButton;
 
 class Sidebar : public QWidget {
     Q_OBJECT
@@ -29,8 +26,12 @@ signals:
 
 private:
     void applyExpandedWidth();
+    void setupUi(const QString &title);
 
-    std::unique_ptr<Ui::Sidebar> ui;
+    QWidget *m_bodyWidget = nullptr;
+    QLabel *m_headerLabel = nullptr;
+    QWidget *m_contentPlaceholder = nullptr;
+    QPushButton *m_toggleButton = nullptr;
     QWidget *m_contentWidget = nullptr;
     QPropertyAnimation *m_animation = nullptr;
     bool m_collapsed = false;

@@ -1,11 +1,7 @@
 #pragma once
 
-#include <memory>
+#include <QLabel>
 #include <QWidget>
-
-namespace Ui {
-class FwFlashTab;
-}
 
 class FwFlashTab : public QWidget {
     Q_OBJECT
@@ -15,7 +11,11 @@ public:
     ~FwFlashTab() override;
 
 private:
+    void setupUi();
     void connectSignals();
 
-    std::unique_ptr<Ui::FwFlashTab> ui;
+    QWidget *m_sidebarContent = nullptr;
+    QWidget *m_mainContent = nullptr;
+    QLabel *m_sidebarLabel = nullptr;
+    QLabel *m_placeholderLabel = nullptr;
 };

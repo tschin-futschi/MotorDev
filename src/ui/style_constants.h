@@ -185,6 +185,10 @@ inline constexpr int ScopeStyleInputMinHeight = 24;
 inline constexpr int ScopeStyleButtonRadius = 3;
 inline constexpr int ScopeStyleTitleFontPx = 10;
 inline constexpr int ScopeStyleRowFontPx = 9;
+inline constexpr int ScopeBottomPanelMinCollapsed = 40;
+inline constexpr int ScopeBottomPanelMinExpanded = 132;
+inline constexpr int ScopeBottomPanelMaxExpanded = 240;
+inline constexpr int LogPanelHeight = 200;
 }
 
 namespace Text {

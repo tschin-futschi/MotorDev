@@ -1,6 +1,7 @@
 #pragma once
 
 #include "frameparser.h"
+#include "protocol/motor_protocol.h"
 
 #include <QByteArray>
 #include <QObject>
@@ -63,8 +64,6 @@ private:
     QTimer *m_heartbeatTimer = nullptr;
     int m_missedHeartbeats = 0;
 
-    static constexpr uint8_t HeartbeatCommand = 0x00;
-    static constexpr uint8_t ErrorResponseCommand = 0x01;
     static constexpr int MaxRetries = 2;
     static constexpr int RetryTimeoutMs = 100;
     static constexpr int HeartbeatIntervalMs = 1000;

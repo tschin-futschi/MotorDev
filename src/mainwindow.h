@@ -1,19 +1,19 @@
 #pragma once
 
-#include <memory>
 #include <QMainWindow>
 
+class ActivityBar;
 class ConfigTab;
 class DeviceContext;
+class LogPanel;
 class OscilloscopTab;
+class QStackedWidget;
+class QPushButton;
 class RegisterRwTab;
 class SerialDebugTab;
 class SerialManager;
+class TopBar;
 class QWidget;
-
-namespace Ui {
-class MainWindow;
-}
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -26,9 +26,13 @@ private:
     void setupUi();
     void connectSignals();
 
-    std::unique_ptr<Ui::MainWindow> ui;
     SerialManager *m_serialManager = nullptr;
     DeviceContext *m_deviceContext = nullptr;
+    TopBar *m_topBar = nullptr;
+    ActivityBar *m_activityBar = nullptr;
+    QStackedWidget *m_contentStack = nullptr;
+    LogPanel *m_logPanel = nullptr;
+    QPushButton *m_logToggleButton = nullptr;
     ConfigTab *m_configTab = nullptr;
     RegisterRwTab *m_registerTab = nullptr;
     OscilloscopTab *m_scopeTab = nullptr;

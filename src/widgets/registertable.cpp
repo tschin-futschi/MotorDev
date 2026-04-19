@@ -2,7 +2,6 @@
 
 #include "ui/style_constants.h"
 #include "ui/repolish.h"
-#include "ui_registertable.h"
 
 #include <QAbstractItemView>
 #include <QBrush>
@@ -20,6 +19,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QTimer>
+#include <QVBoxLayout>
 
 using namespace MotorDev;
 
@@ -97,8 +97,7 @@ bool parseRegisterValueText(const QString &text, qint16 *value) {
 } // namespace
 
 RegisterTable::RegisterTable(QWidget *parent)
-    : QWidget(parent)
-    , ui(std::make_unique<Ui::RegisterTable>()) {
+    : QWidget(parent) {
     setupUi();
     connectSignals();
 }
@@ -106,9 +105,25 @@ RegisterTable::RegisterTable(QWidget *parent)
 RegisterTable::~RegisterTable() = default;
 
 void RegisterTable::setupUi() {
-    ui->setupUi(this);
+    setObjectName(QStringLiteral("RegisterTable"));
+    auto *rootLayout = new QVBoxLayout(this);
+    rootLayout->setObjectName(QStringLiteral("rootLayout"));
+    rootLayout->setSpacing(0);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto *table = ui->tableWidget;
+    m_tableWidget = new QTableWidget(this);
+    m_tableWidget->setObjectName(QStringLiteral("tableWidget"));
+    m_tableWidget->setRowCount(20);
+    m_tableWidget->setColumnCount(20);
+    m_tableWidget->setShowGrid(true);
+    m_tableWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectItems);
+    m_tableWidget->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
+    m_tableWidget->setAlternatingRowColors(true);
+    m_tableWidget->setFocusPolicy(Qt::StrongFocus);
+    rootLayout->addWidget(m_tableWidget);
+
+    auto *table = m_tableWidget;
     table->verticalHeader()->setVisible(false);
     table->horizontalHeader()->setVisible(true);
     table->verticalHeader()->setDefaultSectionSize(Style::Size::TableRowHeight);
@@ -178,7 +193,7 @@ void RegisterTable::connectSignals() {
         });
     }
 
-    connect(ui->tableWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
+    connect(m_tableWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
         if (item == nullptr) {
             return;
         }
@@ -198,7 +213,7 @@ void RegisterTable::connectSignals() {
 }
 
 void RegisterTable::applyColumnWidths() {
-    auto *table = ui->tableWidget;
+    auto *table = m_tableWidget;
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
         table->setColumnWidth(descCol(group), Style::Size::ColDescWidth);
         table->setColumnWidth(addrCol(group), Style::Size::ColAddrWidth);
@@ -230,7 +245,7 @@ void RegisterTable::setValueMode(ValueMode mode) {
     for (int globalRow = 0; globalRow < TotalRows; ++globalRow) {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
-        auto *item = ui->tableWidget->item(row, valueCol(group));
+        auto *item = m_tableWidget->item(row, valueCol(group));
         if (item == nullptr) {
             continue;
         }
@@ -254,11 +269,11 @@ void RegisterTable::updateRowValue(int globalRow, qint16 value) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, valueCol(group));
+    auto *item = m_tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(ui->tableWidget);
+    const QSignalBlocker blocker(m_tableWidget);
     if (m_valueMode == ValueMode::Hex) {
         const quint16 rawValue = static_cast<quint16>(value);
         item->setText(QStringLiteral("0x") + QString::number(rawValue, 16).toUpper().rightJustified(4, QLatin1Char('0')));
@@ -274,11 +289,11 @@ void RegisterTable::markRowError(int globalRow) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, valueCol(group));
+    auto *item = m_tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(ui->tableWidget);
+    const QSignalBlocker blocker(m_tableWidget);
     item->setText(QStringLiteral("--"));
     item->setForeground(QBrush(Style::Color::RegisterErrorText));
 }
@@ -289,11 +304,11 @@ void RegisterTable::markRowPending(int globalRow) {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, valueCol(group));
+    auto *item = m_tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return;
     }
-    const QSignalBlocker blocker(ui->tableWidget);
+    const QSignalBlocker blocker(m_tableWidget);
     item->setText(QStringLiteral("..."));
     item->setForeground(QBrush(Style::Color::MutedText));
 }
@@ -323,7 +338,7 @@ bool RegisterTable::rowHasAddress(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, addrCol(group));
+    auto *item = m_tableWidget->item(row, addrCol(group));
     if (item == nullptr || item->text().trimmed().isEmpty()) {
         return false;
     }
@@ -337,7 +352,7 @@ bool RegisterTable::rowHasValue(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, valueCol(group));
+    auto *item = m_tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return false;
     }
@@ -351,7 +366,7 @@ quint16 RegisterTable::rowAddress(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, addrCol(group));
+    auto *item = m_tableWidget->item(row, addrCol(group));
     if (item == nullptr) {
         return 0;
     }
@@ -365,7 +380,7 @@ qint16 RegisterTable::rowValue(int globalRow) const {
     }
     const int group = globalRow / Style::Size::TableRowCount;
     const int row = globalRow % Style::Size::TableRowCount;
-    auto *item = ui->tableWidget->item(row, valueCol(group));
+    auto *item = m_tableWidget->item(row, valueCol(group));
     if (item == nullptr) {
         return 0;
     }
@@ -379,9 +394,9 @@ void RegisterTable::saveConfig(const QString &path) const {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
         QJsonObject entry;
-        auto *descItem = ui->tableWidget->item(row, descCol(group));
-        auto *addrItem = ui->tableWidget->item(row, addrCol(group));
-        auto *valueItem = ui->tableWidget->item(row, valueCol(group));
+        auto *descItem = m_tableWidget->item(row, descCol(group));
+        auto *addrItem = m_tableWidget->item(row, addrCol(group));
+        auto *valueItem = m_tableWidget->item(row, valueCol(group));
         entry[QStringLiteral("desc")] = descItem != nullptr ? descItem->text() : QString{};
         entry[QStringLiteral("addr")] = addrItem != nullptr ? addrItem->text() : QString{};
         entry[QStringLiteral("val")] = valueItem != nullptr ? valueItem->text() : QString{};
@@ -410,18 +425,18 @@ void RegisterTable::loadConfig(const QString &path) {
     }
 
     const QJsonArray registers = document.object().value(QStringLiteral("registers")).toArray();
-    const QSignalBlocker blocker(ui->tableWidget);
+    const QSignalBlocker blocker(m_tableWidget);
     for (int globalRow = 0; globalRow < TotalRows && globalRow < registers.size(); ++globalRow) {
         const int group = globalRow / Style::Size::TableRowCount;
         const int row = globalRow % Style::Size::TableRowCount;
         const QJsonObject entry = registers.at(globalRow).toObject();
-        if (auto *descItem = ui->tableWidget->item(row, descCol(group)); descItem != nullptr) {
+        if (auto *descItem = m_tableWidget->item(row, descCol(group)); descItem != nullptr) {
             descItem->setText(entry.value(QStringLiteral("desc")).toString());
         }
-        if (auto *addrItem = ui->tableWidget->item(row, addrCol(group)); addrItem != nullptr) {
+        if (auto *addrItem = m_tableWidget->item(row, addrCol(group)); addrItem != nullptr) {
             addrItem->setText(entry.value(QStringLiteral("addr")).toString());
         }
-        if (auto *valueItem = ui->tableWidget->item(row, valueCol(group)); valueItem != nullptr) {
+        if (auto *valueItem = m_tableWidget->item(row, valueCol(group)); valueItem != nullptr) {
             valueItem->setText(entry.value(QStringLiteral("val")).toString());
         }
     }
