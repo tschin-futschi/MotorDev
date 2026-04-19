@@ -119,6 +119,20 @@ QString SimulatorService::describeIncoming(uint8_t cmd, const QByteArray &data) 
     case 0x00: return QStringLiteral("HEARTBEAT");
     case MotorProtocol::CmdI2cBusScan: return QStringLiteral("I2C_SCAN");
     case MotorProtocol::CmdSetMotorIcAddr: return !data.isEmpty() ? QStringLiteral("SET_IC_ADDR addr=%1").arg(formatByte(static_cast<uint8_t>(data.at(0)))) : QStringLiteral("SET_IC_ADDR");
+    case MotorProtocol::CmdSetPmicVoltage: {
+        if (data.size() >= 6) {
+            const quint16 drvvdd = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1)));
+            const quint16 iovdd = static_cast<quint16>((static_cast<quint8>(data.at(2)) << 8) | static_cast<quint8>(data.at(3)));
+            const quint16 vcmvdd = static_cast<quint16>((static_cast<quint8>(data.at(4)) << 8) | static_cast<quint8>(data.at(5)));
+            return QStringLiteral("SET_PMIC_VOLTAGE DRVVDD=%1 IOVDD=%2 VCMVDD=%3")
+                .arg(drvvdd / 100.0, 0, 'f', 2)
+                .arg(iovdd / 100.0, 0, 'f', 2)
+                .arg(vcmvdd / 100.0, 0, 'f', 2);
+        }
+        return QStringLiteral("SET_PMIC_VOLTAGE");
+    }
+    case MotorProtocol::CmdPmicEnable: return QStringLiteral("PMIC_ENABLE");
+    case MotorProtocol::CmdPmicDisable: return QStringLiteral("PMIC_DISABLE");
     case MotorProtocol::CmdReadRegister: if (data.size() >= 2) { const quint16 addr = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1))); return QStringLiteral("READ addr=%1").arg(formatWord(addr)); } return QStringLiteral("READ");
     case MotorProtocol::CmdWriteRegister: if (data.size() >= 4) { const quint16 addr = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1))); const quint16 val = static_cast<quint16>((static_cast<quint8>(data.at(2)) << 8) | static_cast<quint8>(data.at(3))); return QStringLiteral("WRITE addr=%1 val=%2").arg(formatWord(addr), formatWord(val)); } return QStringLiteral("WRITE");
     case MotorProtocol::CmdStartSampling: return QStringLiteral("SCOPE_START");
@@ -141,6 +155,9 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
         switch (cmd) {
         case MotorProtocol::CmdI2cBusScan: handleI2cScan(seq, data); break;
         case MotorProtocol::CmdSetMotorIcAddr: handleSetIcAddr(seq, data); break;
+        case MotorProtocol::CmdSetPmicVoltage: handleSetPmicVoltage(seq, data); break;
+        case MotorProtocol::CmdPmicEnable: handlePmicEnable(seq); break;
+        case MotorProtocol::CmdPmicDisable: handlePmicDisable(seq); break;
         case MotorProtocol::CmdReadRegister: handleReadRegister(seq, data); break;
         case MotorProtocol::CmdWriteRegister: handleWriteRegister(seq, data); break;
         case MotorProtocol::CmdStartSampling: handleStartSampling(seq); break;
@@ -173,6 +190,20 @@ void SimulatorService::handleI2cScan(uint8_t seq, const QByteArray &data) {
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdI2cBusScan, seq, response, accepted.isEmpty() ? QStringLiteral("I2C_SCAN → (空)") : QStringLiteral("I2C_SCAN → %1").arg(accepted.join(QStringLiteral(", "))));
 }
 void SimulatorService::handleSetIcAddr(uint8_t seq, const QByteArray &data) { Q_UNUSED(data); if (m_icAddrSuccess) { sendResponseFrame(seq, MotorProtocol::CmdSetMotorIcAddr, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetMotorIcAddr, seq, {}, QStringLiteral("SET_IC_ADDR → 成功")); return; } sendErrorFrame(seq, 0x03); }
+void SimulatorService::handlePmicEnable(uint8_t seq) { m_pmicEnabled = true; sendResponseFrame(seq, MotorProtocol::CmdPmicEnable, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicEnable, seq, {}, QStringLiteral("PMIC_ENABLE → ACK")); }
+void SimulatorService::handlePmicDisable(uint8_t seq) { m_pmicEnabled = false; sendResponseFrame(seq, MotorProtocol::CmdPmicDisable, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicDisable, seq, {}, QStringLiteral("PMIC_DISABLE → ACK")); }
+void SimulatorService::handleSetPmicVoltage(uint8_t seq, const QByteArray &data) {
+    if (data.size() != 6) { sendErrorFrame(seq, 0x03); return; }
+    const quint16 drvvdd = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1)));
+    const quint16 iovdd = static_cast<quint16>((static_cast<quint8>(data.at(2)) << 8) | static_cast<quint8>(data.at(3)));
+    const quint16 vcmvdd = static_cast<quint16>((static_cast<quint8>(data.at(4)) << 8) | static_cast<quint8>(data.at(5)));
+    if (drvvdd < 60 || drvvdd > 377 || iovdd < 60 || iovdd > 377 || vcmvdd < 60 || vcmvdd > 377) { sendErrorFrame(seq, 0x03); return; }
+    m_pmicDrvvdd = drvvdd;
+    m_pmicIovdd = iovdd;
+    m_pmicVcmvdd = vcmvdd;
+    sendResponseFrame(seq, MotorProtocol::CmdSetPmicVoltage, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetPmicVoltage, seq, {}, QStringLiteral("SET_PMIC_VOLTAGE → ACK (DRVVDD=%1V IOVDD=%2V VCMVDD=%3V)").arg(drvvdd / 100.0, 0, 'f', 2).arg(iovdd / 100.0, 0, 'f', 2).arg(vcmvdd / 100.0, 0, 'f', 2));
+}
 void SimulatorService::handleReadRegister(uint8_t seq, const QByteArray &data) { if (data.size() < 2) { sendErrorFrame(seq, 0x03); return; } const quint16 addr = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1))); Q_UNUSED(addr); const qint16 value = registerReadValue(); const QByteArray response = encodeWord(static_cast<quint16>(value)); sendResponseFrame(seq, MotorProtocol::CmdReadRegister, response); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdReadRegister, seq, response, QStringLiteral("READ → %1").arg(formatWord(static_cast<quint16>(value)))); }
 void SimulatorService::handleWriteRegister(uint8_t seq, const QByteArray &data) { if (data.size() < 4) { sendErrorFrame(seq, 0x03); return; } if (!m_writeSuccess) { sendErrorFrame(seq, 0x03); return; } sendResponseFrame(seq, MotorProtocol::CmdWriteRegister, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdWriteRegister, seq, {}, QStringLiteral("WRITE → ACK")); Q_UNUSED(data); }
 void SimulatorService::handleStartSampling(uint8_t seq) {

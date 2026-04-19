@@ -23,6 +23,7 @@ public:
     void disconnectPort();
     void startI2cScan();
     void setMotorIcAddress(uint8_t addr);
+    void configurePmic(double drvvddV, double iovddV, double vcmvddV);
 
     bool isConnected() const { return m_isConnected; }
 
@@ -33,6 +34,8 @@ signals:
     void i2cScanResult(const QList<uint8_t> &addresses);
     void setAddrSuccess();
     void protocolError(uint8_t errorCode);
+    void pmicConfigSuccess();
+    void pmicConfigFailed(const QString &reason);
 
 private slots:
     void onSerialConnected();
@@ -40,9 +43,16 @@ private slots:
     void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
 
 private:
+    enum class PmicState {
+        Idle,
+        WaitingVoltageAck,
+        WaitingEnableAck,
+    };
+
     SerialManager *m_serialManager = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     bool m_isConnected = false;
     QString m_connectedPort;
     qint32 m_connectedBaud = 0;
+    PmicState m_pmicState = PmicState::Idle;
 };

@@ -7,6 +7,7 @@
 
 #include <QDebug>
 #include <QMetaObject>
+#include <QtMath>
 
 
 
@@ -17,7 +18,13 @@ ConfigService::ConfigService(SerialManager *serialManager, DeviceContext *device
     if (m_serialManager != nullptr) {
         connect(m_serialManager, &SerialManager::connected, this, &ConfigService::onSerialConnected);
         connect(m_serialManager, &SerialManager::disconnected, this, &ConfigService::onSerialDisconnected);
-        connect(m_serialManager, &SerialManager::errorOccurred, this, &ConfigService::serialError);
+        connect(m_serialManager, &SerialManager::errorOccurred, this, [this](const QString &message) {
+            if (m_pmicState != PmicState::Idle) {
+                m_pmicState = PmicState::Idle;
+                emit pmicConfigFailed(message);
+            }
+            emit serialError(message);
+        });
         connect(m_serialManager, &SerialManager::frameReceived, this, &ConfigService::onFrameReceived);
     }
 }
@@ -70,6 +77,42 @@ void ConfigService::setMotorIcAddress(uint8_t addr) {
         Q_ARG(QByteArray, MotorProtocol::encodeSetMotorIcAddr(addr)));
 }
 
+void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV) {
+    if (m_serialManager == nullptr || !m_isConnected) {
+        const QString reason = QStringLiteral("Serial not connected");
+        emit pmicConfigFailed(reason);
+        return;
+    }
+
+    if (m_pmicState != PmicState::Idle) {
+        qWarning() << "PMIC configuration ignored: sequence already in progress";
+        return;
+    }
+
+    const quint16 drvvdd = static_cast<quint16>(qRound(drvvddV * 100.0));
+    const quint16 iovdd = static_cast<quint16>(qRound(iovddV * 100.0));
+    const quint16 vcmvdd = static_cast<quint16>(qRound(vcmvddV * 100.0));
+
+    constexpr quint16 kMinPmicVoltage = 60;
+    constexpr quint16 kMaxPmicVoltage = 377;
+    if (drvvdd < kMinPmicVoltage || drvvdd > kMaxPmicVoltage ||
+        iovdd < kMinPmicVoltage || iovdd > kMaxPmicVoltage ||
+        vcmvdd < kMinPmicVoltage || vcmvdd > kMaxPmicVoltage) {
+        const QString reason = QStringLiteral("Voltage out of range");
+        emit pmicConfigFailed(reason);
+        return;
+    }
+
+    qDebug().noquote() << QStringLiteral("Configuring PMIC: DRVDD=%1V IOVDD=%2V VCMVDD=%3V")
+                              .arg(drvvddV, 0, 'f', 2)
+                              .arg(iovddV, 0, 'f', 2)
+                              .arg(vcmvddV, 0, 'f', 2);
+    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
+        Q_ARG(uint8_t, MotorProtocol::CmdSetPmicVoltage),
+        Q_ARG(QByteArray, MotorProtocol::encodePmicVoltage(drvvdd, iovdd, vcmvdd)));
+    m_pmicState = PmicState::WaitingVoltageAck;
+}
+
 void ConfigService::onSerialConnected() {
     qDebug() << "Serial connected";
     m_isConnected = true;
@@ -79,6 +122,7 @@ void ConfigService::onSerialConnected() {
 void ConfigService::onSerialDisconnected() {
     qDebug() << "Serial disconnected";
     m_isConnected = false;
+    m_pmicState = PmicState::Idle;
     emit serialDisconnected();
 }
 
@@ -104,6 +148,24 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
         emit setAddrSuccess();
         break;
     }
+    case MotorProtocol::CmdSetPmicVoltage: {
+        if (m_pmicState != PmicState::WaitingVoltageAck) {
+            break;
+        }
+        QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
+            Q_ARG(uint8_t, MotorProtocol::CmdPmicEnable),
+            Q_ARG(QByteArray, MotorProtocol::encodePmicEnable()));
+        m_pmicState = PmicState::WaitingEnableAck;
+        break;
+    }
+    case MotorProtocol::CmdPmicEnable: {
+        if (m_pmicState != PmicState::WaitingEnableAck) {
+            break;
+        }
+        m_pmicState = PmicState::Idle;
+        emit pmicConfigSuccess();
+        break;
+    }
     case MotorProtocol::CmdErrorResponse: {
         const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
         QString errorName;
@@ -116,6 +178,10 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
         qWarning().noquote() << QStringLiteral("Error response: code=0x%1 (%2)")
                                     .arg(errorCode, 2, 16, QLatin1Char('0')).toUpper()
                                     .arg(errorName);
+        if (m_pmicState != PmicState::Idle) {
+            m_pmicState = PmicState::Idle;
+            emit pmicConfigFailed(errorName);
+        }
         emit protocolError(errorCode);
         break;
     }

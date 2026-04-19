@@ -58,6 +58,9 @@ private:
     void handleHeartbeat(uint8_t seq);
     void handleI2cScan(uint8_t seq, const QByteArray &data);
     void handleSetIcAddr(uint8_t seq, const QByteArray &data);
+    void handlePmicEnable(uint8_t seq);
+    void handlePmicDisable(uint8_t seq);
+    void handleSetPmicVoltage(uint8_t seq, const QByteArray &data);
     void handleReadRegister(uint8_t seq, const QByteArray &data);
     void handleWriteRegister(uint8_t seq, const QByteArray &data);
     void handleStartSampling(uint8_t seq);
@@ -82,6 +85,10 @@ private:
     QString m_scanAddressText = QStringLiteral("0x5A");
     bool m_icAddrSuccess = true;
     bool m_writeSuccess = true;
+    bool m_pmicEnabled = false;
+    quint16 m_pmicDrvvdd = 180;
+    quint16 m_pmicIovdd = 280;
+    quint16 m_pmicVcmvdd = 320;
     qint16 m_regReadValue = 0;
     mutable std::mutex m_regReadMutex;
 

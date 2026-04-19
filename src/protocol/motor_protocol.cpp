@@ -37,6 +37,26 @@ QByteArray encodeSetMotorIcAddr(uint8_t addr) {
     return payload;
 }
 
+QByteArray encodePmicVoltage(quint16 drvvdd, quint16 iovdd, quint16 vcmvdd) {
+    QByteArray payload;
+    payload.reserve(6);
+    payload.append(static_cast<char>((drvvdd >> 8) & 0xFF));
+    payload.append(static_cast<char>(drvvdd & 0xFF));
+    payload.append(static_cast<char>((iovdd >> 8) & 0xFF));
+    payload.append(static_cast<char>(iovdd & 0xFF));
+    payload.append(static_cast<char>((vcmvdd >> 8) & 0xFF));
+    payload.append(static_cast<char>(vcmvdd & 0xFF));
+    return payload;
+}
+
+QByteArray encodePmicEnable() {
+    return {};
+}
+
+QByteArray encodePmicDisable() {
+    return {};
+}
+
 QByteArray encodeStartSampling() {
     return {};
 }

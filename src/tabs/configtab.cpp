@@ -104,10 +104,13 @@ ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext,
     m_portCombo->setPlaceholderText(tr("Select COM"));
     m_baudRateCombo->setCurrentText(QStringLiteral("115200"));
     for (auto *spin : {m_drvddSpin, m_vcmvddSpin, m_iovddSpin}) {
-        spin->setRange(0.0, 10.0);
+        spin->setRange(0.60, 3.77);
         spin->setDecimals(2);
-        spin->setSingleStep(0.1);
+        spin->setSingleStep(0.10);
     }
+    m_drvddSpin->setValue(1.80);
+    m_iovddSpin->setValue(2.80);
+    m_vcmvddSpin->setValue(3.20);
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
 
@@ -163,6 +166,9 @@ void ConfigTab::connectSignals() {
             return;
         }
         m_service->setMotorIcAddress(static_cast<uint8_t>(addr));
+    });
+    connect(m_pmicConfigButton, &QPushButton::clicked, this, [this]() {
+        m_service->configurePmic(m_drvddSpin->value(), m_iovddSpin->value(), m_vcmvddSpin->value());
     });
 
     // IC type combo → DeviceContext
@@ -220,6 +226,12 @@ void ConfigTab::connectSignals() {
         const uint addr = addrText.toUInt(&ok, 16);
         if (ok && addr <= 0x7F) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
         qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
+    });
+    connect(m_service, &ConfigService::pmicConfigSuccess, this, []() {
+        qDebug() << "PMIC configured successfully";
+    });
+    connect(m_service, &ConfigService::pmicConfigFailed, this, [](const QString &reason) {
+        qWarning().noquote() << QStringLiteral("PMIC configuration failed: %1").arg(reason);
     });
 }
 
