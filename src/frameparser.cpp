@@ -55,7 +55,7 @@ uint16_t FrameParser::calculateCrc16(const QByteArray &data) {
             const bool lsbSet = (crc & 0x0001u) != 0;
             crc >>= 1;
             if (lsbSet) {
-                crc ^= 0xA001u;
+                crc ^= 0x8005u;
             }
         }
     }
