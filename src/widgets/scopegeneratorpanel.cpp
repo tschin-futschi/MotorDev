@@ -1,6 +1,7 @@
 #include "widgets/scopegeneratorpanel.h"
 
 #include "ui/repolish.h"
+#include "ui/style_constants.h"
 
 #include <QAbstractButton>
 #include <QButtonGroup>
@@ -13,6 +14,8 @@
 #include <QRadioButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+
+using namespace MotorDev;
 
 namespace {
 
@@ -55,7 +58,7 @@ void ScopeGeneratorPanel::setRunning(bool running) {
 
 void ScopeGeneratorPanel::setupUi() {
     setObjectName(QStringLiteral("ScopeGeneratorPanel"));
-    setMinimumSize(QSize(420, 340));
+    setMinimumSize(QSize(Style::Size::GeneratorPanelMinW, Style::Size::GeneratorPanelMinH));
 
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setObjectName(QStringLiteral("rootLayout"));

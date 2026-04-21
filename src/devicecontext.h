@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QString>
 
 #include <cstdint>
 
@@ -15,6 +16,10 @@ class DeviceContext : public QObject {
 
 public:
     explicit DeviceContext(QObject *parent = nullptr);
+
+    static MotorIcType motorIcTypeFromIndex(int index);
+    static int indexFromMotorIcType(MotorIcType type);
+    static QString motorIcTypeToString(MotorIcType type);
 
     MotorIcType icType() const;
     void setIcType(MotorIcType type);

@@ -19,7 +19,7 @@ SimulatorSerial::SimulatorSerial(QObject *parent)
     : QObject(nullptr) {
     Q_UNUSED(parent);
 
-    m_thread = new QThread(this);
+    m_thread = new QThread();
     connect(m_thread, &QThread::started, this, &SimulatorSerial::init);
 
     moveToThread(m_thread);
@@ -36,6 +36,8 @@ SimulatorSerial::~SimulatorSerial() {
         m_thread->quit();
         m_thread->wait();
     }
+    delete m_thread;
+    m_thread = nullptr;
 }
 
 QStringList SimulatorSerial::availablePorts() {

@@ -92,8 +92,27 @@ void SimulatorService::disconnectPort() {
     QMetaObject::invokeMethod(m_simulator, "closePort", Qt::QueuedConnection);
 }
 
+bool SimulatorService::isConnected() const {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    return m_isConnected;
+}
+
+void SimulatorService::setScanAddresses(const QString &text) {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    m_scanAddressText = text;
+}
+
+void SimulatorService::setIcAddrResultSuccess(bool success) {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    m_icAddrSuccess = success;
+}
+
+void SimulatorService::setWriteResultSuccess(bool success) {
+    std::lock_guard<std::mutex> lock(m_streamMutex);
+    m_writeSuccess = success;
+}
+
 void SimulatorService::onSimulatorConnected() {
-    m_isConnected = true;
     { std::lock_guard<std::mutex> lock(m_streamMutex); m_isConnected = true; }
     m_streamCv.notify_all();
     emit sysLogEntry(tr("模拟器已连接"), false);
@@ -175,8 +194,13 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
 void SimulatorService::handleHeartbeat(uint8_t seq) { sendResponseFrame(seq, 0x00, {}); emit logEntry(QStringLiteral("TX"), 0x00, seq, {}, QStringLiteral("HEARTBEAT echo")); }
 void SimulatorService::handleI2cScan(uint8_t seq, const QByteArray &data) {
     Q_UNUSED(data);
+    QString scanAddressText;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        scanAddressText = m_scanAddressText;
+    }
     QByteArray response; QStringList accepted;
-    const QStringList tokens = m_scanAddressText.split(QRegularExpression(QStringLiteral("[\\s,]+")), Qt::SkipEmptyParts);
+    const QStringList tokens = scanAddressText.split(QRegularExpression(QStringLiteral("[\\s,]+")), Qt::SkipEmptyParts);
     for (const QString &token : tokens) {
         QString text = token.trimmed();
         if (text.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive)) text = text.mid(2);
@@ -189,26 +213,79 @@ void SimulatorService::handleI2cScan(uint8_t seq, const QByteArray &data) {
     sendResponseFrame(seq, MotorProtocol::CmdI2cBusScan, response);
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdI2cBusScan, seq, response, accepted.isEmpty() ? QStringLiteral("I2C_SCAN → (空)") : QStringLiteral("I2C_SCAN → %1").arg(accepted.join(QStringLiteral(", "))));
 }
-void SimulatorService::handleSetIcAddr(uint8_t seq, const QByteArray &data) { Q_UNUSED(data); if (m_icAddrSuccess) { sendResponseFrame(seq, MotorProtocol::CmdSetMotorIcAddr, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetMotorIcAddr, seq, {}, QStringLiteral("SET_IC_ADDR → 成功")); return; } sendErrorFrame(seq, 0x03); }
-void SimulatorService::handlePmicEnable(uint8_t seq) { m_pmicEnabled = true; sendResponseFrame(seq, MotorProtocol::CmdPmicEnable, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicEnable, seq, {}, QStringLiteral("PMIC_ENABLE → ACK")); }
-void SimulatorService::handlePmicDisable(uint8_t seq) { m_pmicEnabled = false; sendResponseFrame(seq, MotorProtocol::CmdPmicDisable, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicDisable, seq, {}, QStringLiteral("PMIC_DISABLE → ACK")); }
+void SimulatorService::handleSetIcAddr(uint8_t seq, const QByteArray &data) {
+    Q_UNUSED(data);
+    bool icAddrSuccess = false;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        icAddrSuccess = m_icAddrSuccess;
+    }
+    if (icAddrSuccess) {
+        sendResponseFrame(seq, MotorProtocol::CmdSetMotorIcAddr, {});
+        emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetMotorIcAddr, seq, {}, QStringLiteral("SET_IC_ADDR → 成功"));
+        return;
+    }
+    sendErrorFrame(seq, 0x03);
+}
+void SimulatorService::handlePmicEnable(uint8_t seq) {
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_pmicEnabled = true;
+    }
+    sendResponseFrame(seq, MotorProtocol::CmdPmicEnable, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicEnable, seq, {}, QStringLiteral("PMIC_ENABLE → ACK"));
+}
+void SimulatorService::handlePmicDisable(uint8_t seq) {
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_pmicEnabled = false;
+    }
+    sendResponseFrame(seq, MotorProtocol::CmdPmicDisable, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdPmicDisable, seq, {}, QStringLiteral("PMIC_DISABLE → ACK"));
+}
 void SimulatorService::handleSetPmicVoltage(uint8_t seq, const QByteArray &data) {
     if (data.size() != 6) { sendErrorFrame(seq, 0x03); return; }
     const quint16 drvvdd = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1)));
     const quint16 iovdd = static_cast<quint16>((static_cast<quint8>(data.at(2)) << 8) | static_cast<quint8>(data.at(3)));
     const quint16 vcmvdd = static_cast<quint16>((static_cast<quint8>(data.at(4)) << 8) | static_cast<quint8>(data.at(5)));
     if (drvvdd < 60 || drvvdd > 377 || iovdd < 60 || iovdd > 377 || vcmvdd < 60 || vcmvdd > 377) { sendErrorFrame(seq, 0x03); return; }
-    m_pmicDrvvdd = drvvdd;
-    m_pmicIovdd = iovdd;
-    m_pmicVcmvdd = vcmvdd;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        m_pmicDrvvdd = drvvdd;
+        m_pmicIovdd = iovdd;
+        m_pmicVcmvdd = vcmvdd;
+    }
     sendResponseFrame(seq, MotorProtocol::CmdSetPmicVoltage, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetPmicVoltage, seq, {}, QStringLiteral("SET_PMIC_VOLTAGE → ACK (DRVVDD=%1V IOVDD=%2V VCMVDD=%3V)").arg(drvvdd / 100.0, 0, 'f', 2).arg(iovdd / 100.0, 0, 'f', 2).arg(vcmvdd / 100.0, 0, 'f', 2));
 }
 void SimulatorService::handleReadRegister(uint8_t seq, const QByteArray &data) { if (data.size() < 2) { sendErrorFrame(seq, 0x03); return; } const quint16 addr = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1))); Q_UNUSED(addr); const qint16 value = registerReadValue(); const QByteArray response = encodeWord(static_cast<quint16>(value)); sendResponseFrame(seq, MotorProtocol::CmdReadRegister, response); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdReadRegister, seq, response, QStringLiteral("READ → %1").arg(formatWord(static_cast<quint16>(value)))); }
-void SimulatorService::handleWriteRegister(uint8_t seq, const QByteArray &data) { if (data.size() < 4) { sendErrorFrame(seq, 0x03); return; } if (!m_writeSuccess) { sendErrorFrame(seq, 0x03); return; } sendResponseFrame(seq, MotorProtocol::CmdWriteRegister, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdWriteRegister, seq, {}, QStringLiteral("WRITE → ACK")); Q_UNUSED(data); }
+void SimulatorService::handleWriteRegister(uint8_t seq, const QByteArray &data) {
+    if (data.size() < 4) { sendErrorFrame(seq, 0x03); return; }
+    bool writeSuccess = false;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        writeSuccess = m_writeSuccess;
+    }
+    if (!writeSuccess) { sendErrorFrame(seq, 0x03); return; }
+    sendResponseFrame(seq, MotorProtocol::CmdWriteRegister, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdWriteRegister, seq, {}, QStringLiteral("WRITE → ACK"));
+    Q_UNUSED(data);
+}
 void SimulatorService::handleStartSampling(uint8_t seq) {
+    QVector<quint16> channelRegisterMap;
+    uint8_t channelMask = 0x00;
+    {
+        std::lock_guard<std::mutex> lock(m_streamMutex);
+        channelRegisterMap = m_channelRegisterMap;
+        channelMask = m_channelMask;
+    }
     bool hasValidMapping = false;
-    for (int index = 0; index < m_channelRegisterMap.size(); ++index) { if ((m_channelMask & (1u << index)) != 0 && m_channelRegisterMap.at(index) != 0xFFFF) { hasValidMapping = true; break; } }
+    for (int index = 0; index < channelRegisterMap.size(); ++index) {
+        if ((channelMask & (1u << index)) != 0 && channelRegisterMap.at(index) != 0xFFFF) {
+            hasValidMapping = true;
+            break;
+        }
+    }
     if (!hasValidMapping) { sendErrorFrame(seq, 0x03); sendDebugInfo(QStringLiteral("Start sampling failed: no valid channel mapping")); return; }
     { std::lock_guard<std::mutex> lock(m_streamMutex); m_sampling = true; m_streamTick = 0; m_pendingDebugFrames.clear(); m_debugFlushQueued = false; m_lastStreamActualUs = -1; m_streamActualUsAccumulator = 0; m_streamActualUsSamples = 0; }
     m_streamElapsedTimer.restart(); m_streamCv.notify_all(); sendResponseFrame(seq, MotorProtocol::CmdStartSampling, {}); emit debugStreamActiveChanged(true); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartSampling, seq, {}, QStringLiteral("SCOPE_START → ACK"));

@@ -189,6 +189,17 @@ inline constexpr int ScopeBottomPanelMinCollapsed = 40;
 inline constexpr int ScopeBottomPanelMinExpanded = 132;
 inline constexpr int ScopeBottomPanelMaxExpanded = 240;
 inline constexpr int LogPanelHeight = 200;
+inline constexpr int ScopePlotFontSmall = 8;
+inline constexpr int ScopePlotFontNormal = 9;
+inline constexpr int MarqueeFontSize = 10;
+inline constexpr int RegisterTableFontSize = 11;
+inline constexpr int ScopeSamplingButtonMinW = 92;
+inline constexpr int ScopeSamplingButtonMinH = 24;
+inline constexpr int ScopePlotMinHeight = 320;
+inline constexpr int MarqueeMinWidth = 140;
+inline constexpr int MarqueeMinHeight = 26;
+inline constexpr int GeneratorPanelMinW = 420;
+inline constexpr int GeneratorPanelMinH = 340;
 }
 
 namespace Text {

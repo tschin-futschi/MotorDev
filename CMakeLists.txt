@@ -22,8 +22,18 @@ qt_add_executable(MotorDev
     src/serialmanager.h
     src/models/scopechannelmodel.cpp
     src/models/scopechannelmodel.h
+    src/models/channelbuffer.cpp
+    src/models/channelbuffer.h
+    src/protocol/register_utils.cpp
+    src/protocol/register_utils.h
+    src/protocol/sampling_config.cpp
+    src/protocol/sampling_config.h
     src/services/configservice.cpp
     src/services/configservice.h
+    src/services/cyclicwriteservice.cpp
+    src/services/cyclicwriteservice.h
+    src/services/generatorservice.cpp
+    src/services/generatorservice.h
     src/services/registerservice.cpp
     src/services/registerservice.h
     src/services/scopeservice.cpp

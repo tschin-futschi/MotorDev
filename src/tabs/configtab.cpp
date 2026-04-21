@@ -57,33 +57,6 @@ void applyPanelShadow(QWidget *widget) {
     effect->setColor(Style::Color::PanelShadow);
     widget->setGraphicsEffect(effect);
 }
-
-MotorIcType motorIcTypeFromIndex(int index) {
-    switch (index) {
-    case 1: return MotorIcType::DW9786;
-    case 2: return MotorIcType::DW9788;
-    case 0:
-    default: return MotorIcType::AW86006;
-    }
-}
-
-int indexFromMotorIcType(MotorIcType type) {
-    switch (type) {
-    case MotorIcType::DW9786: return 1;
-    case MotorIcType::DW9788: return 2;
-    case MotorIcType::AW86006:
-    default: return 0;
-    }
-}
-
-QString motorIcTypeToString(MotorIcType type) {
-    switch (type) {
-    case MotorIcType::AW86006: return QStringLiteral("AW86006");
-    case MotorIcType::DW9786: return QStringLiteral("DW9786");
-    case MotorIcType::DW9788: return QStringLiteral("DW9788");
-    }
-    return QStringLiteral("Unknown");
-}
 }
 
 ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent)
@@ -129,7 +102,7 @@ void ConfigTab::connectSignals() {
     setSerialControlsConnected(false);
     {
         const QSignalBlocker comboBlocker(m_icCombo);
-        m_icCombo->setCurrentIndex(indexFromMotorIcType(m_deviceContext->icType()));
+        m_icCombo->setCurrentIndex(DeviceContext::indexFromMotorIcType(m_deviceContext->icType()));
     }
 
     // UI → Service
@@ -173,13 +146,13 @@ void ConfigTab::connectSignals() {
 
     // IC type combo → DeviceContext
     connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
-        const MotorIcType type = motorIcTypeFromIndex(index);
-        qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(motorIcTypeToString(type));
+        const MotorIcType type = DeviceContext::motorIcTypeFromIndex(index);
+        qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(DeviceContext::motorIcTypeToString(type));
         m_deviceContext->setIcType(type);
     });
     connect(m_deviceContext, &DeviceContext::icTypeChanged, this, [this](MotorIcType type) {
         const QSignalBlocker blocker(m_icCombo);
-        m_icCombo->setCurrentIndex(indexFromMotorIcType(type));
+        m_icCombo->setCurrentIndex(DeviceContext::indexFromMotorIcType(type));
     });
 
     // Slave ID combo → DeviceContext

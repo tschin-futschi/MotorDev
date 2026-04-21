@@ -24,12 +24,12 @@ public:
 
     void connectToPort(const QString &portName, qint32 baudRate);
     void disconnectPort();
-    bool isConnected() const { return m_isConnected; }
+    bool isConnected() const;
 
     void setResponseDelay(int delayMs) { m_responseDelayMs = delayMs; }
-    void setScanAddresses(const QString &text) { m_scanAddressText = text; }
-    void setIcAddrResultSuccess(bool success) { m_icAddrSuccess = success; }
-    void setWriteResultSuccess(bool success) { m_writeSuccess = success; }
+    void setScanAddresses(const QString &text);
+    void setIcAddrResultSuccess(bool success);
+    void setWriteResultSuccess(bool success);
     void setRegisterReadValue(const QString &text);
 
 signals:
@@ -103,7 +103,7 @@ private:
     qint64 m_streamActualUsAccumulator = 0;
     int m_streamActualUsSamples = 0;
     std::thread m_streamThread;
-    std::mutex m_streamMutex;
+    mutable std::mutex m_streamMutex;
     std::condition_variable m_streamCv;
     bool m_streamStopRequested = false;
     QVector<PendingDebugFrame> m_pendingDebugFrames;

@@ -13,11 +13,11 @@ ScopeMarqueeLabel::ScopeMarqueeLabel(QWidget *parent)
     : QWidget(parent) {
     setObjectName(QStringLiteral("ScopeMarqueeLabel"));
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    setMinimumWidth(140);
-    setMinimumHeight(26);
+    setMinimumWidth(Style::Size::MarqueeMinWidth);
+    setMinimumHeight(Style::Size::MarqueeMinHeight);
 
     QFont labelFont = font();
-    labelFont.setPixelSize(10);
+    labelFont.setPixelSize(Style::Size::MarqueeFontSize);
     setFont(labelFont);
 
     m_scrollTimer = new QTimer(this);

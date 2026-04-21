@@ -27,27 +27,6 @@ constexpr int StackedLaneGap = 10;   // gap between stacked lanes
 constexpr int RenderIntervalMs = 16; // ~60fps active render
 constexpr int IdleIntervalMs = 100;  // idle render interval
 
-// nth_element-based median over a fixed-size buffer (no allocation).
-double medianValueInPlace(std::vector<double> &values, int count) {
-    if (count <= 0) {
-        return 0.0;
-    }
-    if (count == 1) {
-        return values[0];
-    }
-
-    const int mid = count / 2;
-    if ((count % 2) != 0) {
-        std::nth_element(values.begin(), values.begin() + mid, values.begin() + count);
-        return values[mid];
-    }
-
-    std::nth_element(values.begin(), values.begin() + mid, values.begin() + count);
-    const double upper = values[mid];
-    std::nth_element(values.begin(), values.begin() + mid - 1, values.begin() + mid);
-    return (values[mid - 1] + upper) / 2.0;
-}
-
 void configureScopePen(QPen &pen, const QColor &color, qreal width, Qt::PenStyle style) {
     pen = QPen(color, width);
     pen.setCosmetic(true);
@@ -79,7 +58,7 @@ constexpr QPoint kShellTwoOffsets[] = {
 ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     : QOpenGLWidget(parent) {
     m_channels.resize(kMaxChannels);
-    m_pointBuffer.reserve(kUiRingSize);
+    m_pointBuffer.reserve(ChannelBuffer::kUiRingSize);
 
     // Request 4x MSAA for smooth lines at near-zero GPU cost.
     QSurfaceFormat fmt;
@@ -96,7 +75,8 @@ ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     m_samplingButton = new QPushButton(this);
     m_samplingButton->setObjectName(QStringLiteral("samplingButton"));
     m_samplingButton->setProperty("running", false);
-    m_samplingButton->setMinimumSize(92, 24);
+    m_samplingButton->setMinimumSize(Style::Size::ScopeSamplingButtonMinW,
+                                     Style::Size::ScopeSamplingButtonMinH);
     m_samplingButton->setCursor(Qt::PointingHandCursor);
     m_samplingButton->raise();
     connect(m_samplingButton, &QPushButton::clicked, this, [this]() {
@@ -104,7 +84,7 @@ ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     });
 
     clearData();
-    setMinimumHeight(320);
+    setMinimumHeight(Style::Size::ScopePlotMinHeight);
     updateSamplingButton();
     updateSamplingButtonGeometry();
 }
@@ -141,7 +121,8 @@ void ScopePlotWidget::updateSamplingButtonGeometry() {
         return;
     }
     constexpr int kTopMargin = 8;
-    const QSize hint = m_samplingButton->sizeHint().expandedTo(QSize(92, 24));
+    const QSize hint = m_samplingButton->sizeHint().expandedTo(
+        QSize(Style::Size::ScopeSamplingButtonMinW, Style::Size::ScopeSamplingButtonMinH));
     m_samplingButton->resize(hint);
     m_samplingButton->move((width() - hint.width()) / 2, kTopMargin);
     m_samplingButton->raise();
@@ -206,12 +187,15 @@ void ScopePlotWidget::configureAcquisition(int intervalUs, int windowMs) {
 
     m_sampleIntervalUs = intervalUs;
     m_displayWindowMs = windowMs;
+    m_rawWindowSampleCount = qMax(
+        1,
+        qRound((static_cast<double>(m_displayWindowMs) * 1000.0) / static_cast<double>(m_sampleIntervalUs)));
+    m_bucketWidth = qMax(1, (m_rawWindowSampleCount + ChannelBuffer::kUiRingSize - 1) / ChannelBuffer::kUiRingSize);
+    m_displaySampleCount = qMax(1, (m_rawWindowSampleCount + m_bucketWidth - 1) / m_bucketWidth);
     clearData();
 }
 
 void ScopePlotWidget::appendSamples(uint8_t channelMask, const QVector<int16_t> &samples) {
-    const int rawSamples = rawWindowSampleCount();
-    const int samplesPerBucket = bucketWidth();
     int sampleIndex = 0;
     for (int channelIndex = 0; channelIndex < m_channels.size(); ++channelIndex) {
         if ((channelMask & (1u << channelIndex)) == 0) {
@@ -222,23 +206,8 @@ void ScopePlotWidget::appendSamples(uint8_t channelMask, const QVector<int16_t> 
         }
 
         ChannelData &channel = m_channels[channelIndex];
-        if (channel.rawRing.size() != rawSamples
-            || static_cast<int>(channel.bucketBuffer.size()) != samplesPerBucket) {
-            resetChannelBuffers(channel);
-        }
-
         const double sampleValue = static_cast<double>(samples.at(sampleIndex++));
-        channel.rawRing[channel.rawHead] = sampleValue;
-        channel.rawHead = (channel.rawHead + 1) % rawSamples;
-        channel.rawCount = qMin(channel.rawCount + 1, rawSamples);
-
-        // Index-only write into the fixed-capacity bucket. No allocation.
-        channel.bucketBuffer[channel.bucketFill++] = sampleValue;
-        if (channel.bucketFill >= samplesPerBucket) {
-            const double median = medianValueInPlace(channel.bucketBuffer, channel.bucketFill);
-            writeDisplaySample(channel, median);
-            channel.bucketFill = 0;
-        }
+        channel.buffer.appendRaw(sampleValue);
     }
     markAutoYDirty();
     // No update() here -- the 16ms render timer is the single source of
@@ -247,7 +216,7 @@ void ScopePlotWidget::appendSamples(uint8_t channelMask, const QVector<int16_t> 
 
 void ScopePlotWidget::clearData() {
     for (auto &channel : m_channels) {
-        resetChannelBuffers(channel);
+        channel.buffer.configure(m_rawWindowSampleCount, m_bucketWidth);
     }
     markAutoYDirty();
 }
@@ -540,7 +509,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
     }
 
     const int laneHeight = (rect.height() - StackedLaneGap * (channelCount - 1)) / channelCount;
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), 9));
+    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontNormal));
 
     const int startIndex = visibleSampleStart();
     const int endIndex = qMax(startIndex, visibleSampleEnd());
@@ -676,29 +645,30 @@ void ScopePlotWidget::drawDataPointDots(QPainter *painter, const QColor &color, 
 
 void ScopePlotWidget::buildPaintSnapshot(int channelIndex) {
     const ChannelData &channel = m_channels[channelIndex];
-    const int activeDisplayCount = displaySampleCount();
-    const int liveCount = qMin(channel.uiCount, activeDisplayCount);
+    const int activeDisplayCount = m_displaySampleCount;
+    const int liveCount = qMin(channel.buffer.uiCount(), activeDisplayCount);
     const int liveOffset = qMax(0, activeDisplayCount - liveCount);
     m_paintSnapshotCount[channelIndex] = liveCount;
     m_paintSnapshotOffset[channelIndex] = liveOffset;
 
     float *out = m_paintSnapshot[channelIndex].data();
-    std::fill(out, out + kUiRingSize, 0.0f);
+    std::fill(out, out + ChannelBuffer::kUiRingSize, 0.0f);
     if (liveCount <= 0) {
         return;
     }
 
-    const int oldestIndex = (channel.uiHead - liveCount + kUiRingSize) % kUiRingSize;
-    const int firstSegment = qMin(liveCount, kUiRingSize - oldestIndex);
+    const int oldestIndex = (channel.buffer.uiHead() - liveCount + ChannelBuffer::kUiRingSize) % ChannelBuffer::kUiRingSize;
+    const int firstSegment = qMin(liveCount, ChannelBuffer::kUiRingSize - oldestIndex);
     const int secondSegment = liveCount - firstSegment;
+    const auto &uiRing = channel.buffer.uiRing();
 
     float *dst = out + liveOffset;
-    std::copy(channel.uiRing.begin() + oldestIndex,
-              channel.uiRing.begin() + oldestIndex + firstSegment,
+    std::copy(uiRing.begin() + oldestIndex,
+              uiRing.begin() + oldestIndex + firstSegment,
               dst);
     if (secondSegment > 0) {
-        std::copy(channel.uiRing.begin(),
-                  channel.uiRing.begin() + secondSegment,
+        std::copy(uiRing.begin(),
+                  uiRing.begin() + secondSegment,
                   dst + firstSegment);
     }
 }
@@ -761,7 +731,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
                          plotRect.width(),
                          AxisBottomMargin - 8);
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), 8));
+    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
 
     for (int i = 0; i <= 8; ++i) {
         const int x = axisRect.left() + (axisRect.width() * i) / 8;
@@ -775,7 +745,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
 
 void ScopePlotWidget::paintYAxis(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), 8));
+    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
 
     const int tickX = rect.left();
     const int labelRight = rect.left() - 8;
@@ -801,7 +771,7 @@ void ScopePlotWidget::paintLegend(QPainter *painter, const QRect &rect) {
     const int top = rect.top() + 8;
     int left = rect.left() + 10;
 
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), 8));
+    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
     for (const ChannelData &channel : m_channels) {
         if (!channel.enabled) {
             continue;
@@ -851,7 +821,7 @@ void ScopePlotWidget::paintSelection(QPainter *painter, const QRect &rect) {
 
 void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), 9));
+    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontNormal));
 
     if (m_avgFrameMs > 0.0) {
         const double fps = 1000.0 / m_avgFrameMs;
@@ -889,48 +859,14 @@ QRect ScopePlotWidget::currentPlotRect() const {
     return frameRect.adjusted(AxisLeftMargin, AxisTopMargin, -AxisRightMargin, -AxisBottomMargin);
 }
 
-int ScopePlotWidget::rawWindowSampleCount() const {
-    return qMax(
-        1,
-        qRound((static_cast<double>(m_displayWindowMs) * 1000.0) / static_cast<double>(m_sampleIntervalUs)));
-}
-
-int ScopePlotWidget::bucketWidth() const {
-    const int rawSamples = rawWindowSampleCount();
-    return qMax(1, (rawSamples + kUiRingSize - 1) / kUiRingSize);
-}
-
-int ScopePlotWidget::displaySampleCount() const {
-    const int rawSamples = rawWindowSampleCount();
-    const int bucketSamples = bucketWidth();
-    return qMax(1, (rawSamples + bucketSamples - 1) / bucketSamples);
-}
-
 int ScopePlotWidget::visibleSampleStart() const {
-    const int windowLastIndex = qMax(0, displaySampleCount() - 1);
+    const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
     const int offset = static_cast<int>(std::floor(m_viewStartRatio * windowLastIndex));
     return qBound(0, offset, windowLastIndex);
 }
 
 int ScopePlotWidget::visibleSampleEnd() const {
-    const int windowLastIndex = qMax(0, displaySampleCount() - 1);
+    const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
     const int offset = static_cast<int>(std::ceil(m_viewEndRatio * windowLastIndex));
     return qBound(0, offset, windowLastIndex);
-}
-
-void ScopePlotWidget::resetChannelBuffers(ChannelData &channel) {
-    channel.rawRing.fill(0.0, rawWindowSampleCount());
-    channel.rawHead = 0;
-    channel.rawCount = 0;
-    channel.uiRing.fill(0.0f);
-    channel.uiHead = 0;
-    channel.uiCount = 0;
-    channel.bucketBuffer.assign(static_cast<size_t>(bucketWidth()), 0.0);
-    channel.bucketFill = 0;
-}
-
-void ScopePlotWidget::writeDisplaySample(ChannelData &channel, double value) {
-    channel.uiRing[channel.uiHead] = static_cast<float>(value);
-    channel.uiHead = (channel.uiHead + 1) % kUiRingSize;
-    channel.uiCount = qMin(channel.uiCount + 1, kUiRingSize);
 }

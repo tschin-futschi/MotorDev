@@ -1,8 +1,8 @@
 #pragma once
 
+#include "models/channelbuffer.h"
 #include "ui/scopeviewmode.h"
 
-#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -73,21 +73,13 @@ private:
         Vertical
     };
 
-    static constexpr int kUiRingSize = 3000;
     static constexpr int kMaxChannels = 8;
     static constexpr qint64 kAutoYMinIntervalMs = 100;
 
     struct ChannelData {
         QString name;
         QColor color;
-        QVector<double> rawRing;
-        int rawHead = 0;
-        int rawCount = 0;
-        std::array<float, kUiRingSize> uiRing {};
-        int uiHead = 0;
-        int uiCount = 0;
-        std::vector<double> bucketBuffer;
-        int bucketFill = 0;
+        ChannelBuffer buffer;
         bool enabled = false;
         qreal lineWidth = 4.0;
         Qt::PenStyle lineStyle = Qt::SolidLine;
@@ -113,13 +105,8 @@ private:
     void resetZoom();
     void markAutoYDirty();
     QRect currentPlotRect() const;
-    int rawWindowSampleCount() const;
-    int bucketWidth() const;
-    int displaySampleCount() const;
     int visibleSampleStart() const;
     int visibleSampleEnd() const;
-    void resetChannelBuffers(ChannelData &channel);
-    void writeDisplaySample(ChannelData &channel, double value);
     void updateSamplingButton();
     void updateSamplingButtonGeometry();
 
@@ -140,12 +127,15 @@ private:
     double m_manualYMax = 1.0;
     int m_sampleIntervalUs = 1000;
     int m_displayWindowMs = 50;
+    int m_rawWindowSampleCount = 50;
+    int m_bucketWidth = 1;
+    int m_displaySampleCount = 50;
     DragZoomMode m_dragMode = DragZoomMode::None;
     bool m_autoYDirty = true;
     double m_cachedAutoYMin = -1.0;
     double m_cachedAutoYMax = 1.0;
     bool m_staticCacheDirty = true;
-    mutable std::array<std::array<float, kUiRingSize>, kMaxChannels> m_paintSnapshot {};
+    mutable std::array<std::array<float, ChannelBuffer::kUiRingSize>, kMaxChannels> m_paintSnapshot {};
     mutable std::array<int, kMaxChannels> m_paintSnapshotCount {};
     mutable std::array<int, kMaxChannels> m_paintSnapshotOffset {};
     mutable std::vector<QPointF> m_pointBuffer;

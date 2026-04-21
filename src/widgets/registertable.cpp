@@ -141,7 +141,7 @@ void RegisterTable::setupUi() {
 
     QFont monoFont(QStringLiteral("Consolas"));
     monoFont.setStyleHint(QFont::Monospace);
-    monoFont.setPointSize(11);
+    monoFont.setPointSize(Style::Size::RegisterTableFontSize);
 
     for (int row = 0; row < Style::Size::TableRowCount; ++row) {
         for (int group = 0; group < Style::Size::TableGroupCount; ++group) {

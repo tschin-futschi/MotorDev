@@ -59,10 +59,6 @@ public:
     int perfSampleCount() const { return m_perfSampleCount; }
     void resetPerfCounters() { m_perfBatchCount = 0; m_perfSampleCount = 0; }
 
-    static uint8_t sampleIntervalIndexForText(const QString &text);
-    static int sampleIntervalUsForIndex(uint8_t index);
-    static int displayWindowMsForText(const QString &text);
-
 signals:
     void runningChanged(bool running);
     void samplesReceived(uint8_t channelMask, const QVector<int16_t> &samples);

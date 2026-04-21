@@ -3,6 +3,7 @@
 
 #include "models/scopechannelmodel.h"
 #include "protocol/motor_protocol.h"
+#include "protocol/sampling_config.h"
 #include "serialmanager.h"
 
 #include <QDebug>
@@ -92,7 +93,7 @@ void ScopeService::requestStart(uint8_t sampleIntervalIndex, int displayWindowMs
     m_stopPending = false;
     m_hasReceivedStream = false;
     clearPendingStreamBatch();
-    emit acquisitionConfigured(sampleIntervalUsForIndex(m_sampleIntervalIndex), m_displayWindowMs);
+    emit acquisitionConfigured(SamplingConfig::intervalUsForIndex(m_sampleIntervalIndex), m_displayWindowMs);
     emit resetViewRequested();
     logStartSnapshot();
     sendNextStartCommand();
@@ -271,7 +272,7 @@ void ScopeService::clearPendingStreamBatch() {
 }
 
 void ScopeService::logStartSnapshot() const {
-    const int intervalUs = sampleIntervalUsForIndex(m_sampleIntervalIndex);
+    const int intervalUs = SamplingConfig::intervalUsForIndex(m_sampleIntervalIndex);
     const int rawWindowPoints = qMax(1, qRound((static_cast<double>(m_displayWindowMs) * 1000.0) / static_cast<double>(intervalUs)));
     const int bucket = qMax(1, (rawWindowPoints + 3000 - 1) / 3000);
     const int uiPoints = qMax(1, (rawWindowPoints + bucket - 1) / bucket);
@@ -294,35 +295,4 @@ bool ScopeService::sendCommand(uint8_t cmd, const QByteArray &data) {
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, cmd), Q_ARG(QByteArray, data));
     return true;
-}
-
-uint8_t ScopeService::sampleIntervalIndexForText(const QString &text) {
-    const QString normalized = text.trimmed().toLower();
-    if (normalized == QStringLiteral("100 us")) return 0x00;
-    if (normalized == QStringLiteral("200 us")) return 0x01;
-    if (normalized == QStringLiteral("300 us")) return 0x02;
-    if (normalized == QStringLiteral("500 us")) return 0x03;
-    if (normalized == QStringLiteral("750 us")) return 0x04;
-    if (normalized == QStringLiteral("1500 us")) return 0x06;
-    if (normalized == QStringLiteral("2000 us")) return 0x07;
-    return 0x05;
-}
-
-int ScopeService::sampleIntervalUsForIndex(uint8_t index) {
-    switch (index) {
-    case 0x00: return 100; case 0x01: return 200; case 0x02: return 300;
-    case 0x03: return 500; case 0x04: return 750; case 0x05: return 1000;
-    case 0x06: return 1500; case 0x07: return 2000; default: return 1000;
-    }
-}
-
-int ScopeService::displayWindowMsForText(const QString &text) {
-    const QString normalized = text.trimmed().toLower();
-    if (normalized == QStringLiteral("50 ms")) return 50;
-    if (normalized == QStringLiteral("200 ms")) return 200;
-    if (normalized == QStringLiteral("500 ms")) return 500;
-    if (normalized == QStringLiteral("1000 ms")) return 1000;
-    if (normalized == QStringLiteral("2000 ms")) return 2000;
-    if (normalized == QStringLiteral("4000 ms")) return 4000;
-    return 50;
 }

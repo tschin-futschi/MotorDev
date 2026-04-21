@@ -25,9 +25,9 @@ QByteArray encodeWriteRegister(quint16 addr, qint16 value) {
     return payload;
 }
 
-QByteArray encodeI2cBusScan() {
+QByteArray encodeI2cBusScan(uint8_t busIndex) {
     QByteArray payload;
-    payload.append(static_cast<char>(0x02));
+    payload.append(static_cast<char>(busIndex));
     return payload;
 }
 

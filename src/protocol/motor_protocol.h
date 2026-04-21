@@ -30,7 +30,7 @@ inline constexpr uint8_t CmdSetChannelRegisterMap = 0x54;
 
 QByteArray encodeReadRegister(quint16 addr);
 QByteArray encodeWriteRegister(quint16 addr, qint16 value);
-QByteArray encodeI2cBusScan();
+QByteArray encodeI2cBusScan(uint8_t busIndex = 0x02);
 QByteArray encodeSetMotorIcAddr(uint8_t addr);
 QByteArray encodePmicVoltage(quint16 drvvdd, quint16 iovdd, quint16 vcmvdd);
 QByteArray encodePmicEnable();
