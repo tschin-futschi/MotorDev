@@ -20,10 +20,13 @@ public:
     explicit ScopeBottomPanel(QWidget *overlayHost, QWidget *parent = nullptr);
     ~ScopeBottomPanel() override;
     void setRunning(bool running);
+    ScopeRegisterPanel *registerPanel() const;
 
 signals:
     void registerReadRequested(int row);
     void registerWriteRequested(int row);
+    void registerStartRequested();
+    void registerStopRequested();
     void clearPanelRequested();
     void loadParamsRequested();
     void channelToggled(int index, bool enabled);

@@ -1,10 +1,12 @@
 #include "tabs/oscilloscoptab.h"
 
 #include "models/scopechannelmodel.h"
+#include "services/registerservice.h"
 #include "services/scopeservice.h"
 #include "ui/style_constants.h"
 #include "widgets/scopebottompanel.h"
 #include "widgets/scopeplotwidget.h"
+#include "widgets/scoperegisterpanel.h"
 #include "widgets/scopestylepanel.h"
 
 #include <QDebug>
@@ -15,9 +17,11 @@
 using namespace MotorDev;
 
 OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
-    : QWidget(parent) {
+    : QWidget(parent)
+    , m_serialManager(serialManager) {
     m_channelModel = new ScopeChannelModel(this);
     m_service = new ScopeService(serialManager, m_channelModel, this);
+    m_regService = new RegisterService(m_serialManager, this);
     setupUi();
     connectSignals();
     refreshPlotData();
@@ -26,6 +30,10 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
     m_perfTimer->setInterval(1000);
     connect(m_perfTimer, &QTimer::timeout, this, &OscilloscopTab::onPerfTimerTick);
     m_perfTimer->start();
+
+    m_cyclicWriteTimer = new QTimer(this);
+    m_cyclicWriteTimer->setSingleShot(false);
+    connect(m_cyclicWriteTimer, &QTimer::timeout, this, &OscilloscopTab::onCyclicWriteTick);
 }
 
 OscilloscopTab::~OscilloscopTab() {
@@ -119,16 +127,12 @@ void OscilloscopTab::connectSignals() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Display window=%1").arg(text);
     });
 
-    // Bottom panel → placeholder stubs
-    connect(m_bottomPanel, &ScopeBottomPanel::registerReadRequested, this, [](int row) {
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Register R row %1").arg(row + 1);
-    });
-    connect(m_bottomPanel, &ScopeBottomPanel::registerWriteRequested, this, [](int row) {
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Register W row %1").arg(row + 1);
-    });
-    connect(m_bottomPanel, &ScopeBottomPanel::clearPanelRequested, this, []() {
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Clear register panel");
-    });
+    // Bottom panel → register panel / misc
+    connect(m_bottomPanel, &ScopeBottomPanel::registerReadRequested, this, &OscilloscopTab::onRegisterReadRequested);
+    connect(m_bottomPanel, &ScopeBottomPanel::registerWriteRequested, this, &OscilloscopTab::onRegisterWriteRequested);
+    connect(m_bottomPanel, &ScopeBottomPanel::registerStartRequested, this, &OscilloscopTab::onRegisterStartRequested);
+    connect(m_bottomPanel, &ScopeBottomPanel::registerStopRequested, this, &OscilloscopTab::onRegisterStopRequested);
+    connect(m_bottomPanel, &ScopeBottomPanel::clearPanelRequested, this, &OscilloscopTab::onRegisterClearRequested);
     connect(m_bottomPanel, &ScopeBottomPanel::loadParamsRequested, this, []() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Load parameters");
     });
@@ -177,6 +181,35 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::samplesReceived, m_plotWidget, &ScopePlotWidget::appendSamples);
     connect(m_service, &ScopeService::acquisitionConfigured, m_plotWidget, &ScopePlotWidget::configureAcquisition);
     connect(m_service, &ScopeService::resetViewRequested, m_plotWidget, &ScopePlotWidget::resetView);
+
+    connect(m_regService, &RegisterService::rowReadOk, this, [this](int row, qint16 value) {
+        if (m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
+            return;
+        }
+
+        ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
+        panel->setValueText(
+            row, QStringLiteral("0x%1").arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0')).toUpper());
+        panel->setButtonFeedback(row, true, QStringLiteral("ok"));
+    });
+    connect(m_regService, &RegisterService::rowReadError, this, [this](int row) {
+        qDebug().noquote() << QStringLiteral("[Scope Reg] Read error row %1").arg(row + 1);
+        if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
+            m_bottomPanel->registerPanel()->setButtonFeedback(row, true, QStringLiteral("error"));
+        }
+    });
+    connect(m_regService, &RegisterService::rowWriteOk, this, [this](int row) {
+        qDebug().noquote() << QStringLiteral("[Scope Reg] Write OK row %1").arg(row + 1);
+        if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
+            m_bottomPanel->registerPanel()->setButtonFeedback(row, false, QStringLiteral("ok"));
+        }
+    });
+    connect(m_regService, &RegisterService::rowWriteError, this, [this](int row) {
+        qDebug().noquote() << QStringLiteral("[Scope Reg] Write error row %1").arg(row + 1);
+        if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
+            m_bottomPanel->registerPanel()->setButtonFeedback(row, false, QStringLiteral("error"));
+        }
+    });
 }
 
 void OscilloscopTab::onViewModeChangeRequested(int mode) {
@@ -279,6 +312,139 @@ void OscilloscopTab::keyPressEvent(QKeyEvent *event) {
 
 ScopeViewMode OscilloscopTab::viewModeFromInt(int mode) { return mode == 1 ? ScopeViewMode::Stacked : ScopeViewMode::Overlay; }
 int OscilloscopTab::viewModeToInt(ScopeViewMode mode) { return mode == ScopeViewMode::Stacked ? 1 : 0; }
+
+bool OscilloscopTab::parseRegisterNumber(const QString &text, quint16 *out) {
+    if (out == nullptr) {
+        return false;
+    }
+
+    const QString trimmed = text.trimmed();
+    if (trimmed.isEmpty()) {
+        return false;
+    }
+
+    bool ok = false;
+    uint value = 0;
+    if (trimmed.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive)) {
+        value = trimmed.mid(2).toUInt(&ok, 16);
+    } else {
+        value = trimmed.toUInt(&ok, 10);
+    }
+
+    if (!ok || value > 0xFFFFu) {
+        return false;
+    }
+
+    *out = static_cast<quint16>(value);
+    return true;
+}
+
+void OscilloscopTab::onRegisterReadRequested(int row) {
+    if (m_regService == nullptr || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
+        return;
+    }
+
+    ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
+    quint16 address = 0;
+    if (!parseRegisterNumber(panel->addressText(row), &address)) {
+        panel->setAddressError(row, true);
+        return;
+    }
+
+    panel->setAddressError(row, false);
+    panel->setButtonFeedback(row, true, QStringLiteral("pending"));
+    m_regService->readSingleRow(row, address);
+}
+
+void OscilloscopTab::onRegisterWriteRequested(int row) {
+    if (m_regService == nullptr || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
+        return;
+    }
+
+    ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
+    quint16 address = 0;
+    quint16 value = 0;
+    if (!parseRegisterNumber(panel->addressText(row), &address)) {
+        panel->setAddressError(row, true);
+        return;
+    }
+    if (!parseRegisterNumber(panel->valueText(row), &value)) {
+        qDebug().noquote() << QStringLiteral("[Scope Reg] Skip invalid value row %1").arg(row + 1);
+        return;
+    }
+
+    panel->setAddressError(row, false);
+    panel->setButtonFeedback(row, false, QStringLiteral("pending"));
+    m_regService->writeSingleRow(row, address, static_cast<qint16>(value));
+}
+
+void OscilloscopTab::onRegisterStartRequested() {
+    if (m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr || m_cyclicWriteTimer == nullptr) {
+        return;
+    }
+
+    bool ok = false;
+    const int intervalMs = m_bottomPanel->registerPanel()->intervalText().trimmed().toInt(&ok);
+    if (!ok || intervalMs <= 0) {
+        qDebug().noquote() << QStringLiteral("[Scope Reg] Ignore invalid interval");
+        return;
+    }
+
+    m_cyclicWriteIndex = 0;
+    m_cyclicWriteTimer->setInterval(intervalMs);
+    m_cyclicWriteTimer->start();
+    m_bottomPanel->registerPanel()->setCyclicRunning(true);
+    onCyclicWriteTick();
+}
+
+void OscilloscopTab::onRegisterStopRequested() {
+    if (m_cyclicWriteTimer != nullptr) {
+        m_cyclicWriteTimer->stop();
+    }
+    if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
+        m_bottomPanel->registerPanel()->setCyclicRunning(false);
+    }
+}
+
+void OscilloscopTab::onRegisterClearRequested() {
+    if (m_cyclicWriteTimer != nullptr) {
+        m_cyclicWriteTimer->stop();
+    }
+    if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
+        m_bottomPanel->registerPanel()->setCyclicRunning(false);
+        m_bottomPanel->registerPanel()->clearAll();
+    }
+
+    qDebug().noquote() << QStringLiteral("[Scope GUI] Clear register panel");
+}
+
+void OscilloscopTab::onCyclicWriteTick() {
+    if (m_regService == nullptr || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
+        return;
+    }
+
+    ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
+    const int totalRows = ScopeRegisterPanel::rowCount();
+    for (int offset = 0; offset < totalRows; ++offset) {
+        const int row = (m_cyclicWriteIndex + offset) % totalRows;
+        const QString addressText = panel->addressText(row).trimmed();
+        const QString valueText = panel->valueText(row).trimmed();
+        if (addressText.isEmpty() || valueText.isEmpty()) {
+            continue;
+        }
+
+        quint16 address = 0;
+        quint16 value = 0;
+        if (!parseRegisterNumber(addressText, &address) || !parseRegisterNumber(valueText, &value)) {
+            continue;
+        }
+
+        panel->setAddressError(row, false);
+        m_regService->writeSingleRow(row, address, static_cast<qint16>(value));
+        m_cyclicWriteIndex = (row + 1) % totalRows;
+        return;
+    }
+}
 
 void OscilloscopTab::onPerfTimerTick() {
     if (!m_service->isRunning()) return;

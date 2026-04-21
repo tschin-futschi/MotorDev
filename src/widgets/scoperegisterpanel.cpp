@@ -1,24 +1,111 @@
 #include "widgets/scoperegisterpanel.h"
 
+#include "ui/repolish.h"
+
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSpacerItem>
+#include <QTimer>
 #include <QVBoxLayout>
 
 ScopeRegisterPanel::ScopeRegisterPanel(QWidget *parent)
     : QWidget(parent) {
     setupUi();
     connectSignals();
+    setCyclicRunning(false);
 }
 
 ScopeRegisterPanel::~ScopeRegisterPanel() = default;
 
+QString ScopeRegisterPanel::addressText(int row) const {
+    return (row >= 0 && row < RowCount && m_addrEdits[row] != nullptr) ? m_addrEdits[row]->text() : QString();
+}
+
+QString ScopeRegisterPanel::valueText(int row) const {
+    return (row >= 0 && row < RowCount && m_valueEdits[row] != nullptr) ? m_valueEdits[row]->text() : QString();
+}
+
+QString ScopeRegisterPanel::intervalText() const {
+    return m_intervalEdit != nullptr ? m_intervalEdit->text() : QString();
+}
+
+void ScopeRegisterPanel::setValueText(int row, const QString &text) {
+    if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
+        return;
+    }
+    m_valueEdits[row]->setText(text);
+}
+
+void ScopeRegisterPanel::setAddressError(int row, bool error) {
+    if (row < 0 || row >= RowCount || m_addrEdits[row] == nullptr) {
+        return;
+    }
+
+    m_addrEdits[row]->setProperty("hasError", error);
+    MotorDev::UiUtil::repolish(m_addrEdits[row]);
+}
+
+void ScopeRegisterPanel::setButtonFeedback(int row, bool isRead, const QString &state) {
+    if (row < 0 || row >= RowCount) {
+        return;
+    }
+
+    QPushButton *button = isRead ? m_readButtons[row] : m_writeButtons[row];
+    if (button == nullptr) {
+        return;
+    }
+
+    button->setProperty("feedback", state);
+    MotorDev::UiUtil::repolish(button);
+
+    if (!state.isEmpty()) {
+        QTimer::singleShot(600, button, [button]() {
+            button->setProperty("feedback", QString());
+            MotorDev::UiUtil::repolish(button);
+        });
+    }
+}
+
+void ScopeRegisterPanel::setCyclicRunning(bool running) {
+    if (m_startButton != nullptr) {
+        m_startButton->setProperty("active", running);
+        MotorDev::UiUtil::repolish(m_startButton);
+    }
+
+    if (m_stopButton != nullptr) {
+        m_stopButton->setProperty("active", !running);
+        MotorDev::UiUtil::repolish(m_stopButton);
+    }
+}
+
+void ScopeRegisterPanel::clearAll() {
+    for (int row = 0; row < RowCount; ++row) {
+        if (m_addrEdits[row] != nullptr) {
+            m_addrEdits[row]->clear();
+            setAddressError(row, false);
+        }
+        if (m_valueEdits[row] != nullptr) {
+            m_valueEdits[row]->clear();
+        }
+    }
+
+    if (m_intervalEdit != nullptr) {
+        m_intervalEdit->clear();
+    }
+}
+
 void ScopeRegisterPanel::connectSignals() {
     for (int row = 0; row < RowCount; ++row) {
-        connect(m_readButtons[row], &QPushButton::clicked, this, [this, row]() { emit readRequested(row); });
-        connect(m_writeButtons[row], &QPushButton::clicked, this, [this, row]() { emit writeRequested(row); });
+        connect(m_readButtons[row], &QPushButton::clicked, this, [this, row]() {
+            setAddressError(row, false);
+            emit readRequested(row);
+        });
+        connect(m_writeButtons[row], &QPushButton::clicked, this, [this, row]() {
+            setAddressError(row, false);
+            emit writeRequested(row);
+        });
     }
 
     connect(m_startButton, &QPushButton::clicked, this, &ScopeRegisterPanel::startRequested);

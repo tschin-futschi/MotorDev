@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QString>
 #include <QWidget>
 
 class QLineEdit;
@@ -11,6 +12,15 @@ class ScopeRegisterPanel : public QWidget {
 public:
     explicit ScopeRegisterPanel(QWidget *parent = nullptr);
     ~ScopeRegisterPanel() override;
+    QString addressText(int row) const;
+    QString valueText(int row) const;
+    QString intervalText() const;
+    void setValueText(int row, const QString &text);
+    void setAddressError(int row, bool error);
+    void setButtonFeedback(int row, bool isRead, const QString &state);
+    void setCyclicRunning(bool running);
+    void clearAll();
+    static constexpr int rowCount() { return RowCount; }
 
 signals:
     void readRequested(int row);

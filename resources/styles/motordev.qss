@@ -685,6 +685,10 @@ QLineEdit[inputRole="scope-register"] {
     min-height: 24px;
 }
 
+QLineEdit[inputRole="scope-register"][hasError="true"] {
+    border: 1.5px solid #E24B4A;
+}
+
 ScopeRegisterPanel QPushButton {
     color: #4d4942;
     border-radius: 4px;
@@ -704,14 +708,52 @@ ScopeRegisterPanel QPushButton[buttonRole="write"] {
     border: 1px solid #e1c89c;
 }
 
+ScopeRegisterPanel QPushButton[buttonRole="read"][feedback="pending"] {
+    background: #d0d0d0;
+    border: 1px solid #b0b0b0;
+    color: #888888;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="write"][feedback="pending"] {
+    background: #d0d0d0;
+    border: 1px solid #b0b0b0;
+    color: #888888;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="read"][feedback="ok"],
+ScopeRegisterPanel QPushButton[buttonRole="write"][feedback="ok"] {
+    background: #3B6D11;
+    border: 1px solid #3B6D11;
+    color: #ffffff;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="read"][feedback="error"],
+ScopeRegisterPanel QPushButton[buttonRole="write"][feedback="error"] {
+    background: #C0392B;
+    border: 1px solid #C0392B;
+    color: #ffffff;
+}
+
 ScopeRegisterPanel QPushButton[buttonRole="action-start"] {
     background: #e8f1fa;
     border: 1px solid #bdd1e5;
 }
 
+ScopeRegisterPanel QPushButton[buttonRole="action-start"][active="true"] {
+    background: #2C6FBF;
+    border: 1px solid #2C6FBF;
+    color: #ffffff;
+}
+
 ScopeRegisterPanel QPushButton[buttonRole="action-stop"] {
     background: #f7eddd;
     border: 1px solid #e1c89c;
+}
+
+ScopeRegisterPanel QPushButton[buttonRole="action-stop"][active="true"] {
+    background: #B8860B;
+    border: 1px solid #B8860B;
+    color: #ffffff;
 }
 
 ScopeRegisterPanel QPushButton[buttonRole="action-clear"] {

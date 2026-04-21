@@ -68,6 +68,10 @@ ScopeBottomPanel::~ScopeBottomPanel() {
     m_generatorWindow = nullptr;
 }
 
+ScopeRegisterPanel *ScopeBottomPanel::registerPanel() const {
+    return m_registerPanel;
+}
+
 void ScopeBottomPanel::setRunning(bool running) {
     if (m_running == running) {
         return;
@@ -222,6 +226,8 @@ void ScopeBottomPanel::connectSignals() {
 
     connect(m_registerPanel, &ScopeRegisterPanel::readRequested, this, &ScopeBottomPanel::registerReadRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::writeRequested, this, &ScopeBottomPanel::registerWriteRequested);
+    connect(m_registerPanel, &ScopeRegisterPanel::startRequested, this, &ScopeBottomPanel::registerStartRequested);
+    connect(m_registerPanel, &ScopeRegisterPanel::stopRequested, this, &ScopeBottomPanel::registerStopRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::clearPanelRequested, this, &ScopeBottomPanel::clearPanelRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::loadParamsRequested, this, &ScopeBottomPanel::loadParamsRequested);
     connect(m_intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
