@@ -1,14 +1,16 @@
 #pragma once
 
+#include "widgets/scopegeneratorpanel.h"
+
 #include <QWidget>
 
 class ScopeChannelStrip;
 class QComboBox;
 class QEvent;
-class ScopeGeneratorPanel;
 class QLineEdit;
 class QMenu;
 class QPushButton;
+class ScopeMarqueeLabel;
 class ScopeRegisterPanel;
 class QToolButton;
 class QWidget;
@@ -21,6 +23,8 @@ public:
     ~ScopeBottomPanel() override;
     void setRunning(bool running);
     ScopeRegisterPanel *registerPanel() const;
+    ScopeGeneratorPanel *generatorPanel() const;
+    ScopeMarqueeLabel *marqueeLabel() const;
 
 signals:
     void registerReadRequested(int row);
@@ -29,6 +33,10 @@ signals:
     void registerStopRequested();
     void clearPanelRequested();
     void loadParamsRequested();
+    void generatorLinearStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);
+    void generatorCosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz, int intervalMs,
+                                       const QVector<ScopeGeneratorCosineChannel> &channels);
+    void generatorStopRequested();
     void channelToggled(int index, bool enabled);
     void channelDescriptionChanged(int index, const QString &text);
     void channelAddressChanged(int index, const QString &text);
@@ -58,6 +66,7 @@ private:
     QPushButton *m_channelsToggleButton = nullptr;
     QPushButton *m_registerToggleButton = nullptr;
     QPushButton *m_generatorToggleButton = nullptr;
+    ScopeMarqueeLabel *m_marqueeLabel = nullptr;
     ScopeRegisterPanel *m_registerPanel = nullptr;
     ScopeGeneratorPanel *m_generatorPanel = nullptr;
     ScopeChannelStrip *m_channels[8] = {};

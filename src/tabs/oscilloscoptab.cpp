@@ -5,16 +5,23 @@
 #include "services/scopeservice.h"
 #include "ui/style_constants.h"
 #include "widgets/scopebottompanel.h"
+#include "widgets/scopemarqueelabel.h"
 #include "widgets/scopeplotwidget.h"
 #include "widgets/scoperegisterpanel.h"
 #include "widgets/scopestylepanel.h"
 
+#include <QDateTime>
 #include <QDebug>
+#include <QtMath>
 #include <QSplitter>
 #include <QTimer>
 #include <QVBoxLayout>
 
 using namespace MotorDev;
+
+namespace {
+constexpr double kTwoPi = 6.28318530717958647692;
+}
 
 OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
     : QWidget(parent)
@@ -34,9 +41,16 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
     m_cyclicWriteTimer = new QTimer(this);
     m_cyclicWriteTimer->setSingleShot(false);
     connect(m_cyclicWriteTimer, &QTimer::timeout, this, &OscilloscopTab::onCyclicWriteTick);
+
+    m_generatorTimer = new QTimer(this);
+    m_generatorTimer->setSingleShot(false);
+    connect(m_generatorTimer, &QTimer::timeout, this, &OscilloscopTab::onGeneratorTick);
 }
 
 OscilloscopTab::~OscilloscopTab() {
+    if (m_generatorTimer != nullptr) {
+        m_generatorTimer->stop();
+    }
     if (m_fullscreenWindow != nullptr) {
         if (m_fullscreenWindow->layout() != nullptr) {
             m_fullscreenWindow->layout()->removeWidget(m_plotWidget);
@@ -118,9 +132,11 @@ void OscilloscopTab::connectSignals() {
     // Bottom panel → local UI state
     connect(m_bottomPanel, &ScopeBottomPanel::sampleIntervalChanged, this, [this](const QString &text) {
         m_sampleIntervalIndex = ScopeService::sampleIntervalIndexForText(text);
+        m_sampleIntervalText = text;
         qDebug().noquote() << QStringLiteral("[Scope GUI] Sample interval=%1 (0x%2)")
                                   .arg(text)
                                   .arg(m_sampleIntervalIndex, 2, 16, QLatin1Char('0'));
+        refreshMarqueeStatus();
     });
     connect(m_bottomPanel, &ScopeBottomPanel::displayWindowChanged, this, [this](const QString &text) {
         m_displayWindowMs = ScopeService::displayWindowMsForText(text);
@@ -136,6 +152,9 @@ void OscilloscopTab::connectSignals() {
     connect(m_bottomPanel, &ScopeBottomPanel::loadParamsRequested, this, []() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Load parameters");
     });
+    connect(m_bottomPanel, &ScopeBottomPanel::generatorLinearStartRequested, this, &OscilloscopTab::onGeneratorLinearStart);
+    connect(m_bottomPanel, &ScopeBottomPanel::generatorCosineStartRequested, this, &OscilloscopTab::onGeneratorCosineStart);
+    connect(m_bottomPanel, &ScopeBottomPanel::generatorStopRequested, this, &OscilloscopTab::onGeneratorStop);
     connect(m_bottomPanel, &ScopeBottomPanel::captureNoteChanged, this, [](const QString &text) {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Capture note=%1").arg(text);
     });
@@ -176,6 +195,8 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::runningChanged, this, [this](bool running) {
         m_bottomPanel->setRunning(running);
         m_plotWidget->setRunning(running);
+        m_scopeRunning = running;
+        refreshMarqueeStatus();
         emit runningChanged(running);
     });
     connect(m_service, &ScopeService::samplesReceived, m_plotWidget, &ScopePlotWidget::appendSamples);
@@ -183,7 +204,7 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::resetViewRequested, m_plotWidget, &ScopePlotWidget::resetView);
 
     connect(m_regService, &RegisterService::rowReadOk, this, [this](int row, qint16 value) {
-        if (m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
+        if (row < 0 || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
             return;
         }
 
@@ -193,18 +214,27 @@ void OscilloscopTab::connectSignals() {
         panel->setButtonFeedback(row, true, QStringLiteral("ok"));
     });
     connect(m_regService, &RegisterService::rowReadError, this, [this](int row) {
+        if (row < 0) {
+            return;
+        }
         qDebug().noquote() << QStringLiteral("[Scope Reg] Read error row %1").arg(row + 1);
         if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
             m_bottomPanel->registerPanel()->setButtonFeedback(row, true, QStringLiteral("error"));
         }
     });
     connect(m_regService, &RegisterService::rowWriteOk, this, [this](int row) {
+        if (row < 0) {
+            return;
+        }
         qDebug().noquote() << QStringLiteral("[Scope Reg] Write OK row %1").arg(row + 1);
         if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
             m_bottomPanel->registerPanel()->setButtonFeedback(row, false, QStringLiteral("ok"));
         }
     });
     connect(m_regService, &RegisterService::rowWriteError, this, [this](int row) {
+        if (row < 0) {
+            return;
+        }
         qDebug().noquote() << QStringLiteral("[Scope Reg] Write error row %1").arg(row + 1);
         if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
             m_bottomPanel->registerPanel()->setButtonFeedback(row, false, QStringLiteral("error"));
@@ -393,7 +423,9 @@ void OscilloscopTab::onRegisterStartRequested() {
     m_cyclicWriteIndex = 0;
     m_cyclicWriteTimer->setInterval(intervalMs);
     m_cyclicWriteTimer->start();
+    m_cyclicWriteRunning = true;
     m_bottomPanel->registerPanel()->setCyclicRunning(true);
+    refreshMarqueeStatus();
     onCyclicWriteTick();
 }
 
@@ -401,20 +433,24 @@ void OscilloscopTab::onRegisterStopRequested() {
     if (m_cyclicWriteTimer != nullptr) {
         m_cyclicWriteTimer->stop();
     }
+    m_cyclicWriteRunning = false;
     if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
         m_bottomPanel->registerPanel()->setCyclicRunning(false);
     }
+    refreshMarqueeStatus();
 }
 
 void OscilloscopTab::onRegisterClearRequested() {
     if (m_cyclicWriteTimer != nullptr) {
         m_cyclicWriteTimer->stop();
     }
+    m_cyclicWriteRunning = false;
     if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
         m_bottomPanel->registerPanel()->setCyclicRunning(false);
         m_bottomPanel->registerPanel()->clearAll();
     }
 
+    refreshMarqueeStatus();
     qDebug().noquote() << QStringLiteral("[Scope GUI] Clear register panel");
 }
 
@@ -446,6 +482,117 @@ void OscilloscopTab::onCyclicWriteTick() {
     }
 }
 
+void OscilloscopTab::onGeneratorLinearStart(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs) {
+    onGeneratorStop();
+
+    if (m_bottomPanel == nullptr || m_bottomPanel->generatorPanel() == nullptr || m_generatorTimer == nullptr) {
+        return;
+    }
+
+    m_linearState.addr = addr;
+    m_linearState.min = min;
+    m_linearState.max = max;
+    m_linearState.step = step;
+    m_linearState.current = min;
+    m_linearState.ascending = true;
+    m_generatorMode = GeneratorMode::Linear;
+
+    m_generatorTimer->setInterval(intervalMs);
+    m_generatorTimer->start();
+    m_bottomPanel->generatorPanel()->setRunning(true);
+    refreshMarqueeStatus();
+    onGeneratorTick();
+}
+
+void OscilloscopTab::onGeneratorCosineStart(qint16 amplitude, qint16 offset, double frequencyHz, int intervalMs,
+                                            const QVector<ScopeGeneratorCosineChannel> &channels) {
+    onGeneratorStop();
+
+    if (m_bottomPanel == nullptr || m_bottomPanel->generatorPanel() == nullptr || m_generatorTimer == nullptr) {
+        return;
+    }
+
+    m_cosineState.amplitude = amplitude;
+    m_cosineState.offset = offset;
+    m_cosineState.frequencyHz = frequencyHz;
+    m_cosineState.channels = channels;
+    m_cosineState.startTimeMs = QDateTime::currentMSecsSinceEpoch();
+    m_generatorMode = GeneratorMode::Cosine;
+
+    m_generatorTimer->setInterval(intervalMs);
+    m_generatorTimer->start();
+    m_bottomPanel->generatorPanel()->setRunning(true);
+    refreshMarqueeStatus();
+    onGeneratorTick();
+}
+
+void OscilloscopTab::onGeneratorStop() {
+    if (m_generatorTimer != nullptr) {
+        m_generatorTimer->stop();
+    }
+    m_generatorMode = GeneratorMode::None;
+    m_cosineState.channels.clear();
+    if (m_bottomPanel != nullptr && m_bottomPanel->generatorPanel() != nullptr) {
+        m_bottomPanel->generatorPanel()->setRunning(false);
+    }
+    refreshMarqueeStatus();
+}
+
+void OscilloscopTab::onGeneratorTick() {
+    if (m_regService == nullptr) {
+        return;
+    }
+
+    if (m_generatorMode == GeneratorMode::Linear) {
+        m_regService->writeSingleRow(-1, m_linearState.addr, m_linearState.current);
+
+        if (m_linearState.ascending) {
+            const int nextValue = static_cast<int>(m_linearState.current) + static_cast<int>(m_linearState.step);
+            if (nextValue > m_linearState.max) {
+                m_linearState.current = m_linearState.max;
+                m_linearState.ascending = false;
+            } else {
+                m_linearState.current = static_cast<qint16>(nextValue);
+            }
+        } else {
+            const int nextValue = static_cast<int>(m_linearState.current) - static_cast<int>(m_linearState.step);
+            if (nextValue < m_linearState.min) {
+                m_linearState.current = m_linearState.min;
+                m_linearState.ascending = true;
+            } else {
+                m_linearState.current = static_cast<qint16>(nextValue);
+            }
+        }
+        return;
+    }
+
+    if (m_generatorMode == GeneratorMode::Cosine) {
+        const double elapsedSeconds =
+            (QDateTime::currentMSecsSinceEpoch() - m_cosineState.startTimeMs) / 1000.0;
+        QVector<RegisterService::RowRequest> writes;
+        writes.reserve(m_cosineState.channels.size());
+
+        for (const ScopeGeneratorCosineChannel &channel : m_cosineState.channels) {
+            const double phaseRad = qDegreesToRadians(channel.phaseDeg);
+            const double rawValue =
+                static_cast<double>(m_cosineState.offset) +
+                static_cast<double>(m_cosineState.amplitude) *
+                    qCos(kTwoPi * m_cosineState.frequencyHz * elapsedSeconds + phaseRad);
+            const int clampedValue = qBound(-32768, qRound(rawValue), 32767);
+
+            RegisterService::RowRequest request;
+            request.globalRow = -1;
+            request.addr = channel.addr;
+            request.value = static_cast<qint16>(clampedValue);
+            writes.push_back(request);
+        }
+
+        if (!writes.isEmpty()) {
+            m_regService->writeBatch(writes);
+        }
+    }
+}
+
 void OscilloscopTab::onPerfTimerTick() {
     if (!m_service->isRunning()) return;
     qDebug().noquote() << QStringLiteral("[Scope Perf] paint=%1ms fps=%2 batchPerSec=%3 samplesPerSec=%4")
@@ -454,4 +601,30 @@ void OscilloscopTab::onPerfTimerTick() {
                                    QString::number(m_service->perfBatchCount()),
                                    QString::number(m_service->perfSampleCount()));
     m_service->resetPerfCounters();
+}
+
+void OscilloscopTab::refreshMarqueeStatus() {
+    if (m_bottomPanel == nullptr || m_bottomPanel->marqueeLabel() == nullptr) {
+        return;
+    }
+
+    QStringList parts;
+    if (m_scopeRunning) {
+        QString sampleText = m_sampleIntervalText;
+        sampleText.remove(QLatin1Char(' '));
+        parts << QStringLiteral("Sampling @ %1").arg(sampleText);
+    }
+    if (m_cyclicWriteRunning && m_cyclicWriteTimer != nullptr) {
+        parts << QStringLiteral("Cyclic Write @ %1ms").arg(m_cyclicWriteTimer->interval());
+    }
+    if (m_generatorMode == GeneratorMode::Linear && m_generatorTimer != nullptr) {
+        parts << QStringLiteral("Generator: Linear @ %1ms").arg(m_generatorTimer->interval());
+    } else if (m_generatorMode == GeneratorMode::Cosine && m_generatorTimer != nullptr) {
+        parts << QStringLiteral("Generator: Cosine %1ch @ %2ms")
+                     .arg(m_cosineState.channels.size())
+                     .arg(m_generatorTimer->interval());
+    }
+
+    m_bottomPanel->marqueeLabel()->setText(parts.isEmpty() ? QStringLiteral("Idle")
+                                                           : parts.join(QStringLiteral("  |  ")));
 }

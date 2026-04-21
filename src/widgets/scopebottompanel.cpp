@@ -3,6 +3,7 @@
 #include "ui/style_constants.h"
 #include "widgets/scopechannelstrip.h"
 #include "widgets/scopegeneratorpanel.h"
+#include "widgets/scopemarqueelabel.h"
 #include "widgets/scoperegisterpanel.h"
 
 #include <QComboBox>
@@ -12,6 +13,7 @@
 #include <QFormLayout>
 #include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
@@ -46,7 +48,7 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     m_registerPanel = new ScopeRegisterPanel(nullptr);
     m_generatorPanel = new ScopeGeneratorPanel(nullptr);
     m_registerWindow = createOverlayWindow(tr("Register R/W"), m_registerPanel, QSize(500, 400));
-    m_generatorWindow = createOverlayWindow(tr("Wave Generator"), m_generatorPanel, QSize(420, 240));
+    m_generatorWindow = createOverlayWindow(tr("Wave Generator"), m_generatorPanel, QSize(420, 340));
 
     m_yAxisMenu = new QMenu(m_yAxisButton);
     m_yAxisMenu->addAction(tr("Auto"));
@@ -70,6 +72,14 @@ ScopeBottomPanel::~ScopeBottomPanel() {
 
 ScopeRegisterPanel *ScopeBottomPanel::registerPanel() const {
     return m_registerPanel;
+}
+
+ScopeGeneratorPanel *ScopeBottomPanel::generatorPanel() const {
+    return m_generatorPanel;
+}
+
+ScopeMarqueeLabel *ScopeBottomPanel::marqueeLabel() const {
+    return m_marqueeLabel;
 }
 
 void ScopeBottomPanel::setRunning(bool running) {
@@ -230,6 +240,9 @@ void ScopeBottomPanel::connectSignals() {
     connect(m_registerPanel, &ScopeRegisterPanel::stopRequested, this, &ScopeBottomPanel::registerStopRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::clearPanelRequested, this, &ScopeBottomPanel::clearPanelRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::loadParamsRequested, this, &ScopeBottomPanel::loadParamsRequested);
+    connect(m_generatorPanel, &ScopeGeneratorPanel::linearStartRequested, this, &ScopeBottomPanel::generatorLinearStartRequested);
+    connect(m_generatorPanel, &ScopeGeneratorPanel::cosineStartRequested, this, &ScopeBottomPanel::generatorCosineStartRequested);
+    connect(m_generatorPanel, &ScopeGeneratorPanel::stopRequested, this, &ScopeBottomPanel::generatorStopRequested);
     connect(m_intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
     connect(m_windowCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::displayWindowChanged);
     connect(m_noteEdit, &QLineEdit::textChanged, this, &ScopeBottomPanel::captureNoteChanged);
@@ -377,4 +390,9 @@ void ScopeBottomPanel::setupUi() {
     m_generatorToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
     m_generatorToggleButton->setText(QStringLiteral("Show Generator"));
     buttonLayout->addWidget(m_generatorToggleButton);
+
+    m_marqueeLabel = new ScopeMarqueeLabel(this);
+    m_marqueeLabel->setObjectName(QStringLiteral("marqueeLabel"));
+    m_marqueeLabel->setText(QStringLiteral("Idle"));
+    buttonLayout->addWidget(m_marqueeLabel, 1);
 }

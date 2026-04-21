@@ -49,6 +49,8 @@ qt_add_executable(MotorDev
     src/widgets/scopechannelstrip.h
     src/widgets/scopegeneratorpanel.cpp
     src/widgets/scopegeneratorpanel.h
+    src/widgets/scopemarqueelabel.cpp
+    src/widgets/scopemarqueelabel.h
     src/widgets/scopeplotwidget.cpp
     src/widgets/scopeplotwidget.h
     src/widgets/scopepreviewwidget.cpp

@@ -778,9 +778,59 @@ ScopeGeneratorPanel #titleLabel {
     font-weight: 600;
 }
 
-ScopeGeneratorPanel #placeholderLabel {
-    color: #8a867e;
+ScopeGeneratorPanel QLabel {
+    color: #555049;
     font-size: 11px;
+}
+
+QLineEdit[inputRole="scope-generator"] {
+    background: #ffffff;
+    color: #4d4942;
+    border: 1px solid #d5cec4;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    min-height: 24px;
+}
+
+QLineEdit[inputRole="scope-generator"][hasError="true"] {
+    border: 1.5px solid #E24B4A;
+}
+
+ScopeGeneratorPanel QRadioButton {
+    color: #4d4942;
+    font-size: 11px;
+    spacing: 6px;
+}
+
+ScopeGeneratorPanel QPushButton[buttonRole="generator-start"] {
+    background: #e8f1fa;
+    border: 1px solid #bdd1e5;
+    color: #4d4942;
+    border-radius: 4px;
+    min-width: 68px;
+    min-height: 26px;
+}
+
+ScopeGeneratorPanel QPushButton[buttonRole="generator-start"]:disabled {
+    background: #d7e7fb;
+    border: 1px solid #7fa8d9;
+    color: #5c6f84;
+}
+
+ScopeGeneratorPanel QPushButton[buttonRole="generator-stop"] {
+    background: #f7eddd;
+    border: 1px solid #e1c89c;
+    color: #4d4942;
+    border-radius: 4px;
+    min-width: 68px;
+    min-height: 26px;
+}
+
+ScopeGeneratorPanel QPushButton[buttonRole="generator-stop"]:disabled {
+    background: #f2eee7;
+    border: 1px solid #d8cbb7;
+    color: #9f9688;
 }
 
 
