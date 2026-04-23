@@ -24,7 +24,7 @@ public:
 
 signals:
     void linearStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);
-    void cosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz, int intervalMs,
+    void cosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz,
                               const QVector<ScopeGeneratorCosineChannel> &channels);
     void stopRequested();
 
@@ -55,7 +55,6 @@ private:
     QLineEdit *m_cosineAmplitudeEdit = nullptr;
     QLineEdit *m_cosineOffsetEdit = nullptr;
     QLineEdit *m_cosineFrequencyEdit = nullptr;
-    QLineEdit *m_cosineIntervalEdit = nullptr;
     QLineEdit *m_cosineAddrEdits[3] = {};
     QLineEdit *m_cosinePhaseEdits[3] = {};
 

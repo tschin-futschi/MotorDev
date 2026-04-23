@@ -98,7 +98,7 @@ private:
     ScopeChannelModel *m_channelModel = nullptr;
     ScopeStreamBatcher *m_streamBatcher = nullptr;
 
-    uint8_t m_sampleIntervalIndex = 0x05;
+    uint8_t m_sampleIntervalIndex = 0x04;
     int m_displayWindowMs = 50;
     uint8_t m_lastStreamMask = 0x00;
     PendingCommand m_pendingCommand = PendingCommand::None;

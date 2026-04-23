@@ -135,16 +135,21 @@ void ScopeGeneratorPanel::setupUi() {
 
     addGlobalRow(0, tr("Amplitude"), &m_cosineAmplitudeEdit, QStringLiteral("cosineAmplitudeEdit"), QStringLiteral("1000"),
                  tr("Offset"), &m_cosineOffsetEdit, QStringLiteral("cosineOffsetEdit"), QStringLiteral("0"));
-    addGlobalRow(1, tr("Freq (Hz)"), &m_cosineFrequencyEdit, QStringLiteral("cosineFrequencyEdit"), QStringLiteral("1.0"),
-                 tr("Interval (ms)"), &m_cosineIntervalEdit, QStringLiteral("cosineIntervalEdit"), QStringLiteral("100"));
+    auto *freqLabel = new QLabel(tr("Freq (Hz)"), cosinePage);
+    m_cosineFrequencyEdit = createGeneratorEdit(cosinePage, QStringLiteral("cosineFrequencyEdit"), QStringLiteral("1.0"));
+    cosineLayout->addWidget(freqLabel, 1, 0);
+    cosineLayout->addWidget(m_cosineFrequencyEdit, 1, 1);
 
     for (int channel = 0; channel < 3; ++channel) {
         auto *addrLabel = new QLabel(tr("CH%1 Addr").arg(channel + 1), cosinePage);
         auto *phaseLabel = new QLabel(tr("CH%1 Phase (deg)").arg(channel + 1), cosinePage);
         m_cosineAddrEdits[channel] = createGeneratorEdit(
             cosinePage, QStringLiteral("cosineAddrEdit%1").arg(channel), channel == 0 ? QStringLiteral("0x0020") : QString());
+        const QString phasePlaceholder = (channel == 0) ? QStringLiteral("0")
+                                       : (channel == 1) ? QStringLiteral("120")
+                                                        : QStringLiteral("240");
         m_cosinePhaseEdits[channel] = createGeneratorEdit(
-            cosinePage, QStringLiteral("cosinePhaseEdit%1").arg(channel), channel == 0 ? QStringLiteral("0") : QStringLiteral("120"));
+            cosinePage, QStringLiteral("cosinePhaseEdit%1").arg(channel), phasePlaceholder);
         cosineLayout->addWidget(addrLabel, channel + 2, 0);
         cosineLayout->addWidget(m_cosineAddrEdits[channel], channel + 2, 1);
         cosineLayout->addWidget(phaseLabel, channel + 2, 2);
@@ -304,12 +309,10 @@ void ScopeGeneratorPanel::handleCosineStart() {
     qint16 amplitude = 0;
     qint16 offset = 0;
     double frequencyHz = 0.0;
-    int intervalMs = 0;
 
     const bool globalsOk = parseInt16Field(m_cosineAmplitudeEdit, &amplitude)
                            && parseInt16Field(m_cosineOffsetEdit, &offset)
-                           && parseDoubleField(m_cosineFrequencyEdit, &frequencyHz, true)
-                           && parsePositiveIntField(m_cosineIntervalEdit, &intervalMs);
+                           && parseDoubleField(m_cosineFrequencyEdit, &frequencyHz, true);
     if (!globalsOk) {
         return;
     }
@@ -349,7 +352,7 @@ void ScopeGeneratorPanel::handleCosineStart() {
         return;
     }
 
-    emit cosineStartRequested(amplitude, offset, frequencyHz, intervalMs, channels);
+    emit cosineStartRequested(amplitude, offset, frequencyHz, channels);
 }
 
 void ScopeGeneratorPanel::clearErrors() {

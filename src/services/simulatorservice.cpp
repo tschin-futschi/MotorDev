@@ -17,7 +17,7 @@
 
 
 namespace {
-constexpr uint8_t kFixedSampleIntervalIndex = 0x05;
+constexpr uint8_t kFixedSampleIntervalIndex = 0x04;
 constexpr int kFixedSampleIntervalUs = 1000;
 constexpr int kStreamWakeBlockUs = 10000;
 constexpr int kMaxWakeBlocksPerCycle = 4;
@@ -159,6 +159,9 @@ QString SimulatorService::describeIncoming(uint8_t cmd, const QByteArray &data) 
     case MotorProtocol::CmdSetSampleInterval: return !data.isEmpty() ? QStringLiteral("SCOPE_INTERVAL idx=%1").arg(formatByte(static_cast<uint8_t>(data.at(0)))) : QStringLiteral("SCOPE_INTERVAL");
     case MotorProtocol::CmdSetSampleChannels: return !data.isEmpty() ? QStringLiteral("SCOPE_CHANNELS mask=%1").arg(formatByte(static_cast<uint8_t>(data.at(0)))) : QStringLiteral("SCOPE_CHANNELS");
     case MotorProtocol::CmdSetChannelRegisterMap: return QStringLiteral("SCOPE_MAP");
+    case MotorProtocol::CmdStartLinearGen: return QStringLiteral("GEN_LINEAR");
+    case MotorProtocol::CmdStartCosineGen: return QStringLiteral("GEN_COSINE");
+    case MotorProtocol::CmdStopGenerator: return QStringLiteral("GEN_STOP");
     default: return QStringLiteral("UNKNOWN");
     }
 }
@@ -184,6 +187,9 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
         case MotorProtocol::CmdSetSampleInterval: handleSetSampleInterval(seq, data); break;
         case MotorProtocol::CmdSetSampleChannels: handleSetSampleChannels(seq, data); break;
         case MotorProtocol::CmdSetChannelRegisterMap: handleSetChannelRegisterMap(seq, data); break;
+        case MotorProtocol::CmdStartLinearGen: handleStartLinearGen(seq, data); break;
+        case MotorProtocol::CmdStartCosineGen: handleStartCosineGen(seq, data); break;
+        case MotorProtocol::CmdStopGenerator: handleStopGenerator(seq); break;
         default: handleUnknownCommand(cmd, seq); break;
         }
     };
@@ -294,6 +300,9 @@ void SimulatorService::handleStopSampling(uint8_t seq) { { std::lock_guard<std::
 void SimulatorService::handleSetSampleInterval(uint8_t seq, const QByteArray &data) { if (data.size() != 1) { sendErrorFrame(seq, 0x03); return; } const uint8_t index = static_cast<uint8_t>(data.at(0)); if (!MotorProtocol::isValidSampleIntervalIndex(index)) { sendErrorFrame(seq, 0x03); return; } { std::lock_guard<std::mutex> lock(m_streamMutex); m_sampleIntervalIndex = kFixedSampleIntervalIndex; } m_streamCv.notify_all(); sendResponseFrame(seq, MotorProtocol::CmdSetSampleInterval, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetSampleInterval, seq, {}, QStringLiteral("SCOPE_INTERVAL → %1").arg(formatByte(kFixedSampleIntervalIndex))); }
 void SimulatorService::handleSetSampleChannels(uint8_t seq, const QByteArray &data) { if (data.size() != 1) { sendErrorFrame(seq, 0x03); return; } const uint8_t mask = static_cast<uint8_t>(data.at(0)); if (!MotorProtocol::isValidSampleChannelMask(mask)) { sendErrorFrame(seq, 0x03); return; } { std::lock_guard<std::mutex> lock(m_streamMutex); m_channelMask = mask; } sendResponseFrame(seq, MotorProtocol::CmdSetSampleChannels, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetSampleChannels, seq, {}, QStringLiteral("SCOPE_CHANNELS → %1").arg(formatByte(mask))); }
 void SimulatorService::handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data) { if (data.size() != 16) { sendErrorFrame(seq, 0x03); return; } { std::lock_guard<std::mutex> lock(m_streamMutex); for (int index = 0; index < 8; ++index) { const int offset = index * 2; m_channelRegisterMap[index] = static_cast<quint16>((static_cast<quint8>(data.at(offset)) << 8) | static_cast<quint8>(data.at(offset + 1))); } } sendResponseFrame(seq, MotorProtocol::CmdSetChannelRegisterMap, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetChannelRegisterMap, seq, {}, QStringLiteral("SCOPE_MAP → ACK")); }
+void SimulatorService::handleStartLinearGen(uint8_t seq, const QByteArray &data) { if (data.size() != 10) { sendErrorFrame(seq, 0x03); return; } sendResponseFrame(seq, MotorProtocol::CmdStartLinearGen, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartLinearGen, seq, {}, QStringLiteral("GEN_LINEAR → ACK")); }
+void SimulatorService::handleStartCosineGen(uint8_t seq, const QByteArray &data) { if (data.size() < 11) { sendErrorFrame(seq, 0x03); return; } sendResponseFrame(seq, MotorProtocol::CmdStartCosineGen, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartCosineGen, seq, {}, QStringLiteral("GEN_COSINE → ACK")); }
+void SimulatorService::handleStopGenerator(uint8_t seq) { sendResponseFrame(seq, MotorProtocol::CmdStopGenerator, {}); emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStopGenerator, seq, {}, QStringLiteral("GEN_STOP → ACK")); }
 void SimulatorService::handleUnknownCommand(uint8_t cmd, uint8_t seq) { sendErrorFrame(seq, 0x02); emit logEntry(QStringLiteral("TX"), cmd, seq, {}, tr("未知命令")); }
 
 void SimulatorService::sendResponseFrame(uint8_t seq, uint8_t cmd, const QByteArray &data) { const QByteArray frame = FrameParser::encodeControlFrame(seq, cmd, data); QMetaObject::invokeMethod(m_simulator, "sendRawFrame", Qt::QueuedConnection, Q_ARG(QByteArray, frame)); }

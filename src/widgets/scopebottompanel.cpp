@@ -55,7 +55,7 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     m_yAxisMenu->addAction(tr("Manual..."));
     m_yAxisButton->setMenu(m_yAxisMenu);
 
-    m_intervalCombo->setCurrentIndex(5);
+    m_intervalCombo->setCurrentIndex(4);
     m_windowCombo->setCurrentIndex(0);
 
     connectSignals();
@@ -324,8 +324,8 @@ void ScopeBottomPanel::setupUi() {
     m_intervalCombo = new QComboBox(m_channelFrame);
     m_intervalCombo->setObjectName(QStringLiteral("intervalCombo"));
     m_intervalCombo->setMinimumSize(QSize(110, 0));
-    m_intervalCombo->addItems({QStringLiteral("100 us"), QStringLiteral("200 us"), QStringLiteral("300 us"), QStringLiteral("500 us"),
-                               QStringLiteral("750 us"), QStringLiteral("1000 us"), QStringLiteral("1500 us"), QStringLiteral("2000 us")});
+    m_intervalCombo->addItems({QStringLiteral("200 us"), QStringLiteral("300 us"), QStringLiteral("500 us"), QStringLiteral("750 us"),
+                               QStringLiteral("1000 us"), QStringLiteral("1500 us"), QStringLiteral("2000 us")});
     channelHeaderLayout->addWidget(m_intervalCombo);
 
     m_yAxisButton = new QToolButton(m_channelFrame);

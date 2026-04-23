@@ -76,8 +76,8 @@ private:
     QWidget *m_fullscreenWindow = nullptr;
     int m_plotLayoutIndex = -1;
     bool m_scopeRunning = false;
-    QString m_sampleIntervalText = QStringLiteral("1000us");
+    QString m_sampleIntervalText = QStringLiteral("1000 us");
 
-    uint8_t m_sampleIntervalIndex = 0x05;
+    uint8_t m_sampleIntervalIndex = 0x04;
     int m_displayWindowMs = 50;
 };

@@ -46,7 +46,8 @@
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
 - `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 启动/停止/清除/录入参数，UI 完整，信号已连接；后端处理在 oscilloscoptab 中为 stub）
-- `src/widgets/scopegeneratorpanel` `[UI-Widget]` — 信号发生器配置面板（UI stub）
+- `src/widgets/scopegeneratorpanel` `[UI-Widget]` — 信号发生器配置面板（Linear/Cosine 模式切换、参数输入、校验、启停信号）
+- `src/services/generatorservice` `[通信]` — 发生器协议命令发送（0x55/0x56/0x57）与响应状态管理
 
 ### 固件烧录
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab（功能待实现）
@@ -90,7 +91,7 @@
 | 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
 | 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`appendSamples` 接收外部数据，16ms 定时器驱动渲染，零堆分配 paintEvent |
 | 示波器寄存器面板后端处理 | `src/tabs/oscilloscoptab` | stub，信号仅打 log |
-| 信号发生器 | `src/widgets/scopegeneratorpanel` | UI stub，占位面板 |
+| 信号发生器 | `src/widgets/scopegeneratorpanel`, `src/services/generatorservice` | 已实现：Linear/Cosine 参数 UI + 协议命令下发（0x55/0x56/0x57），波形由 STM32 执行 |
 | 固件烧录 | `src/tabs/fwflashtab` | 整体未实现 |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
@@ -109,6 +110,7 @@
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel` |
+| 服务层 | `src/services/generatorservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice` |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |

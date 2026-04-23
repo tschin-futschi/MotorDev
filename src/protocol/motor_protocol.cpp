@@ -3,7 +3,7 @@
 namespace MotorProtocol {
 
 bool isValidSampleIntervalIndex(uint8_t intervalIndex) {
-    return intervalIndex <= 0x07;
+    return intervalIndex <= 0x06;
 }
 
 bool isValidSampleChannelMask(uint8_t channelMask) {
@@ -97,6 +97,52 @@ QByteArray encodeSetChannelRegisterMap(const QVector<quint16> &registers) {
         payload.append(static_cast<char>(reg & 0xFF));
     }
     return payload;
+}
+
+QByteArray encodeStartLinearGen(quint16 addr, qint16 min, qint16 max, qint16 step, quint16 intervalMs) {
+    QByteArray payload;
+    payload.reserve(10);
+    auto appendU16 = [&](quint16 value) {
+        payload.append(static_cast<char>((value >> 8) & 0xFF));
+        payload.append(static_cast<char>(value & 0xFF));
+    };
+    auto appendS16 = [&](qint16 value) {
+        appendU16(static_cast<quint16>(value));
+    };
+
+    appendU16(addr);
+    appendS16(min);
+    appendS16(max);
+    appendS16(step);
+    appendU16(intervalMs);
+    return payload;
+}
+
+QByteArray encodeStartCosineGen(qint16 amplitude, qint16 offset, quint16 freqX100, uint8_t channelCount,
+                                const QVector<QPair<quint16, qint16>> &channels) {
+    QByteArray payload;
+    payload.reserve(7 + static_cast<int>(channelCount) * 4);
+    auto appendU16 = [&](quint16 value) {
+        payload.append(static_cast<char>((value >> 8) & 0xFF));
+        payload.append(static_cast<char>(value & 0xFF));
+    };
+    auto appendS16 = [&](qint16 value) {
+        appendU16(static_cast<quint16>(value));
+    };
+
+    appendS16(amplitude);
+    appendS16(offset);
+    appendU16(freqX100);
+    payload.append(static_cast<char>(channelCount));
+    for (const auto &channel : channels) {
+        appendU16(channel.first);
+        appendS16(channel.second);
+    }
+    return payload;
+}
+
+QByteArray encodeStopGenerator() {
+    return {};
 }
 
 bool decodeReadRegisterResponse(const QByteArray &data, qint16 *valueOut) {

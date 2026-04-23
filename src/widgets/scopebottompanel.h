@@ -34,7 +34,7 @@ signals:
     void clearPanelRequested();
     void loadParamsRequested();
     void generatorLinearStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);
-    void generatorCosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz, int intervalMs,
+    void generatorCosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz,
                                        const QVector<ScopeGeneratorCosineChannel> &channels);
     void generatorStopRequested();
     void channelToggled(int index, bool enabled);

@@ -1,31 +1,23 @@
 #include "services/generatorservice.h"
 
-#include "services/registerservice.h"
+#include "protocol/motor_protocol.h"
+#include "serialmanager.h"
 
-#include <QDateTime>
-#include <QTimer>
+#include <QMetaObject>
 #include <QtMath>
 
-namespace {
-constexpr double kTwoPi = 6.28318530717958647692;
-}
-
-GeneratorService::GeneratorService(RegisterService *regService, QObject *parent)
+GeneratorService::GeneratorService(SerialManager *serialManager, QObject *parent)
     : QObject(parent)
-    , m_regService(regService) {
-    m_timer = new QTimer(this);
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &GeneratorService::onTick);
+    , m_serialManager(serialManager) {
+    if (m_serialManager != nullptr) {
+        connect(m_serialManager, &SerialManager::frameReceived, this, &GeneratorService::onFrameReceived);
+    }
 }
 
 GeneratorService::~GeneratorService() = default;
 
 bool GeneratorService::isRunning() const {
     return m_mode != Mode::None;
-}
-
-int GeneratorService::intervalMs() const {
-    return m_timer != nullptr ? m_timer->interval() : 0;
 }
 
 QString GeneratorService::modeLabel() const {
@@ -41,115 +33,77 @@ QString GeneratorService::modeLabel() const {
 }
 
 int GeneratorService::cosineChannelCount() const {
-    return m_cosineState.channels.size();
+    return m_cosineChannelCount;
 }
 
 void GeneratorService::startLinear(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs) {
-    stop();
-
-    if (m_timer == nullptr) {
+    if (m_serialManager == nullptr) {
         return;
     }
 
-    m_linearState.addr = addr;
-    m_linearState.min = min;
-    m_linearState.max = max;
-    m_linearState.step = step;
-    m_linearState.current = min;
-    m_linearState.ascending = true;
-    m_mode = Mode::Linear;
-
-    m_timer->setInterval(intervalMs);
-    m_timer->start();
-    emit runningChanged(true);
-    onTick();
+    const quint16 interval = static_cast<quint16>(qBound(1, intervalMs, 65535));
+    const QByteArray payload = MotorProtocol::encodeStartLinearGen(addr, min, max, step, interval);
+    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
+                              Q_ARG(uint8_t, MotorProtocol::CmdStartLinearGen), Q_ARG(QByteArray, payload));
 }
 
-void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequencyHz, int intervalMs,
+void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequencyHz,
                                    const QVector<ScopeGeneratorCosineChannel> &channels) {
-    stop();
-
-    if (m_timer == nullptr) {
+    if (m_serialManager == nullptr || channels.isEmpty()) {
         return;
     }
 
-    m_cosineState.amplitude = amplitude;
-    m_cosineState.offset = offset;
-    m_cosineState.frequencyHz = frequencyHz;
-    m_cosineState.channels = channels;
-    m_cosineState.startTimeMs = QDateTime::currentMSecsSinceEpoch();
-    m_mode = Mode::Cosine;
+    const int boundedCount = qBound(1, channels.size(), 3);
+    const uint8_t channelCount = static_cast<uint8_t>(boundedCount);
+    const quint16 freqX100 = static_cast<quint16>(qBound(1.0, frequencyHz * 100.0, 65535.0));
 
-    m_timer->setInterval(intervalMs);
-    m_timer->start();
-    emit runningChanged(true);
-    onTick();
+    QVector<QPair<quint16, qint16>> channelPairs;
+    channelPairs.reserve(boundedCount);
+    for (int i = 0; i < boundedCount; ++i) {
+        const ScopeGeneratorCosineChannel &channel = channels.at(i);
+        const qint16 phaseX10 = static_cast<qint16>(qBound(-3200.0, channel.phaseDeg * 10.0, 3200.0));
+        channelPairs.push_back(qMakePair(channel.addr, phaseX10));
+    }
+
+    m_cosineChannelCount = boundedCount;
+    const QByteArray payload = MotorProtocol::encodeStartCosineGen(amplitude, offset, freqX100, channelCount,
+                                                                    channelPairs);
+    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
+                              Q_ARG(uint8_t, MotorProtocol::CmdStartCosineGen), Q_ARG(QByteArray, payload));
 }
 
 void GeneratorService::stop() {
-    if (m_timer != nullptr) {
-        m_timer->stop();
+    if (m_serialManager == nullptr) {
+        return;
     }
-    const bool wasRunning = isRunning();
-    m_mode = Mode::None;
-    m_cosineState.channels.clear();
-    if (wasRunning) {
-        emit runningChanged(false);
-    }
+
+    const QByteArray payload = MotorProtocol::encodeStopGenerator();
+    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
+                              Q_ARG(uint8_t, MotorProtocol::CmdStopGenerator), Q_ARG(QByteArray, payload));
 }
 
-void GeneratorService::onTick() {
-    if (m_regService == nullptr) {
+void GeneratorService::onFrameReceived(uint8_t cmd, uint8_t /*seq*/, const QByteArray &data) {
+    if (cmd == MotorProtocol::CmdStartLinearGen && data.isEmpty()) {
+        m_mode = Mode::Linear;
+        m_cosineChannelCount = 0;
+        emit runningChanged(true);
         return;
     }
 
-    if (m_mode == Mode::Linear) {
-        m_regService->writeSingleRow(-1, m_linearState.addr, m_linearState.current);
-        emit linearTicked(m_linearState.addr, m_linearState.current);
-
-        if (m_linearState.ascending) {
-            const int nextValue = static_cast<int>(m_linearState.current) + static_cast<int>(m_linearState.step);
-            if (nextValue > m_linearState.max) {
-                m_linearState.current = m_linearState.max;
-                m_linearState.ascending = false;
-            } else {
-                m_linearState.current = static_cast<qint16>(nextValue);
-            }
-        } else {
-            const int nextValue = static_cast<int>(m_linearState.current) - static_cast<int>(m_linearState.step);
-            if (nextValue < m_linearState.min) {
-                m_linearState.current = m_linearState.min;
-                m_linearState.ascending = true;
-            } else {
-                m_linearState.current = static_cast<qint16>(nextValue);
-            }
-        }
+    if (cmd == MotorProtocol::CmdStartCosineGen && data.isEmpty()) {
+        m_mode = Mode::Cosine;
+        emit runningChanged(true);
         return;
     }
 
-    if (m_mode == Mode::Cosine) {
-        const double elapsedSeconds = (QDateTime::currentMSecsSinceEpoch() - m_cosineState.startTimeMs) / 1000.0;
-        QVector<RegisterService::RowRequest> writes;
-        writes.reserve(m_cosineState.channels.size());
+    if (cmd == MotorProtocol::CmdStopGenerator && data.isEmpty()) {
+        m_mode = Mode::None;
+        m_cosineChannelCount = 0;
+        emit runningChanged(false);
+        return;
+    }
 
-        for (const ScopeGeneratorCosineChannel &channel : m_cosineState.channels) {
-            const double phaseRad = qDegreesToRadians(channel.phaseDeg);
-            const double rawValue =
-                static_cast<double>(m_cosineState.offset) +
-                static_cast<double>(m_cosineState.amplitude) *
-                    qCos(kTwoPi * m_cosineState.frequencyHz * elapsedSeconds + phaseRad);
-            const int clampedValue = qBound(-32768, qRound(rawValue), 32767);
-
-            RegisterService::RowRequest request;
-            request.globalRow = -1;
-            request.addr = channel.addr;
-            request.value = static_cast<qint16>(clampedValue);
-            writes.push_back(request);
-        }
-
-        if (!writes.isEmpty()) {
-            m_regService->writeBatch(writes);
-            emit cosineTicked(writes.size());
-        }
+    if (cmd == MotorProtocol::CmdErrorResponse) {
+        return;
     }
 }

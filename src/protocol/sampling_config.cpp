@@ -4,27 +4,25 @@ namespace SamplingConfig {
 
 uint8_t intervalIndexForText(const QString &text) {
     const QString normalized = text.trimmed().toLower();
-    if (normalized == QStringLiteral("100 us")) return 0x00;
-    if (normalized == QStringLiteral("200 us")) return 0x01;
-    if (normalized == QStringLiteral("300 us")) return 0x02;
-    if (normalized == QStringLiteral("500 us")) return 0x03;
-    if (normalized == QStringLiteral("750 us")) return 0x04;
-    if (normalized == QStringLiteral("1000 us")) return 0x05;
-    if (normalized == QStringLiteral("1500 us")) return 0x06;
-    if (normalized == QStringLiteral("2000 us")) return 0x07;
-    return 0x05;
+    if (normalized == QStringLiteral("200 us")) return 0x00;
+    if (normalized == QStringLiteral("300 us")) return 0x01;
+    if (normalized == QStringLiteral("500 us")) return 0x02;
+    if (normalized == QStringLiteral("750 us")) return 0x03;
+    if (normalized == QStringLiteral("1000 us")) return 0x04;
+    if (normalized == QStringLiteral("1500 us")) return 0x05;
+    if (normalized == QStringLiteral("2000 us")) return 0x06;
+    return 0x04;
 }
 
 int intervalUsForIndex(uint8_t index) {
     switch (index) {
-    case 0x00: return 100;
-    case 0x01: return 200;
-    case 0x02: return 300;
-    case 0x03: return 500;
-    case 0x04: return 750;
-    case 0x05: return 1000;
-    case 0x06: return 1500;
-    case 0x07: return 2000;
+    case 0x00: return 200;
+    case 0x01: return 300;
+    case 0x02: return 500;
+    case 0x03: return 750;
+    case 0x04: return 1000;
+    case 0x05: return 1500;
+    case 0x06: return 2000;
     default: return 1000;
     }
 }

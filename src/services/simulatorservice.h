@@ -68,6 +68,9 @@ private:
     void handleSetSampleInterval(uint8_t seq, const QByteArray &data);
     void handleSetSampleChannels(uint8_t seq, const QByteArray &data);
     void handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data);
+    void handleStartLinearGen(uint8_t seq, const QByteArray &data);
+    void handleStartCosineGen(uint8_t seq, const QByteArray &data);
+    void handleStopGenerator(uint8_t seq);
     void handleUnknownCommand(uint8_t cmd, uint8_t seq);
 
     void streamWorkerLoop();
@@ -93,7 +96,7 @@ private:
     mutable std::mutex m_regReadMutex;
 
     bool m_sampling = false;
-    uint8_t m_sampleIntervalIndex = 0x05;
+    uint8_t m_sampleIntervalIndex = 0x04;
     uint8_t m_channelMask = 0x01;
     QVector<quint16> m_channelRegisterMap;
     quint32 m_streamTick = 0;

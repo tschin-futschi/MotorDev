@@ -27,7 +27,7 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
     m_channelModel = new ScopeChannelModel(this);
     m_service = new ScopeService(serialManager, m_channelModel, this);
     m_regService = new RegisterService(m_serialManager, this);
-    m_generatorService = new GeneratorService(m_regService, this);
+    m_generatorService = new GeneratorService(m_serialManager, this);
     m_cyclicWriteService = new CyclicWriteService(m_regService, this);
     m_cyclicWriteService->setRowCount(ScopeRegisterPanel::rowCount());
     setupUi();
@@ -470,13 +470,9 @@ void OscilloscopTab::refreshMarqueeStatus() {
     }
     if (m_generatorService != nullptr && m_generatorService->isRunning()) {
         if (m_generatorService->modeLabel() == QStringLiteral("Cosine")) {
-        parts << QStringLiteral("Generator: Cosine %1ch @ %2ms")
-                     .arg(m_generatorService->cosineChannelCount())
-                     .arg(m_generatorService->intervalMs());
+            parts << QStringLiteral("Generator: Cosine %1ch").arg(m_generatorService->cosineChannelCount());
         } else {
-            parts << QStringLiteral("Generator: %1 @ %2ms")
-                         .arg(m_generatorService->modeLabel())
-                         .arg(m_generatorService->intervalMs());
+            parts << QStringLiteral("Generator: %1").arg(m_generatorService->modeLabel());
         }
     }
 
