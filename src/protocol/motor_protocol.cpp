@@ -2,6 +2,34 @@
 
 namespace MotorProtocol {
 
+const char *commandName(uint8_t cmd) {
+    switch (cmd) {
+    case CmdHeartbeat: return "Heartbeat";
+    case CmdErrorResponse: return "ErrorResponse";
+    case CmdSetMotorIcAddr: return "SetMotorIcAddr";
+    case CmdSetBaudrate: return "SetBaudrate";
+    case CmdReset: return "Reset";
+    case CmdMotorTest: return "MotorTest";
+    case CmdDebugInfo: return "DebugInfo";
+    case CmdI2cBusScan: return "I2cBusScan";
+    case CmdPmicEnable: return "PmicEnable";
+    case CmdSetPmicVoltage: return "SetPmicVoltage";
+    case CmdPmicDisable: return "PmicDisable";
+    case CmdReadRegister: return "ReadRegister";
+    case CmdWriteRegister: return "WriteRegister";
+    case CmdBulkRead: return "BulkRead";
+    case CmdStartSampling: return "StartSampling";
+    case CmdStopSampling: return "StopSampling";
+    case CmdSetSampleInterval: return "SetSampleInterval";
+    case CmdSetSampleChannels: return "SetSampleChannels";
+    case CmdSetChannelRegisterMap: return "SetChannelRegisterMap";
+    case CmdStartLinearGen: return "StartLinearGen";
+    case CmdStartCosineGen: return "StartCosineGen";
+    case CmdStopGenerator: return "StopGenerator";
+    default: return "UnknownCommand";
+    }
+}
+
 bool isValidSampleIntervalIndex(uint8_t intervalIndex) {
     return intervalIndex <= 0x06;
 }

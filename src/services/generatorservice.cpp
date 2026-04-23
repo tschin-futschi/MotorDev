@@ -3,8 +3,22 @@
 #include "protocol/motor_protocol.h"
 #include "serialmanager.h"
 
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QtMath>
+
+Q_LOGGING_CATEGORY(lcGenerator, "motordev.generator")
+
+namespace {
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
+}
+
+QString formatWord(quint16 value) {
+    return QStringLiteral("0x%1").arg(value, 4, 16, QLatin1Char('0')).toUpper();
+}
+} // namespace
 
 GeneratorService::GeneratorService(SerialManager *serialManager, QObject *parent)
     : QObject(parent)
@@ -43,6 +57,15 @@ void GeneratorService::startLinear(quint16 addr, qint16 min, qint16 max, qint16 
 
     const quint16 interval = static_cast<quint16>(qBound(1, intervalMs, 65535));
     const QByteArray payload = MotorProtocol::encodeStartLinearGen(addr, min, max, step, interval);
+    qCInfo(lcGenerator).noquote()
+        << QStringLiteral("%1 TX addr=%2 min=%3 max=%4 step=%5 intervalMs=%6 payload=%7")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStartLinearGen)))
+               .arg(formatWord(addr))
+               .arg(min)
+               .arg(max)
+               .arg(step)
+               .arg(interval)
+               .arg(formatPayloadHex(payload));
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
                               Q_ARG(uint8_t, MotorProtocol::CmdStartLinearGen), Q_ARG(QByteArray, payload));
 }
@@ -68,6 +91,14 @@ void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequ
     m_cosineChannelCount = boundedCount;
     const QByteArray payload = MotorProtocol::encodeStartCosineGen(amplitude, offset, freqX100, channelCount,
                                                                     channelPairs);
+    qCInfo(lcGenerator).noquote()
+        << QStringLiteral("%1 TX amplitude=%2 offset=%3 freqX100=%4 channels=%5 payload=%6")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStartCosineGen)))
+               .arg(amplitude)
+               .arg(offset)
+               .arg(freqX100)
+               .arg(boundedCount)
+               .arg(formatPayloadHex(payload));
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
                               Q_ARG(uint8_t, MotorProtocol::CmdStartCosineGen), Q_ARG(QByteArray, payload));
 }
@@ -78,6 +109,10 @@ void GeneratorService::stop() {
     }
 
     const QByteArray payload = MotorProtocol::encodeStopGenerator();
+    qCInfo(lcGenerator).noquote()
+        << QStringLiteral("%1 TX payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStopGenerator)))
+               .arg(formatPayloadHex(payload));
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
                               Q_ARG(uint8_t, MotorProtocol::CmdStopGenerator), Q_ARG(QByteArray, payload));
 }
@@ -86,12 +121,19 @@ void GeneratorService::onFrameReceived(uint8_t cmd, uint8_t /*seq*/, const QByte
     if (cmd == MotorProtocol::CmdStartLinearGen && data.isEmpty()) {
         m_mode = Mode::Linear;
         m_cosineChannelCount = 0;
+        qCInfo(lcGenerator).noquote()
+            << QStringLiteral("%1 RX ACK mode=Linear")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)));
         emit runningChanged(true);
         return;
     }
 
     if (cmd == MotorProtocol::CmdStartCosineGen && data.isEmpty()) {
         m_mode = Mode::Cosine;
+        qCInfo(lcGenerator).noquote()
+            << QStringLiteral("%1 RX ACK mode=Cosine channels=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(m_cosineChannelCount);
         emit runningChanged(true);
         return;
     }
@@ -99,11 +141,20 @@ void GeneratorService::onFrameReceived(uint8_t cmd, uint8_t /*seq*/, const QByte
     if (cmd == MotorProtocol::CmdStopGenerator && data.isEmpty()) {
         m_mode = Mode::None;
         m_cosineChannelCount = 0;
+        qCInfo(lcGenerator).noquote()
+            << QStringLiteral("%1 RX ACK generator stopped")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)));
         emit runningChanged(false);
         return;
     }
 
     if (cmd == MotorProtocol::CmdErrorResponse) {
+        qCWarning(lcGenerator).noquote()
+            << QStringLiteral("%1 RX errorCode=0x%2 payload=%3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(MotorProtocol::decodeErrorCode(data), 2, 16, QLatin1Char('0'))
+                   .arg(formatPayloadHex(data))
+                   .toUpper();
         return;
     }
 }

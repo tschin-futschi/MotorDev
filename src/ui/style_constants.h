@@ -122,6 +122,7 @@ inline const QColor ScopeWaveCh7(255, 160,  60);   // orange
 inline const QColor ScopeWaveCh8(220, 220, 220);   // light grey
 inline const QColor LogWarning("#B85C00");
 inline const QColor LogError("#C0392B");
+inline const QColor LogInfo("#2E7D32");
 }
 
 namespace Size {

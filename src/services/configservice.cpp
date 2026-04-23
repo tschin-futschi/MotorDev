@@ -6,10 +6,18 @@
 #include "serialmanager.h"
 
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QtMath>
 
+Q_LOGGING_CATEGORY(lcConfig, "motordev.config")
 
+namespace {
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
+}
+}
 
 ConfigService::ConfigService(SerialManager *serialManager, DeviceContext *deviceContext, QObject *parent)
     : QObject(parent)
@@ -38,43 +46,52 @@ QStringList ConfigService::availablePorts() const {
 void ConfigService::connectToPort(const QString &portName, qint32 baudRate) {
     if (m_serialManager == nullptr) return;
     if (m_isConnected) {
-        qWarning() << "Already connected, disconnect first";
+        qCWarning(lcConfig) << "Already connected, disconnect first";
         return;
     }
     m_connectedPort = portName;
     m_connectedBaud = baudRate;
-    qDebug().noquote() << QStringLiteral("Connecting to %1 at %2...").arg(portName).arg(baudRate);
+    qCInfo(lcConfig).noquote() << QStringLiteral("Connect request port=%1 baud=%2").arg(portName).arg(baudRate);
     QMetaObject::invokeMethod(m_serialManager, "openPort", Qt::QueuedConnection,
         Q_ARG(QString, portName), Q_ARG(qint32, baudRate));
 }
 
 void ConfigService::disconnectPort() {
     if (m_serialManager == nullptr) return;
-    qDebug() << "Disconnecting...";
+    qCInfo(lcConfig) << "Disconnect request";
     QMetaObject::invokeMethod(m_serialManager, "closePort", Qt::QueuedConnection);
 }
 
 void ConfigService::startI2cScan() {
     if (m_serialManager == nullptr || !m_isConnected) {
-        qWarning() << "I2C scan failed: serial not connected";
+        qCWarning(lcConfig) << "I2cBusScan blocked: serial not connected";
         return;
     }
-    qDebug() << "I2C scan started on bus I2C2";
+    const QByteArray payload = MotorProtocol::encodeI2cBusScan();
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX bus=I2C2 payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdI2cBusScan)))
+               .arg(formatPayloadHex(payload));
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, MotorProtocol::CmdI2cBusScan),
-        Q_ARG(QByteArray, MotorProtocol::encodeI2cBusScan()));
+        Q_ARG(QByteArray, payload));
 }
 
 void ConfigService::setMotorIcAddress(uint8_t addr) {
     if (m_serialManager == nullptr || !m_isConnected) {
-        qWarning() << "IC connect failed: serial not connected";
+        qCWarning(lcConfig) << "SetMotorIcAddr blocked: serial not connected";
         return;
     }
-    qDebug().noquote() << QStringLiteral("Setting motor IC address to 0x%1")
-                              .arg(addr, 2, 16, QLatin1Char('0')).toUpper();
+    const QByteArray payload = MotorProtocol::encodeSetMotorIcAddr(addr);
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX addr=0x%2 payload=%3")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdSetMotorIcAddr)))
+               .arg(addr, 2, 16, QLatin1Char('0'))
+               .arg(formatPayloadHex(payload))
+               .toUpper();
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, MotorProtocol::CmdSetMotorIcAddr),
-        Q_ARG(QByteArray, MotorProtocol::encodeSetMotorIcAddr(addr)));
+        Q_ARG(QByteArray, payload));
 }
 
 void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV) {
@@ -85,7 +102,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
     }
 
     if (m_pmicState != PmicState::Idle) {
-        qWarning() << "PMIC configuration ignored: sequence already in progress";
+        qCWarning(lcConfig) << "PMIC configuration ignored: sequence already in progress";
         return;
     }
 
@@ -103,24 +120,28 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
         return;
     }
 
-    qDebug().noquote() << QStringLiteral("Configuring PMIC: DRVDD=%1V IOVDD=%2V VCMVDD=%3V")
-                              .arg(drvvddV, 0, 'f', 2)
-                              .arg(iovddV, 0, 'f', 2)
-                              .arg(vcmvddV, 0, 'f', 2);
+    const QByteArray payload = MotorProtocol::encodePmicVoltage(drvvdd, iovdd, vcmvdd);
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX DRVDD=%2V IOVDD=%3V VCMVDD=%4V payload=%5")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdSetPmicVoltage)))
+               .arg(drvvddV, 0, 'f', 2)
+               .arg(iovddV, 0, 'f', 2)
+               .arg(vcmvddV, 0, 'f', 2)
+               .arg(formatPayloadHex(payload));
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, MotorProtocol::CmdSetPmicVoltage),
-        Q_ARG(QByteArray, MotorProtocol::encodePmicVoltage(drvvdd, iovdd, vcmvdd)));
+        Q_ARG(QByteArray, payload));
     m_pmicState = PmicState::WaitingVoltageAck;
 }
 
 void ConfigService::onSerialConnected() {
-    qDebug() << "Serial connected";
+    qCInfo(lcConfig) << "Serial connected";
     m_isConnected = true;
     emit serialConnected(m_connectedPort, m_connectedBaud);
 }
 
 void ConfigService::onSerialDisconnected() {
-    qDebug() << "Serial disconnected";
+    qCInfo(lcConfig) << "Serial disconnected";
     m_isConnected = false;
     m_pmicState = PmicState::Idle;
     emit serialDisconnected();
@@ -131,20 +152,28 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
     switch (cmd) {
     case MotorProtocol::CmdI2cBusScan: {
         if (data.isEmpty()) {
-            qWarning() << "I2C scan response: empty data";
+            qCWarning(lcConfig) << "I2cBusScan response empty";
             return;
         }
         const QList<uint8_t> addresses = MotorProtocol::decodeI2cScanResponse(data);
-        qDebug().noquote() << QStringLiteral("I2C scan found %1 devices").arg(addresses.size());
+        QStringList addressTexts;
         for (uint8_t addr : addresses) {
-            qDebug().noquote() << QStringLiteral("  Device: 0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper();
+            addressTexts.append(QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper());
         }
-        if (addresses.isEmpty()) qDebug() << "No I2C devices found";
+        qCInfo(lcConfig).noquote()
+            << QStringLiteral("%1 RX count=%2 devices=%3 payload=%4")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(addresses.size())
+                   .arg(addressTexts.isEmpty() ? QStringLiteral("<none>") : addressTexts.join(QStringLiteral(", ")))
+                   .arg(formatPayloadHex(data));
         emit i2cScanResult(addresses);
         break;
     }
     case MotorProtocol::CmdSetMotorIcAddr: {
-        qDebug().noquote() << QStringLiteral("Motor IC address set successfully");
+        qCInfo(lcConfig).noquote()
+            << QStringLiteral("%1 RX ACK payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(formatPayloadHex(data));
         emit setAddrSuccess();
         break;
     }
@@ -152,9 +181,18 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
         if (m_pmicState != PmicState::WaitingVoltageAck) {
             break;
         }
+        qCInfo(lcConfig).noquote()
+            << QStringLiteral("%1 RX ACK payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(formatPayloadHex(data));
+        const QByteArray payload = MotorProtocol::encodePmicEnable();
+        qCInfo(lcConfig).noquote()
+            << QStringLiteral("%1 TX payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdPmicEnable)))
+                   .arg(formatPayloadHex(payload));
         QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
             Q_ARG(uint8_t, MotorProtocol::CmdPmicEnable),
-            Q_ARG(QByteArray, MotorProtocol::encodePmicEnable()));
+            Q_ARG(QByteArray, payload));
         m_pmicState = PmicState::WaitingEnableAck;
         break;
     }
@@ -163,6 +201,10 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
             break;
         }
         m_pmicState = PmicState::Idle;
+        qCInfo(lcConfig).noquote()
+            << QStringLiteral("%1 RX ACK payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(formatPayloadHex(data));
         emit pmicConfigSuccess();
         break;
     }
@@ -175,9 +217,13 @@ void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &
         case 0x03: errorName = QStringLiteral("Execution failed"); break;
         default: errorName = QStringLiteral("Unknown error"); break;
         }
-        qWarning().noquote() << QStringLiteral("Error response: code=0x%1 (%2)")
-                                    .arg(errorCode, 2, 16, QLatin1Char('0')).toUpper()
-                                    .arg(errorName);
+        qCWarning(lcConfig).noquote()
+            << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(errorCode, 2, 16, QLatin1Char('0'))
+                   .arg(errorName)
+                   .arg(formatPayloadHex(data))
+                   .toUpper();
         if (m_pmicState != PmicState::Idle) {
             m_pmicState = PmicState::Idle;
             emit pmicConfigFailed(errorName);

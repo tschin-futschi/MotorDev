@@ -1,5 +1,9 @@
 #include "frameparser.h"
 
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(lcFrameParser, "motordev.frame")
+
 namespace {
 constexpr uint8_t ControlHeader1 = 0xAA;
 constexpr uint8_t ControlHeader2 = 0x55;
@@ -21,6 +25,15 @@ uint8_t calculateXor(uint8_t channelMask, uint8_t streamLen, const QByteArray &d
         value ^= static_cast<uint8_t>(byte);
     }
     return value;
+}
+
+QString formatByte(uint8_t value) {
+    return QStringLiteral("0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
+}
+
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
 }
 } // namespace
 
@@ -132,6 +145,11 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
         m_streamLen = byte;
         m_streamData.clear();
         if (m_streamLen != countEnabledChannels(m_channelMask) * 2) {
+            qCWarning(lcFrameParser).noquote()
+                << QStringLiteral("Stream length mismatch: mask=%1 len=%2 expected=%3")
+                       .arg(formatByte(m_channelMask))
+                       .arg(m_streamLen)
+                       .arg(countEnabledChannels(m_channelMask) * 2);
             reset();
             return FrameType::None;
         }
@@ -204,12 +222,22 @@ FrameParser::FrameType FrameParser::finalizeControlFrame(uint8_t crcLow) {
         return FrameType::Control;
     }
 
+    qCWarning(lcFrameParser).noquote()
+        << QStringLiteral("CRC mismatch: seq=%1 cmd=%2 len=%3 expected=0x%4 received=0x%5 payload=%6")
+               .arg(formatByte(m_seq))
+               .arg(formatByte(m_cmd))
+               .arg(m_len)
+               .arg(expectedCrc, 4, 16, QLatin1Char('0'))
+               .arg(receivedCrc, 4, 16, QLatin1Char('0'))
+               .arg(formatPayloadHex(m_data))
+               .toUpper();
     reset();
     return FrameType::None;
 }
 
 FrameParser::FrameType FrameParser::finalizeStreamFrame(uint8_t xorValue) {
-    if (calculateXor(m_channelMask, m_streamLen, m_streamData) == xorValue) {
+    const uint8_t expectedXor = calculateXor(m_channelMask, m_streamLen, m_streamData);
+    if (expectedXor == xorValue) {
         m_streamFrame.channelMask = m_channelMask;
         m_streamFrame.samples.clear();
         m_streamFrame.samples.reserve(m_streamData.size() / 2);
@@ -225,6 +253,13 @@ FrameParser::FrameType FrameParser::finalizeStreamFrame(uint8_t xorValue) {
         return FrameType::Stream;
     }
 
+    qCWarning(lcFrameParser).noquote()
+        << QStringLiteral("XOR mismatch: mask=%1 len=%2 expected=%3 received=%4 payload=%5")
+               .arg(formatByte(m_channelMask))
+               .arg(m_streamLen)
+               .arg(formatByte(expectedXor))
+               .arg(formatByte(xorValue))
+               .arg(formatPayloadHex(m_streamData));
     reset();
     return FrameType::None;
 }

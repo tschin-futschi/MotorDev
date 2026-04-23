@@ -31,13 +31,14 @@ LogPanel::~LogPanel() {
     }
 }
 
-void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
+void LogPanel::appendMessage(QtMsgType type, const QString &category, const QString &msg) {
     if (QThread::currentThread() != thread()) {
         QMetaObject::invokeMethod(
             this,
             "appendMessage",
             Qt::QueuedConnection,
             Q_ARG(QtMsgType, type),
+            Q_ARG(QString, category),
             Q_ARG(QString, msg));
         return;
     }
@@ -45,6 +46,10 @@ void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
     QString prefix;
     QString color;
     switch (type) {
+    case QtInfoMsg:
+        prefix = QStringLiteral("[INFO] ");
+        color = Style::Color::LogInfo.name();
+        break;
     case QtWarningMsg:
         prefix = QStringLiteral("[WARN] ");
         color = Style::Color::LogWarning.name();
@@ -60,9 +65,11 @@ void LogPanel::appendMessage(QtMsgType type, const QString &msg) {
         break;
     }
 
-    const QString html = QStringLiteral("<span style=\"color:%1;\">%2%3</span>")
+    const QString categoryTag = QStringLiteral("[%1] ").arg(category.isEmpty() ? QStringLiteral("default") : category);
+    const QString html = QStringLiteral("<span style=\"color:%1;\">%2%3%4</span>")
                              .arg(color)
                              .arg(prefix.toHtmlEscaped())
+                             .arg(categoryTag.toHtmlEscaped())
                              .arg(msg.toHtmlEscaped());
     m_textEdit->append(html);
     m_textEdit->moveCursor(QTextCursor::End);

@@ -7,16 +7,22 @@
 #include "serialmanager.h"
 
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QStringList>
 #include <QThread>
 #include <QTimer>
 
-
+Q_LOGGING_CATEGORY(lcScope, "motordev.scope")
 
 namespace {
 QString formatByte(uint8_t value) {
     return QStringLiteral("0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
+}
+
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
 }
 }
 
@@ -86,7 +92,7 @@ void ScopeService::requestStart(uint8_t sampleIntervalIndex, int displayWindowMs
         m_lastError = QStringLiteral("No valid scope channel mapping");
         setRunning(false);
         emit startError(m_lastError);
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Start blocked: %1").arg(m_lastError);
+        qCWarning(lcScope).noquote() << QStringLiteral("Start blocked: %1").arg(m_lastError);
         return;
     }
     m_startPending = true;
@@ -113,7 +119,10 @@ void ScopeService::requestStop() {
     m_stopPending = true;
     m_pendingCommand = PendingCommand::StopSampling;
     emit runningChanged(m_running);
-    qDebug().noquote() << QStringLiteral("[Scope GUI] TX stop sampling");
+    qCInfo(lcScope).noquote()
+        << QStringLiteral("%1 TX payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStopSampling)))
+               .arg(formatPayloadHex(payload));
 }
 
 void ScopeService::ingestDebugStream(uint8_t channelMask, const QVector<int16_t> &samples) {
@@ -132,7 +141,7 @@ void ScopeService::setRunning(bool running) {
     }
     m_running = running;
     emit runningChanged(running);
-    qDebug().noquote() << QStringLiteral("[Scope GUI] %1").arg(running ? QStringLiteral("Start") : QStringLiteral("Stop"));
+    qCInfo(lcScope).noquote() << QStringLiteral("Sampling state=%1").arg(running ? QStringLiteral("Start") : QStringLiteral("Stop"));
 }
 
 void ScopeService::startSamplingSequence() {
@@ -146,7 +155,11 @@ void ScopeService::sendNextStartCommand() {
         const QByteArray payload = MotorProtocol::encodeSetSampleInterval(m_sampleIntervalIndex);
         if (!sendCommand(MotorProtocol::CmdSetSampleInterval, payload)) { m_startPending = false; setRunning(false); return; }
         m_pendingCommand = PendingCommand::SetSampleInterval;
-        qDebug().noquote() << QStringLiteral("[Scope GUI] TX set sample interval %1").arg(formatByte(m_sampleIntervalIndex));
+        qCInfo(lcScope).noquote()
+            << QStringLiteral("%1 TX intervalIndex=%2 payload=%3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdSetSampleInterval)))
+                   .arg(formatByte(m_sampleIntervalIndex))
+                   .arg(formatPayloadHex(payload));
         return;
     }
     case PendingCommand::SetSampleInterval: {
@@ -154,21 +167,31 @@ void ScopeService::sendNextStartCommand() {
         const QByteArray payload = MotorProtocol::encodeSetSampleChannels(mask);
         if (!sendCommand(MotorProtocol::CmdSetSampleChannels, payload)) { m_startPending = false; setRunning(false); return; }
         m_pendingCommand = PendingCommand::SetSampleChannels;
-        qDebug().noquote() << QStringLiteral("[Scope GUI] TX set sample channels %1").arg(formatByte(mask));
+        qCInfo(lcScope).noquote()
+            << QStringLiteral("%1 TX channelMask=%2 payload=%3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdSetSampleChannels)))
+                   .arg(formatByte(mask))
+                   .arg(formatPayloadHex(payload));
         return;
     }
     case PendingCommand::SetSampleChannels: {
         const QByteArray payload = MotorProtocol::encodeSetChannelRegisterMap(m_channelModel->currentRegisterMap());
         if (!sendCommand(MotorProtocol::CmdSetChannelRegisterMap, payload)) { m_startPending = false; setRunning(false); return; }
         m_pendingCommand = PendingCommand::SetChannelRegisterMap;
-        qDebug().noquote() << QStringLiteral("[Scope GUI] TX set channel register map");
+        qCInfo(lcScope).noquote()
+            << QStringLiteral("%1 TX payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdSetChannelRegisterMap)))
+                   .arg(formatPayloadHex(payload));
         return;
     }
     case PendingCommand::SetChannelRegisterMap: {
         const QByteArray payload = MotorProtocol::encodeStartSampling();
         if (!sendCommand(MotorProtocol::CmdStartSampling, payload)) { m_startPending = false; setRunning(false); return; }
         m_pendingCommand = PendingCommand::StartSampling;
-        qDebug().noquote() << QStringLiteral("[Scope GUI] TX start sampling");
+        qCInfo(lcScope).noquote()
+            << QStringLiteral("%1 TX payload=%2")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStartSampling)))
+                   .arg(formatPayloadHex(payload));
         return;
     }
     case PendingCommand::StartSampling:
@@ -227,21 +250,64 @@ void ScopeService::handleFrameReceived(uint8_t cmd, uint8_t seq, const QByteArra
         m_startPending = false; m_stopPending = false;
         clearPendingCommandState();
         setRunning(false);
-        qDebug().noquote() << QStringLiteral("[Scope GUI] %1").arg(m_lastError);
+        qCWarning(lcScope).noquote()
+            << QStringLiteral("%1 RX payload=%2 %3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(formatPayloadHex(data))
+                   .arg(m_lastError);
         return;
     }
     if (cmd == MotorProtocol::CmdDebugInfo) {
         m_lastError = QString::fromUtf8(data);
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Debug info=%1").arg(m_lastError);
+        qCInfo(lcScope).noquote()
+            << QStringLiteral("%1 RX message=%2 payload=%3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(m_lastError)
+                   .arg(formatPayloadHex(data));
         return;
     }
     if (m_pendingSeq != InvalidSeq && seq != m_pendingSeq) return;
     switch (m_pendingCommand) {
-    case PendingCommand::SetSampleInterval: if (cmd == MotorProtocol::CmdSetSampleInterval) finishPendingCommand(); break;
-    case PendingCommand::SetSampleChannels: if (cmd == MotorProtocol::CmdSetSampleChannels) finishPendingCommand(); break;
-    case PendingCommand::SetChannelRegisterMap: if (cmd == MotorProtocol::CmdSetChannelRegisterMap) finishPendingCommand(); break;
-    case PendingCommand::StartSampling: if (cmd == MotorProtocol::CmdStartSampling) finishPendingCommand(); break;
-    case PendingCommand::StopSampling: if (cmd == MotorProtocol::CmdStopSampling) finishPendingCommand(); break;
+    case PendingCommand::SetSampleInterval:
+        if (cmd == MotorProtocol::CmdSetSampleInterval) {
+            qCInfo(lcScope).noquote() << QStringLiteral("%1 RX ACK payload=%2")
+                                             .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                                             .arg(formatPayloadHex(data));
+            finishPendingCommand();
+        }
+        break;
+    case PendingCommand::SetSampleChannels:
+        if (cmd == MotorProtocol::CmdSetSampleChannels) {
+            qCInfo(lcScope).noquote() << QStringLiteral("%1 RX ACK payload=%2")
+                                             .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                                             .arg(formatPayloadHex(data));
+            finishPendingCommand();
+        }
+        break;
+    case PendingCommand::SetChannelRegisterMap:
+        if (cmd == MotorProtocol::CmdSetChannelRegisterMap) {
+            qCInfo(lcScope).noquote() << QStringLiteral("%1 RX ACK payload=%2")
+                                             .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                                             .arg(formatPayloadHex(data));
+            finishPendingCommand();
+        }
+        break;
+    case PendingCommand::StartSampling:
+        if (cmd == MotorProtocol::CmdStartSampling) {
+            qCInfo(lcScope).noquote() << QStringLiteral("%1 RX ACK payload=%2")
+                                             .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                                             .arg(formatPayloadHex(data));
+            finishPendingCommand();
+        }
+        break;
+    case PendingCommand::StopSampling:
+        if (cmd == MotorProtocol::CmdStopSampling) {
+            qCInfo(lcScope).noquote() << QStringLiteral("%1 RX ACK payload=%2")
+                                             .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                                             .arg(formatPayloadHex(data));
+            finishPendingCommand();
+        }
+        break;
     case PendingCommand::None: break;
     }
 }
@@ -252,7 +318,7 @@ void ScopeService::handleErrorOccurred(const QString &message) {
     m_startPending = false; m_stopPending = false;
     clearPendingCommandState();
     setRunning(false);
-    qDebug().noquote() << QStringLiteral("[Scope GUI] Serial error=%1").arg(message);
+    qCWarning(lcScope).noquote() << QStringLiteral("Serial error=%1").arg(message);
 }
 
 void ScopeService::handleStreamBatchReceived(const ScopeStreamBatch &batch) {
@@ -282,14 +348,16 @@ void ScopeService::logStartSnapshot() const {
         if (!channel.enabled || channel.registerAddress == 0xFFFF) continue;
         activeChannels.append(QStringLiteral("CH%1=%2").arg(index + 1).arg(channel.addressText.isEmpty() ? QStringLiteral("0xFFFF") : channel.addressText));
     }
-    qDebug().noquote() << QStringLiteral("[Scope Start] interval=%1us index=%2 window=%3ms raw_points=%4 bucket=%5 ui_points=%6 mask=%7 channels=%8")
+    qCInfo(lcScope).noquote() << QStringLiteral("Start snapshot interval=%1us index=%2 window=%3ms raw_points=%4 bucket=%5 ui_points=%6 mask=%7 channels=%8")
                               .arg(intervalUs).arg(formatByte(m_sampleIntervalIndex)).arg(m_displayWindowMs).arg(rawWindowPoints).arg(bucket).arg(uiPoints).arg(formatByte(m_channelModel->currentChannelMask())).arg(activeChannels.join(QStringLiteral(", ")));
 }
 
 bool ScopeService::sendCommand(uint8_t cmd, const QByteArray &data) {
     if (m_serialManager == nullptr) {
         m_lastError = QStringLiteral("Serial manager is unavailable");
-        qDebug().noquote() << QStringLiteral("[Scope GUI] %1").arg(m_lastError);
+        qCWarning(lcScope).noquote() << QStringLiteral("%1 for %2")
+                                            .arg(m_lastError)
+                                            .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)));
         return false;
     }
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,

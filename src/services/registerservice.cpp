@@ -5,10 +5,18 @@
 #include "serialmanager.h"
 
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QTimer>
 
+Q_LOGGING_CATEGORY(lcRegister, "motordev.register")
 
+namespace {
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
+}
+}
 
 RegisterService::RegisterService(SerialManager *serialManager, QObject *parent)
     : QObject(parent)
@@ -25,9 +33,14 @@ RegisterService::RegisterService(SerialManager *serialManager, QObject *parent)
 RegisterService::~RegisterService() = default;
 
 void RegisterService::readSingleRow(int globalRow, quint16 addr) {
-    qDebug().noquote() << QStringLiteral("[RW] Read  row=%1 addr=0x%2")
-                              .arg(globalRow)
-                              .arg(addr, 4, 16, QLatin1Char('0')).toUpper();
+    const QByteArray payload = MotorProtocol::encodeReadRegister(addr);
+    qCInfo(lcRegister).noquote()
+        << QStringLiteral("%1 TX row=%2 addr=0x%3 payload=%4")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdReadRegister)))
+               .arg(globalRow)
+               .arg(addr, 4, 16, QLatin1Char('0'))
+               .arg(formatPayloadHex(payload))
+               .toUpper();
     RowRequest req;
     req.globalRow = globalRow;
     req.addr = addr;
@@ -38,15 +51,20 @@ void RegisterService::readSingleRow(int globalRow, quint16 addr) {
     emit rowPending(globalRow);
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, MotorProtocol::CmdReadRegister),
-        Q_ARG(QByteArray, MotorProtocol::encodeReadRegister(addr)));
+        Q_ARG(QByteArray, payload));
     m_timeoutTimer->start(500);
 }
 
 void RegisterService::writeSingleRow(int globalRow, quint16 addr, qint16 value) {
-    qDebug().noquote() << QStringLiteral("[RW] Write row=%1 addr=0x%2 val=0x%3")
-                              .arg(globalRow)
-                              .arg(addr, 4, 16, QLatin1Char('0'))
-                              .arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0')).toUpper();
+    const QByteArray payload = MotorProtocol::encodeWriteRegister(addr, value);
+    qCInfo(lcRegister).noquote()
+        << QStringLiteral("%1 TX row=%2 addr=0x%3 value=0x%4 payload=%5")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdWriteRegister)))
+               .arg(globalRow)
+               .arg(addr, 4, 16, QLatin1Char('0'))
+               .arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0'))
+               .arg(formatPayloadHex(payload))
+               .toUpper();
     RowRequest req;
     req.globalRow = globalRow;
     req.addr = addr;
@@ -57,7 +75,7 @@ void RegisterService::writeSingleRow(int globalRow, quint16 addr, qint16 value) 
     m_hasPending = true;
     QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
         Q_ARG(uint8_t, MotorProtocol::CmdWriteRegister),
-        Q_ARG(QByteArray, MotorProtocol::encodeWriteRegister(addr, value)));
+        Q_ARG(QByteArray, payload));
     m_timeoutTimer->start(500);
 }
 
@@ -85,7 +103,7 @@ void RegisterService::processNextInQueue() {
     }
     if (m_pendingQueue.isEmpty()) {
         m_timeoutTimer->stop();
-        qDebug().noquote() << QStringLiteral("[RW] Queue done (%1)")
+        qCDebug(lcRegister).noquote() << QStringLiteral("Queue done (%1)")
                                   .arg(m_isWriteOp ? QStringLiteral("write") : QStringLiteral("read"));
         m_hasPending = false;
         emit queueFinished(m_isWriteOp);
@@ -94,14 +112,31 @@ void RegisterService::processNextInQueue() {
     m_currentRequest = m_pendingQueue.dequeue();
     m_hasPending = true;
     if (m_isWriteOp) {
+        const QByteArray payload = MotorProtocol::encodeWriteRegister(m_currentRequest.addr, m_currentRequest.value);
+        qCInfo(lcRegister).noquote()
+            << QStringLiteral("%1 TX row=%2 addr=0x%3 value=0x%4 payload=%5")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdWriteRegister)))
+                   .arg(m_currentRequest.globalRow)
+                   .arg(m_currentRequest.addr, 4, 16, QLatin1Char('0'))
+                   .arg(static_cast<quint16>(m_currentRequest.value), 4, 16, QLatin1Char('0'))
+                   .arg(formatPayloadHex(payload))
+                   .toUpper();
         QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
             Q_ARG(uint8_t, MotorProtocol::CmdWriteRegister),
-            Q_ARG(QByteArray, MotorProtocol::encodeWriteRegister(m_currentRequest.addr, m_currentRequest.value)));
+            Q_ARG(QByteArray, payload));
     } else {
         emit rowPending(m_currentRequest.globalRow);
+        const QByteArray payload = MotorProtocol::encodeReadRegister(m_currentRequest.addr);
+        qCInfo(lcRegister).noquote()
+            << QStringLiteral("%1 TX row=%2 addr=0x%3 payload=%4")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdReadRegister)))
+                   .arg(m_currentRequest.globalRow)
+                   .arg(m_currentRequest.addr, 4, 16, QLatin1Char('0'))
+                   .arg(formatPayloadHex(payload))
+                   .toUpper();
         QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
             Q_ARG(uint8_t, MotorProtocol::CmdReadRegister),
-            Q_ARG(QByteArray, MotorProtocol::encodeReadRegister(m_currentRequest.addr)));
+            Q_ARG(QByteArray, payload));
     }
     m_timeoutTimer->start(500);
 }
@@ -114,26 +149,42 @@ void RegisterService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray
         m_timeoutTimer->stop();
         qint16 value = 0;
         if (MotorProtocol::decodeReadRegisterResponse(data, &value)) {
-            qDebug().noquote() << QStringLiteral("[RW] Read  OK   row=%1 val=0x%2")
-                                      .arg(row)
-                                      .arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0')).toUpper();
+            qCInfo(lcRegister).noquote()
+                << QStringLiteral("%1 RX ACK row=%2 value=0x%3 payload=%4")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                       .arg(row)
+                       .arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0'))
+                       .arg(formatPayloadHex(data))
+                       .toUpper();
             emit rowReadOk(row, value);
         } else {
-            qDebug().noquote() << QStringLiteral("[RW] Read  FAIL row=%1 (decode error)").arg(row);
+            qCWarning(lcRegister).noquote()
+                << QStringLiteral("%1 RX decode failed row=%2 payload=%3")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                       .arg(row)
+                       .arg(formatPayloadHex(data));
             emit rowReadError(row);
         }
         processNextInQueue();
     } else if (cmd == MotorProtocol::CmdWriteRegister && m_isWriteOp) {
         m_timeoutTimer->stop();
-        qDebug().noquote() << QStringLiteral("[RW] Write ACK  row=%1").arg(row);
+        qCInfo(lcRegister).noquote()
+            << QStringLiteral("%1 RX ACK row=%2 payload=%3")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(row)
+                   .arg(formatPayloadHex(data));
         emit rowWriteOk(row);
         processNextInQueue();
     } else if (cmd == MotorProtocol::CmdErrorResponse) {
         m_timeoutTimer->stop();
         const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
-        qDebug().noquote() << QStringLiteral("[RW] Error row=%1 code=0x%2")
-                                  .arg(row)
-                                  .arg(errorCode, 2, 16, QLatin1Char('0')).toUpper();
+        qCWarning(lcRegister).noquote()
+            << QStringLiteral("%1 RX row=%2 errorCode=0x%3 payload=%4")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                   .arg(row)
+                   .arg(errorCode, 2, 16, QLatin1Char('0'))
+                   .arg(formatPayloadHex(data))
+                   .toUpper();
         if (m_isWriteOp) emit rowWriteError(row);
         else emit rowReadError(row);
         processNextInQueue();
@@ -141,7 +192,7 @@ void RegisterService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray
 }
 
 void RegisterService::onSerialError(const QString &message) {
-    Q_UNUSED(message);
+    qCWarning(lcRegister).noquote() << QStringLiteral("Serial error: %1").arg(message);
     m_timeoutTimer->stop();
     if (m_hasPending) {
         const int row = m_currentRequest.globalRow;
@@ -154,6 +205,13 @@ void RegisterService::onSerialError(const QString &message) {
 void RegisterService::onTimeout() {
     if (!m_hasPending) return;
     const int row = m_currentRequest.globalRow;
+    qCWarning(lcRegister).noquote()
+        << QStringLiteral("Timeout waiting for %1 row=%2 addr=0x%3")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(
+                   m_isWriteOp ? MotorProtocol::CmdWriteRegister : MotorProtocol::CmdReadRegister)))
+               .arg(row)
+               .arg(m_currentRequest.addr, 4, 16, QLatin1Char('0'))
+               .toUpper();
     if (m_isWriteOp) emit rowWriteError(row);
     else emit rowReadError(row);
     processNextInQueue();

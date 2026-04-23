@@ -32,6 +32,8 @@ inline constexpr uint8_t CmdStartLinearGen = 0x55;
 inline constexpr uint8_t CmdStartCosineGen = 0x56;
 inline constexpr uint8_t CmdStopGenerator = 0x57;
 
+const char *commandName(uint8_t cmd);
+
 QByteArray encodeReadRegister(quint16 addr);
 QByteArray encodeWriteRegister(quint16 addr, qint16 value);
 QByteArray encodeI2cBusScan(uint8_t busIndex = 0x02);

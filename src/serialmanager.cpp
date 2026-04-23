@@ -1,11 +1,14 @@
 #include "serialmanager.h"
 
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QMetaObject>
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QThread>
 #include <QTimer>
+
+Q_LOGGING_CATEGORY(lcSerialManager, "motordev.serial")
 
 namespace {
 QString makeSerialErrorMessage(const QString &prefix, const QString &detail) {
@@ -17,6 +20,11 @@ QString makeSerialErrorMessage(const QString &prefix, const QString &detail) {
 
 QString formatByte(uint8_t value) {
     return QStringLiteral("0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
+}
+
+QString formatPayloadHex(const QByteArray &data) {
+    return data.isEmpty() ? QStringLiteral("<empty>")
+                          : QString::fromLatin1(data.toHex(' ')).toUpper();
 }
 } // namespace
 
@@ -99,13 +107,13 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
     m_serial->setParity(QSerialPort::NoParity);
     m_serial->setFlowControl(QSerialPort::NoFlowControl);
 
-    qDebug().noquote() << QStringLiteral("Opening port %1 at %2 (8N1)...")
+    qCInfo(lcSerialManager).noquote() << QStringLiteral("Opening port %1 at %2 (8N1)...")
                               .arg(portName)
                               .arg(baudRate);
 
     if (!m_serial->open(QIODevice::ReadWrite)) {
         const QString message = QStringLiteral("Failed to open %1: %2").arg(portName, m_serial->errorString());
-        qWarning().noquote() << message;
+        qCWarning(lcSerialManager).noquote() << message;
         emit errorOccurred(message);
         return;
     }
@@ -113,7 +121,7 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
     m_parser.reset();
     clearPendingCommand();
     m_missedHeartbeats = 0;
-    qDebug().noquote() << QStringLiteral("Port %1 opened successfully").arg(portName);
+    qCInfo(lcSerialManager).noquote() << QStringLiteral("Port %1 opened successfully").arg(portName);
     emit connected();
 }
 
@@ -130,13 +138,13 @@ void SerialManager::startHeartbeat() {
     if (m_heartbeatTimer != nullptr) {
         m_heartbeatTimer->start();
     }
-    qDebug() << "Heartbeat started";
+    qCInfo(lcSerialManager) << "Heartbeat started";
 }
 
 void SerialManager::stopHeartbeat() {
     stopHeartbeatTimer();
     m_missedHeartbeats = 0;
-    qDebug() << "Heartbeat stopped";
+    qCInfo(lcSerialManager) << "Heartbeat stopped";
 }
 
 void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
@@ -156,10 +164,13 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
     m_pendingCmd = cmd;
     m_retryCount = 0;
 
-    qDebug().noquote() << QStringLiteral("TX control frame: seq=%1 cmd=%2 len=%3")
+    qCDebug(lcSerialManager).noquote()
+        << QStringLiteral("TX control frame: seq=%1 cmd=%2(%3) len=%4 payload=%5")
                               .arg(formatByte(seq))
                               .arg(formatByte(cmd))
-                              .arg(data.size());
+                              .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                              .arg(data.size())
+                              .arg(formatPayloadHex(data));
     m_serial->write(m_pendingFrame);
     emit commandSent(cmd, seq);
     if (m_retryTimer != nullptr) {
@@ -190,9 +201,11 @@ void SerialManager::onRetryTimeout() {
     }
 
     if (m_retryCount >= MaxRetries) {
-        qWarning().noquote() << QStringLiteral("Command timeout: seq=%1 cmd=%2 after %3 attempts")
+        qCWarning(lcSerialManager).noquote()
+            << QStringLiteral("Command timeout: seq=%1 cmd=%2(%3) after %4 attempts")
                                     .arg(formatByte(m_pendingSeq))
                                     .arg(formatByte(m_pendingCmd))
+                                    .arg(QString::fromLatin1(MotorProtocol::commandName(m_pendingCmd)))
                                     .arg(MaxRetries + 1);
         clearPendingCommand();
         emit errorOccurred(QStringLiteral("Command timeout"));
@@ -200,10 +213,12 @@ void SerialManager::onRetryTimeout() {
     }
 
     ++m_retryCount;
-    qWarning().noquote() << QStringLiteral("Retry #%1 for seq=%2 cmd=%3")
+    qCWarning(lcSerialManager).noquote()
+        << QStringLiteral("Retry #%1 for seq=%2 cmd=%3(%4)")
                                 .arg(m_retryCount)
                                 .arg(formatByte(m_pendingSeq))
-                                .arg(formatByte(m_pendingCmd));
+                                .arg(formatByte(m_pendingCmd))
+                                .arg(QString::fromLatin1(MotorProtocol::commandName(m_pendingCmd)));
     m_serial->write(m_pendingFrame);
     if (m_retryTimer != nullptr) {
         m_retryTimer->start(RetryTimeoutMs);
@@ -223,9 +238,9 @@ void SerialManager::onHeartbeatTimeout() {
     m_serial->write(heartbeatFrame);
 
     ++m_missedHeartbeats;
-    qDebug().noquote() << QStringLiteral("Heartbeat sent (missed: %1)").arg(m_missedHeartbeats);
+    qCDebug(lcSerialManager).noquote() << QStringLiteral("Heartbeat sent (missed: %1)").arg(m_missedHeartbeats);
     if (m_missedHeartbeats >= MaxMissedHeartbeats) {
-        qWarning().noquote() << QStringLiteral("Heartbeat lost: %1 missed, disconnecting")
+        qCWarning(lcSerialManager).noquote() << QStringLiteral("Heartbeat lost: %1 missed, disconnecting")
                                     .arg(m_missedHeartbeats);
         closePortInternal(true);
     }
@@ -238,7 +253,7 @@ void SerialManager::onSerialErrorOccurred(int error) {
     }
 
     const QString message = makeSerialErrorMessage(QStringLiteral("Serial port error"), m_serial->errorString());
-    qWarning().noquote() << message;
+    qCWarning(lcSerialManager).noquote() << message;
     emit errorOccurred(message);
 
     switch (serialError) {
@@ -274,15 +289,18 @@ void SerialManager::stopHeartbeatTimer() {
 
 void SerialManager::handleControlFrame(const ControlFrame &frame) {
     if (frame.cmd == MotorProtocol::CmdHeartbeat) {
-        qDebug() << "Heartbeat response received";
+        qCDebug(lcSerialManager) << "Heartbeat response received";
         m_missedHeartbeats = 0;
         return;
     }
 
-    qDebug().noquote() << QStringLiteral("RX control frame: seq=%1 cmd=%2 len=%3")
+    qCDebug(lcSerialManager).noquote()
+        << QStringLiteral("RX control frame: seq=%1 cmd=%2(%3) len=%4 payload=%5")
                               .arg(formatByte(frame.seq))
                               .arg(formatByte(frame.cmd))
-                              .arg(frame.data.size());
+                              .arg(QString::fromLatin1(MotorProtocol::commandName(frame.cmd)))
+                              .arg(frame.data.size())
+                              .arg(formatPayloadHex(frame.data));
 
     if (frame.cmd == MotorProtocol::CmdErrorResponse) {
         clearPendingCommand();
@@ -310,7 +328,7 @@ void SerialManager::closePortInternal(bool emitDisconnectedSignal) {
     const bool wasOpen = (m_serial != nullptr && m_serial->isOpen());
     if (wasOpen) {
         m_serial->close();
-        qDebug() << "Port closed";
+        qCInfo(lcSerialManager) << "Port closed";
     }
 
     if (emitDisconnectedSignal && wasOpen) {

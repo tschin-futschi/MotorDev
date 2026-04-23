@@ -16,7 +16,7 @@ public:
     static LogPanel *instance() { return s_instance; }
 
 public slots:
-    void appendMessage(QtMsgType type, const QString &msg);
+    void appendMessage(QtMsgType type, const QString &category, const QString &msg);
 
 private:
     void setupUi();
