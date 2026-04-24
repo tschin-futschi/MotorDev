@@ -58,6 +58,8 @@ private:
     void handleHeartbeat(uint8_t seq);
     void handleI2cScan(uint8_t seq, const QByteArray &data);
     void handleSetIcAddr(uint8_t seq, const QByteArray &data);
+    void handleReset(uint8_t seq);
+    void handleMotorTest(uint8_t seq);
     void handlePmicEnable(uint8_t seq);
     void handlePmicDisable(uint8_t seq);
     void handleSetPmicVoltage(uint8_t seq, const QByteArray &data);

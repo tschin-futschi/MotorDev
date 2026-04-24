@@ -178,6 +178,8 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
         case MotorProtocol::CmdI2cBusScan: handleI2cScan(seq, data); break;
         case MotorProtocol::CmdSetMotorIcAddr: handleSetIcAddr(seq, data); break;
         case MotorProtocol::CmdSetPmicVoltage: handleSetPmicVoltage(seq, data); break;
+        case MotorProtocol::CmdReset: handleReset(seq); break;
+        case MotorProtocol::CmdMotorTest: handleMotorTest(seq); break;
         case MotorProtocol::CmdPmicEnable: handlePmicEnable(seq); break;
         case MotorProtocol::CmdPmicDisable: handlePmicDisable(seq); break;
         case MotorProtocol::CmdReadRegister: handleReadRegister(seq, data); break;
@@ -232,6 +234,14 @@ void SimulatorService::handleSetIcAddr(uint8_t seq, const QByteArray &data) {
         return;
     }
     sendErrorFrame(seq, 0x03);
+}
+void SimulatorService::handleReset(uint8_t seq) {
+    sendResponseFrame(seq, MotorProtocol::CmdReset, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdReset, seq, {}, QStringLiteral("RESET → ACK"));
+}
+void SimulatorService::handleMotorTest(uint8_t seq) {
+    sendResponseFrame(seq, MotorProtocol::CmdMotorTest, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdMotorTest, seq, {}, QStringLiteral("MOTOR_TEST → ACK"));
 }
 void SimulatorService::handlePmicEnable(uint8_t seq) {
     {
