@@ -10,6 +10,7 @@
 class DeviceContext;
 class CommandDispatcher;
 class SerialManager;
+class QTimer;
 
 class ConfigService : public QObject {
     Q_OBJECT
@@ -57,6 +58,7 @@ private:
     SerialManager *m_serialManager = nullptr;
     CommandDispatcher *m_dispatcher = nullptr;
     DeviceContext *m_deviceContext = nullptr;
+    QTimer *m_pmicTimeoutTimer = nullptr;
     bool m_isConnected = false;
     QString m_connectedPort;
     qint32 m_connectedBaud = 0;

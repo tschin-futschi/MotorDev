@@ -5,6 +5,7 @@
 
 #include <QLoggingCategory>
 #include <QPointer>
+#include <QTimer>
 #include <QtMath>
 
 Q_LOGGING_CATEGORY(lcGenerator, "motordev.generator")
@@ -23,6 +24,10 @@ QString formatWord(quint16 value) {
 GeneratorService::GeneratorService(CommandDispatcher *dispatcher, QObject *parent)
     : QObject(parent)
     , m_dispatcher(dispatcher) {
+    m_ackTimeoutTimer = new QTimer(this);
+    m_ackTimeoutTimer->setSingleShot(true);
+    m_ackTimeoutTimer->setInterval(3000);
+    connect(m_ackTimeoutTimer, &QTimer::timeout, this, &GeneratorService::handleTimeout);
 }
 
 GeneratorService::~GeneratorService() = default;
@@ -63,6 +68,8 @@ void GeneratorService::startLinear(quint16 addr, qint16 min, qint16 max, qint16 
                .arg(step)
                .arg(interval)
                .arg(formatPayloadHex(payload));
+    m_pendingOp = PendingOp::StartLinear;
+    m_ackTimeoutTimer->start();
     QPointer<GeneratorService> guard(this);
     m_dispatcher->submitCommand(MotorProtocol::CmdStartLinearGen, payload, CommandDispatcher::High,
         [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
@@ -101,6 +108,8 @@ void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequ
                .arg(freqX100)
                .arg(boundedCount)
                .arg(formatPayloadHex(payload));
+    m_pendingOp = PendingOp::StartCosine;
+    m_ackTimeoutTimer->start();
     QPointer<GeneratorService> guard(this);
     m_dispatcher->submitCommand(MotorProtocol::CmdStartCosineGen, payload, CommandDispatcher::High,
         [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
@@ -120,6 +129,8 @@ void GeneratorService::stop() {
         << QStringLiteral("%1 TX payload=%2")
                .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStopGenerator)))
                .arg(formatPayloadHex(payload));
+    m_pendingOp = PendingOp::Stop;
+    m_ackTimeoutTimer->start();
     QPointer<GeneratorService> guard(this);
     m_dispatcher->submitCommand(MotorProtocol::CmdStopGenerator, payload, CommandDispatcher::High,
         [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
@@ -131,6 +142,8 @@ void GeneratorService::stop() {
 
 void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray &data) {
     if (cmd == MotorProtocol::CmdStartLinearGen && data.isEmpty()) {
+        m_ackTimeoutTimer->stop();
+        m_pendingOp = PendingOp::None;
         m_mode = Mode::Linear;
         m_cosineChannelCount = 0;
         qCInfo(lcGenerator).noquote()
@@ -141,6 +154,8 @@ void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray
     }
 
     if (cmd == MotorProtocol::CmdStartCosineGen && data.isEmpty()) {
+        m_ackTimeoutTimer->stop();
+        m_pendingOp = PendingOp::None;
         m_mode = Mode::Cosine;
         qCInfo(lcGenerator).noquote()
             << QStringLiteral("%1 RX ACK mode=Cosine channels=%2")
@@ -151,6 +166,8 @@ void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray
     }
 
     if (cmd == MotorProtocol::CmdStopGenerator && data.isEmpty()) {
+        m_ackTimeoutTimer->stop();
+        m_pendingOp = PendingOp::None;
         m_mode = Mode::None;
         m_cosineChannelCount = 0;
         qCInfo(lcGenerator).noquote()
@@ -161,11 +178,44 @@ void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray
     }
 
     if (cmd == MotorProtocol::CmdErrorResponse) {
+        m_ackTimeoutTimer->stop();
         qCWarning(lcGenerator).noquote()
             << QStringLiteral("%1 RX errorCode=0x%2 payload=%3")
                    .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
                    .arg(MotorProtocol::decodeErrorCode(data), 2, 16, QLatin1Char('0'))
                    .arg(formatPayloadHex(data))
                    .toUpper();
+        switch (m_pendingOp) {
+        case PendingOp::StartLinear:
+        case PendingOp::StartCosine:
+            m_pendingOp = PendingOp::None;
+            emit runningChanged(false);
+            break;
+        case PendingOp::Stop:
+            m_pendingOp = PendingOp::None;
+            emit runningChanged(isRunning());
+            break;
+        case PendingOp::None:
+            break;
+        }
+    }
+}
+
+void GeneratorService::handleTimeout() {
+    qCWarning(lcGenerator) << "Generator ACK timeout, pendingOp=" << static_cast<int>(m_pendingOp);
+    switch (m_pendingOp) {
+    case PendingOp::StartLinear:
+    case PendingOp::StartCosine:
+        m_pendingOp = PendingOp::None;
+        emit runningChanged(false);
+        break;
+    case PendingOp::Stop:
+        m_mode = Mode::None;
+        m_cosineChannelCount = 0;
+        m_pendingOp = PendingOp::None;
+        emit runningChanged(false);
+        break;
+    case PendingOp::None:
+        break;
     }
 }

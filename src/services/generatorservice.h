@@ -6,6 +6,7 @@
 #include <QObject>
 
 class CommandDispatcher;
+class QTimer;
 
 class GeneratorService : public QObject {
     Q_OBJECT
@@ -29,10 +30,14 @@ signals:
 
 private:
     void onResponse(uint8_t cmd, uint8_t seq, const QByteArray &data);
+    void handleTimeout();
 
     CommandDispatcher *m_dispatcher = nullptr;
+    QTimer *m_ackTimeoutTimer = nullptr;
 
     enum class Mode { None, Linear, Cosine };
+    enum class PendingOp { None, StartLinear, StartCosine, Stop };
     Mode m_mode = Mode::None;
+    PendingOp m_pendingOp = PendingOp::None;
     int m_cosineChannelCount = 0;
 };

@@ -29,11 +29,16 @@ signals:
 
 private:
     void onTick();
+    void stopInternal(const char *reason);
 
     RegisterService *m_regService = nullptr;
     QTimer *m_timer = nullptr;
     RowDataProvider m_rowDataProvider;
     int m_rowCount = 8;
     int m_currentIndex = 0;
+    int m_lastWrittenRow = -1;
+    int m_consecutiveErrors = 0;
+    bool m_waitingResponse = false;
     bool m_running = false;
+    static constexpr int MaxConsecutiveErrors = 5;
 };

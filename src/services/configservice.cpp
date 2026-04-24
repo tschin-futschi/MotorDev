@@ -9,6 +9,7 @@
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <QPointer>
+#include <QTimer>
 #include <QtMath>
 
 Q_LOGGING_CATEGORY(lcConfig, "motordev.config")
@@ -28,6 +29,18 @@ ConfigService::ConfigService(SerialManager *serialManager,
     , m_serialManager(serialManager)
     , m_dispatcher(dispatcher)
     , m_deviceContext(deviceContext) {
+    m_pmicTimeoutTimer = new QTimer(this);
+    m_pmicTimeoutTimer->setSingleShot(true);
+    m_pmicTimeoutTimer->setInterval(5000);
+    connect(m_pmicTimeoutTimer, &QTimer::timeout, this, [this]() {
+        if (m_pmicState == PmicState::Idle) {
+            return;
+        }
+        qCWarning(lcConfig) << "PMIC configuration timeout, resetting state";
+        m_pmicState = PmicState::Idle;
+        emit pmicConfigFailed(QStringLiteral("Timeout"));
+    });
+
     if (m_serialManager != nullptr) {
         connect(m_serialManager, &SerialManager::connected, this, &ConfigService::onSerialConnected);
         connect(m_serialManager, &SerialManager::disconnected, this, &ConfigService::onSerialDisconnected);
@@ -177,6 +190,9 @@ void ConfigService::setMotorIcAddress(uint8_t addr) {
 
 void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV) {
     if (m_dispatcher == nullptr || !m_isConnected) {
+        if (m_pmicTimeoutTimer != nullptr) {
+            m_pmicTimeoutTimer->stop();
+        }
         emit pmicConfigFailed(QStringLiteral("Serial not connected"));
         return;
     }
@@ -195,6 +211,9 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
     if (drvvdd < kMinPmicVoltage || drvvdd > kMaxPmicVoltage ||
         iovdd < kMinPmicVoltage || iovdd > kMaxPmicVoltage ||
         vcmvdd < kMinPmicVoltage || vcmvdd > kMaxPmicVoltage) {
+        if (m_pmicTimeoutTimer != nullptr) {
+            m_pmicTimeoutTimer->stop();
+        }
         emit pmicConfigFailed(QStringLiteral("Voltage out of range"));
         return;
     }
@@ -209,6 +228,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
                .arg(formatPayloadHex(payload));
 
     m_pmicState = PmicState::WaitingVoltageAck;
+    m_pmicTimeoutTimer->start();
     QPointer<ConfigService> guard(this);
     m_dispatcher->submitCommand(MotorProtocol::CmdSetPmicVoltage, payload, CommandDispatcher::Normal,
         [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
@@ -227,6 +247,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
                            .arg(errorName)
                            .arg(formatPayloadHex(data))
                            .toUpper();
+                guard->m_pmicTimeoutTimer->stop();
                 guard->m_pmicState = PmicState::Idle;
                 emit guard->protocolError(errorCode);
                 emit guard->pmicConfigFailed(errorName);
@@ -266,6 +287,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
                                    .arg(errorName)
                                    .arg(formatPayloadHex(enableData))
                                    .toUpper();
+                        guard->m_pmicTimeoutTimer->stop();
                         guard->m_pmicState = PmicState::Idle;
                         emit guard->protocolError(errorCode);
                         emit guard->pmicConfigFailed(errorName);
@@ -277,6 +299,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
                     }
 
                     guard->m_pmicState = PmicState::Idle;
+                    guard->m_pmicTimeoutTimer->stop();
                     qCInfo(lcConfig).noquote()
                         << QStringLiteral("%1 RX ACK payload=%2")
                                .arg(QString::fromLatin1(MotorProtocol::commandName(enableCmd)))
@@ -295,6 +318,9 @@ void ConfigService::onSerialConnected() {
 void ConfigService::onSerialDisconnected() {
     qCInfo(lcConfig) << "Serial disconnected";
     m_isConnected = false;
+    if (m_pmicTimeoutTimer != nullptr) {
+        m_pmicTimeoutTimer->stop();
+    }
     m_pmicState = PmicState::Idle;
     emit serialDisconnected();
 }
