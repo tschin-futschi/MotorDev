@@ -17,11 +17,14 @@
 #include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLoggingCategory>
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 
 using namespace MotorDev;
+
+Q_LOGGING_CATEGORY(lcMainWindow, "motordev.main")
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
@@ -148,7 +151,8 @@ void MainWindow::connectSignals() {
             [](uint8_t cmd, uint8_t seq, const QByteArray &data) {
                 Q_UNUSED(seq);
                 if (cmd == MotorProtocol::CmdDebugInfo) {
-                    qInfo().noquote() << QStringLiteral("Device debug: %1").arg(QString::fromUtf8(data));
+                    qCWarning(lcMainWindow).noquote()
+                        << QStringLiteral("Device: %1").arg(QString::fromUtf8(data));
                 }
             });
     connect(m_topBar, &TopBar::viewModeChanged, m_scopeTab, &OscilloscopTab::onViewModeChangeRequested);

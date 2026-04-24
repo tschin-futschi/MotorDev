@@ -316,6 +316,10 @@ void SerialManager::handleControlFrame(const ControlFrame &frame) {
     if (frame.seq == m_pendingSeq) {
         clearPendingCommand();
         emit frameReceived(frame.cmd, frame.seq, frame.data);
+    } else {
+        // Device-initiated frames (for example 0x06 debug info) may not match
+        // the active pending seq. Do not drop them; let upper layers classify them.
+        emit frameReceived(frame.cmd, frame.seq, frame.data);
     }
 }
 
