@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 
 #include "devicecontext.h"
+#include "protocol/motor_protocol.h"
 #include "serialmanager.h"
+#include "services/commanddispatcher.h"
 #include "tabs/configtab.h"
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
@@ -12,6 +14,7 @@
 #include "widgets/logpanel.h"
 #include "widgets/topbar.h"
 
+#include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -27,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     setMinimumSize(Style::Size::MinWindowWidth, Style::Size::MinWindowHeight);
 
     m_serialManager = new SerialManager(this);
+    m_dispatcher = new CommandDispatcher(m_serialManager, this);
     m_deviceContext = new DeviceContext(this);
 
     setupUi();
@@ -108,15 +112,15 @@ void MainWindow::setupUi() {
     m_logToggleButton->setFlat(true);
     statusBarLayout->addWidget(m_logToggleButton);
 
-    m_configTab = new ConfigTab(m_serialManager, m_deviceContext, m_contentStack);
+    m_configTab = new ConfigTab(m_serialManager, m_dispatcher, m_deviceContext, m_contentStack);
     m_contentStack->addWidget(m_configTab);
 
-    m_registerTab = new RegisterRwTab(m_serialManager, m_contentStack);
+    m_registerTab = new RegisterRwTab(m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_registerTab);
 
     m_contentStack->addWidget(new FwFlashTab(m_contentStack));
 
-    m_scopeTab = new OscilloscopTab(m_serialManager, m_contentStack);
+    m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_scopeTab);
 
     m_debugTab = new SerialDebugTab(this);
@@ -140,6 +144,13 @@ void MainWindow::connectSignals() {
 
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
+    connect(m_dispatcher, &CommandDispatcher::unsolicitedFrameReceived, this,
+            [](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+                Q_UNUSED(seq);
+                if (cmd == MotorProtocol::CmdDebugInfo) {
+                    qInfo().noquote() << QStringLiteral("Device debug: %1").arg(QString::fromUtf8(data));
+                }
+            });
     connect(m_topBar, &TopBar::viewModeChanged, m_scopeTab, &OscilloscopTab::onViewModeChangeRequested);
     connect(m_topBar, &TopBar::styleToggleRequested, m_scopeTab, &OscilloscopTab::onStyleToggleRequested);
     connect(m_scopeTab, &OscilloscopTab::viewModeChanged, m_topBar, &TopBar::setViewMode);

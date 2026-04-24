@@ -3,11 +3,12 @@
 
 #include "devicecontext.h"
 #include "protocol/motor_protocol.h"
+#include "services/commanddispatcher.h"
 #include "serialmanager.h"
 
-#include <QDebug>
 #include <QLoggingCategory>
 #include <QMetaObject>
+#include <QPointer>
 #include <QtMath>
 
 Q_LOGGING_CATEGORY(lcConfig, "motordev.config")
@@ -19,21 +20,26 @@ QString formatPayloadHex(const QByteArray &data) {
 }
 }
 
-ConfigService::ConfigService(SerialManager *serialManager, DeviceContext *deviceContext, QObject *parent)
+ConfigService::ConfigService(SerialManager *serialManager,
+                             CommandDispatcher *dispatcher,
+                             DeviceContext *deviceContext,
+                             QObject *parent)
     : QObject(parent)
     , m_serialManager(serialManager)
+    , m_dispatcher(dispatcher)
     , m_deviceContext(deviceContext) {
     if (m_serialManager != nullptr) {
         connect(m_serialManager, &SerialManager::connected, this, &ConfigService::onSerialConnected);
         connect(m_serialManager, &SerialManager::disconnected, this, &ConfigService::onSerialDisconnected);
         connect(m_serialManager, &SerialManager::errorOccurred, this, [this](const QString &message) {
-            if (m_pmicState != PmicState::Idle) {
-                m_pmicState = PmicState::Idle;
-                emit pmicConfigFailed(message);
+            const bool serialLevelError =
+                message == QStringLiteral("Serial port is not open")
+                || message.startsWith(QStringLiteral("Failed to open"))
+                || message.startsWith(QStringLiteral("Serial port error"));
+            if (serialLevelError || !m_isConnected) {
+                emit serialError(message);
             }
-            emit serialError(message);
         });
-        connect(m_serialManager, &SerialManager::frameReceived, this, &ConfigService::onFrameReceived);
     }
 }
 
@@ -44,7 +50,9 @@ QStringList ConfigService::availablePorts() const {
 }
 
 void ConfigService::connectToPort(const QString &portName, qint32 baudRate) {
-    if (m_serialManager == nullptr) return;
+    if (m_serialManager == nullptr) {
+        return;
+    }
     if (m_isConnected) {
         qCWarning(lcConfig) << "Already connected, disconnect first";
         return;
@@ -57,31 +65,75 @@ void ConfigService::connectToPort(const QString &portName, qint32 baudRate) {
 }
 
 void ConfigService::disconnectPort() {
-    if (m_serialManager == nullptr) return;
+    if (m_serialManager == nullptr) {
+        return;
+    }
     qCInfo(lcConfig) << "Disconnect request";
     QMetaObject::invokeMethod(m_serialManager, "closePort", Qt::QueuedConnection);
 }
 
 void ConfigService::startI2cScan() {
-    if (m_serialManager == nullptr || !m_isConnected) {
+    if (m_dispatcher == nullptr || !m_isConnected) {
         qCWarning(lcConfig) << "I2cBusScan blocked: serial not connected";
         return;
     }
+
     const QByteArray payload = MotorProtocol::encodeI2cBusScan();
     qCInfo(lcConfig).noquote()
         << QStringLiteral("%1 TX bus=I2C2 payload=%2")
                .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdI2cBusScan)))
                .arg(formatPayloadHex(payload));
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-        Q_ARG(uint8_t, MotorProtocol::CmdI2cBusScan),
-        Q_ARG(QByteArray, payload));
+
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdI2cBusScan, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            if (guard == nullptr) {
+                return;
+            }
+
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
+                qCWarning(lcConfig).noquote()
+                    << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
+                           .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                           .arg(errorCode, 2, 16, QLatin1Char('0'))
+                           .arg(ConfigService::errorNameForCode(errorCode))
+                           .arg(formatPayloadHex(data))
+                           .toUpper();
+                emit guard->protocolError(errorCode);
+                return;
+            }
+
+            if (cmd != MotorProtocol::CmdI2cBusScan) {
+                return;
+            }
+            if (data.isEmpty()) {
+                qCWarning(lcConfig) << "I2cBusScan response empty";
+                return;
+            }
+
+            const QList<uint8_t> addresses = MotorProtocol::decodeI2cScanResponse(data);
+            QStringList addressTexts;
+            for (uint8_t addr : addresses) {
+                addressTexts.append(QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper());
+            }
+            qCInfo(lcConfig).noquote()
+                << QStringLiteral("%1 RX count=%2 devices=%3 payload=%4")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                       .arg(addresses.size())
+                       .arg(addressTexts.isEmpty() ? QStringLiteral("<none>") : addressTexts.join(QStringLiteral(", ")))
+                       .arg(formatPayloadHex(data));
+            emit guard->i2cScanResult(addresses);
+        });
 }
 
 void ConfigService::setMotorIcAddress(uint8_t addr) {
-    if (m_serialManager == nullptr || !m_isConnected) {
+    if (m_dispatcher == nullptr || !m_isConnected) {
         qCWarning(lcConfig) << "SetMotorIcAddr blocked: serial not connected";
         return;
     }
+
     const QByteArray payload = MotorProtocol::encodeSetMotorIcAddr(addr);
     qCInfo(lcConfig).noquote()
         << QStringLiteral("%1 TX addr=0x%2 payload=%3")
@@ -89,15 +141,43 @@ void ConfigService::setMotorIcAddress(uint8_t addr) {
                .arg(addr, 2, 16, QLatin1Char('0'))
                .arg(formatPayloadHex(payload))
                .toUpper();
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-        Q_ARG(uint8_t, MotorProtocol::CmdSetMotorIcAddr),
-        Q_ARG(QByteArray, payload));
+
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdSetMotorIcAddr, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            if (guard == nullptr) {
+                return;
+            }
+
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
+                qCWarning(lcConfig).noquote()
+                    << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
+                           .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                           .arg(errorCode, 2, 16, QLatin1Char('0'))
+                           .arg(ConfigService::errorNameForCode(errorCode))
+                           .arg(formatPayloadHex(data))
+                           .toUpper();
+                emit guard->protocolError(errorCode);
+                return;
+            }
+
+            if (cmd != MotorProtocol::CmdSetMotorIcAddr) {
+                return;
+            }
+
+            qCInfo(lcConfig).noquote()
+                << QStringLiteral("%1 RX ACK payload=%2")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                       .arg(formatPayloadHex(data));
+            emit guard->setAddrSuccess();
+        });
 }
 
 void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV) {
-    if (m_serialManager == nullptr || !m_isConnected) {
-        const QString reason = QStringLiteral("Serial not connected");
-        emit pmicConfigFailed(reason);
+    if (m_dispatcher == nullptr || !m_isConnected) {
+        emit pmicConfigFailed(QStringLiteral("Serial not connected"));
         return;
     }
 
@@ -115,8 +195,7 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
     if (drvvdd < kMinPmicVoltage || drvvdd > kMaxPmicVoltage ||
         iovdd < kMinPmicVoltage || iovdd > kMaxPmicVoltage ||
         vcmvdd < kMinPmicVoltage || vcmvdd > kMaxPmicVoltage) {
-        const QString reason = QStringLiteral("Voltage out of range");
-        emit pmicConfigFailed(reason);
+        emit pmicConfigFailed(QStringLiteral("Voltage out of range"));
         return;
     }
 
@@ -128,10 +207,83 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
                .arg(iovddV, 0, 'f', 2)
                .arg(vcmvddV, 0, 'f', 2)
                .arg(formatPayloadHex(payload));
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-        Q_ARG(uint8_t, MotorProtocol::CmdSetPmicVoltage),
-        Q_ARG(QByteArray, payload));
+
     m_pmicState = PmicState::WaitingVoltageAck;
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdSetPmicVoltage, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            if (guard == nullptr || guard->m_pmicState != PmicState::WaitingVoltageAck) {
+                return;
+            }
+
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
+                const QString errorName = ConfigService::errorNameForCode(errorCode);
+                qCWarning(lcConfig).noquote()
+                    << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
+                           .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                           .arg(errorCode, 2, 16, QLatin1Char('0'))
+                           .arg(errorName)
+                           .arg(formatPayloadHex(data))
+                           .toUpper();
+                guard->m_pmicState = PmicState::Idle;
+                emit guard->protocolError(errorCode);
+                emit guard->pmicConfigFailed(errorName);
+                return;
+            }
+
+            if (cmd != MotorProtocol::CmdSetPmicVoltage) {
+                return;
+            }
+
+            qCInfo(lcConfig).noquote()
+                << QStringLiteral("%1 RX ACK payload=%2")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
+                       .arg(formatPayloadHex(data));
+
+            const QByteArray enablePayload = MotorProtocol::encodePmicEnable();
+            qCInfo(lcConfig).noquote()
+                << QStringLiteral("%1 TX payload=%2")
+                       .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdPmicEnable)))
+                       .arg(formatPayloadHex(enablePayload));
+
+            guard->m_pmicState = PmicState::WaitingEnableAck;
+            guard->m_dispatcher->submitCommand(MotorProtocol::CmdPmicEnable, enablePayload, CommandDispatcher::Normal,
+                [guard](uint8_t enableCmd, uint8_t enableSeq, const QByteArray &enableData) {
+                    Q_UNUSED(enableSeq);
+                    if (guard == nullptr || guard->m_pmicState != PmicState::WaitingEnableAck) {
+                        return;
+                    }
+
+                    if (enableCmd == MotorProtocol::CmdErrorResponse) {
+                        const uint8_t errorCode = MotorProtocol::decodeErrorCode(enableData);
+                        const QString errorName = ConfigService::errorNameForCode(errorCode);
+                        qCWarning(lcConfig).noquote()
+                            << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
+                                   .arg(QString::fromLatin1(MotorProtocol::commandName(enableCmd)))
+                                   .arg(errorCode, 2, 16, QLatin1Char('0'))
+                                   .arg(errorName)
+                                   .arg(formatPayloadHex(enableData))
+                                   .toUpper();
+                        guard->m_pmicState = PmicState::Idle;
+                        emit guard->protocolError(errorCode);
+                        emit guard->pmicConfigFailed(errorName);
+                        return;
+                    }
+
+                    if (enableCmd != MotorProtocol::CmdPmicEnable) {
+                        return;
+                    }
+
+                    guard->m_pmicState = PmicState::Idle;
+                    qCInfo(lcConfig).noquote()
+                        << QStringLiteral("%1 RX ACK payload=%2")
+                               .arg(QString::fromLatin1(MotorProtocol::commandName(enableCmd)))
+                               .arg(formatPayloadHex(enableData));
+                    emit guard->pmicConfigSuccess();
+                });
+        });
 }
 
 void ConfigService::onSerialConnected() {
@@ -147,91 +299,17 @@ void ConfigService::onSerialDisconnected() {
     emit serialDisconnected();
 }
 
-void ConfigService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data) {
-    Q_UNUSED(seq);
-    switch (cmd) {
-    case MotorProtocol::CmdI2cBusScan: {
-        if (data.isEmpty()) {
-            qCWarning(lcConfig) << "I2cBusScan response empty";
-            return;
-        }
-        const QList<uint8_t> addresses = MotorProtocol::decodeI2cScanResponse(data);
-        QStringList addressTexts;
-        for (uint8_t addr : addresses) {
-            addressTexts.append(QStringLiteral("0x%1").arg(addr, 2, 16, QLatin1Char('0')).toUpper());
-        }
-        qCInfo(lcConfig).noquote()
-            << QStringLiteral("%1 RX count=%2 devices=%3 payload=%4")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
-                   .arg(addresses.size())
-                   .arg(addressTexts.isEmpty() ? QStringLiteral("<none>") : addressTexts.join(QStringLiteral(", ")))
-                   .arg(formatPayloadHex(data));
-        emit i2cScanResult(addresses);
-        break;
-    }
-    case MotorProtocol::CmdSetMotorIcAddr: {
-        qCInfo(lcConfig).noquote()
-            << QStringLiteral("%1 RX ACK payload=%2")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
-                   .arg(formatPayloadHex(data));
-        emit setAddrSuccess();
-        break;
-    }
-    case MotorProtocol::CmdSetPmicVoltage: {
-        if (m_pmicState != PmicState::WaitingVoltageAck) {
-            break;
-        }
-        qCInfo(lcConfig).noquote()
-            << QStringLiteral("%1 RX ACK payload=%2")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
-                   .arg(formatPayloadHex(data));
-        const QByteArray payload = MotorProtocol::encodePmicEnable();
-        qCInfo(lcConfig).noquote()
-            << QStringLiteral("%1 TX payload=%2")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdPmicEnable)))
-                   .arg(formatPayloadHex(payload));
-        QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-            Q_ARG(uint8_t, MotorProtocol::CmdPmicEnable),
-            Q_ARG(QByteArray, payload));
-        m_pmicState = PmicState::WaitingEnableAck;
-        break;
-    }
-    case MotorProtocol::CmdPmicEnable: {
-        if (m_pmicState != PmicState::WaitingEnableAck) {
-            break;
-        }
-        m_pmicState = PmicState::Idle;
-        qCInfo(lcConfig).noquote()
-            << QStringLiteral("%1 RX ACK payload=%2")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
-                   .arg(formatPayloadHex(data));
-        emit pmicConfigSuccess();
-        break;
-    }
-    case MotorProtocol::CmdErrorResponse: {
-        const uint8_t errorCode = MotorProtocol::decodeErrorCode(data);
-        QString errorName;
-        switch (errorCode) {
-        case 0x01: errorName = QStringLiteral("CRC check failed"); break;
-        case 0x02: errorName = QStringLiteral("Unknown command"); break;
-        case 0x03: errorName = QStringLiteral("Execution failed"); break;
-        default: errorName = QStringLiteral("Unknown error"); break;
-        }
-        qCWarning(lcConfig).noquote()
-            << QStringLiteral("%1 RX errorCode=0x%2 (%3) payload=%4")
-                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
-                   .arg(errorCode, 2, 16, QLatin1Char('0'))
-                   .arg(errorName)
-                   .arg(formatPayloadHex(data))
-                   .toUpper();
-        if (m_pmicState != PmicState::Idle) {
-            m_pmicState = PmicState::Idle;
-            emit pmicConfigFailed(errorName);
-        }
-        emit protocolError(errorCode);
-        break;
-    }
+QString ConfigService::errorNameForCode(uint8_t errorCode) {
+    switch (errorCode) {
+    case 0x01:
+        return QStringLiteral("CRC check failed");
+    case 0x02:
+        return QStringLiteral("Unknown command");
+    case 0x03:
+        return QStringLiteral("Execution failed");
+    case CommandDispatcher::LocalErrorCode:
+        return QStringLiteral("Dispatcher transport error");
     default:
-        break;
+        return QStringLiteral("Unknown error");
     }
 }

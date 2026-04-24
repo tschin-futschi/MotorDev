@@ -8,6 +8,7 @@
 #include <QWidget>
 
 class CyclicWriteService;
+class CommandDispatcher;
 class GeneratorService;
 class ScopeBottomPanel;
 class ScopeChannelModel;
@@ -24,7 +25,9 @@ class OscilloscopTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit OscilloscopTab(SerialManager *serialManager, QWidget *parent = nullptr);
+    explicit OscilloscopTab(SerialManager *serialManager,
+                            CommandDispatcher *dispatcher,
+                            QWidget *parent = nullptr);
     ~OscilloscopTab() override;
 
 signals:
@@ -59,6 +62,7 @@ private:
     static int viewModeToInt(ScopeViewMode mode);
 
     SerialManager *m_serialManager = nullptr;
+    CommandDispatcher *m_dispatcher = nullptr;
     ScopeChannelModel *m_channelModel = nullptr;
     ScopeService *m_service = nullptr;
     RegisterService *m_regService = nullptr;

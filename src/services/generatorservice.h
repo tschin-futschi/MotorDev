@@ -5,13 +5,13 @@
 #include <QByteArray>
 #include <QObject>
 
-class SerialManager;
+class CommandDispatcher;
 
 class GeneratorService : public QObject {
     Q_OBJECT
 
 public:
-    explicit GeneratorService(SerialManager *serialManager, QObject *parent = nullptr);
+    explicit GeneratorService(CommandDispatcher *dispatcher, QObject *parent = nullptr);
     ~GeneratorService() override;
 
     bool isRunning() const;
@@ -27,11 +27,10 @@ public slots:
 signals:
     void runningChanged(bool running);
 
-private slots:
-    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
-
 private:
-    SerialManager *m_serialManager = nullptr;
+    void onResponse(uint8_t cmd, uint8_t seq, const QByteArray &data);
+
+    CommandDispatcher *m_dispatcher = nullptr;
 
     enum class Mode { None, Linear, Cosine };
     Mode m_mode = Mode::None;

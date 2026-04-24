@@ -1,5 +1,6 @@
 #include "services/cyclicwriteservice.h"
 
+#include "services/commanddispatcher.h"
 #include "services/registerservice.h"
 
 #include <QTimer>
@@ -68,7 +69,7 @@ void CyclicWriteService::onTick() {
             continue;
         }
 
-        m_regService->writeSingleRow(row, addr, static_cast<qint16>(value));
+        m_regService->writeSingleRow(row, addr, static_cast<qint16>(value), CommandDispatcher::Low);
         m_currentIndex = (row + 1) % m_rowCount;
         return;
     }

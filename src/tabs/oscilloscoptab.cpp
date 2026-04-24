@@ -3,6 +3,7 @@
 #include "models/scopechannelmodel.h"
 #include "protocol/register_utils.h"
 #include "protocol/sampling_config.h"
+#include "services/commanddispatcher.h"
 #include "services/cyclicwriteservice.h"
 #include "services/generatorservice.h"
 #include "services/registerservice.h"
@@ -21,13 +22,16 @@
 
 using namespace MotorDev;
 
-OscilloscopTab::OscilloscopTab(SerialManager *serialManager, QWidget *parent)
+OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
+                               CommandDispatcher *dispatcher,
+                               QWidget *parent)
     : QWidget(parent)
-    , m_serialManager(serialManager) {
+    , m_serialManager(serialManager)
+    , m_dispatcher(dispatcher) {
     m_channelModel = new ScopeChannelModel(this);
-    m_service = new ScopeService(serialManager, m_channelModel, this);
-    m_regService = new RegisterService(m_serialManager, this);
-    m_generatorService = new GeneratorService(m_serialManager, this);
+    m_service = new ScopeService(serialManager, dispatcher, m_channelModel, this);
+    m_regService = new RegisterService(dispatcher, this);
+    m_generatorService = new GeneratorService(dispatcher, this);
     m_cyclicWriteService = new CyclicWriteService(m_regService, this);
     m_cyclicWriteService->setRowCount(ScopeRegisterPanel::rowCount());
     setupUi();

@@ -1,6 +1,7 @@
 #include "tabs/configtab.h"
 
 #include "devicecontext.h"
+#include "services/commanddispatcher.h"
 #include "services/configservice.h"
 #include "ui/repolish.h"
 #include "ui/style_constants.h"
@@ -59,11 +60,14 @@ void applyPanelShadow(QWidget *widget) {
 }
 }
 
-ConfigTab::ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent)
+ConfigTab::ConfigTab(SerialManager *serialManager,
+                     CommandDispatcher *dispatcher,
+                     DeviceContext *deviceContext,
+                     QWidget *parent)
     : QWidget(parent)
     , m_deviceContext(deviceContext) {
     qRegisterMetaType<uint8_t>("uint8_t");
-    m_service = new ConfigService(serialManager, deviceContext, this);
+    m_service = new ConfigService(serialManager, dispatcher, deviceContext, this);
     setupUi();
     for (auto *group : {m_icGroup, m_serialGroup, m_pmicGroup}) {
         group->setAttribute(Qt::WA_Hover, true);

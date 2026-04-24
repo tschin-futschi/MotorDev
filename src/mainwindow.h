@@ -3,6 +3,7 @@
 #include <QMainWindow>
 
 class ActivityBar;
+class CommandDispatcher;
 class ConfigTab;
 class DeviceContext;
 class LogPanel;
@@ -27,6 +28,7 @@ private:
     void connectSignals();
 
     SerialManager *m_serialManager = nullptr;
+    CommandDispatcher *m_dispatcher = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     TopBar *m_topBar = nullptr;
     ActivityBar *m_activityBar = nullptr;

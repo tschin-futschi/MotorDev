@@ -30,6 +30,8 @@ qt_add_executable(MotorDev
     src/protocol/sampling_config.h
     src/services/configservice.cpp
     src/services/configservice.h
+    src/services/commanddispatcher.cpp
+    src/services/commanddispatcher.h
     src/services/cyclicwriteservice.cpp
     src/services/cyclicwriteservice.h
     src/services/generatorservice.cpp

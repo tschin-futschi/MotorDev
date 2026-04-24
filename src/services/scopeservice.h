@@ -9,6 +9,7 @@
 
 class QTimer;
 class ScopeChannelModel;
+class CommandDispatcher;
 class SerialManager;
 
 struct ScopeStreamPacket {
@@ -44,7 +45,10 @@ class ScopeService : public QObject {
     Q_OBJECT
 
 public:
-    explicit ScopeService(SerialManager *serialManager, ScopeChannelModel *channelModel, QObject *parent = nullptr);
+    explicit ScopeService(SerialManager *serialManager,
+                          CommandDispatcher *dispatcher,
+                          ScopeChannelModel *channelModel,
+                          QObject *parent = nullptr);
     ~ScopeService() override;
 
     bool isRunning() const { return m_running; }
@@ -67,14 +71,10 @@ signals:
     void startError(const QString &message);
 
 private slots:
-    void handleCommandSent(uint8_t cmd, uint8_t seq);
-    void handleFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
-    void handleErrorOccurred(const QString &message);
+    void handleResponse(uint8_t cmd, uint8_t seq, const QByteArray &data);
     void handleStreamBatchReceived(const ScopeStreamBatch &batch);
 
 private:
-    static constexpr uint8_t InvalidSeq = 0xFF;
-
     enum class PendingCommand {
         None,
         SetSampleInterval,
@@ -95,6 +95,7 @@ private:
     bool sendCommand(uint8_t cmd, const QByteArray &data);
 
     SerialManager *m_serialManager = nullptr;
+    CommandDispatcher *m_dispatcher = nullptr;
     ScopeChannelModel *m_channelModel = nullptr;
     ScopeStreamBatcher *m_streamBatcher = nullptr;
 
@@ -102,7 +103,6 @@ private:
     int m_displayWindowMs = 50;
     uint8_t m_lastStreamMask = 0x00;
     PendingCommand m_pendingCommand = PendingCommand::None;
-    uint8_t m_pendingSeq = InvalidSeq;
     bool m_startPending = false;
     bool m_stopPending = false;
     bool m_hasReceivedStream = false;

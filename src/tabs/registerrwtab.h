@@ -6,15 +6,15 @@ class QLabel;
 class QPushButton;
 class QLineEdit;
 class QSplitter;
+class CommandDispatcher;
 class RegisterService;
 class RegisterTable;
-class SerialManager;
 
 class RegisterRwTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit RegisterRwTab(SerialManager *serialManager, QWidget *parent = nullptr);
+    explicit RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent = nullptr);
     ~RegisterRwTab() override;
 
 public slots:
@@ -26,7 +26,6 @@ private:
     QString configFilePath() const;
 
     RegisterService *m_service = nullptr;
-    SerialManager *m_serialManager = nullptr;
     QWidget *m_sidebarContent = nullptr;
     QWidget *m_mainContent = nullptr;
     QSplitter *m_mainSplitter = nullptr;

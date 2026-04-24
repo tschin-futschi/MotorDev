@@ -1,10 +1,10 @@
 #include "services/generatorservice.h"
 
 #include "protocol/motor_protocol.h"
-#include "serialmanager.h"
+#include "services/commanddispatcher.h"
 
 #include <QLoggingCategory>
-#include <QMetaObject>
+#include <QPointer>
 #include <QtMath>
 
 Q_LOGGING_CATEGORY(lcGenerator, "motordev.generator")
@@ -20,12 +20,9 @@ QString formatWord(quint16 value) {
 }
 } // namespace
 
-GeneratorService::GeneratorService(SerialManager *serialManager, QObject *parent)
+GeneratorService::GeneratorService(CommandDispatcher *dispatcher, QObject *parent)
     : QObject(parent)
-    , m_serialManager(serialManager) {
-    if (m_serialManager != nullptr) {
-        connect(m_serialManager, &SerialManager::frameReceived, this, &GeneratorService::onFrameReceived);
-    }
+    , m_dispatcher(dispatcher) {
 }
 
 GeneratorService::~GeneratorService() = default;
@@ -51,7 +48,7 @@ int GeneratorService::cosineChannelCount() const {
 }
 
 void GeneratorService::startLinear(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs) {
-    if (m_serialManager == nullptr) {
+    if (m_dispatcher == nullptr) {
         return;
     }
 
@@ -66,13 +63,18 @@ void GeneratorService::startLinear(quint16 addr, qint16 min, qint16 max, qint16 
                .arg(step)
                .arg(interval)
                .arg(formatPayloadHex(payload));
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-                              Q_ARG(uint8_t, MotorProtocol::CmdStartLinearGen), Q_ARG(QByteArray, payload));
+    QPointer<GeneratorService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdStartLinearGen, payload, CommandDispatcher::High,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            if (guard != nullptr) {
+                guard->onResponse(cmd, seq, data);
+            }
+        });
 }
 
 void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequencyHz,
                                    const QVector<ScopeGeneratorCosineChannel> &channels) {
-    if (m_serialManager == nullptr || channels.isEmpty()) {
+    if (m_dispatcher == nullptr || channels.isEmpty()) {
         return;
     }
 
@@ -89,8 +91,8 @@ void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequ
     }
 
     m_cosineChannelCount = boundedCount;
-    const QByteArray payload = MotorProtocol::encodeStartCosineGen(amplitude, offset, freqX100, channelCount,
-                                                                    channelPairs);
+    const QByteArray payload = MotorProtocol::encodeStartCosineGen(
+        amplitude, offset, freqX100, channelCount, channelPairs);
     qCInfo(lcGenerator).noquote()
         << QStringLiteral("%1 TX amplitude=%2 offset=%3 freqX100=%4 channels=%5 payload=%6")
                .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStartCosineGen)))
@@ -99,12 +101,17 @@ void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequ
                .arg(freqX100)
                .arg(boundedCount)
                .arg(formatPayloadHex(payload));
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-                              Q_ARG(uint8_t, MotorProtocol::CmdStartCosineGen), Q_ARG(QByteArray, payload));
+    QPointer<GeneratorService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdStartCosineGen, payload, CommandDispatcher::High,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            if (guard != nullptr) {
+                guard->onResponse(cmd, seq, data);
+            }
+        });
 }
 
 void GeneratorService::stop() {
-    if (m_serialManager == nullptr) {
+    if (m_dispatcher == nullptr) {
         return;
     }
 
@@ -113,11 +120,16 @@ void GeneratorService::stop() {
         << QStringLiteral("%1 TX payload=%2")
                .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStopGenerator)))
                .arg(formatPayloadHex(payload));
-    QMetaObject::invokeMethod(m_serialManager, "sendCommand", Qt::QueuedConnection,
-                              Q_ARG(uint8_t, MotorProtocol::CmdStopGenerator), Q_ARG(QByteArray, payload));
+    QPointer<GeneratorService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdStopGenerator, payload, CommandDispatcher::High,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            if (guard != nullptr) {
+                guard->onResponse(cmd, seq, data);
+            }
+        });
 }
 
-void GeneratorService::onFrameReceived(uint8_t cmd, uint8_t /*seq*/, const QByteArray &data) {
+void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray &data) {
     if (cmd == MotorProtocol::CmdStartLinearGen && data.isEmpty()) {
         m_mode = Mode::Linear;
         m_cosineChannelCount = 0;
@@ -155,6 +167,5 @@ void GeneratorService::onFrameReceived(uint8_t cmd, uint8_t /*seq*/, const QByte
                    .arg(MotorProtocol::decodeErrorCode(data), 2, 16, QLatin1Char('0'))
                    .arg(formatPayloadHex(data))
                    .toUpper();
-        return;
     }
 }

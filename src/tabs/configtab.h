@@ -5,6 +5,7 @@
 #include <cstdint>
 
 class ConfigService;
+class CommandDispatcher;
 class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
@@ -17,7 +18,10 @@ class ConfigTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ConfigTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent = nullptr);
+    explicit ConfigTab(SerialManager *serialManager,
+                       CommandDispatcher *dispatcher,
+                       DeviceContext *deviceContext,
+                       QWidget *parent = nullptr);
     ~ConfigTab() override;
 
 signals:

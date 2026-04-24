@@ -8,13 +8,17 @@
 #include <cstdint>
 
 class DeviceContext;
+class CommandDispatcher;
 class SerialManager;
 
 class ConfigService : public QObject {
     Q_OBJECT
 
 public:
-    explicit ConfigService(SerialManager *serialManager, DeviceContext *deviceContext, QObject *parent = nullptr);
+    explicit ConfigService(SerialManager *serialManager,
+                           CommandDispatcher *dispatcher,
+                           DeviceContext *deviceContext,
+                           QObject *parent = nullptr);
     ~ConfigService() override;
 
     QStringList availablePorts() const;
@@ -40,7 +44,6 @@ signals:
 private slots:
     void onSerialConnected();
     void onSerialDisconnected();
-    void onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArray &data);
 
 private:
     enum class PmicState {
@@ -49,7 +52,10 @@ private:
         WaitingEnableAck,
     };
 
+    static QString errorNameForCode(uint8_t errorCode);
+
     SerialManager *m_serialManager = nullptr;
+    CommandDispatcher *m_dispatcher = nullptr;
     DeviceContext *m_deviceContext = nullptr;
     bool m_isConnected = false;
     QString m_connectedPort;

@@ -1,5 +1,6 @@
 #include "tabs/registerrwtab.h"
 
+#include "services/commanddispatcher.h"
 #include "services/registerservice.h"
 #include "ui/style_constants.h"
 #include "widgets/registertable.h"
@@ -21,10 +22,9 @@
 
 using namespace MotorDev;
 
-RegisterRwTab::RegisterRwTab(SerialManager *serialManager, QWidget *parent)
-    : QWidget(parent)
-    , m_serialManager(serialManager) {
-    m_service = new RegisterService(serialManager, this);
+RegisterRwTab::RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent)
+    : QWidget(parent) {
+    m_service = new RegisterService(dispatcher, this);
     setupUi();
     connectSignals();
     m_registerTable->loadConfig(configFilePath());
