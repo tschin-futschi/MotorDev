@@ -35,7 +35,12 @@ void RegisterService::readSingleRow(int globalRow, quint16 addr) {
     RowRequest req;
     req.globalRow = globalRow;
     req.addr = addr;
-    clearQueue();
+    req.isWrite = false;
+    if (m_hasPending) {
+        m_pendingQueue.prepend(req);
+        emit rowPending(globalRow);
+        return;
+    }
     m_isWriteOp = false;
     m_priority = CommandDispatcher::Normal;
     m_currentRequest = req;
@@ -50,7 +55,11 @@ void RegisterService::writeSingleRow(int globalRow, quint16 addr, qint16 value,
     req.globalRow = globalRow;
     req.addr = addr;
     req.value = value;
-    clearQueue();
+    req.isWrite = true;
+    if (m_hasPending) {
+        m_pendingQueue.prepend(req);
+        return;
+    }
     m_isWriteOp = true;
     m_priority = priority;
     m_currentRequest = req;
@@ -69,9 +78,9 @@ void RegisterService::writeBatch(const QVector<RowRequest> &rows) {
 void RegisterService::enqueueAndStart(const QVector<RowRequest> &rows, bool isWrite,
                                       CommandDispatcher::Priority priority) {
     clearQueue();
-    m_isWriteOp = isWrite;
     m_priority = priority;
-    for (const RowRequest &r : rows) {
+    for (RowRequest r : rows) {
+        r.isWrite = isWrite;
         m_pendingQueue.enqueue(r);
     }
     processNextInQueue();
@@ -203,6 +212,7 @@ void RegisterService::processNextInQueue() {
 
     m_currentRequest = m_pendingQueue.dequeue();
     m_hasPending = true;
+    m_isWriteOp = m_currentRequest.isWrite;
     if (!m_isWriteOp) {
         emit rowPending(m_currentRequest.globalRow);
     }

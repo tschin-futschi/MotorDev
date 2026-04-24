@@ -23,6 +23,7 @@ public:
         int globalRow = -1;
         quint16 addr = 0;
         qint16 value = 0;
+        bool isWrite = false;
     };
 
     void readSingleRow(int globalRow, quint16 addr);

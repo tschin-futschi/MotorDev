@@ -79,6 +79,19 @@ ScopeService::ScopeService(SerialManager *serialManager,
     , m_channelModel(channelModel) {
     qRegisterMetaType<ScopeStreamBatch>("ScopeStreamBatch");
 
+    m_streamWatchdog = new QTimer(this);
+    m_streamWatchdog->setSingleShot(true);
+    m_streamWatchdog->setInterval(StreamWatchdogMs);
+    connect(m_streamWatchdog, &QTimer::timeout, this, [this]() {
+        if (!m_running) {
+            return;
+        }
+        qCWarning(lcScope) << "Stream watchdog timeout: no data for 5 seconds";
+        m_lastError = QStringLiteral("Data stream interrupted");
+        emit startError(m_lastError);
+        requestStop();
+    });
+
     if (m_serialManager != nullptr) {
         m_streamBatcher = new ScopeStreamBatcher();
         m_streamBatcher->moveToThread(m_serialManager->thread());
@@ -121,6 +134,9 @@ void ScopeService::requestStop() {
         emit runningChanged(m_running);
         return;
     }
+    if (m_streamWatchdog != nullptr) {
+        m_streamWatchdog->stop();
+    }
     const QByteArray payload = MotorProtocol::encodeStopSampling();
     if (!sendCommand(MotorProtocol::CmdStopSampling, payload)) {
         emit runningChanged(m_running);
@@ -148,6 +164,9 @@ void ScopeService::ingestDebugStream(uint8_t channelMask, const QVector<int16_t>
 }
 
 void ScopeService::setRunning(bool running) {
+    if (!running && m_streamWatchdog != nullptr) {
+        m_streamWatchdog->stop();
+    }
     if (m_running == running) {
         emit runningChanged(running);
         return;
@@ -243,6 +262,9 @@ void ScopeService::finishPendingCommand() {
         m_startPending = false;
         clearPendingCommandState();
         setRunning(true);
+        if (!m_debugStreamActive && m_streamWatchdog != nullptr) {
+            m_streamWatchdog->start();
+        }
         return;
     case PendingCommand::StopSampling:
         m_stopPending = false;
@@ -346,6 +368,9 @@ void ScopeService::handleResponse(uint8_t cmd, uint8_t seq, const QByteArray &da
 void ScopeService::handleStreamBatchReceived(const ScopeStreamBatch &batch) {
     if (!m_running || m_debugStreamActive || batch.isEmpty()) {
         return;
+    }
+    if (m_streamWatchdog != nullptr) {
+        m_streamWatchdog->start();
     }
     m_perfBatchCount += 1;
     for (const ScopeStreamPacket &packet : batch) {

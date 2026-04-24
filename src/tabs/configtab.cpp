@@ -115,12 +115,14 @@ void ConfigTab::connectSignals() {
         refreshAvailablePorts();
     });
     connect(m_connectButton, &QPushButton::clicked, this, [this]() {
+        m_connectButton->setEnabled(false);
         if (m_service->isConnected()) {
             m_service->disconnectPort();
             return;
         }
         const QString portName = m_portCombo->currentText().trimmed();
         if (portName.isEmpty()) {
+            m_connectButton->setEnabled(true);
             qWarning() << "Connect failed: no port selected";
             return;
         }
@@ -128,23 +130,28 @@ void ConfigTab::connectSignals() {
         m_service->connectToPort(portName, baudRate);
     });
     connect(m_icScanButton, &QPushButton::clicked, this, [this]() {
+        m_icScanButton->setEnabled(false);
         m_service->startI2cScan();
     });
     connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
+        m_icConnectButton->setEnabled(false);
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
         if (addrText.isEmpty()) {
+            m_icConnectButton->setEnabled(true);
             qWarning() << "IC connect failed: no slave address selected";
             return;
         }
         bool ok = false;
         const uint addr = addrText.toUInt(&ok, 16);
         if (!ok || addr == 0 || addr > 0x7F) {
+            m_icConnectButton->setEnabled(true);
             qWarning().noquote() << QStringLiteral("IC connect failed: invalid address %1").arg(addrText);
             return;
         }
         m_service->setMotorIcAddress(static_cast<uint8_t>(addr));
     });
     connect(m_pmicConfigButton, &QPushButton::clicked, this, [this]() {
+        m_pmicConfigButton->setEnabled(false);
         m_service->configurePmic(m_drvddSpin->value(), m_iovddSpin->value(), m_vcmvddSpin->value());
     });
 
@@ -181,14 +188,21 @@ void ConfigTab::connectSignals() {
 
     // Service → UI
     connect(m_service, &ConfigService::serialConnected, this, [this](const QString &port, qint32 baudRate) {
+        m_connectButton->setEnabled(true);
         setSerialControlsConnected(true);
         emit serialConnected(port, baudRate);
     });
     connect(m_service, &ConfigService::serialDisconnected, this, [this]() {
+        m_connectButton->setEnabled(true);
         setSerialControlsConnected(false);
         emit serialDisconnected();
     });
+    connect(m_service, &ConfigService::serialError, this, [this](const QString &message) {
+        Q_UNUSED(message);
+        m_connectButton->setEnabled(true);
+    });
     connect(m_service, &ConfigService::i2cScanResult, this, [this](const QList<uint8_t> &addresses) {
+        m_icScanButton->setEnabled(true);
         const QSignalBlocker blocker(m_slaveIdCombo);
         m_slaveIdCombo->clear();
         for (uint8_t addr : addresses) {
@@ -198,16 +212,25 @@ void ConfigTab::connectSignals() {
         if (m_slaveIdCombo->count() > 0) m_slaveIdCombo->setCurrentIndex(0);
     });
     connect(m_service, &ConfigService::setAddrSuccess, this, [this]() {
+        m_icConnectButton->setEnabled(true);
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
         bool ok = false;
         const uint addr = addrText.toUInt(&ok, 16);
         if (ok && addr <= 0x7F) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
         qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
     });
-    connect(m_service, &ConfigService::pmicConfigSuccess, this, []() {
+    connect(m_service, &ConfigService::protocolError, this, [this](uint8_t errorCode) {
+        Q_UNUSED(errorCode);
+        m_icScanButton->setEnabled(m_service->isConnected());
+        m_icConnectButton->setEnabled(m_service->isConnected());
+        m_pmicConfigButton->setEnabled(true);
+    });
+    connect(m_service, &ConfigService::pmicConfigSuccess, this, [this]() {
+        m_pmicConfigButton->setEnabled(true);
         qDebug() << "PMIC configured successfully";
     });
-    connect(m_service, &ConfigService::pmicConfigFailed, this, [](const QString &reason) {
+    connect(m_service, &ConfigService::pmicConfigFailed, this, [this](const QString &reason) {
+        m_pmicConfigButton->setEnabled(true);
         qWarning().noquote() << QStringLiteral("PMIC configuration failed: %1").arg(reason);
     });
 }

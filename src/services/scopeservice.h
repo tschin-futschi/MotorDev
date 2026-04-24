@@ -94,10 +94,13 @@ private:
     static uint8_t commandForPending(PendingCommand pending);
     bool sendCommand(uint8_t cmd, const QByteArray &data);
 
+    static constexpr int StreamWatchdogMs = 5000;
+
     SerialManager *m_serialManager = nullptr;
     CommandDispatcher *m_dispatcher = nullptr;
     ScopeChannelModel *m_channelModel = nullptr;
     ScopeStreamBatcher *m_streamBatcher = nullptr;
+    QTimer *m_streamWatchdog = nullptr;
 
     uint8_t m_sampleIntervalIndex = 0x04;
     int m_displayWindowMs = 50;

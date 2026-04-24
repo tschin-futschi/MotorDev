@@ -43,6 +43,8 @@ void RegisterRwTab::connectSignals() {
         m_registerTable->saveConfig(configFilePath());
     });
     connect(m_readAllButton, &QPushButton::clicked, this, [this]() {
+        m_readAllButton->setEnabled(false);
+        m_writeAllButton->setEnabled(false);
         QVector<RegisterService::RowRequest> rows;
         for (int row = 0; row < Style::Size::TableGroupCount * Style::Size::TableRowCount; ++row) {
             if (m_registerTable->rowHasAddress(row)) {
@@ -55,6 +57,8 @@ void RegisterRwTab::connectSignals() {
         m_service->readBatch(rows);
     });
     connect(m_writeAllButton, &QPushButton::clicked, this, [this]() {
+        m_readAllButton->setEnabled(false);
+        m_writeAllButton->setEnabled(false);
         QVector<RegisterService::RowRequest> rows;
         for (int row = 0; row < Style::Size::TableGroupCount * Style::Size::TableRowCount; ++row) {
             if (m_registerTable->rowHasAddress(row) && m_registerTable->rowHasValue(row)) {
@@ -85,6 +89,8 @@ void RegisterRwTab::connectSignals() {
         m_registerTable->markWriteButtonFeedback(globalRow, false);
     });
     connect(m_service, &RegisterService::queueFinished, this, [this](bool wasWrite) {
+        m_readAllButton->setEnabled(true);
+        m_writeAllButton->setEnabled(true);
         if (!wasWrite) m_registerTable->saveConfig(configFilePath());
     });
 }
