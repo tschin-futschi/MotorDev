@@ -55,6 +55,9 @@ private:
     QDoubleSpinBox *m_vcmvddSpin = nullptr;
     QDoubleSpinBox *m_iovddSpin = nullptr;
     QPushButton *m_pmicConfigButton = nullptr;
+    QPushButton *m_pmicDisableButton = nullptr;
+    QPushButton *m_resetButton = nullptr;
+    QPushButton *m_motorTestButton = nullptr;
     QComboBox *m_fileCombo = nullptr;
     QPushButton *m_browseButton = nullptr;
     QPushButton *m_writeButton = nullptr;

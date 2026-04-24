@@ -85,6 +85,14 @@ QByteArray encodePmicDisable() {
     return {};
 }
 
+QByteArray encodeReset() {
+    return {};
+}
+
+QByteArray encodeMotorTest() {
+    return {};
+}
+
 QByteArray encodeStartSampling() {
     return {};
 }

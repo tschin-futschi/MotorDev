@@ -90,6 +90,9 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_vcmvddSpin->setValue(3.20);
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
+    m_resetButton->setEnabled(false);
+    m_motorTestButton->setEnabled(false);
+    m_pmicDisableButton->setEnabled(false);
     m_browseButton->setEnabled(false);
     m_browseButton->setToolTip(tr("功能开发中"));
     m_writeButton->setEnabled(false);
@@ -160,7 +163,21 @@ void ConfigTab::connectSignals() {
     });
     connect(m_pmicConfigButton, &QPushButton::clicked, this, [this]() {
         m_pmicConfigButton->setEnabled(false);
+        m_pmicDisableButton->setEnabled(false);
         m_service->configurePmic(m_drvddSpin->value(), m_iovddSpin->value(), m_vcmvddSpin->value());
+    });
+    connect(m_pmicDisableButton, &QPushButton::clicked, this, [this]() {
+        m_pmicConfigButton->setEnabled(false);
+        m_pmicDisableButton->setEnabled(false);
+        m_service->disablePmic();
+    });
+    connect(m_resetButton, &QPushButton::clicked, this, [this]() {
+        m_resetButton->setEnabled(false);
+        m_service->resetDevice();
+    });
+    connect(m_motorTestButton, &QPushButton::clicked, this, [this]() {
+        m_motorTestButton->setEnabled(false);
+        m_service->testMotor();
     });
 
     // IC type combo → DeviceContext
@@ -232,14 +249,45 @@ void ConfigTab::connectSignals() {
         m_icScanButton->setEnabled(m_service->isConnected());
         m_icConnectButton->setEnabled(m_service->isConnected());
         m_pmicConfigButton->setEnabled(true);
+        m_pmicDisableButton->setEnabled(m_service->isConnected());
+        m_resetButton->setEnabled(m_service->isConnected());
+        m_motorTestButton->setEnabled(m_service->isConnected());
     });
     connect(m_service, &ConfigService::pmicConfigSuccess, this, [this]() {
         m_pmicConfigButton->setEnabled(true);
+        m_pmicDisableButton->setEnabled(true);
         qDebug() << "PMIC configured successfully";
     });
     connect(m_service, &ConfigService::pmicConfigFailed, this, [this](const QString &reason) {
         m_pmicConfigButton->setEnabled(true);
+        m_pmicDisableButton->setEnabled(true);
         qWarning().noquote() << QStringLiteral("PMIC configuration failed: %1").arg(reason);
+    });
+    connect(m_service, &ConfigService::pmicDisableSuccess, this, [this]() {
+        m_pmicConfigButton->setEnabled(true);
+        m_pmicDisableButton->setEnabled(true);
+        qDebug() << "PMIC disabled successfully";
+    });
+    connect(m_service, &ConfigService::pmicDisableFailed, this, [this](const QString &reason) {
+        m_pmicConfigButton->setEnabled(true);
+        m_pmicDisableButton->setEnabled(true);
+        qWarning().noquote() << QStringLiteral("PMIC disable failed: %1").arg(reason);
+    });
+    connect(m_service, &ConfigService::resetSuccess, this, [this]() {
+        m_resetButton->setEnabled(true);
+        qDebug() << "Device reset successful";
+    });
+    connect(m_service, &ConfigService::resetFailed, this, [this](const QString &reason) {
+        m_resetButton->setEnabled(true);
+        qWarning().noquote() << QStringLiteral("Device reset failed: %1").arg(reason);
+    });
+    connect(m_service, &ConfigService::motorTestSuccess, this, [this]() {
+        m_motorTestButton->setEnabled(true);
+        qDebug() << "Motor test successful";
+    });
+    connect(m_service, &ConfigService::motorTestFailed, this, [this](const QString &reason) {
+        m_motorTestButton->setEnabled(true);
+        qWarning().noquote() << QStringLiteral("Motor test failed: %1").arg(reason);
     });
 }
 
@@ -262,6 +310,10 @@ void ConfigTab::setSerialControlsConnected(bool connected) {
     m_scanButton->setEnabled(!connected);
     m_icScanButton->setEnabled(connected);
     m_icConnectButton->setEnabled(connected);
+    m_pmicConfigButton->setEnabled(connected);
+    m_pmicDisableButton->setEnabled(connected);
+    m_resetButton->setEnabled(connected);
+    m_motorTestButton->setEnabled(connected);
 }
 
 void ConfigTab::setupUi() {
@@ -408,6 +460,25 @@ void ConfigTab::setupUi() {
     m_connectButton->setProperty("buttonRole", QStringLiteral("primary"));
     serialButtonRow->addWidget(m_connectButton);
     serialButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    auto *serialActionRow = new QHBoxLayout();
+    serialActionRow->setObjectName(QStringLiteral("serialActionRow"));
+    serialActionRow->setSpacing(10);
+    serialGroupLayout->addLayout(serialActionRow);
+    m_resetButton = new QPushButton(m_serialGroup);
+    m_resetButton->setObjectName(QStringLiteral("resetButton"));
+    m_resetButton->setMinimumSize(QSize(0, 32));
+    m_resetButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_resetButton->setText(tr("Reset Device"));
+    m_resetButton->setProperty("buttonRole", QStringLiteral("secondary"));
+    serialActionRow->addWidget(m_resetButton);
+    m_motorTestButton = new QPushButton(m_serialGroup);
+    m_motorTestButton->setObjectName(QStringLiteral("motorTestButton"));
+    m_motorTestButton->setMinimumSize(QSize(0, 32));
+    m_motorTestButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_motorTestButton->setText(tr("Motor Test"));
+    m_motorTestButton->setProperty("buttonRole", QStringLiteral("secondary"));
+    serialActionRow->addWidget(m_motorTestButton);
+    serialActionRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     makeCard(m_pmicGroup, QStringLiteral("pmicGroup"), QStringLiteral("PMIC"));
     upperLayout->addWidget(m_pmicGroup, 0, 2);
@@ -452,7 +523,18 @@ void ConfigTab::setupUi() {
     m_pmicConfigButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
     m_pmicConfigButton->setText(tr("配置 PMIC"));
     m_pmicConfigButton->setProperty("buttonRole", QStringLiteral("primary"));
-    pmicGroupLayout->addWidget(m_pmicConfigButton);
+    auto *pmicButtonRow = new QHBoxLayout();
+    pmicButtonRow->setObjectName(QStringLiteral("pmicButtonRow"));
+    pmicButtonRow->setSpacing(10);
+    pmicGroupLayout->addLayout(pmicButtonRow);
+    pmicButtonRow->addWidget(m_pmicConfigButton);
+    m_pmicDisableButton = new QPushButton(m_pmicGroup);
+    m_pmicDisableButton->setObjectName(QStringLiteral("pmicDisableButton"));
+    m_pmicDisableButton->setMinimumSize(QSize(0, 32));
+    m_pmicDisableButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_pmicDisableButton->setText(tr("PMIC Off"));
+    m_pmicDisableButton->setProperty("buttonRole", QStringLiteral("secondary"));
+    pmicButtonRow->addWidget(m_pmicDisableButton);
 
     auto *lowerArea = new QWidget(m_mainSplitter);
     lowerArea->setObjectName(QStringLiteral("lowerArea"));

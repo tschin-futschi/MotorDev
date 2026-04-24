@@ -45,16 +45,7 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
 }
 
 OscilloscopTab::~OscilloscopTab() {
-    if (m_fullscreenWindow != nullptr) {
-        if (m_fullscreenWindow->layout() != nullptr) {
-            m_fullscreenWindow->layout()->removeWidget(m_plotWidget);
-        }
-        m_plotLayout->insertWidget(m_plotLayoutIndex >= 0 ? m_plotLayoutIndex : 0, m_plotWidget);
-        m_plotLayout->setStretch(0, 1);
-        m_plotLayout->setStretch(1, 0);
-        delete m_fullscreenWindow;
-        m_fullscreenWindow = nullptr;
-    }
+    exitFullscreen();
 }
 
 void OscilloscopTab::setupUi() {
@@ -333,6 +324,21 @@ void OscilloscopTab::refreshPlotData() {
 
 void OscilloscopTab::toggleStylePanel() { m_stylePanel->setVisible(!m_stylePanel->isVisible()); }
 
+void OscilloscopTab::exitFullscreen() {
+    if (m_fullscreenWindow == nullptr) {
+        return;
+    }
+
+    if (m_fullscreenWindow->layout() != nullptr) {
+        m_fullscreenWindow->layout()->removeWidget(m_plotWidget);
+    }
+    m_plotLayout->insertWidget(m_plotLayoutIndex >= 0 ? m_plotLayoutIndex : 0, m_plotWidget);
+    m_plotLayout->setStretch(0, 1);
+    m_plotLayout->setStretch(1, 0);
+    delete m_fullscreenWindow;
+    m_fullscreenWindow = nullptr;
+}
+
 void OscilloscopTab::togglePlotFullscreen() {
     if (m_fullscreenWindow == nullptr) {
         m_plotLayoutIndex = m_plotLayout->indexOf(m_plotWidget);
@@ -352,15 +358,7 @@ void OscilloscopTab::togglePlotFullscreen() {
         return;
     }
 
-    if (m_fullscreenWindow->layout() != nullptr) {
-        m_fullscreenWindow->layout()->removeWidget(m_plotWidget);
-    }
-    m_plotLayout->insertWidget(m_plotLayoutIndex >= 0 ? m_plotLayoutIndex : 0, m_plotWidget);
-    m_plotLayout->setStretch(0, 1);
-    m_plotLayout->setStretch(1, 0);
-
-    delete m_fullscreenWindow;
-    m_fullscreenWindow = nullptr;
+    exitFullscreen();
     m_plotWidget->setFocus();
 }
 

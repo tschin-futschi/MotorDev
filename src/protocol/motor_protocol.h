@@ -41,6 +41,8 @@ QByteArray encodeSetMotorIcAddr(uint8_t addr);
 QByteArray encodePmicVoltage(quint16 drvvdd, quint16 iovdd, quint16 vcmvdd);
 QByteArray encodePmicEnable();
 QByteArray encodePmicDisable();
+QByteArray encodeReset();
+QByteArray encodeMotorTest();
 QByteArray encodeStartSampling();
 QByteArray encodeStopSampling();
 QByteArray encodeSetSampleInterval(uint8_t intervalIndex);

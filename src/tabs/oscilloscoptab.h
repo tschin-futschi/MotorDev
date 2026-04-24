@@ -50,6 +50,7 @@ private:
     void refreshPlotData();
     void toggleStylePanel();
     void togglePlotFullscreen();
+    void exitFullscreen();
     void onPerfTimerTick();
     void onRegisterReadRequested(int row);
     void onRegisterWriteRequested(int row);

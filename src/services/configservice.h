@@ -29,6 +29,9 @@ public:
     void startI2cScan();
     void setMotorIcAddress(uint8_t addr);
     void configurePmic(double drvvddV, double iovddV, double vcmvddV);
+    void disablePmic();
+    void resetDevice();
+    void testMotor();
 
     bool isConnected() const { return m_isConnected; }
 
@@ -41,6 +44,12 @@ signals:
     void protocolError(uint8_t errorCode);
     void pmicConfigSuccess();
     void pmicConfigFailed(const QString &reason);
+    void pmicDisableSuccess();
+    void pmicDisableFailed(const QString &reason);
+    void resetSuccess();
+    void resetFailed(const QString &reason);
+    void motorTestSuccess();
+    void motorTestFailed(const QString &reason);
 
 private slots:
     void onSerialConnected();

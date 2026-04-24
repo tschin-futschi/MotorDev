@@ -309,6 +309,99 @@ void ConfigService::configurePmic(double drvvddV, double iovddV, double vcmvddV)
         });
 }
 
+void ConfigService::disablePmic() {
+    if (m_dispatcher == nullptr || !m_isConnected) {
+        emit pmicDisableFailed(QStringLiteral("Serial not connected"));
+        return;
+    }
+
+    const QByteArray payload = MotorProtocol::encodePmicDisable();
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdPmicDisable)))
+               .arg(formatPayloadHex(payload));
+
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdPmicDisable, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            Q_UNUSED(data);
+            if (guard == nullptr) {
+                return;
+            }
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                emit guard->pmicDisableFailed(QStringLiteral("Device returned error"));
+                return;
+            }
+            if (cmd != MotorProtocol::CmdPmicDisable) {
+                return;
+            }
+            emit guard->pmicDisableSuccess();
+        });
+}
+
+void ConfigService::resetDevice() {
+    if (m_dispatcher == nullptr || !m_isConnected) {
+        emit resetFailed(QStringLiteral("Serial not connected"));
+        return;
+    }
+
+    const QByteArray payload = MotorProtocol::encodeReset();
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdReset)))
+               .arg(formatPayloadHex(payload));
+
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdReset, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            Q_UNUSED(data);
+            if (guard == nullptr) {
+                return;
+            }
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                emit guard->resetFailed(QStringLiteral("Device returned error"));
+                return;
+            }
+            if (cmd != MotorProtocol::CmdReset) {
+                return;
+            }
+            emit guard->resetSuccess();
+        });
+}
+
+void ConfigService::testMotor() {
+    if (m_dispatcher == nullptr || !m_isConnected) {
+        emit motorTestFailed(QStringLiteral("Serial not connected"));
+        return;
+    }
+
+    const QByteArray payload = MotorProtocol::encodeMotorTest();
+    qCInfo(lcConfig).noquote()
+        << QStringLiteral("%1 TX payload=%2")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdMotorTest)))
+               .arg(formatPayloadHex(payload));
+
+    QPointer<ConfigService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdMotorTest, payload, CommandDispatcher::Normal,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            Q_UNUSED(seq);
+            Q_UNUSED(data);
+            if (guard == nullptr) {
+                return;
+            }
+            if (cmd == MotorProtocol::CmdErrorResponse) {
+                emit guard->motorTestFailed(QStringLiteral("Motor test failed"));
+                return;
+            }
+            if (cmd != MotorProtocol::CmdMotorTest) {
+                return;
+            }
+            emit guard->motorTestSuccess();
+        });
+}
+
 void ConfigService::onSerialConnected() {
     qCInfo(lcConfig) << "Serial connected";
     m_isConnected = true;

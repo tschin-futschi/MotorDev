@@ -17,13 +17,6 @@
 using namespace MotorDev;
 
 namespace {
-// --- Plot geometry constants ---
-constexpr int FramePadding = 8;      // outer frame to plot frame
-constexpr int AxisLeftMargin = 58;   // Y-axis label width
-constexpr int AxisTopMargin = 14;    // top padding inside frame
-constexpr int AxisRightMargin = 14;  // right padding inside frame
-constexpr int AxisBottomMargin = 32; // X-axis label height
-constexpr int StackedLaneGap = 10;   // gap between stacked lanes
 constexpr int RenderIntervalMs = 16; // ~60fps active render
 constexpr int IdleIntervalMs = 100;  // idle render interval
 
@@ -261,7 +254,10 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, false);
-    const QRect frameRect = rect().adjusted(FramePadding, FramePadding, -FramePadding, -FramePadding);
+    const QRect frameRect = rect().adjusted(Style::Size::ScopePlotFramePadding,
+                                            Style::Size::ScopePlotFramePadding,
+                                            -Style::Size::ScopePlotFramePadding,
+                                            -Style::Size::ScopePlotFramePadding);
     const QRect plotRect = currentPlotRect();
 
     // GL backend redraws every frame; static frame is cheap on GPU.
@@ -508,7 +504,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
         return;
     }
 
-    const int laneHeight = (rect.height() - StackedLaneGap * (channelCount - 1)) / channelCount;
+    const int laneHeight = (rect.height() - Style::Size::ScopePlotStackedGap * (channelCount - 1)) / channelCount;
     painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontNormal));
 
     const int startIndex = visibleSampleStart();
@@ -522,7 +518,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
         }
 
         const QRect laneRect(rect.left(),
-                             rect.top() + laneIndex * (laneHeight + StackedLaneGap),
+                             rect.top() + laneIndex * (laneHeight + Style::Size::ScopePlotStackedGap),
                              rect.width(),
                              laneHeight);
 
@@ -729,7 +725,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
     const QRect axisRect(plotRect.left(),
                          plotRect.bottom() + 4,
                          plotRect.width(),
-                         AxisBottomMargin - 8);
+                         Style::Size::ScopePlotAxisBottom - 8);
     painter->setPen(Style::Color::ScopeTextSubtle);
     painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontSmall));
 
@@ -855,8 +851,14 @@ void ScopePlotWidget::markAutoYDirty() {
 }
 
 QRect ScopePlotWidget::currentPlotRect() const {
-    const QRect frameRect = rect().adjusted(FramePadding, FramePadding, -FramePadding, -FramePadding);
-    return frameRect.adjusted(AxisLeftMargin, AxisTopMargin, -AxisRightMargin, -AxisBottomMargin);
+    const QRect frameRect = rect().adjusted(Style::Size::ScopePlotFramePadding,
+                                            Style::Size::ScopePlotFramePadding,
+                                            -Style::Size::ScopePlotFramePadding,
+                                            -Style::Size::ScopePlotFramePadding);
+    return frameRect.adjusted(Style::Size::ScopePlotAxisLeft,
+                              Style::Size::ScopePlotAxisTop,
+                              -Style::Size::ScopePlotAxisRight,
+                              -Style::Size::ScopePlotAxisBottom);
 }
 
 int ScopePlotWidget::visibleSampleStart() const {
