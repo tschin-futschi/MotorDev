@@ -93,20 +93,18 @@ private:
     quint16 m_pmicIovdd = 280;
     quint16 m_pmicVcmvdd = 320;
     qint16 m_regReadValue = 0;
-    mutable std::mutex m_regReadMutex;
-
+    qint16 m_streamBaseValue = 0;
     bool m_sampling = false;
     uint8_t m_sampleIntervalIndex = 0x04;
     uint8_t m_channelMask = 0x01;
     QVector<quint16> m_channelRegisterMap;
     quint32 m_streamTick = 0;
-    qint16 m_streamBaseValue = 0;
     QElapsedTimer m_streamElapsedTimer;
     qint64 m_lastStreamActualUs = -1;
     qint64 m_streamActualUsAccumulator = 0;
     int m_streamActualUsSamples = 0;
     std::thread m_streamThread;
-    mutable std::mutex m_streamMutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_streamCv;
     bool m_streamStopRequested = false;
     QVector<PendingDebugFrame> m_pendingDebugFrames;

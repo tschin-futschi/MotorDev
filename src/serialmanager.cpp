@@ -171,7 +171,14 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
                               .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
                               .arg(data.size())
                               .arg(formatPayloadHex(data));
-    m_serial->write(m_pendingFrame);
+    const qint64 written = m_serial->write(m_pendingFrame);
+    if (written != m_pendingFrame.size()) {
+        qCWarning(lcSerialManager) << "Write failed: expected" << m_pendingFrame.size()
+                                   << "bytes, wrote" << written;
+        clearPendingCommand();
+        emit errorOccurred(QStringLiteral("Failed to write command to serial port"));
+        return;
+    }
     emit commandSent(cmd, seq);
     if (m_retryTimer != nullptr) {
         m_retryTimer->start(RetryTimeoutMs);

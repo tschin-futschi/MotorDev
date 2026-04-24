@@ -2,6 +2,15 @@
 
 namespace SamplingConfig {
 
+QStringList intervalLabels() {
+    return {
+        QStringLiteral("200 us"),  QStringLiteral("300 us"),
+        QStringLiteral("500 us"),  QStringLiteral("750 us"),
+        QStringLiteral("1000 us"), QStringLiteral("1500 us"),
+        QStringLiteral("2000 us")
+    };
+}
+
 uint8_t intervalIndexForText(const QString &text) {
     const QString normalized = text.trimmed().toLower();
     if (normalized == QStringLiteral("200 us")) return 0x00;

@@ -20,6 +20,7 @@ public:
     static MotorIcType motorIcTypeFromIndex(int index);
     static int indexFromMotorIcType(MotorIcType type);
     static QString motorIcTypeToString(MotorIcType type);
+    static bool isValidSlaveAddress(uint addr) { return addr >= 1 && addr <= 0x7F; }
 
     MotorIcType icType() const;
     void setIcType(MotorIcType type);

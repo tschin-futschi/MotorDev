@@ -1,5 +1,6 @@
 #include "widgets/scopebottompanel.h"
 
+#include "protocol/sampling_config.h"
 #include "ui/style_constants.h"
 #include "widgets/scopechannelstrip.h"
 #include "widgets/scopegeneratorpanel.h"
@@ -324,8 +325,7 @@ void ScopeBottomPanel::setupUi() {
     m_intervalCombo = new QComboBox(m_channelFrame);
     m_intervalCombo->setObjectName(QStringLiteral("intervalCombo"));
     m_intervalCombo->setMinimumSize(QSize(110, 0));
-    m_intervalCombo->addItems({QStringLiteral("200 us"), QStringLiteral("300 us"), QStringLiteral("500 us"), QStringLiteral("750 us"),
-                               QStringLiteral("1000 us"), QStringLiteral("1500 us"), QStringLiteral("2000 us")});
+    m_intervalCombo->addItems(SamplingConfig::intervalLabels());
     channelHeaderLayout->addWidget(m_intervalCombo);
 
     m_yAxisButton = new QToolButton(m_channelFrame);

@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QString>
+#include <QStringList>
 
 namespace MotorDev::Style {
 
@@ -201,6 +202,24 @@ inline constexpr int MarqueeMinWidth = 140;
 inline constexpr int MarqueeMinHeight = 26;
 inline constexpr int GeneratorPanelMinW = 420;
 inline constexpr int GeneratorPanelMinH = 340;
+}
+
+namespace Font {
+inline const char *SansSerif = "Segoe UI";
+inline const char *Monospace = "Consolas";
+}
+
+namespace Serial {
+inline QStringList baudRateLabels() {
+    return {
+        QStringLiteral("9600"),   QStringLiteral("19200"),
+        QStringLiteral("38400"),  QStringLiteral("57600"),
+        QStringLiteral("115200"), QStringLiteral("230400"),
+        QStringLiteral("460800"), QStringLiteral("921600")
+    };
+}
+
+inline const char *DefaultBaudRate = "115200";
 }
 
 namespace Text {

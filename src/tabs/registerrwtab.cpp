@@ -26,6 +26,16 @@ RegisterRwTab::RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent)
     : QWidget(parent) {
     m_service = new RegisterService(dispatcher, this);
     setupUi();
+    for (int i = 0; i < 4; ++i) {
+        m_batchBtn[i]->setEnabled(false);
+        m_batchBtn[i]->setToolTip(tr("功能开发中"));
+        m_batchBrowseBtn[i]->setEnabled(false);
+        m_batchBrowseBtn[i]->setToolTip(tr("功能开发中"));
+        m_batchDescEdit[i]->setEnabled(false);
+        m_batchDescEdit[i]->setToolTip(tr("功能开发中"));
+        m_batchPathEdit[i]->setEnabled(false);
+        m_batchPathEdit[i]->setToolTip(tr("功能开发中"));
+    }
     connectSignals();
     m_registerTable->loadConfig(configFilePath());
 }

@@ -36,7 +36,7 @@ SerialDebugTab::SerialDebugTab(QWidget *parent)
     setupUi();
 
     m_portCombo->setPlaceholderText(tr("选择端口"));
-    m_baudCombo->setCurrentText(QStringLiteral("115200"));
+    m_baudCombo->setCurrentText(QLatin1String(Style::Serial::DefaultBaudRate));
     m_delaySpinBox->setValue(0);
 
     connectSignals();
@@ -169,8 +169,7 @@ void SerialDebugTab::setupUi() {
     m_baudCombo = new QComboBox(connectionBar);
     m_baudCombo->setObjectName(QStringLiteral("baudCombo"));
     m_baudCombo->setProperty("inputRole", QStringLiteral("form"));
-    m_baudCombo->addItems({QStringLiteral("9600"), QStringLiteral("19200"), QStringLiteral("38400"), QStringLiteral("57600"),
-                           QStringLiteral("115200"), QStringLiteral("230400"), QStringLiteral("460800"), QStringLiteral("921600")});
+    m_baudCombo->addItems(Style::Serial::baudRateLabels());
     connectionLayout->addWidget(m_baudCombo);
 
     m_scanButton = new QPushButton(connectionBar);

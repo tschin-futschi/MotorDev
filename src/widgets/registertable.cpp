@@ -139,7 +139,7 @@ void RegisterTable::setupUi() {
         }
     }
 
-    QFont monoFont(QStringLiteral("Consolas"));
+    QFont monoFont(QLatin1String(Style::Font::Monospace));
     monoFont.setStyleHint(QFont::Monospace);
     monoFont.setPointSize(Style::Size::RegisterTableFontSize);
 

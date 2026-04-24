@@ -79,7 +79,7 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_slaveIdCombo->setPlaceholderText(QStringLiteral("Scan first"));
     m_slaveIdCombo->setCurrentIndex(-1);
     m_portCombo->setPlaceholderText(tr("Select COM"));
-    m_baudRateCombo->setCurrentText(QStringLiteral("115200"));
+    m_baudRateCombo->setCurrentText(QLatin1String(Style::Serial::DefaultBaudRate));
     for (auto *spin : {m_drvddSpin, m_vcmvddSpin, m_iovddSpin}) {
         spin->setRange(0.60, 3.77);
         spin->setDecimals(2);
@@ -90,6 +90,14 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_vcmvddSpin->setValue(3.20);
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
+    m_browseButton->setEnabled(false);
+    m_browseButton->setToolTip(tr("功能开发中"));
+    m_writeButton->setEnabled(false);
+    m_writeButton->setToolTip(tr("功能开发中"));
+    m_readButton->setEnabled(false);
+    m_readButton->setToolTip(tr("功能开发中"));
+    m_fileCombo->setEnabled(false);
+    m_fileCombo->setToolTip(tr("功能开发中"));
 
     connectSignals();
 }
@@ -143,7 +151,7 @@ void ConfigTab::connectSignals() {
         }
         bool ok = false;
         const uint addr = addrText.toUInt(&ok, 16);
-        if (!ok || addr == 0 || addr > 0x7F) {
+        if (!ok || !DeviceContext::isValidSlaveAddress(addr)) {
             m_icConnectButton->setEnabled(true);
             qWarning().noquote() << QStringLiteral("IC connect failed: invalid address %1").arg(addrText);
             return;
@@ -171,12 +179,12 @@ void ConfigTab::connectSignals() {
         if (text.isEmpty()) return;
         bool ok = false;
         const uint value = text.toUInt(&ok, 16);
-        if (ok && value <= 0x7F) {
+        if (ok && DeviceContext::isValidSlaveAddress(value)) {
             qDebug().noquote() << QStringLiteral("Slave ID set to 0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
             m_deviceContext->setSlaveId(static_cast<uint8_t>(value));
             return;
         }
-        if (!ok || value > 0x7F) qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
+        if (!ok || !DeviceContext::isValidSlaveAddress(value)) qWarning().noquote() << QStringLiteral("Invalid slave ID: %1").arg(text);
     });
     connect(m_deviceContext, &DeviceContext::slaveIdChanged, this, [this](uint8_t id) {
         const QSignalBlocker blocker(m_slaveIdCombo);
@@ -216,7 +224,7 @@ void ConfigTab::connectSignals() {
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
         bool ok = false;
         const uint addr = addrText.toUInt(&ok, 16);
-        if (ok && addr <= 0x7F) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
+        if (ok && DeviceContext::isValidSlaveAddress(addr)) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
         qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
     });
     connect(m_service, &ConfigService::protocolError, this, [this](uint8_t errorCode) {
@@ -378,8 +386,7 @@ void ConfigTab::setupUi() {
     m_baudRateCombo = new QComboBox(m_serialGroup);
     m_baudRateCombo->setObjectName(QStringLiteral("baudRateCombo"));
     m_baudRateCombo->setProperty("inputRole", QStringLiteral("form"));
-    m_baudRateCombo->addItems({QStringLiteral("9600"), QStringLiteral("19200"), QStringLiteral("38400"), QStringLiteral("57600"),
-                               QStringLiteral("115200"), QStringLiteral("230400"), QStringLiteral("460800"), QStringLiteral("921600")});
+    m_baudRateCombo->addItems(Style::Serial::baudRateLabels());
     serialFormLayout->setWidget(1, QFormLayout::FieldRole, m_baudRateCombo);
     serialGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
     auto *serialButtonRow = new QHBoxLayout();

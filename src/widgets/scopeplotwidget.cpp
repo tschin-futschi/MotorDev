@@ -509,7 +509,7 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
     }
 
     const int laneHeight = (rect.height() - StackedLaneGap * (channelCount - 1)) / channelCount;
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontNormal));
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontNormal));
 
     const int startIndex = visibleSampleStart();
     const int endIndex = qMax(startIndex, visibleSampleEnd());
@@ -731,7 +731,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
                          plotRect.width(),
                          AxisBottomMargin - 8);
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontSmall));
 
     for (int i = 0; i <= 8; ++i) {
         const int x = axisRect.left() + (axisRect.width() * i) / 8;
@@ -745,7 +745,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
 
 void ScopePlotWidget::paintYAxis(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontSmall));
 
     const int tickX = rect.left();
     const int labelRight = rect.left() - 8;
@@ -771,7 +771,7 @@ void ScopePlotWidget::paintLegend(QPainter *painter, const QRect &rect) {
     const int top = rect.top() + 8;
     int left = rect.left() + 10;
 
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontSmall));
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontSmall));
     for (const ChannelData &channel : m_channels) {
         if (!channel.enabled) {
             continue;
@@ -821,7 +821,7 @@ void ScopePlotWidget::paintSelection(QPainter *painter, const QRect &rect) {
 
 void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
-    painter->setFont(QFont(QStringLiteral("Segoe UI"), Style::Size::ScopePlotFontNormal));
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontNormal));
 
     if (m_avgFrameMs > 0.0) {
         const double fps = 1000.0 / m_avgFrameMs;
