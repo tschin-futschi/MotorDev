@@ -41,6 +41,7 @@ qrc_*.cpp
 *.manifest
 *.rc
 *.res
+!resources/app_icon.rc
 /platforms/
 /styles/
 /imageformats/

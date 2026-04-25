@@ -88,6 +88,9 @@ qt_add_executable(MotorDev
 
 if(WIN32)
     set_target_properties(MotorDev PROPERTIES WIN32_EXECUTABLE FALSE)
+    target_sources(MotorDev PRIVATE
+        resources/app_icon.rc
+    )
 endif()
 
 target_include_directories(MotorDev PRIVATE src)

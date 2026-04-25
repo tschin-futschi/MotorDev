@@ -8,6 +8,8 @@
 #include <QIcon>
 #include <QMessageLogContext>
 #include <QMetaObject>
+#include <QPixmap>
+#include <QSplashScreen>
 #include <QStandardPaths>
 #include <QString>
 #include <QStringConverter>
@@ -83,9 +85,18 @@ int main(int argc, char *argv[]) {
         app.setStyleSheet(QString::fromUtf8(qssFile.readAll()));
     }
 
+    QPixmap splashPixmap(QStringLiteral(":/motordev_logo.svg"));
+    if (!splashPixmap.isNull()) {
+        splashPixmap = splashPixmap.scaled(360, 360, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    QSplashScreen splash(splashPixmap, Qt::WindowStaysOnTopHint);
+    splash.show();
+    app.processEvents();
+
     MainWindow window;
     window.setWindowIcon(QIcon(QStringLiteral(":/motordev_logo.svg")));
     window.show();
+    splash.finish(&window);
     const int exitCode = app.exec();
     delete g_logStream;
     g_logStream = nullptr;
