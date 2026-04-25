@@ -1,6 +1,5 @@
-﻿<RCC>
+<RCC>
     <qresource prefix="/">
         <file alias="motordev_logo.svg">../motordev_logo.svg</file>
-        <file alias="styles/motordev.qss">styles/motordev.qss</file>
     </qresource>
 </RCC>
