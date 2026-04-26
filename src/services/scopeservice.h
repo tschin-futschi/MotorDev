@@ -1,4 +1,16 @@
-// ScopeService — 采样状态机、协议命令序列、流数据转发
+// =============================================================================
+// @file    scopeservice.h
+// @brief   示波器服务（服务层）— 采样状态机、协议命令序列、流数据转发
+//
+// 管理示波器采样的完整生命周期：
+// - 启动序列：SetSampleInterval → SetSampleChannels → SetChannelRegisterMap → StartSampling
+// - 停止序列：StopSampling
+// - 流数据接收：ScopeStreamBatcher 在串口线程聚合流帧，定时批量转发到主线程
+// - 看门狗：5 秒无数据自动停止采样
+//
+// ScopeStreamBatcher 运行在 SerialManager 的工作线程中，通过背压机制
+// （uiBusy 原子标志）避免 UI 来不及处理时 OOM。
+// =============================================================================
 #pragma once
 
 #include <QAtomicInt>

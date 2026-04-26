@@ -1,3 +1,11 @@
+// =============================================================================
+// @file    serialmanager.cpp
+// @brief   串口管理器实现
+//
+// 实现串口通信的核心逻辑：端口管理、命令收发、帧解析分发、
+// 自动重试和心跳保活机制。
+// =============================================================================
+
 #include "serialmanager.h"
 
 #include <QDebug>
@@ -11,6 +19,8 @@
 Q_LOGGING_CATEGORY(lcSerialManager, "motordev.serial")
 
 namespace {
+
+/// @brief 拼接串口错误消息
 QString makeSerialErrorMessage(const QString &prefix, const QString &detail) {
     if (detail.isEmpty()) {
         return prefix;
@@ -18,25 +28,31 @@ QString makeSerialErrorMessage(const QString &prefix, const QString &detail) {
     return QStringLiteral("%1: %2").arg(prefix, detail);
 }
 
+/// @brief 格式化字节为十六进制字符串
 QString formatByte(uint8_t value) {
     return QStringLiteral("0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
 }
 
+/// @brief 格式化载荷为空格分隔的十六进制字符串
 QString formatPayloadHex(const QByteArray &data) {
     return data.isEmpty() ? QStringLiteral("<empty>")
                           : QString::fromLatin1(data.toHex(' ')).toUpper();
 }
 } // namespace
 
+// -----------------------------------------------------------------------------
+// 构造与析构
+// -----------------------------------------------------------------------------
+
 SerialManager::SerialManager(QObject *parent)
     : QObject(nullptr) {
     Q_UNUSED(parent);
 
+    // 注册自定义类型，使其可通过 QueuedConnection 跨线程传递
     qRegisterMetaType<QVector<int16_t>>("QVector<int16_t>");
 
-    // QThread must not have a parent when the QObject using it calls
-    // moveToThread() — Qt forbids moving objects with a parent to
-    // another thread. Manually deleted in ~SerialManager().
+    // 创建工作线程并将自身移入
+    // 注意：QThread 不能有 parent，否则 moveToThread 会失败
     m_thread = new QThread();
     connect(m_thread, &QThread::started, this, &SerialManager::init);
 
@@ -50,6 +66,7 @@ SerialManager::~SerialManager() {
     }
 
     if (m_thread->isRunning()) {
+        // 在工作线程中同步关闭串口（BlockingQueuedConnection 保证执行完毕后返回）
         QMetaObject::invokeMethod(this, [this]() { closePortInternal(false); }, Qt::BlockingQueuedConnection);
         m_thread->quit();
         m_thread->wait();
@@ -58,6 +75,10 @@ SerialManager::~SerialManager() {
     delete m_thread;
     m_thread = nullptr;
 }
+
+// -----------------------------------------------------------------------------
+// 静态方法
+// -----------------------------------------------------------------------------
 
 QStringList SerialManager::availablePorts() {
     QStringList ports;
@@ -69,7 +90,12 @@ QStringList SerialManager::availablePorts() {
     return ports;
 }
 
+// -----------------------------------------------------------------------------
+// 初始化（在工作线程中执行）
+// -----------------------------------------------------------------------------
+
 void SerialManager::init() {
+    // 创建串口对象（必须在工作线程中创建，保证线程亲和性）
     if (m_serial == nullptr) {
         m_serial = new QSerialPort(this);
         connect(m_serial, &QSerialPort::readyRead, this, &SerialManager::onReadyRead);
@@ -78,12 +104,14 @@ void SerialManager::init() {
         });
     }
 
+    // 创建重试定时器（单次触发）
     if (m_retryTimer == nullptr) {
         m_retryTimer = new QTimer(this);
         m_retryTimer->setSingleShot(true);
         connect(m_retryTimer, &QTimer::timeout, this, &SerialManager::onRetryTimeout);
     }
 
+    // 创建心跳定时器（周期触发）
     if (m_heartbeatTimer == nullptr) {
         m_heartbeatTimer = new QTimer(this);
         m_heartbeatTimer->setInterval(HeartbeatIntervalMs);
@@ -91,15 +119,21 @@ void SerialManager::init() {
     }
 }
 
+// -----------------------------------------------------------------------------
+// 端口管理
+// -----------------------------------------------------------------------------
+
 void SerialManager::openPort(const QString &portName, qint32 baudRate) {
     if (m_serial == nullptr) {
         init();
     }
 
+    // 如果当前已打开端口，先关闭
     if (m_serial->isOpen()) {
         closePortInternal(true);
     }
 
+    // 配置串口参数：8 数据位、1 停止位、无校验、无流控
     m_serial->setPortName(portName);
     m_serial->setBaudRate(baudRate);
     m_serial->setDataBits(QSerialPort::Data8);
@@ -118,6 +152,7 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
         return;
     }
 
+    // 重置解析器和命令状态
     m_parser.reset();
     clearPendingCommand();
     m_missedHeartbeats = 0;
@@ -128,6 +163,10 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
 void SerialManager::closePort() {
     closePortInternal(true);
 }
+
+// -----------------------------------------------------------------------------
+// 心跳保活
+// -----------------------------------------------------------------------------
 
 void SerialManager::startHeartbeat() {
     if (m_serial == nullptr || !m_serial->isOpen()) {
@@ -147,17 +186,23 @@ void SerialManager::stopHeartbeat() {
     qCInfo(lcSerialManager) << "Heartbeat stopped";
 }
 
+// -----------------------------------------------------------------------------
+// 命令发送
+// -----------------------------------------------------------------------------
+
 void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
     if (m_serial == nullptr || !m_serial->isOpen()) {
         emit errorOccurred(QStringLiteral("Serial port is not open"));
         return;
     }
 
+    // 一次只能有一条挂起的命令（简单的命令队列由上层 CommandDispatcher 管理）
     if (!m_pendingFrame.isEmpty()) {
         emit errorOccurred(QStringLiteral("Another command is pending"));
         return;
     }
 
+    // 分配序列号并编码帧
     const uint8_t seq = m_nextSeq++;
     m_pendingFrame = FrameParser::encodeControlFrame(seq, cmd, data);
     m_pendingSeq = seq;
@@ -171,6 +216,7 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
                               .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
                               .arg(data.size())
                               .arg(formatPayloadHex(data));
+
     const qint64 written = m_serial->write(m_pendingFrame);
     if (written != m_pendingFrame.size()) {
         qCWarning(lcSerialManager) << "Write failed: expected" << m_pendingFrame.size()
@@ -180,10 +226,16 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
         return;
     }
     emit commandSent(cmd, seq);
+
+    // 启动重试定时器
     if (m_retryTimer != nullptr) {
         m_retryTimer->start(RetryTimeoutMs);
     }
 }
+
+// -----------------------------------------------------------------------------
+// 数据接收与解析
+// -----------------------------------------------------------------------------
 
 void SerialManager::onReadyRead() {
     if (m_serial == nullptr) {
@@ -191,22 +243,29 @@ void SerialManager::onReadyRead() {
     }
 
     const QByteArray bytes = m_serial->readAll();
+    // 逐字节喂入状态机解析器
     for (char byte : bytes) {
         const FrameParser::FrameType frameType = m_parser.feedByte(static_cast<uint8_t>(byte));
         if (frameType == FrameParser::FrameType::Control) {
             handleControlFrame(m_parser.controlFrame());
         } else if (frameType == FrameParser::FrameType::Stream) {
+            // 流帧直接转发给上层（示波器数据）
             const StreamFrame &frame = m_parser.streamFrame();
             emit streamDataReceived(frame.channelMask, frame.samples);
         }
     }
 }
 
+// -----------------------------------------------------------------------------
+// 重试机制
+// -----------------------------------------------------------------------------
+
 void SerialManager::onRetryTimeout() {
     if (m_serial == nullptr || !m_serial->isOpen() || m_pendingFrame.isEmpty()) {
         return;
     }
 
+    // 超过最大重试次数，放弃该命令
     if (m_retryCount >= MaxRetries) {
         qCWarning(lcSerialManager).noquote()
             << QStringLiteral("Command timeout: seq=%1 cmd=%2(%3) after %4 attempts")
@@ -219,6 +278,7 @@ void SerialManager::onRetryTimeout() {
         return;
     }
 
+    // 重发命令
     ++m_retryCount;
     qCWarning(lcSerialManager).noquote()
         << QStringLiteral("Retry #%1 for seq=%2 cmd=%3(%4)")
@@ -232,26 +292,34 @@ void SerialManager::onRetryTimeout() {
     }
 }
 
+// -----------------------------------------------------------------------------
+// 心跳超时处理
+// -----------------------------------------------------------------------------
+
 void SerialManager::onHeartbeatTimeout() {
     if (m_serial == nullptr || !m_serial->isOpen()) {
         return;
     }
 
-    // Heartbeat is sent regardless of pending command state.
-    // Response matching is safe: handleControlFrame() dispatches heartbeat
-    // responses by cmd==0x00 before checking seq, so no conflict with
-    // pending command responses.
+    // 心跳独立于命令队列发送，不占用 pendingCommand 槽位。
+    // handleControlFrame() 会按 cmd==0x00 匹配心跳响应，不会与普通命令响应冲突。
     const QByteArray heartbeatFrame = FrameParser::encodeControlFrame(m_nextSeq++, MotorProtocol::CmdHeartbeat, {});
     m_serial->write(heartbeatFrame);
 
     ++m_missedHeartbeats;
     qCDebug(lcSerialManager).noquote() << QStringLiteral("Heartbeat sent (missed: %1)").arg(m_missedHeartbeats);
+
+    // 连续丢失心跳超过阈值，判定连接断开
     if (m_missedHeartbeats >= MaxMissedHeartbeats) {
         qCWarning(lcSerialManager).noquote() << QStringLiteral("Heartbeat lost: %1 missed, disconnecting")
                                     .arg(m_missedHeartbeats);
         closePortInternal(true);
     }
 }
+
+// -----------------------------------------------------------------------------
+// 串口错误处理
+// -----------------------------------------------------------------------------
 
 void SerialManager::onSerialErrorOccurred(int error) {
     const auto serialError = static_cast<QSerialPort::SerialPortError>(error);
@@ -263,16 +331,21 @@ void SerialManager::onSerialErrorOccurred(int error) {
     qCWarning(lcSerialManager).noquote() << message;
     emit errorOccurred(message);
 
+    // 致命错误自动断开连接
     switch (serialError) {
-    case QSerialPort::ResourceError:
-    case QSerialPort::PermissionError:
-    case QSerialPort::DeviceNotFoundError:
+    case QSerialPort::ResourceError:       // 设备被拔出
+    case QSerialPort::PermissionError:     // 权限丢失
+    case QSerialPort::DeviceNotFoundError: // 设备不存在
         closePortInternal(true);
         break;
     default:
         break;
     }
 }
+
+// -----------------------------------------------------------------------------
+// 内部辅助方法
+// -----------------------------------------------------------------------------
 
 void SerialManager::clearPendingCommand() {
     stopRetryTimer();
@@ -294,7 +367,16 @@ void SerialManager::stopHeartbeatTimer() {
     }
 }
 
+/// @brief 处理解析完成的控制帧
+///
+/// 分发逻辑：
+/// 1. 心跳响应（cmd==0x00）→ 重置心跳计数器
+/// 2. 错误响应（cmd==0xFF）→ 清除挂起命令并转发
+/// 3. 无挂起命令 → 作为设备主动上报帧转发
+/// 4. seq 匹配 → 清除挂起命令并转发响应
+/// 5. seq 不匹配 → 仍然转发（可能是设备主动上报帧，如调试信息）
 void SerialManager::handleControlFrame(const ControlFrame &frame) {
+    // 心跳响应：重置丢失计数器
     if (frame.cmd == MotorProtocol::CmdHeartbeat) {
         qCDebug(lcSerialManager) << "Heartbeat response received";
         m_missedHeartbeats = 0;
@@ -309,27 +391,33 @@ void SerialManager::handleControlFrame(const ControlFrame &frame) {
                               .arg(frame.data.size())
                               .arg(formatPayloadHex(frame.data));
 
+    // 错误响应：不论 seq 是否匹配都清除挂起状态
     if (frame.cmd == MotorProtocol::CmdErrorResponse) {
         clearPendingCommand();
         emit frameReceived(frame.cmd, frame.seq, frame.data);
         return;
     }
 
+    // 无挂起命令：视为设备主动上报帧
     if (m_pendingFrame.isEmpty()) {
         emit frameReceived(frame.cmd, frame.seq, frame.data);
         return;
     }
 
+    // seq 匹配：命令响应成功
     if (frame.seq == m_pendingSeq) {
         clearPendingCommand();
         emit frameReceived(frame.cmd, frame.seq, frame.data);
     } else {
-        // Device-initiated frames (for example 0x06 debug info) may not match
-        // the active pending seq. Do not drop them; let upper layers classify them.
+        // seq 不匹配：可能是设备主动上报帧（如 0x06 调试信息），不丢弃
         emit frameReceived(frame.cmd, frame.seq, frame.data);
     }
 }
 
+/// @brief 内部关闭串口
+///
+/// 停止所有定时器、清除挂起命令、重置解析器。
+/// 仅在 wasOpen 且 emitDisconnectedSignal 为 true 时发出 disconnected 信号。
 void SerialManager::closePortInternal(bool emitDisconnectedSignal) {
     stopHeartbeatTimer();
     clearPendingCommand();

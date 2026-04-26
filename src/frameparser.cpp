@@ -1,3 +1,10 @@
+// =============================================================================
+// @file    frameparser.cpp
+// @brief   二进制帧解析器实现
+//
+// 实现控制帧/流帧的状态机解析、CRC-16 校验和控制帧编码。
+// =============================================================================
+
 #include "frameparser.h"
 
 #include <QLoggingCategory>
@@ -5,10 +12,14 @@
 Q_LOGGING_CATEGORY(lcFrameParser, "motordev.frame")
 
 namespace {
-constexpr uint8_t ControlHeader1 = 0xAA;
-constexpr uint8_t ControlHeader2 = 0x55;
-constexpr uint8_t StreamHeader = 0xBB;
 
+constexpr uint8_t ControlHeader1 = 0xAA;  ///< 控制帧帧头第一字节
+constexpr uint8_t ControlHeader2 = 0x55;  ///< 控制帧帧头第二字节
+constexpr uint8_t StreamHeader = 0xBB;    ///< 流帧帧头
+
+/// @brief 统计通道掩码中启用的通道数量
+/// @param channelMask  8 位通道掩码，每 bit 对应一个通道
+/// @return 置位的 bit 数量
 int countEnabledChannels(uint8_t channelMask) {
     int count = 0;
     for (int bit = 0; bit < 8; ++bit) {
@@ -19,6 +30,11 @@ int countEnabledChannels(uint8_t channelMask) {
     return count;
 }
 
+/// @brief 计算流帧的 XOR 校验值
+/// @param channelMask  通道掩码
+/// @param streamLen    数据长度
+/// @param data         流帧载荷数据
+/// @return XOR 校验值 = channelMask ^ streamLen ^ data[0] ^ data[1] ^ ...
 uint8_t calculateXor(uint8_t channelMask, uint8_t streamLen, const QByteArray &data) {
     uint8_t value = channelMask ^ streamLen;
     for (char byte : data) {
@@ -27,19 +43,27 @@ uint8_t calculateXor(uint8_t channelMask, uint8_t streamLen, const QByteArray &d
     return value;
 }
 
+/// @brief 将字节格式化为 "0x??" 的十六进制字符串（用于日志输出）
 QString formatByte(uint8_t value) {
     return QStringLiteral("0x%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
 }
 
+/// @brief 将字节数组格式化为空格分隔的十六进制字符串（用于日志输出）
 QString formatPayloadHex(const QByteArray &data) {
     return data.isEmpty() ? QStringLiteral("<empty>")
                           : QString::fromLatin1(data.toHex(' ')).toUpper();
 }
 } // namespace
 
+// -----------------------------------------------------------------------------
+// 控制帧编码
+// -----------------------------------------------------------------------------
+
 QByteArray FrameParser::encodeControlFrame(uint8_t seq, uint8_t cmd, const QByteArray &data) {
     QByteArray frame;
-    frame.reserve(data.size() + 7);
+    frame.reserve(data.size() + 7);  // 帧头(2) + SEQ(1) + CMD(1) + LEN(1) + CRC(2)
+
+    // 组装帧：[AA][55][SEQ][CMD][LEN][DATA...][CRC_H][CRC_L]
     frame.append(static_cast<char>(ControlHeader1));
     frame.append(static_cast<char>(ControlHeader2));
     frame.append(static_cast<char>(seq));
@@ -47,6 +71,7 @@ QByteArray FrameParser::encodeControlFrame(uint8_t seq, uint8_t cmd, const QByte
     frame.append(static_cast<char>(data.size() & 0xFF));
     frame.append(data);
 
+    // CRC 计算范围：SEQ + CMD + LEN + DATA
     QByteArray crcInput;
     crcInput.reserve(data.size() + 3);
     crcInput.append(static_cast<char>(seq));
@@ -55,11 +80,19 @@ QByteArray FrameParser::encodeControlFrame(uint8_t seq, uint8_t cmd, const QByte
     crcInput.append(data);
 
     const uint16_t crc = calculateCrc16(crcInput);
-    frame.append(static_cast<char>((crc >> 8) & 0xFF));
-    frame.append(static_cast<char>(crc & 0xFF));
+    frame.append(static_cast<char>((crc >> 8) & 0xFF));  // CRC 高字节
+    frame.append(static_cast<char>(crc & 0xFF));          // CRC 低字节
     return frame;
 }
 
+// -----------------------------------------------------------------------------
+// CRC-16 校验
+// -----------------------------------------------------------------------------
+
+/// @brief CRC-16 校验算法
+///
+/// 多项式：0x8005（反转），初始值：0xFFFF，LSB 优先处理。
+/// 与 Modbus CRC-16 兼容。
 uint16_t FrameParser::calculateCrc16(const QByteArray &data) {
     uint16_t crc = 0xFFFF;
     for (char byte : data) {
@@ -75,6 +108,17 @@ uint16_t FrameParser::calculateCrc16(const QByteArray &data) {
     return crc;
 }
 
+// -----------------------------------------------------------------------------
+// 状态机解析
+// -----------------------------------------------------------------------------
+
+/// @brief 逐字节驱动解析状态机
+///
+/// 状态机转换示意：
+/// 控制帧：WaitHeader → WaitHeader2 → WaitSeq → WaitCmd → WaitLen
+///         → WaitData → WaitCrcHigh → WaitCrcLow → (完成)
+/// 流帧：  WaitHeader → WaitChannelMask → WaitStreamLen
+///         → WaitStreamData → WaitXor → (完成)
 FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
     switch (m_state) {
     case State::WaitHeader:
@@ -91,9 +135,11 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
         if (byte == ControlHeader2) {
             m_state = State::WaitSeq;
         } else if (byte == ControlHeader1) {
+            // 连续收到 0xAA，重新开始等待第二字节
             resetControlState();
             m_state = State::WaitHeader2;
         } else if (byte == StreamHeader) {
+            // 控制帧头不匹配，但发现流帧头，切换到流帧解析
             resetStreamState();
             m_state = State::WaitChannelMask;
         } else {
@@ -115,7 +161,7 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
         m_len = byte;
         m_data.clear();
         if (m_len == 0) {
-            m_state = State::WaitCrcHigh;
+            m_state = State::WaitCrcHigh;  // 无载荷，直接等待 CRC
         } else {
             m_state = State::WaitData;
         }
@@ -124,7 +170,7 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
     case State::WaitData:
         m_data.append(static_cast<char>(byte));
         if (m_data.size() >= m_len) {
-            m_state = State::WaitCrcHigh;
+            m_state = State::WaitCrcHigh;  // 载荷接收完毕
         }
         return FrameType::None;
 
@@ -144,6 +190,7 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
     case State::WaitStreamLen:
         m_streamLen = byte;
         m_streamData.clear();
+        // 校验数据长度：必须等于 启用通道数 × 2（每通道 2 字节 int16）
         if (m_streamLen != countEnabledChannels(m_channelMask) * 2) {
             qCWarning(lcFrameParser).noquote()
                 << QStringLiteral("Stream length mismatch: mask=%1 len=%2 expected=%3")
@@ -163,7 +210,7 @@ FrameParser::FrameType FrameParser::feedByte(uint8_t byte) {
     case State::WaitStreamData:
         m_streamData.append(static_cast<char>(byte));
         if (m_streamData.size() >= m_streamLen) {
-            m_state = State::WaitXor;
+            m_state = State::WaitXor;  // 流帧数据接收完毕
         }
         return FrameType::None;
 
@@ -203,7 +250,12 @@ void FrameParser::resetStreamState() {
     m_streamData.clear();
 }
 
+/// @brief 完成控制帧解析
+///
+/// 重新计算 CRC 并与接收到的 CRC 对比。校验通过则填充 m_controlFrame 并返回 Control；
+/// 校验失败则输出警告日志并丢弃该帧。
 FrameParser::FrameType FrameParser::finalizeControlFrame(uint8_t crcLow) {
+    // 重建 CRC 输入：SEQ + CMD + LEN + DATA
     QByteArray crcInput;
     crcInput.reserve(m_data.size() + 3);
     crcInput.append(static_cast<char>(m_seq));
@@ -235,6 +287,10 @@ FrameParser::FrameType FrameParser::finalizeControlFrame(uint8_t crcLow) {
     return FrameType::None;
 }
 
+/// @brief 完成流帧解析
+///
+/// 校验 XOR 后，将大端字节序的采样数据解码为 int16 数组。
+/// 每两个字节组成一个 int16 采样值，按通道掩码顺序排列。
 FrameParser::FrameType FrameParser::finalizeStreamFrame(uint8_t xorValue) {
     const uint8_t expectedXor = calculateXor(m_channelMask, m_streamLen, m_streamData);
     if (expectedXor == xorValue) {
@@ -242,6 +298,7 @@ FrameParser::FrameType FrameParser::finalizeStreamFrame(uint8_t xorValue) {
         m_streamFrame.samples.clear();
         m_streamFrame.samples.reserve(m_streamData.size() / 2);
 
+        // 大端字节序解码：每 2 字节组成一个 int16 采样值
         for (int i = 0; i + 1 < m_streamData.size(); i += 2) {
             const uint16_t high = static_cast<uint8_t>(m_streamData.at(i));
             const uint16_t low = static_cast<uint8_t>(m_streamData.at(i + 1));

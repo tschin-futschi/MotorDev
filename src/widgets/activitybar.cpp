@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    activitybar.cpp
+// @brief   活动栏实现 — 按钮创建、页面切换、QSS 属性驱动
+// =============================================================================
 #include "widgets/activitybar.h"
 
 #include "ui/repolish.h"
@@ -8,6 +12,10 @@
 #include <QSpacerItem>
 #include <QVBoxLayout>
 
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
+
 ActivityBar::ActivityBar(QWidget *parent)
     : QWidget(parent) {
     setupUi();
@@ -17,7 +25,12 @@ ActivityBar::ActivityBar(QWidget *parent)
 
 ActivityBar::~ActivityBar() = default;
 
+// =============================================================================
+// 信号槽连接
+// =============================================================================
+
 void ActivityBar::connectSignals() {
+    // 每个按钮点击时：更新活跃状态 + 发出 pageSelected 信号
     connect(m_configButton, &QPushButton::clicked, this, [this] {
         setActivePage(ConfigPage);
         emit pageSelected(ConfigPage);
@@ -40,6 +53,11 @@ void ActivityBar::connectSignals() {
     });
 }
 
+// =============================================================================
+// 页面状态管理
+// =============================================================================
+
+/// @brief 启用/禁用指定页面的导航按钮（ConfigPage 和 DebugPage 始终可用）
 void ActivityBar::setPageEnabled(int page, bool enabled) {
     switch (page) {
     case RegisterPage:
@@ -52,12 +70,13 @@ void ActivityBar::setPageEnabled(int page, bool enabled) {
         m_scopeButton->setEnabled(enabled);
         break;
     case DebugPage:
-        break;
+        break; // 调试按钮始终可用
     default:
         break;
     }
 }
 
+/// @brief 遍历所有按钮，将匹配索引的按钮设为 active=true，其余 active=false
 void ActivityBar::setActivePage(int index) {
     const QList<QPushButton *> buttons = {
         m_configButton,
@@ -79,6 +98,10 @@ void ActivityBar::setActivePage(int index) {
     }
 }
 
+// =============================================================================
+// UI 构建
+// =============================================================================
+
 void ActivityBar::setupUi() {
     setObjectName(QStringLiteral("ActivityBar"));
     resize(44, 640);
@@ -90,6 +113,7 @@ void ActivityBar::setupUi() {
     verticalLayout->setSpacing(6);
     verticalLayout->setContentsMargins(4, 8, 4, 8);
 
+    // 5 个导航按钮：配置 / 读写 / 烧录 / 示波 / 调试
     const struct {
         QPushButton **button;
         const char *objectName;
@@ -103,6 +127,7 @@ void ActivityBar::setupUi() {
     };
 
     for (const auto &spec : specs) {
+        // 每个按钮用水平布局居中包裹
         auto *wrapper = new QHBoxLayout();
         wrapper->setContentsMargins(0, 0, 0, 0);
         wrapper->addStretch();
@@ -117,8 +142,10 @@ void ActivityBar::setupUi() {
         verticalLayout->addLayout(wrapper);
     }
 
+    // 弹性间距 → 设置按钮推到底部
     verticalLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
+    // 底部设置按钮
     auto *settingsWrapper = new QHBoxLayout();
     settingsWrapper->setContentsMargins(0, 0, 0, 0);
     settingsWrapper->addStretch();

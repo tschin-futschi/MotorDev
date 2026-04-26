@@ -1,29 +1,50 @@
+// =============================================================================
+// @file    scopechannelstrip.h
+// @brief   示波器通道条 — 单通道的启用开关、描述、地址配置
+//
+// ScopeChannelStrip 是示波器底部面板中的通道配置条，每个通道一个：
+// [✓ CH1] [描述输入框] [地址输入框]
+// 提供通道启用/禁用、描述和地址的编辑功能。
+// =============================================================================
 #pragma once
 
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QWidget>
 
+/// @brief 示波器单通道配置条
+///
+/// 包含复选框（启用/禁用）、描述输入框和地址输入框。
+/// 信号携带通道索引，供父控件统一处理。
 class ScopeChannelStrip : public QWidget {
     Q_OBJECT
 
 public:
+    /// @brief 构造通道条
+    /// @param index 通道索引（0~7 对应 CH1~CH8）
+    /// @param parent 父控件
     explicit ScopeChannelStrip(int index, QWidget *parent = nullptr);
     ~ScopeChannelStrip() override;
 
+    /// @brief 通道是否启用
     bool isChannelEnabled() const;
 
 signals:
+    /// @brief 通道启用/禁用切换
     void channelToggled(int index, bool enabled);
+
+    /// @brief 通道描述文本变化
     void descriptionChanged(int index, const QString &text);
+
+    /// @brief 通道地址文本变化
     void addressChanged(int index, const QString &text);
 
 private:
     void setupUi();
     void connectSignals();
 
-    QCheckBox *m_checkBox = nullptr;
-    QLineEdit *m_descEdit = nullptr;
-    QLineEdit *m_addrEdit = nullptr;
-    int m_index = 0;
+    QCheckBox *m_checkBox = nullptr;    ///< 通道启用复选框（显示 "CH#"）
+    QLineEdit *m_descEdit = nullptr;    ///< 描述输入框
+    QLineEdit *m_addrEdit = nullptr;    ///< 地址输入框（十六进制）
+    int m_index = 0;                    ///< 通道索引（0~7）
 };

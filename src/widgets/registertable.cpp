@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    registertable.cpp
+// @brief   寄存器表格实现 — 表格初始化、值解析、状态反馈、JSON 持久化
+// =============================================================================
 #include "widgets/registertable.h"
 
 #include "ui/style_constants.h"
@@ -24,6 +28,8 @@
 using namespace MotorDev;
 
 namespace {
+
+/// @brief 组间分隔线委托 — 在每组第一列左侧绘制竖线作为视觉分隔
 class GroupDividerDelegate : public QStyledItemDelegate {
 public:
     explicit GroupDividerDelegate(QObject *parent = nullptr)
@@ -31,6 +37,7 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
         QStyledItemDelegate::paint(painter, option, index);
+        // 每 5 列为一组，在第 5/10/15 列左侧画分隔线
         if (index.column() > 0 && index.column() % 5 == 0) {
             painter->save();
             painter->setPen(QPen(Style::Color::GroupDivider, Style::Size::TableGroupDividerWidth));
@@ -40,8 +47,13 @@ public:
     }
 };
 
+/// @brief 总行数（4 组 × 20 行 = 80）
 constexpr int TotalRows = Style::Size::TableGroupCount * Style::Size::TableRowCount;
 
+/// @brief 解析地址文本（支持 "0x" 前缀的十六进制）
+/// @param text 输入文本
+/// @param value 输出地址值
+/// @return true=解析成功
 bool parseAddressText(const QString &text, quint16 *value) {
     QString trimmed = text.trimmed();
     if (trimmed.isEmpty()) {
@@ -64,12 +76,17 @@ bool parseAddressText(const QString &text, quint16 *value) {
     return true;
 }
 
+/// @brief 解析寄存器值文本（支持 "0x" 十六进制和十进制）
+/// @param text 输入文本
+/// @param value 输出有符号 16 位值
+/// @return true=解析成功
 bool parseRegisterValueText(const QString &text, qint16 *value) {
     QString trimmed = text.trimmed();
     if (trimmed.isEmpty()) {
         return false;
     }
 
+    // 十六进制模式
     if (trimmed.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive)) {
         trimmed.remove(0, 2);
         bool ok = false;
@@ -83,6 +100,7 @@ bool parseRegisterValueText(const QString &text, qint16 *value) {
         return true;
     }
 
+    // 十进制模式
     bool ok = false;
     const qint16 parsed = trimmed.toShort(&ok, 10);
     if (!ok) {
@@ -96,6 +114,10 @@ bool parseRegisterValueText(const QString &text, qint16 *value) {
 }
 } // namespace
 
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
+
 RegisterTable::RegisterTable(QWidget *parent)
     : QWidget(parent) {
     setupUi();
@@ -103,6 +125,10 @@ RegisterTable::RegisterTable(QWidget *parent)
 }
 
 RegisterTable::~RegisterTable() = default;
+
+// =============================================================================
+// UI 构建
+// =============================================================================
 
 void RegisterTable::setupUi() {
     setObjectName(QStringLiteral("RegisterTable"));
@@ -114,7 +140,7 @@ void RegisterTable::setupUi() {
     m_tableWidget = new QTableWidget(this);
     m_tableWidget->setObjectName(QStringLiteral("tableWidget"));
     m_tableWidget->setRowCount(20);
-    m_tableWidget->setColumnCount(20);
+    m_tableWidget->setColumnCount(20);  // 4 组 × 5 列
     m_tableWidget->setShowGrid(true);
     m_tableWidget->setSelectionMode(QAbstractItemView::NoSelection);
     m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectItems);
@@ -132,6 +158,7 @@ void RegisterTable::setupUi() {
     table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     table->setItemDelegate(new GroupDividerDelegate(table));
 
+    // 设置列头（每组重复：描述 | 地址 | 值 | R | W）
     const QStringList groupHeaders = {tr("描述"), tr("地址"), tr("值"), QStringLiteral("R"), QStringLiteral("W")};
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
         for (int column = 0; column < groupHeaders.size(); ++column) {
@@ -139,35 +166,42 @@ void RegisterTable::setupUi() {
         }
     }
 
+    // 等宽字体用于地址和值列
     QFont monoFont(QLatin1String(Style::Font::Monospace));
     monoFont.setStyleHint(QFont::Monospace);
     monoFont.setPointSize(Style::Size::RegisterTableFontSize);
 
+    // 创建所有单元格和 R/W 按钮
     for (int row = 0; row < Style::Size::TableRowCount; ++row) {
         for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
             const int globalRow = group * Style::Size::TableRowCount + row;
 
+            // 描述列（可编辑文本）
             auto *descItem = new QTableWidgetItem(QString{});
             descItem->setTextAlignment(Qt::AlignVCenter | Qt::AlignLeft);
             table->setItem(row, descCol(group), descItem);
 
+            // 地址列（等宽、居中）
             auto *addrItem = new QTableWidgetItem(QString{});
             addrItem->setTextAlignment(Qt::AlignCenter);
             addrItem->setFont(monoFont);
             table->setItem(row, addrCol(group), addrItem);
 
+            // 值列（等宽、居中、特殊颜色）
             auto *valueItem = new QTableWidgetItem(QString{});
             valueItem->setTextAlignment(Qt::AlignCenter);
             valueItem->setFont(monoFont);
             valueItem->setForeground(QBrush(Style::Color::RegisterValueText));
             table->setItem(row, valueCol(group), valueItem);
 
+            // R 按钮
             auto *readButton = new QPushButton(QStringLiteral("R"), table);
             readButton->setFixedHeight(Style::Size::TableRowHeight - 2);
             readButton->setProperty("buttonType", QStringLiteral("read"));
             table->setCellWidget(row, readCol(group), readButton);
             m_readButtons[globalRow] = readButton;
 
+            // W 按钮
             auto *writeButton = new QPushButton(QStringLiteral("W"), table);
             writeButton->setFixedHeight(Style::Size::TableRowHeight - 2);
             writeButton->setProperty("buttonType", QStringLiteral("write"));
@@ -179,7 +213,12 @@ void RegisterTable::setupUi() {
     applyColumnWidths();
 }
 
+// =============================================================================
+// 信号槽连接
+// =============================================================================
+
 void RegisterTable::connectSignals() {
+    // R/W 按钮 → readRowRequested / writeRowRequested
     for (int globalRow = 0; globalRow < TotalRows; ++globalRow) {
         connect(m_readButtons[globalRow], &QPushButton::clicked, this, [this, globalRow]() {
             if (rowHasAddress(globalRow)) {
@@ -193,11 +232,13 @@ void RegisterTable::connectSignals() {
         });
     }
 
+    // 单元格编辑完成 → 值自动格式化 + configChanged 信号
     connect(m_tableWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
         if (item == nullptr) {
             return;
         }
         const int columnMod = item->column() % 5;
+        // 值列编辑 → 自动格式化为当前 ValueMode
         if (columnMod == 2) {
             qint16 value = 0;
             if (parseRegisterValueText(item->text(), &value)) {
@@ -206,12 +247,14 @@ void RegisterTable::connectSignals() {
                 updateRowValue(globalRow, value);
             }
         }
+        // 描述/地址/值任意变化 → 触发自动保存
         if (columnMod == 0 || columnMod == 1 || columnMod == 2) {
             emit configChanged();
         }
     });
 }
 
+/// @brief 设置各列宽度
 void RegisterTable::applyColumnWidths() {
     auto *table = m_tableWidget;
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
@@ -222,6 +265,10 @@ void RegisterTable::applyColumnWidths() {
         table->setColumnWidth(writeCol(group), Style::Size::ColWriteWidth);
     }
 }
+
+// =============================================================================
+// 状态控制
+// =============================================================================
 
 void RegisterTable::setConnected(bool connected) {
     for (int i = 0; i < TotalRows; ++i) {
@@ -234,6 +281,7 @@ void RegisterTable::setConnected(bool connected) {
     }
 }
 
+/// @brief 切换 Hex/Dec 模式，遍历所有行重新格式化已有值
 void RegisterTable::setValueMode(ValueMode mode) {
     if (mode == m_valueMode) {
         return;
@@ -263,6 +311,11 @@ void RegisterTable::setValueMode(ValueMode mode) {
     }
 }
 
+// =============================================================================
+// 行值更新与状态反馈
+// =============================================================================
+
+/// @brief 更新行值显示，根据当前 ValueMode 格式化
 void RegisterTable::updateRowValue(int globalRow, qint16 value) {
     if (globalRow < 0 || globalRow >= TotalRows) {
         return;
@@ -283,6 +336,7 @@ void RegisterTable::updateRowValue(int globalRow, qint16 value) {
     item->setForeground(QBrush(Style::Color::RegisterValueText));
 }
 
+/// @brief 标记行为错误状态：显示 "--" 红色文字
 void RegisterTable::markRowError(int globalRow) {
     if (globalRow < 0 || globalRow >= TotalRows) {
         return;
@@ -298,6 +352,7 @@ void RegisterTable::markRowError(int globalRow) {
     item->setForeground(QBrush(Style::Color::RegisterErrorText));
 }
 
+/// @brief 标记行为等待状态：显示 "..." 灰色文字
 void RegisterTable::markRowPending(int globalRow) {
     if (globalRow < 0 || globalRow >= TotalRows) {
         return;
@@ -313,6 +368,7 @@ void RegisterTable::markRowPending(int globalRow) {
     item->setForeground(QBrush(Style::Color::MutedText));
 }
 
+/// @brief W 按钮短暂闪烁反馈：200ms 后清除 feedback 属性
 void RegisterTable::markWriteButtonFeedback(int globalRow, bool success) {
     if (globalRow < 0 || globalRow >= TotalRows) {
         return;
@@ -331,6 +387,10 @@ void RegisterTable::markWriteButtonFeedback(int globalRow, bool success) {
         UiUtil::repolish(button);
     });
 }
+
+// =============================================================================
+// 行数据查询
+// =============================================================================
 
 bool RegisterTable::rowHasAddress(int globalRow) const {
     if (globalRow < 0 || globalRow >= TotalRows) {
@@ -388,6 +448,11 @@ qint16 RegisterTable::rowValue(int globalRow) const {
     return parseRegisterValueText(item->text(), &value) ? value : 0;
 }
 
+// =============================================================================
+// JSON 持久化
+// =============================================================================
+
+/// @brief 保存所有行到 JSON：{version: 1, registers: [{desc, addr, val}, ...]}
 void RegisterTable::saveConfig(const QString &path) const {
     QJsonArray registers;
     for (int globalRow = 0; globalRow < TotalRows; ++globalRow) {
@@ -413,6 +478,7 @@ void RegisterTable::saveConfig(const QString &path) const {
     }
 }
 
+/// @brief 从 JSON 加载寄存器配置到表格（阻塞信号避免触发 configChanged）
 void RegisterTable::loadConfig(const QString &path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {

@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    logpanel.cpp
+// @brief   日志输出面板实现 — 消息着色、线程安全追加、行数限制
+// =============================================================================
 #include "widgets/logpanel.h"
 
 #include "ui/style_constants.h"
@@ -16,11 +20,16 @@ using namespace MotorDev;
 
 LogPanel *LogPanel::s_instance = nullptr;
 
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
+
 LogPanel::LogPanel(QWidget *parent)
     : QWidget(parent) {
     s_instance = this;
     setupUi();
 
+    // 限制最大行数，防止长时间运行导致内存增长
     m_textEdit->document()->setMaximumBlockCount(500);
     connect(m_clearButton, &QPushButton::clicked, m_textEdit, &QTextEdit::clear);
 }
@@ -31,7 +40,19 @@ LogPanel::~LogPanel() {
     }
 }
 
+// =============================================================================
+// 日志追加
+// =============================================================================
+
+/// @brief 追加日志消息，自动着色
+///
+/// 颜色规则：
+/// - Debug: MutedText（灰色）
+/// - Info: LogInfo（蓝色）
+/// - Warning: LogWarning（黄色）
+/// - Critical/Fatal: LogError（红色）
 void LogPanel::appendMessage(QtMsgType type, const QString &category, const QString &msg) {
+    // 跨线程调用 → 自动转发到 GUI 线程
     if (QThread::currentThread() != thread()) {
         QMetaObject::invokeMethod(
             this,
@@ -75,6 +96,10 @@ void LogPanel::appendMessage(QtMsgType type, const QString &category, const QStr
     m_textEdit->moveCursor(QTextCursor::End);
 }
 
+// =============================================================================
+// UI 构建
+// =============================================================================
+
 void LogPanel::setupUi() {
     setObjectName(QStringLiteral("LogPanel"));
     setMinimumSize(QSize(0, Style::Size::LogPanelHeight));
@@ -85,6 +110,7 @@ void LogPanel::setupUi() {
     rootLayout->setSpacing(4);
     rootLayout->setContentsMargins(8, 4, 8, 4);
 
+    // 标题栏：标题 + 清空按钮
     auto *headerLayout = new QHBoxLayout();
     headerLayout->setObjectName(QStringLiteral("headerLayout"));
     headerLayout->setContentsMargins(0, 0, 0, 0);
@@ -103,6 +129,7 @@ void LogPanel::setupUi() {
     m_clearButton->setText(tr("清空"));
     headerLayout->addWidget(m_clearButton);
 
+    // 日志文本区
     m_textEdit = new QTextEdit(this);
     m_textEdit->setObjectName(QStringLiteral("textEdit"));
     m_textEdit->setReadOnly(true);

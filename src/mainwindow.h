@@ -1,3 +1,16 @@
+// =============================================================================
+// @file    mainwindow.h
+// @brief   主窗口类声明
+//
+// MainWindow 是应用程序的顶层窗口，负责：
+// - 持有并组合所有顶层 UI 组件（TopBar、ActivityBar、ContentStack、LogPanel）
+// - 管理核心服务实例（SerialManager、CommandDispatcher、DeviceContext）
+// - 协调页面切换和串口连接状态对各 Tab 的启用/禁用
+// - 桥接 TopBar 示波器控件与 OscilloscopTab 之间的信号
+//
+// 线程安全：MainWindow 及其所有 UI 子组件只在主线程操作。
+// =============================================================================
+
 #pragma once
 
 #include <QMainWindow>
@@ -16,27 +29,43 @@ class SerialManager;
 class TopBar;
 class QWidget;
 
+/// @brief 应用程序主窗口
+///
+/// 采用 TopBar + ActivityBar + ContentStack + LogPanel + StatusBar 的经典布局。
+/// 串口连接成功后启用寄存器/烧录/示波器页面；断开后禁用相关页面。
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
+    /// @brief 构造主窗口，初始化所有服务和 UI 组件
+    /// @param parent  父控件，默认为 nullptr（顶层窗口）
     explicit MainWindow(QWidget *parent = nullptr);
+
+    /// @brief 析构函数，释放 SerialManager（需在子线程清理前手动删除）
     ~MainWindow() override;
 
 private:
+    /// @brief 构建 UI 布局和所有子控件
     void setupUi();
+
+    /// @brief 连接所有信号槽（页面切换、串口状态、日志面板等）
     void connectSignals();
 
-    SerialManager *m_serialManager = nullptr;
-    CommandDispatcher *m_dispatcher = nullptr;
-    DeviceContext *m_deviceContext = nullptr;
-    TopBar *m_topBar = nullptr;
-    ActivityBar *m_activityBar = nullptr;
-    QStackedWidget *m_contentStack = nullptr;
-    LogPanel *m_logPanel = nullptr;
-    QPushButton *m_logToggleButton = nullptr;
-    ConfigTab *m_configTab = nullptr;
-    RegisterRwTab *m_registerTab = nullptr;
-    OscilloscopTab *m_scopeTab = nullptr;
-    SerialDebugTab *m_debugTab = nullptr;
+    // --- 核心服务 ---
+    SerialManager *m_serialManager = nullptr;       ///< 串口管理器（独立线程运行）
+    CommandDispatcher *m_dispatcher = nullptr;       ///< 命令分发器（命令队列 + 超时管理）
+    DeviceContext *m_deviceContext = nullptr;        ///< 设备上下文（IC 类型 + 从机地址）
+
+    // --- 顶层 UI 组件 ---
+    TopBar *m_topBar = nullptr;                     ///< 顶栏（Logo、连接状态、示波器控件）
+    ActivityBar *m_activityBar = nullptr;            ///< 左侧活动栏（页面切换按钮）
+    QStackedWidget *m_contentStack = nullptr;        ///< 内容区域堆叠容器（各 Tab 页面）
+    LogPanel *m_logPanel = nullptr;                  ///< 底部日志面板
+    QPushButton *m_logToggleButton = nullptr;        ///< 状态栏上的日志面板展开/收起按钮
+
+    // --- Tab 页面 ---
+    ConfigTab *m_configTab = nullptr;                ///< 配置 Tab（串口/IC/PMIC）
+    RegisterRwTab *m_registerTab = nullptr;          ///< 寄存器读写 Tab
+    OscilloscopTab *m_scopeTab = nullptr;            ///< 示波器 Tab
+    SerialDebugTab *m_debugTab = nullptr;            ///< 串口调试模拟器（浮动窗口）
 };

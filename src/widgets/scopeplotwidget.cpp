@@ -1,3 +1,32 @@
+// =============================================================================
+// @file    scopeplotwidget.cpp
+// @brief   示波器波形绘制实现 — OpenGL 绘制、拖拽缩放、数据快照、帧率统计
+//
+// ScopePlotWidget 是示波器的核心绘图控件，基于 QOpenGLWidget 实现。
+//
+// 渲染架构：
+//   - 16 ms 定时器驱动重绘（≈60 fps），空闲时降至 100 ms
+//   - 不在 appendSamples 中触发 update()，定时器是唯一重绘源
+//   - 每帧流程：帧时间统计 → 静态背景 → 数据快照 → AutoY → 波形 → 轴/图例
+//
+// 数据快照机制：
+//   buildPaintSnapshot() 将 ChannelBuffer 环形缓冲区展平为线性数组，
+//   避免绘制时反复处理环形索引。所有通道的快照在绘制前统一构建。
+//
+// 线宽优化（Shell 扩展）：
+//   QPainter + cosmetic pen 在 Windows 下仅支持 1~4px 高效绘制。
+//   更粗的线通过偏移绘制多层"壳"（Shell）实现：
+//     Shell 1: 8 个方向偏移 1px 重绘
+//     Shell 2: 12 个方向偏�� 2px 重绘
+//   必须配合 cosmetic + FlatCap + BevelJoin 才能保证性能。
+//
+// 缩放交互：
+//   - 水平拖拽选框 → X 轴缩放（时间轴）
+//   - 垂直拖拽选框 → Y 轴缩放（幅值轴）
+//   - 双击 → 切换全屏
+//   - 右键菜单 → 重置缩放
+//   - Esc → 退出全屏
+// =============================================================================
 #include "widgets/scopeplotwidget.h"
 
 #include "ui/style_constants.h"
@@ -17,9 +46,13 @@
 using namespace MotorDev;
 
 namespace {
-constexpr int RenderIntervalMs = 16; // ~60fps active render
-constexpr int IdleIntervalMs = 100;  // idle render interval
+constexpr int RenderIntervalMs = 16;                    ///< 活跃渲染间隔（≈60 fps）
+constexpr int IdleIntervalMs = 100;                     ///< 空闲渲染间隔
 
+/// @brief 配置示波器专用画笔：cosmetic + FlatCap + BevelJoin。
+///
+/// 这三个属性的组合是 Windows 下 QPainter drawPolyline 的性能关键，
+/// 缺少任一项都会导致 GDI 回退路径，帧率从 60fps 降至 <10fps。
 void configureScopePen(QPen &pen, const QColor &color, qreal width, Qt::PenStyle style) {
     pen = QPen(color, width);
     pen.setCosmetic(true);
@@ -28,6 +61,7 @@ void configureScopePen(QPen &pen, const QColor &color, qreal width, Qt::PenStyle
     pen.setStyle(style);
 }
 
+/// @brief 计算需要的额外偏移壳层数（实现超过 4px 的线宽）。
 int extraThicknessShells(qreal requestedWidth, qreal baseWidth) {
     if (requestedWidth <= baseWidth) {
         return 0;
@@ -36,11 +70,13 @@ int extraThicknessShells(qreal requestedWidth, qreal baseWidth) {
     return qMax(0, qCeil((requestedWidth - baseWidth) / 2.0));
 }
 
+/// Shell 1 偏移表：8 个方向各偏移 1 像素（4 正交 + 4 对角）
 constexpr QPoint kShellOneOffsets[] = {
     QPoint(-1, 0), QPoint(1, 0), QPoint(0, -1), QPoint(0, 1),
     QPoint(-1, -1), QPoint(1, -1), QPoint(-1, 1), QPoint(1, 1)
 };
 
+/// Shell 2 偏移表：12 个方向各偏移 2 像素
 constexpr QPoint kShellTwoOffsets[] = {
     QPoint(-2, 0), QPoint(2, 0), QPoint(0, -2), QPoint(0, 2),
     QPoint(-2, -1), QPoint(-2, 1), QPoint(2, -1), QPoint(2, 1),
@@ -48,6 +84,11 @@ constexpr QPoint kShellTwoOffsets[] = {
 };
 } // namespace
 
+// =============================================================================
+// 构造
+// =============================================================================
+
+/// @brief 构造示波器绘图控件：初始化 OpenGL、渲染定时器、采样按钮。
 ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     : QOpenGLWidget(parent) {
     m_channels.resize(kMaxChannels);
@@ -86,6 +127,11 @@ QSize ScopePlotWidget::minimumSizeHint() const {
     return {720, 320};
 }
 
+// =============================================================================
+// 公共接口 — 运行状态与配置
+// =============================================================================
+
+/// @brief 设置采样运行状态，动态调整渲染定时器频率。
 void ScopePlotWidget::setRunning(bool running) {
     if (m_running != running) {
         m_running = running;
@@ -152,6 +198,7 @@ void ScopePlotWidget::setManualYAxisRange(double minValue, double maxValue) {
     m_yViewMax = maxValue;
 }
 
+/// @brief 更新通道配置（颜色、线宽、线型、数据点显示等）。
 void ScopePlotWidget::setChannelData(const QVector<PlotChannelData> &channels) {
     for (auto &channel : m_channels) {
         channel.enabled = false;
@@ -173,6 +220,10 @@ void ScopePlotWidget::setChannelData(const QVector<PlotChannelData> &channels) {
     markAutoYDirty();
 }
 
+/// @brief 配置采集参数：计算原始窗口点数、降采样桶宽和 UI 显示点数。
+///
+/// 降采样策略：若原始点数超过 kUiRingSize（3000），按桶宽聚合。
+/// 例如：窗口 4000ms / 间隔 100us → 40000 点 → 桶宽 14 → UI 约 2857 点。
 void ScopePlotWidget::configureAcquisition(int intervalUs, int windowMs) {
     if (intervalUs <= 0 || windowMs <= 0) {
         return;
@@ -190,6 +241,9 @@ void ScopePlotWidget::configureAcquisition(int intervalUs, int windowMs) {
     clearData();
 }
 
+/// @brief 追加一帧采样数据到对应通道的环形缓冲区。
+///
+/// 注意：此方法不调用 update()，重绘由 16ms 渲染定时器统一驱动。
 void ScopePlotWidget::appendSamples(uint8_t channelMask, const QVector<int16_t> &samples) {
     int sampleIndex = 0;
     for (int channelIndex = 0; channelIndex < m_channels.size(); ++channelIndex) {
@@ -237,6 +291,19 @@ void ScopePlotWidget::resetZoom() {
     }
 }
 
+// =============================================================================
+// 绘制主流程
+// =============================================================================
+
+/// @brief 主绘制入口：帧率统计 → 静态背景 → 数据快照 → AutoY → 波形 → 轴/图例。
+///
+/// 渲染流程：
+///   1. 帧间隔 EMA 统计（alpha=0.1）
+///   2. paintStaticFrame: 背景 + 圆角边框 + 网格
+///   3. buildPaintSnapshot: 每个启用通道的环形缓冲区展平为线性数组
+///   4. computeAutoYFromSnapshot: AutoY 模式下扫描快照计算 Y 范围
+///   5. paintOverlay / paintStacked: 叠加或分栏绘制波形
+///   6. paintSelection + paintYAxis + paintTimeAxis + paintFrameTimeReadout
 void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
@@ -320,6 +387,11 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     paintFrameTimeReadout(&painter, frameRect);
 }
 
+// =============================================================================
+// 鼠标交互 — 拖拽缩放
+// =============================================================================
+
+/// @brief 鼠标按下：在绘图区域内启动拖拽选框。
 void ScopePlotWidget::mousePressEvent(QMouseEvent *event) {
     if (event->button() != Qt::LeftButton) {
         QWidget::mousePressEvent(event);
@@ -339,6 +411,7 @@ void ScopePlotWidget::mousePressEvent(QMouseEvent *event) {
     event->accept();
 }
 
+/// @brief 鼠标移动：根据位移方向判断水平/垂直缩放模式（阈值 6px）。
 void ScopePlotWidget::mouseMoveEvent(QMouseEvent *event) {
     if (!m_dragSelecting) {
         QWidget::mouseMoveEvent(event);
@@ -354,6 +427,7 @@ void ScopePlotWidget::mouseMoveEvent(QMouseEvent *event) {
     event->accept();
 }
 
+/// @brief 鼠标释放：应用缩放。水平选框→时间轴缩放，垂直选框→幅值轴缩放。
 void ScopePlotWidget::mouseReleaseEvent(QMouseEvent *event) {
     if (!m_dragSelecting || event->button() != Qt::LeftButton) {
         QWidget::mouseReleaseEvent(event);
@@ -432,6 +506,11 @@ void ScopePlotWidget::keyPressEvent(QKeyEvent *event) {
     QOpenGLWidget::keyPressEvent(event);
 }
 
+// =============================================================================
+// 绘制子模块
+// =============================================================================
+
+/// @brief 绘制网格：10 列 × 8 行，每 5 列和 4 行使用主网格线。
 void ScopePlotWidget::paintGrid(QPainter *painter, const QRect &rect) {
     painter->save();
     painter->setClipRect(rect);
@@ -455,6 +534,9 @@ void ScopePlotWidget::paintGrid(QPainter *painter, const QRect &rect) {
     painter->restore();
 }
 
+/// @brief 叠加模式绘制：所有通道共享同一绘图区域。
+///
+/// 每个通道绘制流程：基础线 → Shell 1（可选）→ Shell 2（可选）→ 数据点圆点（可选）
 void ScopePlotWidget::paintOverlay(QPainter *painter, const QRect &rect, double yMin, double yMax) {
     const int startIndex = visibleSampleStart();
     const int endIndex = qMax(startIndex, visibleSampleEnd());
@@ -495,6 +577,7 @@ void ScopePlotWidget::paintOverlay(QPainter *painter, const QRect &rect, double 
     }
 }
 
+/// @brief 分栏模式绘制：每个通道独占一个水平泳道，泳道间有间隙。
 void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double yMin, double yMax) {
     int channelCount = 0;
     for (const ChannelData &channel : m_channels) {
@@ -567,6 +650,15 @@ void ScopePlotWidget::paintStacked(QPainter *painter, const QRect &rect, double 
     }
 }
 
+/// @brief 在指定矩形区域内绘制单个通道的波形折线。
+///
+/// 算法：
+///   1. 从快照数组中取 [actualStart, actualEnd] 范围的数据
+///   2. 将每个样本值归一化到 [0, 1]（基于 yMin/yMax）
+///   3. 映射到像素坐标填入 m_pointBuffer
+///   4. 一次 drawPolyline 调用绘制所有点
+///
+/// @return 实际绘制的点数（供后续 drawDataPointDots 使用）
 int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
                                       int channelIndex, double yMin, double yMax,
                                       int startIndex, int endIndex) {
@@ -615,6 +707,9 @@ int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
     return pointCount;
 }
 
+/// @brief 在波形上绘制数据点圆点（SolidDot 模式）。
+///
+/// 使用最小间距过滤避免圆点过密：相邻圆点间距 < 8px 时跳过。
 void ScopePlotWidget::drawDataPointDots(QPainter *painter, const QColor &color, int pointCount) {
     constexpr qreal kDotRadius = 3.0;
     constexpr qreal kMinDotSpacingPx = 8.0;
@@ -641,6 +736,14 @@ void ScopePlotWidget::drawDataPointDots(QPainter *painter, const QColor &color, 
     }
 }
 
+// =============================================================================
+// 数据快照
+// =============================================================================
+
+/// @brief 将通道环形缓冲区展平为线性数组，供绘制和 AutoY 使用。
+///
+/// 展平后的数据存储在 m_paintSnapshot[channelIndex] 中，
+/// m_paintSnapshotCount 和 m_paintSnapshotOffset 记录有效数据的范围。
 void ScopePlotWidget::buildPaintSnapshot(int channelIndex) {
     const ChannelData &channel = m_channels[channelIndex];
     const int activeDisplayCount = m_displaySampleCount;
@@ -671,6 +774,10 @@ void ScopePlotWidget::buildPaintSnapshot(int channelIndex) {
     }
 }
 
+/// @brief 从所有启用通道的快照中计算自动 Y 轴范围。
+///
+/// 算法：扫描可见区域内所有启用通道的数据，取全局 min/max，
+/// 然后按 100 为步长向外取整，并留出 10% 或 50 的 padding。
 void ScopePlotWidget::computeAutoYFromSnapshot(int startIndex, int endIndex,
                                                double &minValue, double &maxValue) const {
     bool hasValue = false;
@@ -723,6 +830,11 @@ void ScopePlotWidget::computeAutoYFromSnapshot(int startIndex, int endIndex,
     }
 }
 
+// =============================================================================
+// 坐标轴与图例绘制
+// =============================================================================
+
+/// @brief 绘制时间轴（X 轴）：8 等分刻度 + 毫秒标签。
 void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
     const QRect axisRect(plotRect.left(),
                          plotRect.bottom() + 4,
@@ -741,6 +853,7 @@ void ScopePlotWidget::paintTimeAxis(QPainter *painter, const QRect &plotRect) {
     }
 }
 
+/// @brief 绘制幅值轴（Y 轴）：5 等分刻度 + 数值标签。
 void ScopePlotWidget::paintYAxis(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
     painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontSmall));
@@ -763,6 +876,7 @@ void ScopePlotWidget::paintYAxis(QPainter *painter, const QRect &rect) {
     }
 }
 
+/// @brief 绘制叠加模式下的通道图例（左上角彩色方块 + 通道名）。
 void ScopePlotWidget::paintLegend(QPainter *painter, const QRect &rect) {
     const int itemWidth = 98;
     const int itemHeight = 18;
@@ -788,6 +902,7 @@ void ScopePlotWidget::paintLegend(QPainter *painter, const QRect &rect) {
     }
 }
 
+/// @brief 绘制拖拽选框（虚线边框 + 半透明填充）。
 void ScopePlotWidget::paintSelection(QPainter *painter, const QRect &rect) {
     if (!m_dragSelecting) {
         return;
@@ -817,6 +932,7 @@ void ScopePlotWidget::paintSelection(QPainter *painter, const QRect &rect) {
     painter->restore();
 }
 
+/// @brief 绘制右上角帧率读数（fps + 帧时间）和运行状态提示。
 void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect) {
     painter->setPen(Style::Color::ScopeTextSubtle);
     painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), Style::Size::ScopePlotFontNormal));
@@ -838,6 +954,7 @@ void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect
                       m_running ? tr("Live scope preview") : tr("Scope idle preview"));
 }
 
+/// @brief 绘制静态背景层：全区域填充 → 圆角边框 → 网格。
 void ScopePlotWidget::paintStaticFrame(QPainter *painter, const QRect &frameRect, const QRect &plotRect) {
     painter->fillRect(rect(), Style::Color::ScopeBackground);
     painter->setPen(QPen(Style::Color::ScopeFrameBorder, 1));
@@ -852,6 +969,11 @@ void ScopePlotWidget::markAutoYDirty() {
     }
 }
 
+// =============================================================================
+// 辅助计算
+// =============================================================================
+
+/// @brief 计算当前绘图区域矩形（去除边距和坐标轴空间）。
 QRect ScopePlotWidget::currentPlotRect() const {
     const QRect frameRect = rect().adjusted(Style::Size::ScopePlotFramePadding,
                                             Style::Size::ScopePlotFramePadding,
@@ -863,12 +985,14 @@ QRect ScopePlotWidget::currentPlotRect() const {
                               -Style::Size::ScopePlotAxisBottom);
 }
 
+/// @brief 返回当前视口起始采样索引（考虑缩放比例）。
 int ScopePlotWidget::visibleSampleStart() const {
     const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
     const int offset = static_cast<int>(std::floor(m_viewStartRatio * windowLastIndex));
     return qBound(0, offset, windowLastIndex);
 }
 
+/// @brief 返回当前视口结束采样索引（考虑缩放比例）。
 int ScopePlotWidget::visibleSampleEnd() const {
     const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
     const int offset = static_cast<int>(std::ceil(m_viewEndRatio * windowLastIndex));

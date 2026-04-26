@@ -1,4 +1,17 @@
-// SimulatorService — 模拟器协议调度、波形生成、流线程管理
+// =============================================================================
+// @file    simulatorservice.h
+// @brief   模拟器服务（服务层）— 协议命令分发、模拟响应生成、波形数据流线程
+//
+// 在 SerialDebugTab 中模拟 STM32 侧的行为：
+// - 接收上位机命令并模拟响应（I2C 扫描、寄存器读写、PMIC 配置等）
+// - 采样启动后，在独立 std::thread 中按采样间隔生成正弦波形数据
+// - 通过 debugStreamGenerated 信号将模拟数据注入示波器
+//
+// 线程模型：
+// - SimulatorSerial 在独立 QThread 中运行
+// - 波形生成在 std::thread (streamWorkerLoop) 中运行，通过 mutex + condition_variable 同步
+// - 主线程处理命令分发和 UI 交互
+// =============================================================================
 #pragma once
 
 #include <QByteArray>

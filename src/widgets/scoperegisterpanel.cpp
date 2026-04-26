@@ -1,3 +1,14 @@
+// =============================================================================
+// @file    scoperegisterpanel.cpp
+// @brief   示波器寄存器辅助面板实现 — 8 行读写 UI、循环写入控制
+//
+// 布局结构（每行一组）：
+//   [描述输入] [地址输入] [值输入] [R按钮] [W按钮]  × 8 行
+//   [间隔标签] [间隔输入] [启动] [停止] ---弹簧--- [清除面板] [录入参数]
+//
+// 本面板仅负责 UI 展示和用户交互信号发射，
+// 实际的寄存器读写逻辑由外部（OscilloscpTab）通过信号槽连接处理。
+// =============================================================================
 #include "widgets/scoperegisterpanel.h"
 
 #include "ui/repolish.h"
@@ -10,27 +21,43 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
+
 ScopeRegisterPanel::ScopeRegisterPanel(QWidget *parent)
     : QWidget(parent) {
     setupUi();
     connectSignals();
-    setCyclicRunning(false);
+    setCyclicRunning(false);                            // 初始状态：循环写入停止
 }
 
 ScopeRegisterPanel::~ScopeRegisterPanel() = default;
 
+// =============================================================================
+// 公共查询接口
+// =============================================================================
+
+/// @brief 返回指定行的地址文本。
 QString ScopeRegisterPanel::addressText(int row) const {
     return (row >= 0 && row < RowCount && m_addrEdits[row] != nullptr) ? m_addrEdits[row]->text() : QString();
 }
 
+/// @brief 返回指定行的值文本。
 QString ScopeRegisterPanel::valueText(int row) const {
     return (row >= 0 && row < RowCount && m_valueEdits[row] != nullptr) ? m_valueEdits[row]->text() : QString();
 }
 
+/// @brief 返回循环写入间隔文本。
 QString ScopeRegisterPanel::intervalText() const {
     return m_intervalEdit != nullptr ? m_intervalEdit->text() : QString();
 }
 
+// =============================================================================
+// 公共设置接口
+// =============================================================================
+
+/// @brief 设置指定行的值输入框文本（用于读取结果回填）。
 void ScopeRegisterPanel::setValueText(int row, const QString &text) {
     if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
         return;
@@ -38,6 +65,9 @@ void ScopeRegisterPanel::setValueText(int row, const QString &text) {
     m_valueEdits[row]->setText(text);
 }
 
+/// @brief 设置指定行的地址输入框错误状态。
+///
+/// 通过 QSS 动态属性 "hasError" 控制红色边框样式。
 void ScopeRegisterPanel::setAddressError(int row, bool error) {
     if (row < 0 || row >= RowCount || m_addrEdits[row] == nullptr) {
         return;
@@ -47,6 +77,13 @@ void ScopeRegisterPanel::setAddressError(int row, bool error) {
     MotorDev::UiUtil::repolish(m_addrEdits[row]);
 }
 
+/// @brief 设置指定行按钮的操作反馈状态（成功/失败闪烁）。
+///
+/// @param row     行号
+/// @param isRead  true=读按钮，false=写按钮
+/// @param state   反馈状态字符串（"ok" / "error" / 空字符串清除）
+///
+/// 非空状态在 600 ms 后自动清除，实现短暂的视觉反馈效果。
 void ScopeRegisterPanel::setButtonFeedback(int row, bool isRead, const QString &state) {
     if (row < 0 || row >= RowCount) {
         return;
@@ -57,9 +94,11 @@ void ScopeRegisterPanel::setButtonFeedback(int row, bool isRead, const QString &
         return;
     }
 
+    // 设置 QSS 动态属性触发样式变化
     button->setProperty("feedback", state);
     MotorDev::UiUtil::repolish(button);
 
+    // 非空状态 600 ms 后自动清除
     if (!state.isEmpty()) {
         QTimer::singleShot(600, button, [button]() {
             button->setProperty("feedback", QString());
@@ -68,6 +107,7 @@ void ScopeRegisterPanel::setButtonFeedback(int row, bool isRead, const QString &
     }
 }
 
+/// @brief 设置循环写入运行状态，更新启动/停止按钮的 active 属性。
 void ScopeRegisterPanel::setCyclicRunning(bool running) {
     if (m_startButton != nullptr) {
         m_startButton->setProperty("active", running);
@@ -80,6 +120,7 @@ void ScopeRegisterPanel::setCyclicRunning(bool running) {
     }
 }
 
+/// @brief 清空所有行的地址、值输入框和错误状态。
 void ScopeRegisterPanel::clearAll() {
     for (int row = 0; row < RowCount; ++row) {
         if (m_addrEdits[row] != nullptr) {
@@ -96,24 +137,38 @@ void ScopeRegisterPanel::clearAll() {
     }
 }
 
+// =============================================================================
+// 信号槽连接
+// =============================================================================
+
+/// @brief 连接 8 行 R/W 按钮和底部控制按钮的信号。
 void ScopeRegisterPanel::connectSignals() {
+    // ---------- 8 行读写按钮 ----------
     for (int row = 0; row < RowCount; ++row) {
+        // 读按钮：清除错误状态后发射 readRequested
         connect(m_readButtons[row], &QPushButton::clicked, this, [this, row]() {
             setAddressError(row, false);
             emit readRequested(row);
         });
+        // 写按钮：清除错误状态后发射 writeRequested
         connect(m_writeButtons[row], &QPushButton::clicked, this, [this, row]() {
             setAddressError(row, false);
             emit writeRequested(row);
         });
     }
 
+    // ---------- 底部控制按钮 ----------
     connect(m_startButton, &QPushButton::clicked, this, &ScopeRegisterPanel::startRequested);
     connect(m_stopButton, &QPushButton::clicked, this, &ScopeRegisterPanel::stopRequested);
     connect(m_clearButton, &QPushButton::clicked, this, &ScopeRegisterPanel::clearPanelRequested);
     connect(m_loadButton, &QPushButton::clicked, this, &ScopeRegisterPanel::loadParamsRequested);
 }
 
+// =============================================================================
+// UI 构建
+// =============================================================================
+
+/// @brief 创建 8 行寄存器输入控件和底部控制栏。
 void ScopeRegisterPanel::setupUi() {
     setObjectName(QStringLiteral("ScopeRegisterPanel"));
     setMinimumSize(QSize(430, 292));
@@ -124,15 +179,18 @@ void ScopeRegisterPanel::setupUi() {
     rootLayout->setSizeConstraint(QLayout::SetMinimumSize);
     rootLayout->setContentsMargins(6, 6, 6, 6);
 
+    // ---------- 8 行寄存器控件 ----------
     for (int row = 0; row < RowCount; ++row) {
         auto *rowLayout = new QHBoxLayout();
         rowLayout->setObjectName(QStringLiteral("row%1Layout").arg(row));
         rowLayout->setSpacing(8);
+        // 列宽比例：描述(3) : 地址(2) : 值(2) : 按钮固定
         rowLayout->setStretch(0, 3);
         rowLayout->setStretch(1, 2);
         rowLayout->setStretch(2, 2);
         rootLayout->addLayout(rowLayout);
 
+        // --- 描述输入框 ---
         m_descEdits[row] = new QLineEdit(this);
         m_descEdits[row]->setObjectName(QStringLiteral("descEdit%1").arg(row));
         m_descEdits[row]->setMinimumSize(QSize(124, 24));
@@ -141,6 +199,7 @@ void ScopeRegisterPanel::setupUi() {
         m_descEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_descEdits[row]);
 
+        // --- 地址输入框：默认从 0x0020 开始递增 ---
         m_addrEdits[row] = new QLineEdit(this);
         m_addrEdits[row]->setObjectName(QStringLiteral("addrEdit%1").arg(row));
         m_addrEdits[row]->setMinimumSize(QSize(92, 24));
@@ -149,6 +208,7 @@ void ScopeRegisterPanel::setupUi() {
         m_addrEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_addrEdits[row]);
 
+        // --- 值输入框 ---
         m_valueEdits[row] = new QLineEdit(this);
         m_valueEdits[row]->setObjectName(QStringLiteral("valueEdit%1").arg(row));
         m_valueEdits[row]->setMinimumSize(QSize(92, 24));
@@ -157,6 +217,7 @@ void ScopeRegisterPanel::setupUi() {
         m_valueEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_valueEdits[row]);
 
+        // --- 读按钮（R） ---
         m_readButtons[row] = new QPushButton(this);
         m_readButtons[row]->setObjectName(QStringLiteral("readButton%1").arg(row));
         m_readButtons[row]->setMinimumSize(QSize(28, 24));
@@ -165,6 +226,7 @@ void ScopeRegisterPanel::setupUi() {
         m_readButtons[row]->setText(QStringLiteral("R"));
         rowLayout->addWidget(m_readButtons[row]);
 
+        // --- 写按钮（W） ---
         m_writeButtons[row] = new QPushButton(this);
         m_writeButtons[row]->setObjectName(QStringLiteral("writeButton%1").arg(row));
         m_writeButtons[row]->setMinimumSize(QSize(28, 24));
@@ -174,10 +236,11 @@ void ScopeRegisterPanel::setupUi() {
         rowLayout->addWidget(m_writeButtons[row]);
     }
 
+    // ---------- 底部控制栏：间隔 + 启停 + 清除/录入 ----------
     auto *intervalRow = new QHBoxLayout();
     intervalRow->setObjectName(QStringLiteral("intervalRow"));
     intervalRow->setSpacing(6);
-    intervalRow->setContentsMargins(0, 10, 0, 0);
+    intervalRow->setContentsMargins(0, 10, 0, 0);       // 与上方行间留出间距
     rootLayout->addLayout(intervalRow);
 
     auto *intervalLabel = new QLabel(this);
@@ -185,6 +248,7 @@ void ScopeRegisterPanel::setupUi() {
     intervalLabel->setText(tr("下发时间间隔"));
     intervalRow->addWidget(intervalLabel);
 
+    // --- 间隔输入框 ---
     m_intervalEdit = new QLineEdit(this);
     m_intervalEdit->setObjectName(QStringLiteral("intervalEdit"));
     m_intervalEdit->setMinimumSize(QSize(68, 0));
@@ -193,12 +257,14 @@ void ScopeRegisterPanel::setupUi() {
     m_intervalEdit->setProperty("inputRole", QStringLiteral("scope-register"));
     intervalRow->addWidget(m_intervalEdit);
 
+    // --- 启动按钮 ---
     m_startButton = new QPushButton(this);
     m_startButton->setObjectName(QStringLiteral("startButton"));
     m_startButton->setProperty("buttonRole", QStringLiteral("action-start"));
     m_startButton->setText(tr("启动"));
     intervalRow->addWidget(m_startButton);
 
+    // --- 停止按钮 ---
     m_stopButton = new QPushButton(this);
     m_stopButton->setObjectName(QStringLiteral("stopButton"));
     m_stopButton->setProperty("buttonRole", QStringLiteral("action-stop"));
@@ -207,12 +273,14 @@ void ScopeRegisterPanel::setupUi() {
 
     intervalRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
+    // --- 清除面板按钮 ---
     m_clearButton = new QPushButton(this);
     m_clearButton->setObjectName(QStringLiteral("clearButton"));
     m_clearButton->setProperty("buttonRole", QStringLiteral("action-clear"));
     m_clearButton->setText(tr("清除面板"));
     intervalRow->addWidget(m_clearButton);
 
+    // --- 录入参数按钮 ---
     m_loadButton = new QPushButton(this);
     m_loadButton->setObjectName(QStringLiteral("loadButton"));
     m_loadButton->setProperty("buttonRole", QStringLiteral("action-load"));

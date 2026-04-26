@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    configtab.cpp
+// @brief   配置页面实现 — UI 构建、信号槽连接、控件状态管理
+// =============================================================================
 #include "tabs/configtab.h"
 
 #include "devicecontext.h"
@@ -27,12 +31,15 @@
 using namespace MotorDev;
 
 namespace {
+
+/// @brief 卡片悬停事件过滤器 — 为 GroupBox 添加 hover 动态属性以驱动 QSS 样式切换
 class GroupHoverFilter : public QObject {
 public:
     explicit GroupHoverFilter(QObject *parent = nullptr)
         : QObject(parent) {}
 
 protected:
+    /// @brief 拦截 HoverEnter/HoverLeave 事件，设置 "hovered" 动态属性并触发 QSS 重绘
     bool eventFilter(QObject *watched, QEvent *event) override {
         auto *widget = qobject_cast<QWidget *>(watched);
         if (widget == nullptr) {
@@ -51,6 +58,8 @@ protected:
     }
 };
 
+/// @brief 为卡片控件添加投影效果
+/// @param widget 目标控件
 void applyPanelShadow(QWidget *widget) {
     auto *effect = new QGraphicsDropShadowEffect(widget);
     effect->setOffset(0, 1);
@@ -59,6 +68,10 @@ void applyPanelShadow(QWidget *widget) {
     widget->setGraphicsEffect(effect);
 }
 }
+
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
 
 ConfigTab::ConfigTab(SerialManager *serialManager,
                      CommandDispatcher *dispatcher,
@@ -69,6 +82,8 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     qRegisterMetaType<uint8_t>("uint8_t");
     m_service = new ConfigService(serialManager, dispatcher, deviceContext, this);
     setupUi();
+
+    // 为三张卡片启用悬停效果和投影
     for (auto *group : {m_icGroup, m_serialGroup, m_pmicGroup}) {
         group->setAttribute(Qt::WA_Hover, true);
         group->setProperty("hovered", false);
@@ -76,10 +91,13 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
         applyPanelShadow(group);
     }
 
+    // 初始化控件状态
     m_slaveIdCombo->setPlaceholderText(QStringLiteral("Scan first"));
     m_slaveIdCombo->setCurrentIndex(-1);
     m_portCombo->setPlaceholderText(tr("Select COM"));
     m_baudRateCombo->setCurrentText(QLatin1String(Style::Serial::DefaultBaudRate));
+
+    // PMIC 电压 SpinBox 统一配置：范围 0.60~3.77V，步进 0.10V
     for (auto *spin : {m_drvddSpin, m_vcmvddSpin, m_iovddSpin}) {
         spin->setRange(0.60, 3.77);
         spin->setDecimals(2);
@@ -88,6 +106,8 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_drvddSpin->setValue(1.80);
     m_iovddSpin->setValue(2.80);
     m_vcmvddSpin->setValue(3.20);
+
+    // 配置文件区域当前未实现，禁用相关控件
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
     m_resetButton->setEnabled(false);
@@ -107,6 +127,10 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
 
 ConfigTab::~ConfigTab() = default;
 
+// =============================================================================
+// 信号槽连接
+// =============================================================================
+
 void ConfigTab::connectSignals() {
     if (m_service == nullptr || m_deviceContext == nullptr) {
         qWarning() << "ConfigTab dependencies are not fully initialized";
@@ -115,16 +139,24 @@ void ConfigTab::connectSignals() {
 
     refreshAvailablePorts();
     setSerialControlsConnected(false);
+
+    // 初始化 IC 型号下拉框（阻塞信号避免触发不必要的回调）
     {
         const QSignalBlocker comboBlocker(m_icCombo);
         m_icCombo->setCurrentIndex(DeviceContext::indexFromMotorIcType(m_deviceContext->icType()));
     }
 
-    // UI → Service
+    // -------------------------------------------------------------------------
+    // UI → Service：用户操作触发业务逻辑
+    // -------------------------------------------------------------------------
+
+    // 刷新串口列表
     connect(m_scanButton, &QPushButton::clicked, this, [this]() {
         qDebug() << "Scan started";
         refreshAvailablePorts();
     });
+
+    // 连接/断开串口
     connect(m_connectButton, &QPushButton::clicked, this, [this]() {
         m_connectButton->setEnabled(false);
         if (m_service->isConnected()) {
@@ -140,10 +172,14 @@ void ConfigTab::connectSignals() {
         const qint32 baudRate = m_baudRateCombo->currentText().toInt();
         m_service->connectToPort(portName, baudRate);
     });
+
+    // I2C 扫描
     connect(m_icScanButton, &QPushButton::clicked, this, [this]() {
         m_icScanButton->setEnabled(false);
         m_service->startI2cScan();
     });
+
+    // 设置 IC 从设备地址
     connect(m_icConnectButton, &QPushButton::clicked, this, [this]() {
         m_icConnectButton->setEnabled(false);
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
@@ -161,26 +197,37 @@ void ConfigTab::connectSignals() {
         }
         m_service->setMotorIcAddress(static_cast<uint8_t>(addr));
     });
+
+    // PMIC 配置：读取三路电压值下发
     connect(m_pmicConfigButton, &QPushButton::clicked, this, [this]() {
         m_pmicConfigButton->setEnabled(false);
         m_pmicDisableButton->setEnabled(false);
         m_service->configurePmic(m_drvddSpin->value(), m_iovddSpin->value(), m_vcmvddSpin->value());
     });
+
+    // PMIC 禁用
     connect(m_pmicDisableButton, &QPushButton::clicked, this, [this]() {
         m_pmicConfigButton->setEnabled(false);
         m_pmicDisableButton->setEnabled(false);
         m_service->disablePmic();
     });
+
+    // 设备复位
     connect(m_resetButton, &QPushButton::clicked, this, [this]() {
         m_resetButton->setEnabled(false);
         m_service->resetDevice();
     });
+
+    // 电机测试
     connect(m_motorTestButton, &QPushButton::clicked, this, [this]() {
         m_motorTestButton->setEnabled(false);
         m_service->testMotor();
     });
 
-    // IC type combo → DeviceContext
+    // -------------------------------------------------------------------------
+    // IC 型号双向同步：ComboBox ↔ DeviceContext
+    // -------------------------------------------------------------------------
+
     connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
         const MotorIcType type = DeviceContext::motorIcTypeFromIndex(index);
         qDebug().noquote() << QStringLiteral("IC type changed to %1").arg(DeviceContext::motorIcTypeToString(type));
@@ -191,7 +238,10 @@ void ConfigTab::connectSignals() {
         m_icCombo->setCurrentIndex(DeviceContext::indexFromMotorIcType(type));
     });
 
-    // Slave ID combo → DeviceContext
+    // -------------------------------------------------------------------------
+    // 从设备地址双向同步：ComboBox ↔ DeviceContext
+    // -------------------------------------------------------------------------
+
     connect(m_slaveIdCombo, &QComboBox::currentTextChanged, this, [this](const QString &text) {
         if (text.isEmpty()) return;
         bool ok = false;
@@ -211,21 +261,31 @@ void ConfigTab::connectSignals() {
         if (index >= 0) m_slaveIdCombo->setCurrentIndex(index);
     });
 
-    // Service → UI
+    // -------------------------------------------------------------------------
+    // Service → UI：业务结果回调更新控件状态
+    // -------------------------------------------------------------------------
+
+    // 串口连接成功 → 更新按钮状态，广播信号
     connect(m_service, &ConfigService::serialConnected, this, [this](const QString &port, qint32 baudRate) {
         m_connectButton->setEnabled(true);
         setSerialControlsConnected(true);
         emit serialConnected(port, baudRate);
     });
+
+    // 串口断开 → 恢复未连接状态
     connect(m_service, &ConfigService::serialDisconnected, this, [this]() {
         m_connectButton->setEnabled(true);
         setSerialControlsConnected(false);
         emit serialDisconnected();
     });
+
+    // 串口错误 → 恢复连接按钮可点击
     connect(m_service, &ConfigService::serialError, this, [this](const QString &message) {
         Q_UNUSED(message);
         m_connectButton->setEnabled(true);
     });
+
+    // I2C 扫描结果 → 填充从设备地址列表
     connect(m_service, &ConfigService::i2cScanResult, this, [this](const QList<uint8_t> &addresses) {
         m_icScanButton->setEnabled(true);
         const QSignalBlocker blocker(m_slaveIdCombo);
@@ -236,6 +296,8 @@ void ConfigTab::connectSignals() {
         }
         if (m_slaveIdCombo->count() > 0) m_slaveIdCombo->setCurrentIndex(0);
     });
+
+    // IC 地址设置成功 → 同步到 DeviceContext
     connect(m_service, &ConfigService::setAddrSuccess, this, [this]() {
         m_icConnectButton->setEnabled(true);
         const QString addrText = m_slaveIdCombo->currentText().trimmed();
@@ -244,6 +306,8 @@ void ConfigTab::connectSignals() {
         if (ok && DeviceContext::isValidSlaveAddress(addr)) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
         qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
     });
+
+    // 协议错误 → 恢复所有操作按钮
     connect(m_service, &ConfigService::protocolError, this, [this](uint8_t errorCode) {
         Q_UNUSED(errorCode);
         m_icScanButton->setEnabled(m_service->isConnected());
@@ -253,6 +317,8 @@ void ConfigTab::connectSignals() {
         m_resetButton->setEnabled(m_service->isConnected());
         m_motorTestButton->setEnabled(m_service->isConnected());
     });
+
+    // PMIC 配置/禁用结果
     connect(m_service, &ConfigService::pmicConfigSuccess, this, [this]() {
         m_pmicConfigButton->setEnabled(true);
         m_pmicDisableButton->setEnabled(true);
@@ -273,6 +339,8 @@ void ConfigTab::connectSignals() {
         m_pmicDisableButton->setEnabled(true);
         qWarning().noquote() << QStringLiteral("PMIC disable failed: %1").arg(reason);
     });
+
+    // 设备复位结果
     connect(m_service, &ConfigService::resetSuccess, this, [this]() {
         m_resetButton->setEnabled(true);
         qDebug() << "Device reset successful";
@@ -281,6 +349,8 @@ void ConfigTab::connectSignals() {
         m_resetButton->setEnabled(true);
         qWarning().noquote() << QStringLiteral("Device reset failed: %1").arg(reason);
     });
+
+    // 电机测试结果
     connect(m_service, &ConfigService::motorTestSuccess, this, [this]() {
         m_motorTestButton->setEnabled(true);
         qDebug() << "Motor test successful";
@@ -291,6 +361,11 @@ void ConfigTab::connectSignals() {
     });
 }
 
+// =============================================================================
+// 辅助方法
+// =============================================================================
+
+/// @brief 刷新串口列表，保留用户当前选中项
 void ConfigTab::refreshAvailablePorts() {
     const QString currentPort = m_portCombo->currentText();
     const QStringList ports = m_service->availablePorts();
@@ -303,6 +378,7 @@ void ConfigTab::refreshAvailablePorts() {
     qDebug().noquote() << QStringLiteral("Scan found %1 ports: %2").arg(ports.size()).arg(ports.join(QStringLiteral(", ")));
 }
 
+/// @brief 根据连接状态切换控件启用/禁用和按钮文字
 void ConfigTab::setSerialControlsConnected(bool connected) {
     m_connectButton->setText(connected ? tr("Disconnect") : tr("Connect"));
     m_portCombo->setEnabled(!connected);
@@ -316,14 +392,20 @@ void ConfigTab::setSerialControlsConnected(bool connected) {
     m_motorTestButton->setEnabled(connected);
 }
 
+// =============================================================================
+// UI 构建
+// =============================================================================
+
 void ConfigTab::setupUi() {
     setObjectName(QStringLiteral("ConfigTab"));
 
+    // 顶层水平布局：侧边栏 | 主内容区
     auto *topLayout = new QHBoxLayout(this);
     topLayout->setObjectName(QStringLiteral("topLayout"));
     topLayout->setSpacing(0);
     topLayout->setContentsMargins(0, 0, 0, 0);
 
+    // --- 侧边栏（空内容，仅标题） ---
     m_sidebarContent = new QWidget(this);
     m_sidebarContent->setObjectName(QStringLiteral("sidebarContent"));
     auto *sidebarLayout = new QVBoxLayout(m_sidebarContent);
@@ -334,6 +416,7 @@ void ConfigTab::setupUi() {
     auto *sidebar = new Sidebar(tr("配置"), m_sidebarContent, this);
     topLayout->addWidget(sidebar);
 
+    // --- 主内容区 ---
     m_mainContent = new QWidget(this);
     m_mainContent->setObjectName(QStringLiteral("mainContent"));
     auto *mainContentLayout = new QVBoxLayout(m_mainContent);
@@ -342,12 +425,16 @@ void ConfigTab::setupUi() {
     mainContentLayout->setContentsMargins(24, 24, 24, 24);
     topLayout->addWidget(m_mainContent);
 
+    // 垂直分割器：上方卡片区 | 下方配置文件区
     m_mainSplitter = new QSplitter(Qt::Vertical, m_mainContent);
     m_mainSplitter->setObjectName(QStringLiteral("mainSplitter"));
     m_mainSplitter->setChildrenCollapsible(false);
     m_mainSplitter->setHandleWidth(8);
     mainContentLayout->addWidget(m_mainSplitter);
 
+    // =========================================================================
+    // 上方区域：三张卡片（IC / Serial / PMIC）以 GridLayout 排列
+    // =========================================================================
     auto *upperArea = new QWidget(m_mainSplitter);
     upperArea->setObjectName(QStringLiteral("upperArea"));
     auto *upperLayout = new QGridLayout(upperArea);
@@ -356,6 +443,7 @@ void ConfigTab::setupUi() {
     upperLayout->setVerticalSpacing(16);
     upperLayout->setContentsMargins(0, 0, 0, 0);
 
+    // 卡片工厂 lambda：创建 GroupBox 并设置 panelRole 属性用于 QSS 匹配
     auto makeCard = [&](QGroupBox *&group, const QString &objectName, const QString &title) {
         group = new QGroupBox(upperArea);
         group->setObjectName(objectName);
@@ -363,6 +451,7 @@ void ConfigTab::setupUi() {
         group->setProperty("panelRole", QStringLiteral("card"));
     };
 
+    // ----- IC 卡片 -----
     makeCard(m_icGroup, QStringLiteral("icGroup"), QStringLiteral("IC"));
     upperLayout->addWidget(m_icGroup, 0, 0);
     auto *icGroupLayout = new QVBoxLayout(m_icGroup);
@@ -412,6 +501,7 @@ void ConfigTab::setupUi() {
     icButtonRow->addWidget(m_icConnectButton);
     icButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
+    // ----- Serial 卡片 -----
     makeCard(m_serialGroup, QStringLiteral("serialGroup"), QStringLiteral("Serial"));
     upperLayout->addWidget(m_serialGroup, 0, 1);
     auto *serialGroupLayout = new QVBoxLayout(m_serialGroup);
@@ -441,6 +531,8 @@ void ConfigTab::setupUi() {
     m_baudRateCombo->addItems(Style::Serial::baudRateLabels());
     serialFormLayout->setWidget(1, QFormLayout::FieldRole, m_baudRateCombo);
     serialGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+    // Serial 卡片按钮：2×2 网格（Scan/Connect + Reset/MotorTest）
     auto *serialButtonGrid = new QGridLayout();
     serialButtonGrid->setObjectName(QStringLiteral("serialButtonGrid"));
     serialButtonGrid->setHorizontalSpacing(10);
@@ -471,6 +563,7 @@ void ConfigTab::setupUi() {
     m_motorTestButton->setProperty("buttonRole", QStringLiteral("secondary"));
     serialButtonGrid->addWidget(m_motorTestButton, 1, 1);
 
+    // ----- PMIC 卡片 -----
     makeCard(m_pmicGroup, QStringLiteral("pmicGroup"), QStringLiteral("PMIC"));
     upperLayout->addWidget(m_pmicGroup, 0, 2);
     auto *pmicGroupLayout = new QVBoxLayout(m_pmicGroup);
@@ -482,6 +575,8 @@ void ConfigTab::setupUi() {
     pmicFormLayout->setHorizontalSpacing(16);
     pmicFormLayout->setVerticalSpacing(10);
     pmicGroupLayout->addLayout(pmicFormLayout);
+
+    // 电压行工厂 lambda：统一创建 Label + SpinBox + "V" 单位标签
     auto addVoltageRow = [&](int row, const QString &labelName, const QString &labelText, QDoubleSpinBox *&spin,
                              const QString &spinName, const QString &rowName, const QString &unitName, const QString &spacerName) {
         auto *label = new QLabel(m_pmicGroup);
@@ -508,6 +603,8 @@ void ConfigTab::setupUi() {
     addVoltageRow(1, QStringLiteral("vcmvddLabel"), QStringLiteral("VCMVDD"), m_vcmvddSpin, QStringLiteral("vcmvddSpin"), QStringLiteral("vcmvddRow"), QStringLiteral("vcmvddUnitLabel"), QStringLiteral("vcmvddSpacer"));
     addVoltageRow(2, QStringLiteral("iovddLabel"), QStringLiteral("IOVDD"), m_iovddSpin, QStringLiteral("iovddSpin"), QStringLiteral("iovddRow"), QStringLiteral("iovddUnitLabel"), QStringLiteral("iovddSpacer"));
     pmicGroupLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+    // PMIC 按钮行：配置 + 禁用
     m_pmicConfigButton = new QPushButton(m_pmicGroup);
     m_pmicConfigButton->setObjectName(QStringLiteral("pmicConfigButton"));
     m_pmicConfigButton->setMinimumSize(QSize(0, 32));
@@ -527,6 +624,9 @@ void ConfigTab::setupUi() {
     m_pmicDisableButton->setProperty("buttonRole", QStringLiteral("secondary"));
     pmicButtonRow->addWidget(m_pmicDisableButton);
 
+    // =========================================================================
+    // 下方区域：配置文件选择与读写（功能开发中）
+    // =========================================================================
     auto *lowerArea = new QWidget(m_mainSplitter);
     lowerArea->setObjectName(QStringLiteral("lowerArea"));
     auto *lowerLayout = new QVBoxLayout(lowerArea);
@@ -572,6 +672,7 @@ void ConfigTab::setupUi() {
     configFileLayout->addWidget(m_readButton);
     lowerLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
+    // 上方网格等宽 4 列、3 行
     for (int column = 0; column < 4; ++column) {
         upperLayout->setColumnStretch(column, 1);
     }
@@ -579,6 +680,7 @@ void ConfigTab::setupUi() {
         upperLayout->setRowStretch(row, 1);
     }
 
+    // 上方卡片区占 4/5，下方配置文件区占 1/5
     m_mainSplitter->setStretchFactor(0, 4);
     m_mainSplitter->setStretchFactor(1, 1);
 }

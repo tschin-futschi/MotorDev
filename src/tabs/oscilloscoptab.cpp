@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    oscilloscoptab.cpp
+// @brief   示波器页面实现 — UI 构建、多服务协调、全屏/样式面板切换
+// =============================================================================
 #include "tabs/oscilloscoptab.h"
 
 #include "models/scopechannelmodel.h"
@@ -22,22 +26,29 @@
 
 using namespace MotorDev;
 
+// =============================================================================
+// 构造 / 析构
+// =============================================================================
+
 OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
                                CommandDispatcher *dispatcher,
                                QWidget *parent)
     : QWidget(parent)
     , m_serialManager(serialManager)
     , m_dispatcher(dispatcher) {
+    // 初始化各模型和服务
     m_channelModel = new ScopeChannelModel(this);
     m_service = new ScopeService(serialManager, dispatcher, m_channelModel, this);
     m_regService = new RegisterService(dispatcher, this);
     m_generatorService = new GeneratorService(dispatcher, this);
     m_cyclicWriteService = new CyclicWriteService(m_regService, this);
     m_cyclicWriteService->setRowCount(ScopeRegisterPanel::rowCount());
+
     setupUi();
     connectSignals();
     refreshPlotData();
 
+    // 性能统计定时器：每秒输出一次绘制耗时、FPS、采样率
     m_perfTimer = new QTimer(this);
     m_perfTimer->setInterval(1000);
     connect(m_perfTimer, &QTimer::timeout, this, &OscilloscopTab::onPerfTimerTick);
@@ -45,8 +56,12 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
 }
 
 OscilloscopTab::~OscilloscopTab() {
-    exitFullscreen();
+    exitFullscreen(); // 确保全屏窗口被正确清理
 }
+
+// =============================================================================
+// UI 构建
+// =============================================================================
 
 void OscilloscopTab::setupUi() {
     setObjectName(QStringLiteral("OscilloscopTab"));
@@ -56,12 +71,14 @@ void OscilloscopTab::setupUi() {
     rootLayout->setContentsMargins(0, 0, 0, 0);
     rootLayout->setStretch(0, 1);
 
+    // 水平分割器：左侧波形区 | 右侧样式面板（可折叠）
     m_splitter = new QSplitter(Qt::Horizontal, this);
     m_splitter->setObjectName(QStringLiteral("splitter"));
     m_splitter->setChildrenCollapsible(false);
     m_splitter->setHandleWidth(0);
     rootLayout->addWidget(m_splitter);
 
+    // --- 波形区（PlotWidget + BottomPanel 垂直排列）---
     m_plotArea = new QWidget(m_splitter);
     m_plotArea->setObjectName(QStringLiteral("plotArea"));
     m_plotLayout = new QVBoxLayout(m_plotArea);
@@ -73,13 +90,16 @@ void OscilloscopTab::setupUi() {
     m_plotWidget->setObjectName(QStringLiteral("plotWidget"));
     m_plotLayout->addWidget(m_plotWidget);
 
+    // 底部面板宿主
     m_bottomPanelHost = new QWidget(m_plotArea);
     m_bottomPanelHost->setObjectName(QStringLiteral("bottomPanelHost"));
     m_plotLayout->addWidget(m_bottomPanelHost);
 
+    // --- 样式面板（默认隐藏）---
     m_stylePanel = new ScopeStylePanel(m_splitter);
     m_stylePanel->setObjectName(QStringLiteral("stylePanel"));
 
+    // 创建底部面板
     auto *bottomLayout = qobject_cast<QVBoxLayout *>(m_bottomPanelHost->layout());
     if (bottomLayout == nullptr) {
         bottomLayout = new QVBoxLayout(m_bottomPanelHost);
@@ -89,10 +109,11 @@ void OscilloscopTab::setupUi() {
 
     m_bottomPanel = new ScopeBottomPanel(m_plotArea, m_bottomPanelHost);
     bottomLayout->addWidget(m_bottomPanel);
-    m_plotLayout->setStretch(0, 1);
-    m_plotLayout->setStretch(1, 0);
+    m_plotLayout->setStretch(0, 1);  // PlotWidget 占满剩余空间
+    m_plotLayout->setStretch(1, 0);  // BottomPanel 固定高度
     m_stylePanel->setVisible(false);
 
+    // 从通道模型初始化样式面板
     for (int i = 0; i < m_channelModel->channelCount(); ++i) {
         const ScopeChannelState &ch = m_channelModel->channel(i);
         m_stylePanel->setChannelColor(i, ch.color);
@@ -101,20 +122,31 @@ void OscilloscopTab::setupUi() {
         m_stylePanel->setChannelShowDataPoints(i, ch.showDataPoints);
     }
 
-    m_splitter->setStretchFactor(0, 1);
-    m_splitter->setStretchFactor(1, 0);
+    m_splitter->setStretchFactor(0, 1); // 波形区弹性伸展
+    m_splitter->setStretchFactor(1, 0); // 样式面板固定宽度
 }
 
+// =============================================================================
+// 信号槽连接
+// =============================================================================
+
 void OscilloscopTab::connectSignals() {
+    // -------------------------------------------------------------------------
+    // PlotWidget 事件
+    // -------------------------------------------------------------------------
     connect(m_plotWidget, &ScopePlotWidget::fullscreenToggleRequested, this, &OscilloscopTab::togglePlotFullscreen);
     connect(m_plotWidget, &ScopePlotWidget::samplingToggleRequested, this, &OscilloscopTab::onSamplingToggleRequested);
 
-    // Bottom panel → channel model
+    // -------------------------------------------------------------------------
+    // BottomPanel → ChannelModel：通道启用/描述/地址
+    // -------------------------------------------------------------------------
     connect(m_bottomPanel, &ScopeBottomPanel::channelToggled, m_channelModel, &ScopeChannelModel::setEnabled);
     connect(m_bottomPanel, &ScopeBottomPanel::channelDescriptionChanged, m_channelModel, &ScopeChannelModel::setDescription);
     connect(m_bottomPanel, &ScopeBottomPanel::channelAddressChanged, m_channelModel, &ScopeChannelModel::setAddressText);
 
-    // Bottom panel → local UI state
+    // -------------------------------------------------------------------------
+    // BottomPanel → 采样配置
+    // -------------------------------------------------------------------------
     connect(m_bottomPanel, &ScopeBottomPanel::sampleIntervalChanged, this, [this](const QString &text) {
         m_sampleIntervalIndex = SamplingConfig::intervalIndexForText(text);
         m_sampleIntervalText = text;
@@ -128,7 +160,9 @@ void OscilloscopTab::connectSignals() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Display window=%1").arg(text);
     });
 
-    // Bottom panel → register panel / misc
+    // -------------------------------------------------------------------------
+    // BottomPanel → 寄存器面板 / 杂项
+    // -------------------------------------------------------------------------
     connect(m_bottomPanel, &ScopeBottomPanel::registerReadRequested, this, &OscilloscopTab::onRegisterReadRequested);
     connect(m_bottomPanel, &ScopeBottomPanel::registerWriteRequested, this, &OscilloscopTab::onRegisterWriteRequested);
     connect(m_bottomPanel, &ScopeBottomPanel::registerStartRequested, this, &OscilloscopTab::onRegisterStartRequested);
@@ -137,6 +171,8 @@ void OscilloscopTab::connectSignals() {
     connect(m_bottomPanel, &ScopeBottomPanel::loadParamsRequested, this, []() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Load parameters");
     });
+
+    // BottomPanel → 波形生成器服务
     connect(m_bottomPanel, &ScopeBottomPanel::generatorLinearStartRequested,
             m_generatorService, &GeneratorService::startLinear);
     connect(m_bottomPanel, &ScopeBottomPanel::generatorCosineStartRequested,
@@ -147,7 +183,9 @@ void OscilloscopTab::connectSignals() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Capture note=%1").arg(text);
     });
 
-    // Bottom panel → plot widget Y-axis
+    // -------------------------------------------------------------------------
+    // BottomPanel → PlotWidget Y 轴控制
+    // -------------------------------------------------------------------------
     connect(m_bottomPanel, &ScopeBottomPanel::yAxisAutoRequested, this, [this]() {
         m_plotWidget->setAutoYAxisRange();
         qDebug().noquote() << QStringLiteral("[Scope GUI] Y axis=auto");
@@ -159,14 +197,18 @@ void OscilloscopTab::connectSignals() {
                                   .arg(QString::number(maxValue, 'f', 1));
     });
 
-    // Style panel → channel model
+    // -------------------------------------------------------------------------
+    // StylePanel → ChannelModel：通道样式属性
+    // -------------------------------------------------------------------------
     connect(m_stylePanel, &ScopeStylePanel::colorChanged, m_channelModel, &ScopeChannelModel::setColor);
     connect(m_stylePanel, &ScopeStylePanel::lineWidthChanged, m_channelModel, &ScopeChannelModel::setLineWidth);
     connect(m_stylePanel, &ScopeStylePanel::lineStyleChanged, m_channelModel, &ScopeChannelModel::setLineStyle);
     connect(m_stylePanel, &ScopeStylePanel::dataPointsChanged, m_channelModel, &ScopeChannelModel::setShowDataPoints);
     connect(m_stylePanel, &ScopeStylePanel::defaultSettingsRequested, m_channelModel, &ScopeChannelModel::resetStylesToDefault);
 
-    // Channel model → refresh plot + sync style panel on reset
+    // -------------------------------------------------------------------------
+    // ChannelModel → 刷新绘图 + 样式面板同步
+    // -------------------------------------------------------------------------
     connect(m_channelModel, &ScopeChannelModel::channelChanged, this, &OscilloscopTab::refreshPlotData);
     connect(m_channelModel, &ScopeChannelModel::stylesReset, this, [this]() {
         for (int i = 0; i < m_channelModel->channelCount(); ++i) {
@@ -179,7 +221,9 @@ void OscilloscopTab::connectSignals() {
         qDebug().noquote() << QStringLiteral("[Scope GUI] Reset channel styles to default");
     });
 
-    // Service → UI
+    // -------------------------------------------------------------------------
+    // ScopeService → UI：采样状态和数据
+    // -------------------------------------------------------------------------
     connect(m_service, &ScopeService::runningChanged, this, [this](bool running) {
         m_bottomPanel->setRunning(running);
         m_plotWidget->setRunning(running);
@@ -191,6 +235,9 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::acquisitionConfigured, m_plotWidget, &ScopePlotWidget::configureAcquisition);
     connect(m_service, &ScopeService::resetViewRequested, m_plotWidget, &ScopePlotWidget::resetView);
 
+    // -------------------------------------------------------------------------
+    // RegisterService → 寄存器面板反馈
+    // -------------------------------------------------------------------------
     connect(m_regService, &RegisterService::rowReadOk, this, [this](int row, qint16 value) {
         if (row < 0 || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
             return;
@@ -229,6 +276,7 @@ void OscilloscopTab::connectSignals() {
         }
     });
 
+    // 循环写入数据提供者：从寄存器面板读取地址和值
     if (m_bottomPanel != nullptr && m_bottomPanel->registerPanel() != nullptr) {
         m_cyclicWriteService->setRowDataProvider([this](int row, quint16 &addr, quint16 &value) -> bool {
             if (m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
@@ -252,6 +300,9 @@ void OscilloscopTab::connectSignals() {
         });
     }
 
+    // -------------------------------------------------------------------------
+    // 生成器/循环写入状态 → 跑马灯更新
+    // -------------------------------------------------------------------------
     connect(m_generatorService, &GeneratorService::runningChanged, this, [this](bool running) {
         if (m_bottomPanel != nullptr && m_bottomPanel->generatorPanel() != nullptr) {
             m_bottomPanel->generatorPanel()->setRunning(running);
@@ -266,6 +317,11 @@ void OscilloscopTab::connectSignals() {
     });
 }
 
+// =============================================================================
+// 公共槽
+// =============================================================================
+
+/// @brief 切换视图模式（Overlay ↔ Stacked）
 void OscilloscopTab::onViewModeChangeRequested(int mode) {
     const ScopeViewMode nextMode = viewModeFromInt(mode);
     if (m_viewMode == nextMode) {
@@ -281,6 +337,7 @@ void OscilloscopTab::onViewModeChangeRequested(int mode) {
                                        : QStringLiteral("Switch to Stacked"));
 }
 
+/// @brief 采样启停请求处理
 void OscilloscopTab::onSamplingToggleRequested(bool running) {
     if (running) {
         m_service->requestStart(m_sampleIntervalIndex, m_displayWindowMs);
@@ -301,6 +358,11 @@ void OscilloscopTab::ingestDebugStream(uint8_t channelMask, const QVector<int16_
     m_service->ingestDebugStream(channelMask, samples);
 }
 
+// =============================================================================
+// 通道数据同步
+// =============================================================================
+
+/// @brief 从 ChannelModel 读取启用通道的配置，构造 PlotChannelData 列表传给 PlotWidget
 void OscilloscopTab::refreshPlotData() {
     QVector<ScopePlotWidget::PlotChannelData> plotChannels;
     plotChannels.reserve(m_channelModel->channelCount());
@@ -322,8 +384,13 @@ void OscilloscopTab::refreshPlotData() {
     m_plotWidget->setChannelData(plotChannels);
 }
 
+// =============================================================================
+// 全屏控制
+// =============================================================================
+
 void OscilloscopTab::toggleStylePanel() { m_stylePanel->setVisible(!m_stylePanel->isVisible()); }
 
+/// @brief 退出全屏：将 PlotWidget 从独立窗口移回原布局位置
 void OscilloscopTab::exitFullscreen() {
     if (m_fullscreenWindow == nullptr) {
         return;
@@ -339,8 +406,10 @@ void OscilloscopTab::exitFullscreen() {
     m_fullscreenWindow = nullptr;
 }
 
+/// @brief 切换全屏：将 PlotWidget 移入独立无边框全屏窗口
 void OscilloscopTab::togglePlotFullscreen() {
     if (m_fullscreenWindow == nullptr) {
+        // 进入全屏：记录原始位置，创建无边框全屏窗口
         m_plotLayoutIndex = m_plotLayout->indexOf(m_plotWidget);
         m_fullscreenWindow = new QWidget(nullptr, Qt::Window | Qt::FramelessWindowHint);
         m_fullscreenWindow->setStyleSheet(
@@ -358,10 +427,12 @@ void OscilloscopTab::togglePlotFullscreen() {
         return;
     }
 
+    // 退出全屏
     exitFullscreen();
     m_plotWidget->setFocus();
 }
 
+/// @brief Escape 键退出全屏
 void OscilloscopTab::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Escape && m_fullscreenWindow != nullptr) {
         togglePlotFullscreen();
@@ -371,9 +442,18 @@ void OscilloscopTab::keyPressEvent(QKeyEvent *event) {
     QWidget::keyPressEvent(event);
 }
 
+// =============================================================================
+// 视图模式转换
+// =============================================================================
+
 ScopeViewMode OscilloscopTab::viewModeFromInt(int mode) { return mode == 1 ? ScopeViewMode::Stacked : ScopeViewMode::Overlay; }
 int OscilloscopTab::viewModeToInt(ScopeViewMode mode) { return mode == ScopeViewMode::Stacked ? 1 : 0; }
 
+// =============================================================================
+// 寄存器面板操作
+// =============================================================================
+
+/// @brief 单行寄存器读取：解析地址，设置 pending 状态，发起读取
 void OscilloscopTab::onRegisterReadRequested(int row) {
     if (m_regService == nullptr || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
         return;
@@ -391,6 +471,7 @@ void OscilloscopTab::onRegisterReadRequested(int row) {
     m_regService->readSingleRow(row, address);
 }
 
+/// @brief 单行寄存器写入：解析地址和值，设置 pending 状态，发起写入
 void OscilloscopTab::onRegisterWriteRequested(int row) {
     if (m_regService == nullptr || m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr) {
         return;
@@ -413,6 +494,7 @@ void OscilloscopTab::onRegisterWriteRequested(int row) {
     m_regService->writeSingleRow(row, address, static_cast<qint16>(value));
 }
 
+/// @brief 启动循环写入：从寄存器面板读取间隔参数
 void OscilloscopTab::onRegisterStartRequested() {
     if (m_bottomPanel == nullptr || m_bottomPanel->registerPanel() == nullptr || m_cyclicWriteService == nullptr) {
         return;
@@ -434,6 +516,7 @@ void OscilloscopTab::onRegisterStopRequested() {
     }
 }
 
+/// @brief 清除寄存器面板：停止循环写入 + 清空所有行
 void OscilloscopTab::onRegisterClearRequested() {
     if (m_cyclicWriteService != nullptr) {
         m_cyclicWriteService->stop();
@@ -446,6 +529,11 @@ void OscilloscopTab::onRegisterClearRequested() {
     qDebug().noquote() << QStringLiteral("[Scope GUI] Clear register panel");
 }
 
+// =============================================================================
+// 性能统计
+// =============================================================================
+
+/// @brief 每秒输出一次性能数据：绘制耗时、FPS、批次/秒、采样数/秒
 void OscilloscopTab::onPerfTimerTick() {
     if (!m_service->isRunning()) return;
     qDebug().noquote() << QStringLiteral("[Scope Perf] paint=%1ms fps=%2 batchPerSec=%3 samplesPerSec=%4")
@@ -456,6 +544,11 @@ void OscilloscopTab::onPerfTimerTick() {
     m_service->resetPerfCounters();
 }
 
+// =============================================================================
+// 跑马灯状态
+// =============================================================================
+
+/// @brief 刷新底部跑马灯显示文本，汇总当前活跃的采样/循环写入/生成器状态
 void OscilloscopTab::refreshMarqueeStatus() {
     if (m_bottomPanel == nullptr || m_bottomPanel->marqueeLabel() == nullptr) {
         return;

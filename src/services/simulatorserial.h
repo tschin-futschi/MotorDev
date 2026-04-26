@@ -1,3 +1,11 @@
+// =============================================================================
+// @file    simulatorserial.h
+// @brief   模拟器专用串口驱动（传输层）
+//
+// 接口与 SerialManager 对称（openPort/closePort/sendRawFrame），
+// 在独立线程运行，仅供 SerialDebugTab / SimulatorService 使用。
+// 不含重试和心跳逻辑，只做原始帧的收发。
+// =============================================================================
 #pragma once
 
 #include "frameparser.h"

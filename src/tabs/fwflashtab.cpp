@@ -1,3 +1,7 @@
+// =============================================================================
+// @file    fwflashtab.cpp
+// @brief   固件烧录页面实现 — 占位布局
+// =============================================================================
 #include "tabs/fwflashtab.h"
 
 #include "widgets/sidebar.h"
@@ -16,16 +20,23 @@ FwFlashTab::FwFlashTab(QWidget *parent)
 FwFlashTab::~FwFlashTab() = default;
 
 void FwFlashTab::connectSignals() {
+    // 当前无信号槽连接，后续实现烧录功能时补充
 }
+
+// -----------------------------------------------------------------------------
+// UI 构建
+// -----------------------------------------------------------------------------
 
 void FwFlashTab::setupUi() {
     setObjectName(QStringLiteral("FwFlashTab"));
 
+    // 顶层水平布局：侧边栏 | 主内容区
     auto *topLayout = new QHBoxLayout(this);
     topLayout->setObjectName(QStringLiteral("topLayout"));
     topLayout->setSpacing(0);
     topLayout->setContentsMargins(0, 0, 0, 0);
 
+    // --- 侧边栏 ---
     m_sidebarContent = new QWidget(this);
     m_sidebarContent->setObjectName(QStringLiteral("sidebarContent"));
     auto *sidebarLayout = new QVBoxLayout(m_sidebarContent);
@@ -42,6 +53,7 @@ void FwFlashTab::setupUi() {
     auto *sidebar = new Sidebar(tr("烧录"), m_sidebarContent, this);
     topLayout->addWidget(sidebar);
 
+    // --- 主内容区 ---
     m_mainContent = new QWidget(this);
     m_mainContent->setObjectName(QStringLiteral("mainContent"));
     auto *mainLayout = new QVBoxLayout(m_mainContent);
