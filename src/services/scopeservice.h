@@ -1,6 +1,7 @@
 // ScopeService — 采样状态机、协议命令序列、流数据转发
 #pragma once
 
+#include <QAtomicInt>
 #include <QByteArray>
 #include <QObject>
 #include <QVector>
@@ -25,10 +26,10 @@ class ScopeStreamBatcher : public QObject {
     Q_OBJECT
 
 public:
-    explicit ScopeStreamBatcher(QObject *parent = nullptr);
+    explicit ScopeStreamBatcher(QAtomicInt *uiBusyFlag, QObject *parent = nullptr);
 
 public slots:
-    void enqueue(uint8_t channelMask, const QVector<int16_t> &samples);
+    void enqueue(uint8_t channelMask, QVector<int16_t> samples);
     void clearPending();
 
 signals:
@@ -37,8 +38,12 @@ signals:
 private:
     void ensureTimer();
 
+    static constexpr int kMaxPendingPackets = 512;
+
+    QAtomicInt *m_uiBusy = nullptr;
     ScopeStreamBatch m_pendingBatch;
     QTimer *m_flushTimer = nullptr;
+    bool m_overflowWarned = false;
 };
 
 class ScopeService : public QObject {
@@ -112,6 +117,7 @@ private:
     bool m_debugStreamActive = false;
     QString m_lastError;
     bool m_running = false;
+    QAtomicInt m_uiProcessing {0};
     int m_perfBatchCount = 0;
     int m_perfSampleCount = 0;
 };

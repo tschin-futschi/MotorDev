@@ -27,19 +27,27 @@ QString formatPayloadHex(const QByteArray &data) {
 }
 }
 
-ScopeStreamBatcher::ScopeStreamBatcher(QObject *parent)
-    : QObject(parent) {
+ScopeStreamBatcher::ScopeStreamBatcher(QAtomicInt *uiBusyFlag, QObject *parent)
+    : QObject(parent)
+    , m_uiBusy(uiBusyFlag) {
 }
 
-void ScopeStreamBatcher::enqueue(uint8_t channelMask, const QVector<int16_t> &samples) {
+void ScopeStreamBatcher::enqueue(uint8_t channelMask, QVector<int16_t> samples) {
     if (samples.isEmpty()) {
         return;
     }
     ensureTimer();
+    if (m_pendingBatch.size() >= kMaxPendingPackets) {
+        m_pendingBatch.removeFirst();
+        if (!m_overflowWarned) {
+            m_overflowWarned = true;
+            qCWarning(lcScope) << "ScopeStreamBatcher overflow: dropping oldest packets";
+        }
+    }
     ScopeStreamPacket packet;
     packet.channelMask = channelMask;
-    packet.samples = samples;
-    m_pendingBatch.append(packet);
+    packet.samples = std::move(samples);
+    m_pendingBatch.append(std::move(packet));
     if (!m_flushTimer->isActive()) {
         m_flushTimer->start();
     }
@@ -63,8 +71,13 @@ void ScopeStreamBatcher::ensureTimer() {
             m_flushTimer->stop();
             return;
         }
-        ScopeStreamBatch batch = m_pendingBatch;
+        if (m_uiBusy != nullptr && m_uiBusy->loadAcquire() != 0) {
+            return;
+        }
+        ScopeStreamBatch batch = std::move(m_pendingBatch);
         m_pendingBatch.clear();
+        m_pendingBatch.reserve(64);
+        m_overflowWarned = false;
         emit batchReady(batch);
     });
 }
@@ -93,11 +106,11 @@ ScopeService::ScopeService(SerialManager *serialManager,
     });
 
     if (m_serialManager != nullptr) {
-        m_streamBatcher = new ScopeStreamBatcher();
+        m_streamBatcher = new ScopeStreamBatcher(&m_uiProcessing);
         m_streamBatcher->moveToThread(m_serialManager->thread());
         connect(m_serialManager->thread(), &QThread::finished, m_streamBatcher, &QObject::deleteLater);
         connect(m_serialManager, &SerialManager::streamDataReceived,
-                m_streamBatcher, &ScopeStreamBatcher::enqueue, Qt::DirectConnection);
+                m_streamBatcher, &ScopeStreamBatcher::enqueue);
         connect(m_streamBatcher, &ScopeStreamBatcher::batchReady,
                 this, &ScopeService::handleStreamBatchReceived, Qt::QueuedConnection);
     }
@@ -369,6 +382,7 @@ void ScopeService::handleStreamBatchReceived(const ScopeStreamBatch &batch) {
     if (!m_running || m_debugStreamActive || batch.isEmpty()) {
         return;
     }
+    m_uiProcessing.storeRelease(1);
     if (m_streamWatchdog != nullptr) {
         m_streamWatchdog->start();
     }
@@ -379,6 +393,7 @@ void ScopeService::handleStreamBatchReceived(const ScopeStreamBatch &batch) {
         m_perfSampleCount += packet.samples.size();
         emit samplesReceived(packet.channelMask, packet.samples);
     }
+    m_uiProcessing.storeRelease(0);
 }
 
 void ScopeService::clearPendingStreamBatch() {

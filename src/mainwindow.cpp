@@ -48,7 +48,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_scopeTab->setEnabled(true);
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow() {
+    delete m_serialManager;
+    m_serialManager = nullptr;
+}
 
 void MainWindow::setupUi() {
     auto *centralWidget = new QWidget(this);

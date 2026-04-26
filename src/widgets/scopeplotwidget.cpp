@@ -184,7 +184,9 @@ void ScopePlotWidget::configureAcquisition(int intervalUs, int windowMs) {
         1,
         qRound((static_cast<double>(m_displayWindowMs) * 1000.0) / static_cast<double>(m_sampleIntervalUs)));
     m_bucketWidth = qMax(1, (m_rawWindowSampleCount + ChannelBuffer::kUiRingSize - 1) / ChannelBuffer::kUiRingSize);
-    m_displaySampleCount = qMax(1, (m_rawWindowSampleCount + m_bucketWidth - 1) / m_bucketWidth);
+    m_displaySampleCount = qMin(
+        ChannelBuffer::kUiRingSize,
+        qMax(1, (m_rawWindowSampleCount + m_bucketWidth - 1) / m_bucketWidth));
     clearData();
 }
 
