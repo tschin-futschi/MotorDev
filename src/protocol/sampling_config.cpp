@@ -14,35 +14,35 @@ namespace SamplingConfig {
 /// 索引 0~6 对应协议中的 intervalIndex 0x00~0x06。
 QStringList intervalLabels() {
     return {
-        QStringLiteral("200 us"),  QStringLiteral("300 us"),
-        QStringLiteral("500 us"),  QStringLiteral("750 us"),
-        QStringLiteral("1000 us"), QStringLiteral("1500 us"),
-        QStringLiteral("2000 us")
+        QStringLiteral("150 us"),  QStringLiteral("250 us"),
+        QStringLiteral("300 us"),  QStringLiteral("400 us"),
+        QStringLiteral("500 us"),  QStringLiteral("900 us"),
+        QStringLiteral("1000 us")
     };
 }
 
 uint8_t intervalIndexForText(const QString &text) {
     const QString normalized = text.trimmed().toLower();
-    if (normalized == QStringLiteral("200 us")) return 0x00;   // 200 微秒
-    if (normalized == QStringLiteral("300 us")) return 0x01;   // 300 微秒
-    if (normalized == QStringLiteral("500 us")) return 0x02;   // 500 微秒
-    if (normalized == QStringLiteral("750 us")) return 0x03;   // 750 微秒
-    if (normalized == QStringLiteral("1000 us")) return 0x04;  // 1000 微秒
-    if (normalized == QStringLiteral("1500 us")) return 0x05;  // 1500 微秒
-    if (normalized == QStringLiteral("2000 us")) return 0x06;  // 2000 微秒
-    return 0x04;  // 默认 1000 us
+    if (normalized == QStringLiteral("150 us")) return 0x00;   // 150 微秒
+    if (normalized == QStringLiteral("250 us")) return 0x01;   // 250 微秒
+    if (normalized == QStringLiteral("300 us")) return 0x02;   // 300 微秒
+    if (normalized == QStringLiteral("400 us")) return 0x03;   // 400 微秒
+    if (normalized == QStringLiteral("500 us")) return 0x04;   // 500 微秒
+    if (normalized == QStringLiteral("900 us")) return 0x05;   // 900 微秒
+    if (normalized == QStringLiteral("1000 us")) return 0x06;  // 1000 微秒
+    return 0x03;  // 默认 400 us
 }
 
 int intervalUsForIndex(uint8_t index) {
     switch (index) {
-    case 0x00: return 200;
-    case 0x01: return 300;
-    case 0x02: return 500;
-    case 0x03: return 750;
-    case 0x04: return 1000;
-    case 0x05: return 1500;
-    case 0x06: return 2000;
-    default: return 1000;  // 无效索引默认 1000 us
+    case 0x00: return 150;
+    case 0x01: return 250;
+    case 0x02: return 300;
+    case 0x03: return 400;
+    case 0x04: return 500;
+    case 0x05: return 900;
+    case 0x06: return 1000;
+    default: return 400;  // 无效索引默认 400 us
     }
 }
 

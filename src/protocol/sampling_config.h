@@ -16,12 +16,12 @@ namespace SamplingConfig {
 
 /// @brief 将采样间隔 UI 文本转换为协议索引
 /// @param text  UI 显示的文本（如 "200 us"）
-/// @return 协议索引（0x00~0x06）；无匹配时默认返回 0x04（1000 us）
+/// @return 协议索引（0x00~0x06）；无匹配时默认返回 0x03（400 us）
 uint8_t intervalIndexForText(const QString &text);
 
 /// @brief 将协议索引转换为采样间隔（微秒）
 /// @param index  协议索引（0x00~0x06）
-/// @return 采样间隔微秒值；无效索引默认返回 1000
+/// @return 采样间隔微秒值；无效索引默认返回 400
 int intervalUsForIndex(uint8_t index);
 
 /// @brief 将显示窗口 UI 文本转换为毫秒值
