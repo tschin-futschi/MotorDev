@@ -373,7 +373,11 @@ void ConfigTab::refreshAvailablePorts() {
     m_portCombo->clear();
     m_portCombo->addItems(ports);
     const int currentIndex = m_portCombo->findText(currentPort);
-    if (currentIndex >= 0) m_portCombo->setCurrentIndex(currentIndex);
+    if (currentIndex >= 0) {
+        m_portCombo->setCurrentIndex(currentIndex);
+    } else if (!currentPort.trimmed().isEmpty()) {
+        m_portCombo->setCurrentText(currentPort);
+    }
     if (ports.isEmpty()) { qDebug() << "Scan found 0 ports"; return; }
     qDebug().noquote() << QStringLiteral("Scan found %1 ports: %2").arg(ports.size()).arg(ports.join(QStringLiteral(", ")));
 }
@@ -520,6 +524,8 @@ void ConfigTab::setupUi() {
     m_portCombo = new QComboBox(m_serialGroup);
     m_portCombo->setObjectName(QStringLiteral("portCombo"));
     m_portCombo->setProperty("inputRole", QStringLiteral("form"));
+    m_portCombo->setEditable(true);
+    m_portCombo->setInsertPolicy(QComboBox::NoInsert);
     serialFormLayout->setWidget(0, QFormLayout::FieldRole, m_portCombo);
     auto *baudRateLabel = new QLabel(m_serialGroup);
     baudRateLabel->setObjectName(QStringLiteral("baudRateLabel"));

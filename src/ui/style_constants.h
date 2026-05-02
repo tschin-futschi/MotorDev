@@ -323,7 +323,7 @@ inline QStringList baudRateLabels() {
     };
 }
 
-inline const char *DefaultBaudRate = "115200";  ///< 默认波特率
+inline const char *DefaultBaudRate = "460800";  ///< 默认波特率
 }
 
 // ---------------------------------------------------------------------------

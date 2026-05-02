@@ -135,7 +135,11 @@ void SerialDebugTab::refreshPortList() {
     m_portCombo->clear();
     m_portCombo->addItems(ports);
     const int currentIndex = m_portCombo->findText(currentPort);
-    if (currentIndex >= 0) m_portCombo->setCurrentIndex(currentIndex);
+    if (currentIndex >= 0) {
+        m_portCombo->setCurrentIndex(currentIndex);
+    } else if (!currentPort.trimmed().isEmpty()) {
+        m_portCombo->setCurrentText(currentPort);
+    }
 }
 
 /// @brief 切换连接/未连接状态的控件外观和可用性
@@ -207,6 +211,8 @@ void SerialDebugTab::setupUi() {
     m_portCombo = new QComboBox(connectionBar);
     m_portCombo->setObjectName(QStringLiteral("portCombo"));
     m_portCombo->setProperty("inputRole", QStringLiteral("form"));
+    m_portCombo->setEditable(true);
+    m_portCombo->setInsertPolicy(QComboBox::NoInsert);
     connectionLayout->addWidget(m_portCombo);
 
     auto *baudLabel = new QLabel(connectionBar);
