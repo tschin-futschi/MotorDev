@@ -118,6 +118,7 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void leaveEvent(QEvent *event) override;
 
 private:
     /// @brief 拖拽缩放方向
@@ -150,6 +151,7 @@ private:
     void paintLegend(QPainter *painter, const QRect &rect);
     void paintSelection(QPainter *painter, const QRect &rect);
     void paintFrameTimeReadout(QPainter *painter, const QRect &rect);
+    void paintCrosshair(QPainter *painter, const QRect &plotRect, double yMin, double yMax);
     void paintStaticFrame(QPainter *painter, const QRect &frameRect, const QRect &plotRect);
 
     // --- 数据快照（避免绘制时锁竞争）---
@@ -207,6 +209,10 @@ private:
     mutable std::array<int, kMaxChannels> m_paintSnapshotCount {};   ///< 快照有效点数
     mutable std::array<int, kMaxChannels> m_paintSnapshotOffset {};  ///< 快照起始偏移
     mutable std::vector<QPointF> m_pointBuffer;     ///< drawPolyline 共享点缓冲
+
+    // --- 十字准线 ---
+    QPoint m_cursorPos;                             ///< 鼠标当前位置
+    bool m_cursorInPlot = false;                    ///< 鼠标是否在绘图区内
 
     // --- 帧率统计 ---
     QTimer *m_renderTimer = nullptr;                ///< 渲染刷新定时器

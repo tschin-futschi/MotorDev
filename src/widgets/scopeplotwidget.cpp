@@ -91,6 +91,7 @@ constexpr QPoint kShellTwoOffsets[] = {
 /// @brief 构造示波器绘图控件：初始化 OpenGL、渲染定时器、采样按钮。
 ScopePlotWidget::ScopePlotWidget(QWidget *parent)
     : QOpenGLWidget(parent) {
+    setMouseTracking(true);
     m_channels.resize(kMaxChannels);
     m_pointBuffer.reserve(ChannelBuffer::kUiRingSize);
 
@@ -376,6 +377,7 @@ void ScopePlotWidget::paintEvent(QPaintEvent *event) {
     }
 
     paintSelection(&painter, plotRect);
+    paintCrosshair(&painter, plotRect, yMin, yMax);
     const double previousMin = m_yViewMin;
     const double previousMax = m_yViewMax;
     m_yViewMin = yMin;
@@ -411,14 +413,18 @@ void ScopePlotWidget::mousePressEvent(QMouseEvent *event) {
     event->accept();
 }
 
-/// @brief 鼠标移动：根据位移方向判断水平/垂直缩放模式（阈值 6px）。
+/// @brief 鼠标移动：跟踪十字准线位置；拖拽时判断缩放方向（阈值 6px）。
 void ScopePlotWidget::mouseMoveEvent(QMouseEvent *event) {
+    const QPoint pos = event->position().toPoint();
+    m_cursorPos = pos;
+    m_cursorInPlot = currentPlotRect().contains(pos);
+
     if (!m_dragSelecting) {
-        QWidget::mouseMoveEvent(event);
+        event->accept();
         return;
     }
 
-    m_dragCurrent = event->position().toPoint();
+    m_dragCurrent = pos;
     const int dx = std::abs(m_dragCurrent.x() - m_dragStart.x());
     const int dy = std::abs(m_dragCurrent.y() - m_dragStart.y());
     if (dx >= 6 || dy >= 6) {
@@ -494,6 +500,11 @@ void ScopePlotWidget::contextMenuEvent(QContextMenuEvent *event) {
     QAction *resetAction = menu.addAction(tr("重置缩放"));
     connect(resetAction, &QAction::triggered, this, &ScopePlotWidget::resetZoom);
     menu.exec(event->globalPos());
+}
+
+void ScopePlotWidget::leaveEvent(QEvent *event) {
+    m_cursorInPlot = false;
+    QOpenGLWidget::leaveEvent(event);
 }
 
 void ScopePlotWidget::keyPressEvent(QKeyEvent *event) {
@@ -952,6 +963,160 @@ void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect
     painter->drawText(rect.adjusted(0, 22, -12, 0),
                       Qt::AlignTop | Qt::AlignRight,
                       m_running ? tr("Live scope preview") : tr("Scope idle preview"));
+}
+
+/// @brief 绘制十字准线和各通道数值标签。
+///
+/// 当鼠标在绘图区内且不在拖拽选框时，绘制：
+///   1. 垂直虚线（时间定位线）
+///   2. 各启用通道在该时间点的采样值标签（通道色圆点 + 数值）
+///   3. 底部时间读数
+void ScopePlotWidget::paintCrosshair(QPainter *painter, const QRect &plotRect,
+                                     double yMin, double yMax) {
+    if (!m_cursorInPlot || m_dragSelecting) {
+        return;
+    }
+
+    const int startIndex = visibleSampleStart();
+    const int endIndex = qMax(startIndex, visibleSampleEnd());
+    const int visibleCount = endIndex - startIndex + 1;
+    if (visibleCount <= 1 || plotRect.width() <= 0) {
+        return;
+    }
+
+    // --- 将鼠标 X 吸附到最近的采样点 ---
+    const double cursorLocalRatio = static_cast<double>(m_cursorPos.x() - plotRect.left())
+                                    / static_cast<double>(plotRect.width());
+    const int sampleIndex = qBound(startIndex,
+                                   startIndex + qRound(cursorLocalRatio * (visibleCount - 1)),
+                                   endIndex);
+    // 反算吸附后的像素 X（精确落在数据点上）
+    const double snappedRatio = static_cast<double>(sampleIndex - startIndex)
+                                / static_cast<double>(visibleCount - 1);
+    const int snappedX = plotRect.left() + qRound(snappedRatio * plotRect.width());
+
+    // --- 垂直虚线（吸附到采样点） ---
+    painter->save();
+    painter->setClipRect(plotRect);
+    QPen crossPen(Style::Color::ScopeTextSubtle, 1, Qt::DashLine);
+    crossPen.setCosmetic(true);
+    painter->setPen(crossPen);
+    painter->drawLine(snappedX, plotRect.top(), snappedX, plotRect.bottom());
+
+    // --- 时间读数（基于吸附后的采样点） ---
+    const double snappedViewRatio = m_viewStartRatio
+                                    + (m_viewEndRatio - m_viewStartRatio) * snappedRatio;
+    const double timeMs = snappedViewRatio * static_cast<double>(m_displayWindowMs);
+
+    // --- 收集各通道在此采样索引处的值 ---
+    struct ChannelReadout {
+        QString name;
+        QColor color;
+        float value;
+        double pixelY;
+    };
+    QVector<ChannelReadout> readouts;
+
+    const double span = qMax(yMax - yMin, 1e-9);
+    for (int c = 0; c < m_channels.size(); ++c) {
+        if (!m_channels[c].enabled) {
+            continue;
+        }
+        const int liveCount = m_paintSnapshotCount[c];
+        const int liveOffset = m_paintSnapshotOffset[c];
+        if (liveCount <= 0 || sampleIndex < liveOffset || sampleIndex >= liveOffset + liveCount) {
+            continue;
+        }
+        const float v = m_paintSnapshot[c][sampleIndex];
+        const double normalized = qBound(0.0, (static_cast<double>(v) - yMin) / span, 1.0);
+        const double py = plotRect.bottom() - normalized * plotRect.height();
+        readouts.append({m_channels[c].name, m_channels[c].color, v, py});
+    }
+
+    // --- 在各通道波形上画小圆点标记（位于吸附后的 X） ---
+    for (const auto &r : readouts) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(r.color);
+        painter->drawEllipse(QPointF(snappedX, r.pixelY), 5.0, 5.0);
+    }
+    painter->restore();
+
+    // --- 绘制数值标签框 ---
+    if (readouts.isEmpty()) {
+        return;
+    }
+
+    painter->save();
+    const int fontSize = Style::Size::ScopePlotFontSmall + 1;
+    painter->setFont(QFont(QLatin1String(Style::Font::SansSerif), fontSize));
+    const QFontMetrics fm(painter->font());
+    const int lineHeight = fm.height() + 6;
+    const int boxPaddingH = 10;
+    const int boxPaddingV = 8;
+    constexpr int kDotSize = 5;
+    constexpr int kDotTextGap = 8;
+    const int textLeft = kDotSize * 2 + kDotTextGap;
+
+    // 时间行
+    const QString timeLine = QStringLiteral("t = %1 ms").arg(QString::number(timeMs, 'f', 1));
+    int maxTextWidth = fm.horizontalAdvance(timeLine);
+
+    // 各通道文本
+    QVector<QString> channelTexts;
+    channelTexts.reserve(readouts.size());
+    for (const auto &r : readouts) {
+        const QString text = QStringLiteral("%1:  %2")
+            .arg(r.name, QString::number(static_cast<double>(r.value), 'f', 0));
+        channelTexts.append(text);
+        maxTextWidth = qMax(maxTextWidth, fm.horizontalAdvance(text) + textLeft);
+    }
+
+    const int boxW = maxTextWidth + boxPaddingH * 2;
+    const int totalRows = 1 + readouts.size();
+    const int boxH = lineHeight * totalRows + boxPaddingV * 2;
+
+    // 标签框定位：优先在吸附 X 右侧，超出则放左侧
+    int boxX = snappedX + 14;
+    if (boxX + boxW > plotRect.right()) {
+        boxX = snappedX - 14 - boxW;
+    }
+    int boxY = m_cursorPos.y() - boxH / 2;
+    boxY = qBound(plotRect.top(), boxY, plotRect.bottom() - boxH);
+
+    // 背景框
+    painter->setPen(QPen(Style::Color::ScopeGridMajor, 1));
+    painter->setBrush(QColor(30, 30, 30, 220));
+    painter->drawRoundedRect(QRect(boxX, boxY, boxW, boxH), 4, 4);
+
+    // 时间行（居中灰色）
+    painter->setPen(Style::Color::ScopeTextSubtle);
+    const int timeY = boxY + boxPaddingV + fm.ascent();
+    painter->drawText(boxX + boxPaddingH, timeY, timeLine);
+
+    // 各通道数值行
+    for (int i = 0; i < readouts.size(); ++i) {
+        const int rowY = boxY + boxPaddingV + (i + 1) * lineHeight + fm.ascent();
+        const int dotCenterY = rowY - fm.ascent() / 2;
+
+        // 通道色圆点
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(readouts[i].color);
+        painter->drawEllipse(QPoint(boxX + boxPaddingH + kDotSize, dotCenterY),
+                             kDotSize, kDotSize);
+
+        // 通道名（通道色）+ 数值（白色）
+        const int labelX = boxX + boxPaddingH + textLeft;
+        const QString nameText = readouts[i].name + QStringLiteral(":");
+        painter->setPen(readouts[i].color);
+        painter->drawText(labelX, rowY, nameText);
+
+        const int nameWidth = fm.horizontalAdvance(nameText);
+        painter->setPen(Qt::white);
+        painter->drawText(labelX + nameWidth + 6, rowY,
+                          QString::number(static_cast<double>(readouts[i].value), 'f', 0));
+    }
+
+    painter->restore();
 }
 
 /// @brief 绘制静态背景层：全区域填充 → 圆角边框 → 网格。
