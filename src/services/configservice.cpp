@@ -513,6 +513,10 @@ void ConfigService::testMotor() {
 void ConfigService::onSerialConnected() {
     qCInfo(lcConfig) << "Serial connected";
     m_isConnected = true;
+
+    // 启动心跳检测（SerialManager 在工作线程，必须通过 QueuedConnection 调用）
+    QMetaObject::invokeMethod(m_serialManager, "startHeartbeat", Qt::QueuedConnection);
+
     emit serialConnected(m_connectedPort, m_connectedBaud);
 }
 
@@ -520,6 +524,10 @@ void ConfigService::onSerialConnected() {
 void ConfigService::onSerialDisconnected() {
     qCInfo(lcConfig) << "Serial disconnected";
     m_isConnected = false;
+
+    // 停止心跳（防御性调用，closePortInternal 内部也会停止）
+    QMetaObject::invokeMethod(m_serialManager, "stopHeartbeat", Qt::QueuedConnection);
+
     if (m_pmicTimeoutTimer != nullptr) {
         m_pmicTimeoutTimer->stop();
     }
