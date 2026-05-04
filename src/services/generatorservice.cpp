@@ -67,6 +67,8 @@ QString GeneratorService::modeLabel() const {
         return QStringLiteral("Linear");
     case Mode::Cosine:
         return QStringLiteral("Cosine");
+    case Mode::Sawtooth:
+        return QStringLiteral("Sawtooth");
     case Mode::None:
         return QString();
     }
@@ -176,6 +178,43 @@ void GeneratorService::startCosine(qint16 amplitude, qint16 offset, double frequ
 }
 
 // =============================================================================
+// 启动锯齿波测试
+// =============================================================================
+
+/// @brief 下发锯齿波测试发生器启动命令。
+///
+/// @param addr  目标寄存器地址
+/// @param min   最小值
+/// @param max   最大值
+/// @param step  步长
+void GeneratorService::startSawtooth(quint16 addr, qint16 min, qint16 max, qint16 step) {
+    if (m_dispatcher == nullptr) {
+        return;
+    }
+
+    const QByteArray payload = MotorProtocol::encodeStartSawtoothGen(addr, min, max, step);
+    qCInfo(lcGenerator).noquote()
+        << QStringLiteral("%1 TX addr=%2 min=%3 max=%4 step=%5 payload=%6")
+               .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStartSawtoothGen)))
+               .arg(formatWord(addr))
+               .arg(min)
+               .arg(max)
+               .arg(step)
+               .arg(formatPayloadHex(payload));
+
+    m_pendingOp = PendingOp::StartSawtooth;
+    m_ackTimeoutTimer->start();
+
+    QPointer<GeneratorService> guard(this);
+    m_dispatcher->submitCommand(MotorProtocol::CmdStartSawtoothGen, payload, CommandDispatcher::High,
+        [guard](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            if (guard != nullptr) {
+                guard->onResponse(cmd, seq, data);
+            }
+        });
+}
+
+// =============================================================================
 // 停止发生器
 // =============================================================================
 
@@ -240,6 +279,19 @@ void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray
         return;
     }
 
+    // ---------- 锯齿波启动 ACK ----------
+    if (cmd == MotorProtocol::CmdStartSawtoothGen && data.isEmpty()) {
+        m_ackTimeoutTimer->stop();
+        m_pendingOp = PendingOp::None;
+        m_mode = Mode::Sawtooth;
+        m_cosineChannelCount = 0;
+        qCInfo(lcGenerator).noquote()
+            << QStringLiteral("%1 RX ACK mode=Sawtooth")
+                   .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)));
+        emit runningChanged(true);
+        return;
+    }
+
     // ---------- 停止 ACK ----------
     if (cmd == MotorProtocol::CmdStopGenerator && data.isEmpty()) {
         m_ackTimeoutTimer->stop();
@@ -266,6 +318,7 @@ void GeneratorService::onResponse(uint8_t cmd, uint8_t /*seq*/, const QByteArray
         switch (m_pendingOp) {
         case PendingOp::StartLinear:
         case PendingOp::StartCosine:
+        case PendingOp::StartSawtooth:
             m_pendingOp = PendingOp::None;
             emit runningChanged(false);                 // 启动失败，保持停止状态
             break;

@@ -177,6 +177,8 @@ void OscilloscopTab::connectSignals() {
             m_generatorService, &GeneratorService::startLinear);
     connect(m_bottomPanel, &ScopeBottomPanel::generatorCosineStartRequested,
             m_generatorService, &GeneratorService::startCosine);
+    connect(m_bottomPanel, &ScopeBottomPanel::generatorSawtoothStartRequested,
+            m_generatorService, &GeneratorService::startSawtooth);
     connect(m_bottomPanel, &ScopeBottomPanel::generatorStopRequested,
             m_generatorService, &GeneratorService::stop);
     connect(m_bottomPanel, &ScopeBottomPanel::captureNoteChanged, this, [](const QString &text) {

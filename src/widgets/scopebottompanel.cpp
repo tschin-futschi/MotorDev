@@ -340,6 +340,7 @@ void ScopeBottomPanel::connectSignals() {
     // --- 生成器面板信号转发 ---
     connect(m_generatorPanel, &ScopeGeneratorPanel::linearStartRequested, this, &ScopeBottomPanel::generatorLinearStartRequested);
     connect(m_generatorPanel, &ScopeGeneratorPanel::cosineStartRequested, this, &ScopeBottomPanel::generatorCosineStartRequested);
+    connect(m_generatorPanel, &ScopeGeneratorPanel::sawtoothStartRequested, this, &ScopeBottomPanel::generatorSawtoothStartRequested);
     connect(m_generatorPanel, &ScopeGeneratorPanel::stopRequested, this, &ScopeBottomPanel::generatorStopRequested);
 
     // --- 采样配置变更 ---

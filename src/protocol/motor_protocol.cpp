@@ -38,6 +38,7 @@ const char *commandName(uint8_t cmd) {
     case CmdStartLinearGen: return "StartLinearGen";
     case CmdStartCosineGen: return "StartCosineGen";
     case CmdStopGenerator: return "StopGenerator";
+    case CmdStartSawtoothGen: return "StartSawtoothGen";
     default: return "UnknownCommand";
     }
 }
@@ -221,6 +222,29 @@ QByteArray encodeStartCosineGen(qint16 amplitude, qint16 offset, quint16 freqX10
 
 QByteArray encodeStopGenerator() {
     return {};  // 无载荷
+}
+
+/// @brief 编码锯齿波测试发生器启动参数
+///
+/// 载荷格式（8 字节）：
+/// [ADDR_H][ADDR_L][MIN_H][MIN_L][MAX_H][MAX_L][STEP_H][STEP_L]
+QByteArray encodeStartSawtoothGen(quint16 addr, qint16 min, qint16 max, qint16 step) {
+    QByteArray payload;
+    payload.reserve(8);
+
+    auto appendU16 = [&](quint16 value) {
+        payload.append(static_cast<char>((value >> 8) & 0xFF));
+        payload.append(static_cast<char>(value & 0xFF));
+    };
+    auto appendS16 = [&](qint16 value) {
+        appendU16(static_cast<quint16>(value));
+    };
+
+    appendU16(addr);
+    appendS16(min);
+    appendS16(max);
+    appendS16(step);
+    return payload;
 }
 
 // -----------------------------------------------------------------------------

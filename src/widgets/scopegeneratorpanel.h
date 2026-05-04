@@ -53,6 +53,13 @@ signals:
     void cosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz,
                               const QVector<ScopeGeneratorCosineChannel> &channels);
 
+    /// @brief 请求启动锯齿波测试发生器
+    /// @param addr 目标寄存器地址
+    /// @param min 最小值
+    /// @param max 最大值
+    /// @param step 步进值
+    void sawtoothStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step);
+
     /// @brief 请求停止波形生成
     void stopRequested();
 
@@ -79,6 +86,7 @@ private:
     void handleStartClicked();
     void handleLinearStart();
     void handleCosineStart();
+    void handleSawtoothStart();
 
     /// @brief 清除所有输入框的错误样式
     void clearErrors();
@@ -87,6 +95,7 @@ private:
     QButtonGroup *m_modeGroup = nullptr;        ///< 线性/余弦互斥按钮组
     QRadioButton *m_linearRadio = nullptr;      ///< 线性模式单选按钮
     QRadioButton *m_cosineRadio = nullptr;      ///< 余弦模式单选按钮
+    QRadioButton *m_sawtoothRadio = nullptr;    ///< 锯齿波测试模式单选按钮
     QStackedWidget *m_modeStack = nullptr;      ///< 模式参数切换容器
 
     // --- 线性模式参数 ---
@@ -95,6 +104,12 @@ private:
     QLineEdit *m_linearMaxEdit = nullptr;       ///< 最大值
     QLineEdit *m_linearStepEdit = nullptr;      ///< 步进值
     QLineEdit *m_linearIntervalEdit = nullptr;  ///< 写入间隔（ms）
+
+    // --- 锯齿波测试模式参数 ---
+    QLineEdit *m_sawtoothAddrEdit = nullptr;      ///< 目标地址
+    QLineEdit *m_sawtoothMinEdit = nullptr;        ///< 最小值
+    QLineEdit *m_sawtoothMaxEdit = nullptr;        ///< 最大值
+    QLineEdit *m_sawtoothStepEdit = nullptr;       ///< 步进值
 
     // --- 余弦模式参数 ---
     QLineEdit *m_cosineAmplitudeEdit = nullptr;     ///< 幅值

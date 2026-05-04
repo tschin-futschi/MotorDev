@@ -237,6 +237,7 @@ QString SimulatorService::describeIncoming(uint8_t cmd, const QByteArray &data) 
     case MotorProtocol::CmdSetChannelRegisterMap: return QStringLiteral("SCOPE_MAP");
     case MotorProtocol::CmdStartLinearGen: return QStringLiteral("GEN_LINEAR");
     case MotorProtocol::CmdStartCosineGen: return QStringLiteral("GEN_COSINE");
+    case MotorProtocol::CmdStartSawtoothGen: return QStringLiteral("GEN_SAWTOOTH");
     case MotorProtocol::CmdStopGenerator: return QStringLiteral("GEN_STOP");
     default: return QStringLiteral("UNKNOWN");
     }
@@ -277,6 +278,7 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
         case MotorProtocol::CmdSetChannelRegisterMap: handleSetChannelRegisterMap(seq, data); break;
         case MotorProtocol::CmdStartLinearGen: handleStartLinearGen(seq, data); break;
         case MotorProtocol::CmdStartCosineGen: handleStartCosineGen(seq, data); break;
+        case MotorProtocol::CmdStartSawtoothGen: handleStartSawtoothGen(seq, data); break;
         case MotorProtocol::CmdStopGenerator: handleStopGenerator(seq); break;
         default: handleUnknownCommand(cmd, seq); break;
         }
@@ -555,6 +557,13 @@ void SimulatorService::handleStartCosineGen(uint8_t seq, const QByteArray &data)
     if (data.size() < 11) { sendErrorFrame(seq, 0x03); return; }
     sendResponseFrame(seq, MotorProtocol::CmdStartCosineGen, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartCosineGen, seq, {}, QStringLiteral("GEN_COSINE → ACK"));
+}
+
+/// @brief 锯齿波测试启动：校验 8 字节 payload，返回 ACK。
+void SimulatorService::handleStartSawtoothGen(uint8_t seq, const QByteArray &data) {
+    if (data.size() != 8) { sendErrorFrame(seq, 0x03); return; }
+    sendResponseFrame(seq, MotorProtocol::CmdStartSawtoothGen, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartSawtoothGen, seq, {}, QStringLiteral("GEN_SAWTOOTH → ACK"));
 }
 
 /// @brief 停止波形发生器。

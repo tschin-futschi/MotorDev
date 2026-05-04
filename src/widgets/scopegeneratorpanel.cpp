@@ -148,10 +148,14 @@ void ScopeGeneratorPanel::setupUi() {
     m_linearRadio->setChecked(true);                    // 默认选中线性模式
     m_cosineRadio = new QRadioButton(tr("Cosine"), this);
     m_cosineRadio->setObjectName(QStringLiteral("cosineRadio"));
+    m_sawtoothRadio = new QRadioButton(tr("Sawtooth"), this);
+    m_sawtoothRadio->setObjectName(QStringLiteral("sawtoothRadio"));
     m_modeGroup->addButton(m_linearRadio, 0);           // ID 0 = Linear
     m_modeGroup->addButton(m_cosineRadio, 1);           // ID 1 = Cosine
+    m_modeGroup->addButton(m_sawtoothRadio, 2);         // ID 2 = Sawtooth
     modeLayout->addWidget(m_linearRadio);
     modeLayout->addWidget(m_cosineRadio);
+    modeLayout->addWidget(m_sawtoothRadio);
     modeLayout->addStretch(1);
 
     // --- 参数页面栈 ---
@@ -238,6 +242,25 @@ void ScopeGeneratorPanel::setupUi() {
     }
     m_modeStack->addWidget(cosinePage);
 
+    // ===== 锯齿波测试模式参数页 =====
+    auto *sawtoothPage = new QWidget(m_modeStack);
+    sawtoothPage->setObjectName(QStringLiteral("sawtoothPage"));
+    auto *sawtoothLayout = new QFormLayout(sawtoothPage);
+    sawtoothLayout->setObjectName(QStringLiteral("sawtoothLayout"));
+    sawtoothLayout->setSpacing(8);
+    sawtoothLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_sawtoothAddrEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothAddrEdit"), QStringLiteral("0x0020"));
+    m_sawtoothMinEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothMinEdit"), QStringLiteral("-100"));
+    m_sawtoothMaxEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothMaxEdit"), QStringLiteral("100"));
+    m_sawtoothStepEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothStepEdit"), QStringLiteral("1"));
+
+    sawtoothLayout->addRow(tr("Register Addr"), m_sawtoothAddrEdit);
+    sawtoothLayout->addRow(tr("Min"), m_sawtoothMinEdit);
+    sawtoothLayout->addRow(tr("Max"), m_sawtoothMaxEdit);
+    sawtoothLayout->addRow(tr("Step"), m_sawtoothStepEdit);
+    m_modeStack->addWidget(sawtoothPage);
+
     // --- 底部按钮行 ---
     auto *buttonLayout = new QHBoxLayout();
     buttonLayout->setObjectName(QStringLiteral("buttonLayout"));
@@ -273,6 +296,11 @@ void ScopeGeneratorPanel::connectSignals() {
     connect(m_cosineRadio, &QRadioButton::toggled, this, [this](bool checked) {
         if (checked && m_modeStack != nullptr) {
             m_modeStack->setCurrentIndex(1);            // 切换到余弦参数页
+        }
+    });
+    connect(m_sawtoothRadio, &QRadioButton::toggled, this, [this](bool checked) {
+        if (checked && m_modeStack != nullptr) {
+            m_modeStack->setCurrentIndex(2);            // 切换到锯齿波参数页
         }
     });
     connect(m_startButton, &QPushButton::clicked, this, &ScopeGeneratorPanel::handleStartClicked);
@@ -391,6 +419,10 @@ void ScopeGeneratorPanel::handleStartClicked() {
         handleLinearStart();
         return;
     }
+    if (m_sawtoothRadio != nullptr && m_sawtoothRadio->isChecked()) {
+        handleSawtoothStart();
+        return;
+    }
     handleCosineStart();
 }
 
@@ -493,6 +525,40 @@ void ScopeGeneratorPanel::handleCosineStart() {
     }
 
     emit cosineStartRequested(amplitude, offset, frequencyHz, channels);
+}
+
+/// @brief 锯齿波测试模式启动：解析并验证 4 个参数字段，通过后发射 sawtoothStartRequested。
+///
+/// 验证规则：
+///   1. 地址必须为有效 uint16
+///   2. min / max / step 必须为有效 int16
+///   3. max > min（否则同时标红 min 和 max）
+///   4. step > 0（否则标红 step）
+void ScopeGeneratorPanel::handleSawtoothStart() {
+    quint16 addr = 0;
+    qint16 minValue = 0;
+    qint16 maxValue = 0;
+    qint16 step = 0;
+
+    const bool ok = parseUint16Field(m_sawtoothAddrEdit, &addr)
+                    && parseInt16Field(m_sawtoothMinEdit, &minValue)
+                    && parseInt16Field(m_sawtoothMaxEdit, &maxValue)
+                    && parseInt16Field(m_sawtoothStepEdit, &step);
+    if (!ok) {
+        return;
+    }
+
+    if (maxValue <= minValue) {
+        setFieldError(m_sawtoothMinEdit, true);
+        setFieldError(m_sawtoothMaxEdit, true);
+        return;
+    }
+    if (step <= 0) {
+        setFieldError(m_sawtoothStepEdit, true);
+        return;
+    }
+
+    emit sawtoothStartRequested(addr, minValue, maxValue, step);
 }
 
 // =============================================================================

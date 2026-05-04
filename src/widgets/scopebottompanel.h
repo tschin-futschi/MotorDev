@@ -68,6 +68,7 @@ signals:
     void generatorLinearStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);
     void generatorCosineStartRequested(qint16 amplitude, qint16 offset, double frequencyHz,
                                        const QVector<ScopeGeneratorCosineChannel> &channels);
+    void generatorSawtoothStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step);
     void generatorStopRequested();
 
     // --- 通道配置信号 ---

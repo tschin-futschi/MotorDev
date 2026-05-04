@@ -31,6 +31,7 @@ public slots:
     void startLinear(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);
     void startCosine(qint16 amplitude, qint16 offset, double frequencyHz,
                      const QVector<ScopeGeneratorCosineChannel> &channels);
+    void startSawtooth(quint16 addr, qint16 min, qint16 max, qint16 step);
     void stop();
 
 signals:
@@ -43,8 +44,8 @@ private:
     CommandDispatcher *m_dispatcher = nullptr;
     QTimer *m_ackTimeoutTimer = nullptr;
 
-    enum class Mode { None, Linear, Cosine };
-    enum class PendingOp { None, StartLinear, StartCosine, Stop };
+    enum class Mode { None, Linear, Cosine, Sawtooth };
+    enum class PendingOp { None, StartLinear, StartCosine, StartSawtooth, Stop };
     Mode m_mode = Mode::None;
     PendingOp m_pendingOp = PendingOp::None;
     int m_cosineChannelCount = 0;

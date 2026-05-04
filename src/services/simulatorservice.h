@@ -85,6 +85,7 @@ private:
     void handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data);
     void handleStartLinearGen(uint8_t seq, const QByteArray &data);
     void handleStartCosineGen(uint8_t seq, const QByteArray &data);
+    void handleStartSawtoothGen(uint8_t seq, const QByteArray &data);
     void handleStopGenerator(uint8_t seq);
     void handleUnknownCommand(uint8_t cmd, uint8_t seq);
 
