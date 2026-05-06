@@ -215,12 +215,34 @@ QWidget *ScopeBottomPanel::createOverlayWindow(const QString &title, QWidget *co
     layout->addWidget(content);
 
     window->resize(size);
-    // 初始位置居中于 overlayHost
-    if (m_overlayHost != nullptr) {
-        const QPoint center = m_overlayHost->mapToGlobal(m_overlayHost->rect().center());
-        window->move(center.x() - window->width() / 2, center.y() - window->height() / 2);
-    }
+    // 标记尚未定位：首次 Show 时才计算居中位置（构造期 overlayHost 还未显示，
+    // mapToGlobal 拿不到正确坐标，会落到屏幕左上角）。用户后续拖动后保留位置。
+    window->setProperty("scopeOverlayPositioned", false);
     return window;
+}
+
+// =============================================================================
+// 覆盖窗口居中
+// =============================================================================
+
+/// @brief 将覆盖窗口居中放置在 overlayHost 上（host 不可用时回退到顶级窗口）。
+void ScopeBottomPanel::centerOverlayOnHost(QWidget *window) {
+    if (window == nullptr) {
+        return;
+    }
+
+    QWidget *host = m_overlayHost;
+    if (host == nullptr || !host->isVisible()) {
+        host = this->window();  // 顶级窗口兜底
+    }
+    if (host == nullptr) {
+        return;
+    }
+
+    const QPoint center = host->mapToGlobal(host->rect().center());
+    const int w = qMax(window->width(), window->sizeHint().width());
+    const int h = qMax(window->height(), window->sizeHint().height());
+    window->move(center.x() - w / 2, center.y() - h / 2);
 }
 
 // =============================================================================
@@ -382,6 +404,10 @@ void ScopeBottomPanel::connectSignals() {
     });
     connect(m_registerToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_registerWindow->isVisible();
+        if (visible && !m_registerWindow->property("scopeOverlayPositioned").toBool()) {
+            centerOverlayOnHost(m_registerWindow);
+            m_registerWindow->setProperty("scopeOverlayPositioned", true);
+        }
         m_registerWindow->setVisible(visible);
         if (visible) {
             m_registerWindow->raise();
@@ -391,6 +417,10 @@ void ScopeBottomPanel::connectSignals() {
     });
     connect(m_generatorToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_generatorWindow->isVisible();
+        if (visible && !m_generatorWindow->property("scopeOverlayPositioned").toBool()) {
+            centerOverlayOnHost(m_generatorWindow);
+            m_generatorWindow->setProperty("scopeOverlayPositioned", true);
+        }
         m_generatorWindow->setVisible(visible);
         if (visible) {
             m_generatorWindow->raise();

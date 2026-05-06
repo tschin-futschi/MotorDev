@@ -96,6 +96,9 @@ private:
     /// @brief 创建覆盖窗口（标题栏 + 内容 + 关闭按钮）
     QWidget *createOverlayWindow(const QString &title, QWidget *content, const QSize &size);
 
+    /// @brief 将覆盖窗口居中放置在 overlayHost（或顶级窗口兜底）上
+    void centerOverlayOnHost(QWidget *window);
+
     /// @brief 刷新覆盖面板的显示/隐藏状态
     void refreshPanels();
 

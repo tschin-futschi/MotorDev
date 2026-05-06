@@ -696,8 +696,13 @@ int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
 
     const double span = qMax(yMax - yMin, 1e-9);
     const double oneOverSpan = 1.0 / span;
-    const double xStep = static_cast<double>(laneRect.width()) /
-                         static_cast<double>(visibleWindowCount - 1);
+    // X 映射：第 k 个采样点（全窗口绝对索引）的全窗口比例 = k / N（左边界对齐），
+    // 与 X 轴时间标签的 ratio×T 语义保持一致；屏幕 x = xLeft + (k - viewStart×N) × pixelPerSlot。
+    const int totalSlots = qMax(1, m_displaySampleCount);
+    const double rangeRatio = qMax(m_viewEndRatio - m_viewStartRatio, 1e-9);
+    const double pixelPerSampleSlot = static_cast<double>(laneRect.width())
+                                      / (rangeRatio * static_cast<double>(totalSlots));
+    const double sampleOriginOffset = m_viewStartRatio * static_cast<double>(totalSlots);
     const double xLeft = static_cast<double>(laneRect.left());
     const double yBottom = static_cast<double>(laneRect.bottom());
     const double yHeight = static_cast<double>(laneRect.height());
@@ -710,7 +715,6 @@ int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
     const float *snapshot = m_paintSnapshot[channelIndex].data();
     for (int i = 0; i < pointCount; ++i) {
         const int sampleIndex = actualStart + i;
-        const int windowOffset = sampleIndex - startIndex;
         const float v = snapshot[sampleIndex];
         double normalized = (static_cast<double>(v) - yMin) * oneOverSpan;
         if (normalized < 0.0) {
@@ -718,7 +722,8 @@ int ScopePlotWidget::drawWaveformLane(QPainter *painter, const QRect &laneRect,
         } else if (normalized > 1.0) {
             normalized = 1.0;
         }
-        m_pointBuffer[i] = QPointF(xLeft + windowOffset * xStep,
+        m_pointBuffer[i] = QPointF(xLeft + (static_cast<double>(sampleIndex) - sampleOriginOffset)
+                                           * pixelPerSampleSlot,
                                    yBottom - normalized * yHeight);
     }
 
@@ -995,16 +1000,22 @@ void ScopePlotWidget::paintCrosshair(QPainter *painter, const QRect &plotRect,
         return;
     }
 
-    // --- 将鼠标 X 吸附到最近的采样点 ---
+    // --- 将鼠标 X 吸附到最近的采样点（与 drawWaveformLane 同一映射规则） ---
     const double cursorLocalRatio = static_cast<double>(m_cursorPos.x() - plotRect.left())
                                     / static_cast<double>(plotRect.width());
-    const int sampleIndex = qBound(startIndex,
-                                   startIndex + qRound(cursorLocalRatio * (visibleCount - 1)),
-                                   endIndex);
-    // 反算吸附后的像素 X（精确落在数据点上）
-    const double snappedRatio = static_cast<double>(sampleIndex - startIndex)
-                                / static_cast<double>(visibleCount - 1);
-    const int snappedX = plotRect.left() + qRound(snappedRatio * plotRect.width());
+    const int totalSlots = qMax(1, m_displaySampleCount);
+    const double rangeRatio = qMax(m_viewEndRatio - m_viewStartRatio, 1e-9);
+    const double globalRatio = m_viewStartRatio + cursorLocalRatio * rangeRatio;
+    const int rawIndex = qBound(0,
+                                qRound(globalRatio * static_cast<double>(totalSlots)),
+                                totalSlots - 1);
+    const int sampleIndex = qBound(startIndex, rawIndex, endIndex);
+    // 反算吸附后的像素 X（与波形点公式严格一致：x = xLeft + (k/N - viewStart)/range × width）
+    const double snappedGlobalRatio = static_cast<double>(sampleIndex)
+                                      / static_cast<double>(totalSlots);
+    const int snappedX = plotRect.left()
+                         + qRound((snappedGlobalRatio - m_viewStartRatio) / rangeRatio
+                                  * static_cast<double>(plotRect.width()));
 
     // --- 垂直虚线（吸附到采样点） ---
     painter->save();
@@ -1014,10 +1025,8 @@ void ScopePlotWidget::paintCrosshair(QPainter *painter, const QRect &plotRect,
     painter->setPen(crossPen);
     painter->drawLine(snappedX, plotRect.top(), snappedX, plotRect.bottom());
 
-    // --- 时间读数（基于吸附后的采样点） ---
-    const double snappedViewRatio = m_viewStartRatio
-                                    + (m_viewEndRatio - m_viewStartRatio) * snappedRatio;
-    const double timeMs = snappedViewRatio * static_cast<double>(m_displayWindowMs);
+    // --- 时间读数（左边界语义：第 k 点的真实时间 = k × T / N） ---
+    const double timeMs = snappedGlobalRatio * static_cast<double>(m_displayWindowMs);
 
     // --- 收集各通道在此采样索引处的值 ---
     struct ChannelReadout {
@@ -1162,15 +1171,24 @@ QRect ScopePlotWidget::currentPlotRect() const {
 }
 
 /// @brief 返回当前视口起始采样索引（考虑缩放比例）。
+///
+/// 全窗口共 N = m_displaySampleCount 个时间格子，第 k 点的全窗口比例 = k/N（左边界对齐）。
+/// 视口左边界比例 viewStartRatio 对应的采样索引取 floor(ratio×N)，扩张到偏左以覆盖屏幕宽度。
 int ScopePlotWidget::visibleSampleStart() const {
-    const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
-    const int offset = static_cast<int>(std::floor(m_viewStartRatio * windowLastIndex));
-    return qBound(0, offset, windowLastIndex);
+    const int totalSlots = qMax(0, m_displaySampleCount);
+    if (totalSlots <= 0) {
+        return 0;
+    }
+    const int idx = static_cast<int>(std::floor(m_viewStartRatio * static_cast<double>(totalSlots)));
+    return qBound(0, idx, totalSlots - 1);
 }
 
 /// @brief 返回当前视口结束采样索引（考虑缩放比例）。
 int ScopePlotWidget::visibleSampleEnd() const {
-    const int windowLastIndex = qMax(0, m_displaySampleCount - 1);
-    const int offset = static_cast<int>(std::ceil(m_viewEndRatio * windowLastIndex));
-    return qBound(0, offset, windowLastIndex);
+    const int totalSlots = qMax(0, m_displaySampleCount);
+    if (totalSlots <= 0) {
+        return 0;
+    }
+    const int idx = static_cast<int>(std::ceil(m_viewEndRatio * static_cast<double>(totalSlots)));
+    return qBound(0, idx, totalSlots - 1);
 }
