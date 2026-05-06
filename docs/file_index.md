@@ -9,52 +9,65 @@
 ## 功能场景索引
 
 ### 串口连接与断开
-- `src/tabs/configtab` `[UI-Tab]` — 串口扫描/连接/断开操作入口
+- `src/tabs/configtab` `[UI-Tab]` — 串口扫描/连接/断开操作入口（仅控件，业务下沉到 ConfigService）
+- `src/services/configservice` `[通信]` — 串口连接/断开业务逻辑、心跳启停、状态转发
 - `src/widgets/topbar` `[UI-Shell]` — 顶栏连接状态显示（指示灯、端口名）
 - `src/serialmanager` `[通信]` — 串口打开/关闭、重试、心跳管理
 - `src/frameparser` `[传输]` — 字节流解析为控制帧/流帧，并负责帧编码
 
 ### IC 扫描与连接
-- `src/tabs/configtab` `[UI-Tab]` — I2C 扫描触发、IC 类型/从机地址选择
+- `src/tabs/configtab` `[UI-Tab]` — I2C 扫描触发、IC 类型/从机地址选择（仅控件）
+- `src/services/configservice` `[通信]` — I2C 扫描命令下发、响应解析、IC 地址写入
+- `src/services/commanddispatcher` `[通信]` — 命令优先级队列与 seq 匹配
 - `src/devicecontext` `[数据模型]` — 当前 IC 类型和从机地址的持久状态
 - `src/protocol/motor_protocol` `[协议]` — I2C 扫描指令编码、响应解码
-- `src/serialmanager` `[通信]` — 指令发送与响应接收
 
 ### PMIC 配置
-- `src/tabs/configtab` `[UI-Tab]` — PMIC 电压配置 UI（DRVDD/VCMVDD/IOVDD 输入框与"配置 PMIC"按钮；**当前为 UI stub，按钮未连接信号**）
+- `src/tabs/configtab` `[UI-Tab]` — PMIC 电压配置 UI（DRVDD/VCMVDD/IOVDD 输入 + 配置 / 关闭按钮）
+- `src/services/configservice` `[通信]` — PMIC 两步序列（SetVoltage → Enable）+ 5s 整体超时 + 关闭命令
 
 ### IC 配置文件写入/读出
 - `src/tabs/configtab` `[UI-Tab]` — Config File 行（文件选择 combo、Browse/Write/Read 按钮；**当前为 UI stub，按钮未连接信号**）
 
 ### 寄存器读写
-- `src/tabs/registerrwtab` `[UI-Tab]` — 读写操作队列调度、批量操作、按钮事件处理
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、批量按钮（仅控件）
+- `src/services/registerservice` `[通信]` — 单行/批量读写队列、500ms 超时、sessionId 防过期响应
 - `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 20 行）
 - `src/protocol/motor_protocol` `[协议]` — 读写寄存器指令编码/响应解码
-- `src/serialmanager` `[通信]` — 指令发送与帧接收
+- `src/protocol/register_utils` `[协议]` — 地址/值文本统一解析（含 0x 前缀）
 
 ### 寄存器配置文件自动保存/加载
 - `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；底部"批量读写"面板的文件选择按钮**当前为 UI stub，未连接信号**
 - `src/widgets/registertable` `[UI-Widget]` — `loadConfig`/`saveConfig` 实现，读写 JSON 格式的地址-描述-值配置
 
 ### 示波器/波形观测
-> 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、调试模拟器端到端数据路径。寄存器面板后端处理、导出/截图等为 stub。
-> 示波器工具栏控件（视图模式切换、Style、采样启停）已迁移至 TopBar，仅在示波器页面可见。
+> 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、双击全屏、十字光标吸附读数、调试模拟器端到端数据路径。
+> 示波器工具栏控件（视图模式切换、Style、Crosshair）位于 TopBar 仅示波器页面可见；采样启停按钮内嵌在绘图区。
 
-- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，组合各子组件，管理 running 状态、viewMode、PendingCommand 采样序列状态机、ScopeStreamBatcher 批量数据接收；通过 MainWindow 桥接与 TopBar 上的示波器控件交互
-- `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击重置视图）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔 + 4x MSAA，8 通道稳定 60fps
+- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，协调 ScopeService / RegisterService / GeneratorService / CyclicWriteService 四个服务；通过 MainWindow 桥接与 TopBar 上的示波器控件交互
+- `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击全屏，内嵌采样按钮，十字光标）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔，8 通道稳定 60fps
 - `src/widgets/scopestylepanel` `[UI-Widget]` — 示波器通道样式面板（颜色选择、线宽、线型、数据点开关）；由 TopBar 的 Style 按钮触发显隐
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
-- `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 启动/停止/清除/录入参数，UI 完整，信号已连接；后端处理在 oscilloscoptab 中为 stub）
-- `src/widgets/scopegeneratorpanel` `[UI-Widget]` — 信号发生器配置面板（Linear/Cosine 模式切换、参数输入、校验、启停信号）
-- `src/services/generatorservice` `[通信]` — 发生器协议命令发送（0x55/0x56/0x57）与响应状态管理
+- `src/widgets/scopemarqueelabel` `[UI-Widget]` — 跑马灯状态标签（采样/循环写入/发生器活跃状态汇总）
+- `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 循环写入间隔/启动/停止/清除/录入参数）
+- `src/widgets/scopegeneratorpanel` `[UI-Widget]` — 信号发生器配置面板（Linear/Cosine/Sawtooth 模式切换 + 参数校验）
+- `src/widgets/scopepreviewwidget` `[UI-Widget]` — 独立预览控件，自带正弦数据源用于 UI 演示与样式验证
+- `src/models/scopechannelmodel` `[数据模型]` — 8 通道配置数据模型（启用/描述/地址/颜色/线宽/线型/数据点 + 协议参数生成）
+- `src/models/channelbuffer` `[数据模型]` — 单通道双层环形缓冲（原始环 + UI 降采样环）
+- `src/services/scopeservice` `[通信]` — 4 步采样启动序列（Interval/Channels/Map/Start）+ ScopeStreamBatcher 流帧批量接收 + 5s 看门狗 + 背压（QAtomicInt）
+- `src/services/registerservice` `[通信]` — 寄存器面板单行/批量读写
+- `src/services/cyclicwriteservice` `[通信]` — 寄存器面板循环写入（轮询 + 连续错误 5 次自停）
+- `src/services/generatorservice` `[通信]` — 发生器协议命令（0x55/0x56/0x57/0x58）与运行状态管理 + 3s ACK 超时
+- `src/protocol/sampling_config` `[协议]` — 采样间隔/显示窗口的 UI 文本 ↔ 协议索引映射
 
 ### 固件烧录
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab（功能待实现）
 
 ### 串口调试模拟器
-- `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器浮动窗口，可模拟 STM32 侧响应（I2C 扫描、寄存器读写、采样启停、流帧上报）；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
-- `src/services/simulatorserial` `[传输]` — 模拟器专用串口驱动，接口与 SerialManager 对称（openPort / closePort / sendRawFrame）；独立线程运行，仅供 SerialDebugTab 使用
+- `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
+- `src/services/simulatorservice` `[通信]` — 模拟器命令分发与模拟响应（I2C 扫描/寄存器读写/PMIC/采样启停/发生器），独立 std::thread 生成正弦波形流（基波 1Hz + 纹波 100Hz，通道间相位偏移）
+- `src/services/simulatorserial` `[传输]` — 模拟器专用串口驱动，接口与 SerialManager 对称（openPort / closePort / sendRawFrame）；独立线程运行
 
 ### 主窗口框架与页面导航
 - `src/main.cpp` — 程序入口，创建 QApplication 和 MainWindow，安装全局 Qt 消息处理器（将 qDebug/qWarning 路由至 LogPanel）
@@ -84,14 +97,15 @@
 
 | 功能 | 入口文件 | 状态 |
 |------|---------|------|
-| PMIC 电压配置 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
+| PMIC 电压配置 | `src/tabs/configtab` + `src/services/configservice` | 已实现：DRVDD/IOVDD/VCMVDD 三路电压输入 + 两步序列（SetVoltage → Enable）+ Disable + 5s 超时 |
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` | UI stub，按钮未连接信号 |
-| 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击重置视图 |
-| 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | stub，仅打 debug log |
-| 示波器串口数据流接入 | `src/widgets/scopeplotwidget` | 已实现：`appendSamples` 接收外部数据，16ms 定时器驱动渲染，零堆分配 paintEvent |
-| 示波器寄存器面板后端处理 | `src/tabs/oscilloscoptab` | stub，信号仅打 log |
-| 信号发生器 | `src/widgets/scopegeneratorpanel`, `src/services/generatorservice` | 已实现：Linear/Cosine 参数 UI + 协议命令下发（0x55/0x56/0x57），波形由 STM32 执行 |
+| 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击全屏，右键重置 |
+| 示波器十字光标 | `src/widgets/scopeplotwidget` + `src/widgets/topbar` | 已实现：TopBar 切换按钮 + 吸附最近样本读数 |
+| 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
+| 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
+| 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
+| 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
 | 固件烧录 | `src/tabs/fwflashtab` | 整体未实现 |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
@@ -105,12 +119,12 @@
 | 应用入口 | `src/main.cpp` |
 | 传输层 | `src/frameparser` |
 | 通信层 | `src/serialmanager` |
-| 协议层 | `src/protocol/motor_protocol` |
-| 数据模型层 | `src/devicecontext` |
+| 协议层 | `src/protocol/motor_protocol`, `src/protocol/register_utils`, `src/protocol/sampling_config` |
+| 数据模型层 | `src/devicecontext`, `src/models/scopechannelmodel`, `src/models/channelbuffer` |
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
-| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel` |
-| 服务层 | `src/services/generatorservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice` |
+| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel` |
+| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice` |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |
@@ -123,7 +137,10 @@
 
 - `src/serialmanager` — 所有需要串口通信的功能都依赖它
 - `src/frameparser` — serialmanager 唯一依赖的帧解析器，协议帧格式变更必须同步修改
+- `src/services/commanddispatcher` — 所有应用层 Service 的统一入口，优先级队列与响应匹配集中在此
 - `src/protocol/motor_protocol` — 所有读写操作的指令编解码集中在此
+- `src/protocol/sampling_config` — 采样间隔/显示窗口下拉选项的唯一来源，变更影响 UI 与协议两侧
 - `src/devicecontext` — 当前 IC 类型和从机地址，目前仅 configtab 读写；其他 Tab 尚未接入
+- `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
 - `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、fwflashtab、oscilloscoptab 四个 Tab 共用

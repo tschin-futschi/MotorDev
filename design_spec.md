@@ -1,6 +1,6 @@
 # MotorDev UI 设计规格文档
 
-> 版本：v0.1 草稿
+> 版本：v0.2 | 日期：2026-05-06
 > 本文档定义所有 UI 组件的精确规格，供开发实现参考。
 
 ---
@@ -353,12 +353,15 @@ Sidebar 内容:
 仅在示波器页面可见（其他页面隐藏）
 
 控件（从左到右）:
-[Overlay/Stacked] [Style] [开始采样/停止采样]
+[Overlay/Stacked] [Style] [Crosshair toggle]
 
 Overlay/Stacked: QToolButton，单按钮点击切换，文字显示当前模式
 Style: QToolButton，checkable，切换通道样式面板
-采样按钮: QPushButton，文字随状态切换（"开始采样" / "停止采样"），绿色/红色风格
-注：原 STOPPED/RUNNING 状态标签已移除，采样状态仅通过采样按钮文字和样式区分
+Crosshair toggle: QToolButton，checkable；文字在「使用十字光标：开启/关闭」之间切换；
+                 启用后绘图区显示垂直虚线 + 吸附最近样本的圆点 + 数值标签框
+
+注：采样启停按钮已迁至 ScopePlotWidget 绘图区右上角内嵌位置（见下文），不再位于 TopBar
+注：原 STOPPED/RUNNING 状态标签已移除，采样状态通过内嵌采样按钮的文字与样式区分
 ```
 
 ### ScopeStylePanel（通道样式面板）
@@ -392,7 +395,7 @@ Style: QToolButton，checkable，切换通道样式面板
 
 ```
 最小尺寸: 720×320px
-绘制方式: QPainter 自绘制（非 QCustomPlot）
+绘制方式: QOpenGLWidget + QPainter（GL 后端，cosmetic 画笔，零堆分配 paintEvent）
 背景: #f4f2ed
 绘图区: 圆角矩形，内部网格 10×8
 
@@ -402,7 +405,15 @@ Style: QToolButton，checkable，切换通道样式面板
 
 交互:
   鼠标左键拖拽 — 水平方向选区缩放 X 轴 / 垂直方向选区缩放 Y 轴
-  双击 — 重置视图为全范围
+  双击 — 切换全屏（独立无边框窗口；Esc 退出）
+  右键 — 弹出菜单（含重置视图）
+  十字光标（由 TopBar Crosshair 按钮启用）— 鼠标移动时显示垂直虚线、吸附最近样本圆点、数值标签
+
+内嵌采样启停按钮:
+  位置: 绘图区右上角
+  控件: QPushButton，文字随状态在「开始采样 / 停止采样」之间切换
+  样式: 由 Style::Color::ScopeStatusRunning* / ScopeStatusStopped* 系列驱动
+  尺寸常量: ScopeSamplingButtonMinW=92, ScopeSamplingButtonMinH=24
 
 默认通道颜色（定义在 style_constants.h）:
   CH1 Speed   rgb(255, 90, 90)    // bright red — ScopeWaveCh1
@@ -422,11 +433,12 @@ Style: QToolButton，checkable，切换通道样式面板
 边框: 顶部 1px solid #d8d1c7
 
 控制行（顶部，横向排列）:
-  [Sample Interval 标签] [QComboBox: 100 us / 200 us / 300 us / 500 us / 750 us / 1000 us / 1500 us / 2000 us]
+  [Sample Interval 标签] [QComboBox: 150 us / 250 us / 300 us / 400 us / 500 us / 900 us / 1000 us]
+    （选项与 protocol.md 4.4 节 0x52 索引表 0x00~0x06 严格对应，由 SamplingConfig::intervalLabels() 提供）
   [Y Axis QToolButton（下拉菜单: Auto / Manual...）]
   [Display Window 标签] [QComboBox: 50 ms / 200 ms / 500 ms / 1000 ms / 2000 ms / 4000 ms]
   [Capture Note 标签] [QLineEdit]
-  注：采样启停按钮已移至 TopBar
+  注：采样启停按钮位于 ScopePlotWidget 绘图区内嵌位置，不在底部面板亦不在 TopBar
   底部按钮行（右对齐）: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
 
 通道配置条区域（可通过 Hide/Show Channels 按钮折叠）:
@@ -442,8 +454,14 @@ Style: QToolButton，checkable，切换通道样式面板
   点击 Hide/Show Register 按钮切换显示
 
 信号发生器面板（ScopeGeneratorPanel）:
-  以独立浮动窗口弹出（Qt::Tool），420×240px
-  当前为占位 UI，无后端逻辑
+  以独立浮动窗口弹出（Qt::Tool），最小 420×340px（Style::Size::GeneratorPanelMinW / MinH）
+  通过 QStackedWidget + QButtonGroup 切换三种模式：
+    - Linear   — 参数: 目标地址、min、max、step、间隔(ms)；对应协议 0x55
+    - Cosine   — 参数: 振幅、偏移、频率(Hz)、最多 3 通道（地址 + 相位°）；对应协议 0x56
+    - Sawtooth — 参数: 目标地址、min、max、step（每 tick 写一次，无 interval 分频）；对应协议 0x58
+                 用于链路完整性测试：配合采样读取同一寄存器，肉眼可验证示波器是否完整还原信号
+  统一启动/停止按钮；启动前对所有字段做格式校验，错误字段显示红色边框
+  波形由 STM32 本地执行，上位机仅下发参数与启停命令
   点击 Hide/Show Generator 按钮切换显示
 ```
 
