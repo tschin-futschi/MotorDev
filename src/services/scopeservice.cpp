@@ -25,6 +25,7 @@
 // =============================================================================
 #include "services/scopeservice.h"
 
+#include "models/channelbuffer.h"
 #include "models/scopechannelmodel.h"
 #include "protocol/motor_protocol.h"
 #include "protocol/sampling_config.h"
@@ -575,8 +576,8 @@ void ScopeService::logStartSnapshot() const {
     const int rawWindowPoints = qMax(
         1,
         qRound((static_cast<double>(m_displayWindowMs) * 1000.0) / static_cast<double>(intervalUs)));
-    // 降采样桶大小：确保 UI 点数不超过 3000
-    const int bucket = qMax(1, (rawWindowPoints + 3000 - 1) / 3000);
+    // 降采样桶大小：确保 UI 点数不超过 ChannelBuffer::kUiRingSize
+    const int bucket = qMax(1, (rawWindowPoints + ChannelBuffer::kUiRingSize - 1) / ChannelBuffer::kUiRingSize);
     const int uiPoints = qMax(1, (rawWindowPoints + bucket - 1) / bucket);
 
     // 收集活跃通道信息

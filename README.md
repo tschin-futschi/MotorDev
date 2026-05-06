@@ -1,124 +1,120 @@
 # MotorDev
 
-MotorDev 是一款面向电机驱动模组调试的 Qt 上位机工具，目标是把寄存器读写、固件烧录和实时波形观测整合到同一个桌面应用中。
+MotorDev 是一款面向电机驱动模组调试的 Qt 上位机工具，将寄存器读写、固件烧录、实时波形观测整合到同一桌面应用中。
 
-当前仓库处于早期开发阶段，已经完成：
-
-- 项目愿景、协议和 UI 规格文档
-- 基于 Qt6 Widgets 的主窗口和 4 个主功能页
-- TopBar / ActivityBar / Sidebar / ContentArea / StatusBar 基础架构
-- 串口管理、协议解析和基础日志能力
-- CMake 构建配置
+通信链路：上位机（Windows） ⇄ 串口 ⇄ STM32 ⇄ I2C ⇄ 电机驱动 IC。
 
 ## Features
 
-规划中的核心功能：
+四个主功能页 + 一个浮动调试模拟器：
 
-- 寄存器读写
-- 固件烧录
-- 实时示波
-- 多语言支持
-- 配置持久化
+| 页面 | 状态 |
+|------|------|
+| **Config** 串口扫描 / IC 类型 / 从机地址 / PMIC 电压配置 / 设备控制 | 串口、IC、PMIC、设备控制按钮 已实现；Config File 行为 UI stub |
+| **RegisterRW** 寄存器读写（4 组 × 20 行） | 单读 / 单写 / 批量读，启动自动加载 + 自动保存到 `AppDataLocation/registers.json`；用户文件选择导入导出为 stub |
+| **FwFlash** 固件烧录 | 整体未实现（占位页） |
+| **Oscilloscope** 8 通道实时示波 | OpenGL + QPainter 自绘渲染，60 fps 稳定；overlay/stacked 视图、X/Y 拖拽缩放、双击重置、十字光标读值（snap to sample）、通道样式面板（颜色/线宽/线型/数据点）、采样启停、信号发生器（Linear/Cosine/Sawtooth，由 STM32 执行）、寄存器侧面板（单写 / 周期写） |
+| **SerialDebug**（浮动） | 串口调试模拟器，可在不连接真实硬件的情况下端到端跑通 I2C 扫描、寄存器读写、采样流帧、发生器命令等 |
 
-当前已经具备：
+公共基础设施已具备：
 
-- UI 主框架
-- 串口通信基础层
-- 协议帧编解码
-- `ConfigTab` 基础业务逻辑
-
-尚未完成的是完整业务联调，以及烧录 / 示波等深层功能实现。
+- 串口管理（独立线程、心跳检测、流帧 backpressure 防 OOM）
+- 协议帧编解码（控制帧 0xAA55 + 流帧 0xBB；CRC16 已对齐固件实现）
+- 命令分发器（CommandDispatcher 串行化命令，避免响应错配）
+- 日志面板（支持 level / category / 源码位置 / 文件持久化）
+- Splash screen、QSS 主题、自定义 logo / icon
 
 ## Tech Stack
 
 - C++17
-- Qt 6 Widgets
-- CMake
-- MinGW
+- Qt 6 Widgets（含 SerialPort / Svg / SvgWidgets / OpenGLWidgets / PrintSupport）
+- CMake 3.16+
+- MinGW 13.1.0 64-bit
 
 ## Repository Layout
 
 ```text
 MotorDev/
 ├─ CMakeLists.txt
+├─ build.bat                       # 一键 mingw32-make 构建脚本
 ├─ README.md
-├─ CLAUDE.md
-├─ codex.md
-├─ design_spec.md
-├─ protocol.md
-├─ setup_qt_env.ps1
+├─ CLAUDE.md                       # AI 协作规则与架构约束
+├─ codex.md                        # Codex 工程师协作约束
+├─ design_spec.md                  # UI 设计规格（唯一权威）
+├─ protocol.md                     # 通信协议（唯一权威，当前 v1.9）
 ├─ docs/
-│  ├─ vision.md
-│  └─ tech_overview.md
+│  ├─ vision.md                    # 项目愿景
+│  ├─ tech_overview.md             # 技术栈与目录结构
+│  └─ file_index.md                # src 模块索引
 ├─ resources/
-│  ├─ motordev_logo.svg
-│  └─ resources.qrc
+│  ├─ resources.qrc
+│  ├─ motordev.ico
+│  ├─ app_icon.rc
+│  └─ styles/motordev.qss
 ├─ src/
-│  ├─ main.cpp
-│  ├─ mainwindow.cpp
-│  ├─ mainwindow.h
-│  ├─ ui/
-│  │  └─ style_constants.h
-│  ├─ tabs/
-│  └─ widgets/
-└─ tmp_handoff/
+│  ├─ main.cpp                     # 入口，安装全局 Qt 消息处理器
+│  ├─ mainwindow.{h,cpp}           # 主窗口 Shell
+│  ├─ devicecontext.{h,cpp}        # 当前 IC 类型 / 从机地址
+│  ├─ frameparser.{h,cpp}          # 帧解析状态机 + 帧编码
+│  ├─ serialmanager.{h,cpp}        # 串口管理（独立线程、心跳）
+│  ├─ models/                      # ScopeChannelModel / ChannelBuffer
+│  ├─ protocol/                    # motor_protocol / register_utils / sampling_config
+│  ├─ services/                    # CommandDispatcher / ConfigService /
+│  │                                CyclicWriteService / GeneratorService /
+│  │                                RegisterService / ScopeService /
+│  │                                SimulatorService / SimulatorSerial
+│  ├─ tabs/                        # configtab / registerrwtab / fwflashtab /
+│  │                                oscilloscoptab / serialdebugtab
+│  ├─ ui/                          # style_constants.h / repolish.h / scopeviewmode.h
+│  └─ widgets/                     # activitybar / topbar / sidebar / logpanel /
+│                                    registertable / scope* 系列
+├─ build_make_qt/                  # 默认构建输出目录（含 MotorDev.exe）
+├─ TRACKING/                       # 用户可读问题追踪笔记
+└─ tmp_handoff/                    # 阶段计划 / Review / 实现回执交接
 ```
 
 ## Requirements
 
-建议使用与 Qt 配套的工具链：
+建议使用与 Qt 配套的工具链版本：
 
-- Qt `6.11.0`
-- Qt MinGW `mingw1310_64`
-- Qt CMake `CMake_64`
+- Qt `6.11.0` `mingw_64`
+- Qt Tools `mingw1310_64`（MinGW 13.1.0 64-bit）
+- Qt Tools `CMake_64`
 
-当前项目已在以下路径组合下验证通过：
-
-- `D:\Qt\6.11.0\mingw_64`
-- `D:\Qt\Tools\mingw1310_64`
-- `D:\Qt\Tools\CMake_64`
-
-如果你是在另一台机器上编译，核心要求不是路径必须和这里完全一致，而是下面 3 件事必须成立：
+核心要求不是路径必须一致，而是下面三件事必须成立：
 
 - Qt 版本使用 `6.11.0`
 - 编译器使用与该 Qt 套件配套的 `MinGW 13.1.0 64-bit`
-- `cmake.exe`、`g++.exe`、`mingw32-make.exe` 和 `Qt6_DIR` 必须指向同一套 Qt/MinGW 安装
+- `cmake.exe`、`g++.exe`、`mingw32-make.exe` 与 `Qt6_DIR` 必须指向同一套 Qt/MinGW 安装
 
-## Build On Another Machine
-
-推荐直接安装这些组件：
-
-- Qt `6.11.0` `mingw_64`
-- Qt Tools 中的 `mingw1310_64`
-- Qt Tools 中的 `CMake_64`
-
-安装完成后，先确认你机器上的真实路径。例如：
+仓库默认验证路径：
 
 ```text
-C:\Qt\6.11.0\mingw_64
-C:\Qt\Tools\mingw1310_64
-C:\Qt\Tools\CMake_64
+D:\Qt\6.11.0\mingw_64
+D:\Qt\Tools\mingw1310_64
+D:\Qt\Tools\CMake_64
 ```
-
-下面的命令里请把这些路径替换成你本机实际安装目录。
 
 ## Build
 
-### Recommended Method
+### Quick Build（首次成功配置后）
 
-这个项目在当前环境里最稳定的构建方式是：
+`build.bat` 是一键增量构建脚本，前提是 `build_make_qt/` 已通过下面 "First-time CMake Configure" 步骤完成 cmake 配置：
 
-- 使用 Qt 自带的 `cmake.exe`
-- 使用 Qt 对应的 `g++.exe`
-- 使用 `MinGW Makefiles`
-- 不依赖系统 `PATH` 自动找工具链
+```cmd
+build.bat
+```
 
-推荐在 PowerShell 中执行：
+脚本默认 `MINGW_PATH=D:\Qt\Tools\mingw1310_64\bin`。换机器时改这一行即可。
+
+### First-time CMake Configure
+
+PowerShell 中执行（替换为本机实际路径）：
 
 ```powershell
-$qtRoot = "C:\Qt\6.11.0\mingw_64"
-$mingwRoot = "C:\Qt\Tools\mingw1310_64"
-$cmakeRoot = "C:\Qt\Tools\CMake_64"
+$qtRoot    = "D:\Qt\6.11.0\mingw_64"
+$mingwRoot = "D:\Qt\Tools\mingw1310_64"
+$cmakeRoot = "D:\Qt\Tools\CMake_64"
 
 & "$cmakeRoot\bin\cmake.exe" `
   -S . `
@@ -129,119 +125,76 @@ $cmakeRoot = "C:\Qt\Tools\CMake_64"
   -DCMAKE_CXX_COMPILER="$mingwRoot\bin\g++.exe" `
   -DCMAKE_MAKE_PROGRAM="$mingwRoot\bin\mingw32-make.exe"
 
-& "$mingwRoot\bin\mingw32-make.exe" -C build_make_qt -j4
+& "$mingwRoot\bin\mingw32-make.exe" -C build_make_qt -j8
 ```
 
-构建完成后可执行文件位于：
+构建产物：
 
 ```text
-build_make_qt/MotorDev.exe
+build_make_qt\MotorDev.exe
 ```
 
-### Optional: Configure Environment First
+### Why MinGW Makefiles, Not Ninja
 
-如果你希望先把当前 PowerShell 会话切到 Qt 环境，再执行构建命令，可以参考本仓库的 `setup_qt_env.ps1`。
-
-这份脚本在本机写死的是：
-
-- `D:\Qt\6.11.0\mingw_64`
-- `D:\Qt\Tools\mingw1310_64`
-- `D:\Qt\Tools\CMake_64`
-
-所以换机器时，你需要先把脚本里的路径改成新机器的实际安装目录，然后再运行：
-
-```powershell
-. .\setup_qt_env.ps1
-```
-
-再构建：
-
-```powershell
-cmake -S . -B build_make_qt -G "MinGW Makefiles"
-mingw32-make -C build_make_qt -j4
-```
-
-### Why Not Use Ninja By Default
-
-这个仓库最初用过 `Ninja`，但在当前项目环境里，`Ninja` 更容易出现这些问题：
+仓库最初尝试过 Ninja，但在当前项目环境里更容易遇到：
 
 - `Detecting CXX compiler ABI info` 卡住
-- 脏的构建目录残留 `.ninja_lock`
-- 更难区分是生成器问题还是 Qt 配置问题
+- 脏构建目录残留 `.ninja_lock`
+- 难以区分是生成器问题还是 Qt 配置问题
 
-因此这里把 `MinGW Makefiles` 作为默认推荐方案。  
-如果你已经在自己的机器上稳定验证过 `Ninja`，也可以自行切换，但 README 不把它作为首选。
+因此默认推荐 `MinGW Makefiles`。如果你已经在自己机器上稳定验证过 Ninja，可自行切换。
 
 ### Common Problems
 
-1. `Qt6` 找不到
-
-- 检查 `-DCMAKE_PREFIX_PATH`
-- 检查 `-DQt6_DIR`
-- 确保它们都指向同一套 Qt `6.11.0\mingw_64`
-
-2. `g++` 或 `mingw32-make` 不是 Qt 配套版本
-
-- 不要依赖裸命令 `g++`
-- 直接指定绝对路径，例如：
-
-```text
-D:\Qt\Tools\mingw1310_64\bin\g++.exe
-D:\Qt\Tools\mingw1310_64\bin\mingw32-make.exe
-```
-
-3. `MotorDev.exe` 链接失败，提示文件被占用
-
-- 先关闭正在运行的 `MotorDev.exe`
-- 然后重新执行 `mingw32-make -C build_make_qt -j4`
-
-4. `AutoMoc` 或子进程创建失败
-
-- 如果是在受限终端或沙箱里构建，可能不是代码错误，而是环境限制
-- 换到正常本地终端重新执行同一条构建命令
+1. **`Qt6` 找不到** —— 检查 `-DCMAKE_PREFIX_PATH` 与 `-DQt6_DIR`，确认两者都指向同一套 `6.11.0\mingw_64`。
+2. **`g++` 不是 Qt 配套版本** —— 不要依赖裸 `g++`，直接传绝对路径 `D:\Qt\Tools\mingw1310_64\bin\g++.exe`。
+3. **`MotorDev.exe` 链接失败、提示文件被占用** —— 先关闭正在运行的实例，再重新 `mingw32-make` 或 `build.bat`。
+4. **`AutoMoc` 或子进程创建失败** —— 受限终端 / 沙箱环境的常见问题，换到正常本地终端重试。
 
 ## Deploy
 
-如果需要部署 Qt 运行时，在构建成功后执行：
+打包 Qt 运行时：
 
 ```powershell
-& "C:\Qt\6.11.0\mingw_64\bin\windeployqt.exe" .\build_make_qt\MotorDev.exe
+& "D:\Qt\6.11.0\mingw_64\bin\windeployqt.exe" .\build_make_qt\MotorDev.exe
 ```
 
 ## Documentation
 
-项目文档以这些文件为准：
-
-- `docs/vision.md`
-- `docs/tech_overview.md`
-- `design_spec.md`
-- `protocol.md`
-- `CLAUDE.md`
-- `codex.md`
-
-其中：
-
-- `protocol.md` 是通信协议的唯一权威来源
-- `design_spec.md` 是 UI 设计的当前基准
-- `tmp_handoff/` 用于阶段计划、实现回执和 review 交接
+| 文件 | 用途 |
+|------|------|
+| `docs/vision.md` | 项目愿景与设计原则 |
+| `docs/tech_overview.md` | 技术栈、目录结构、开发优先级 |
+| `docs/file_index.md` | `src/` 模块功能索引 |
+| `protocol.md` | 串口通信协议（**唯一权威**） |
+| `design_spec.md` | UI 设计与交互规格（**唯一权威**） |
+| `CLAUDE.md` | Claude Code 协作规则与架构约束 |
+| `codex.md` | Codex 工程师实现侧约束 |
+| `tmp_handoff/` | 阶段计划 / Review / 实现回执 |
+| `TRACKING/` | 用户可读问题追踪笔记（HTML） |
 
 ## Current Status
 
-当前阶段：
+已完成并联调通过：
 
-- UI 重构已完成
-- 串口通信基础层已完成
-- `ConfigTab` 基础业务逻辑已接入
-- 控制台日志已接入
-- 心跳已改为显式启动，不再在打开串口时自动启动
+- Config / RegisterRW / Oscilloscope 三个 Tab 的核心交互
+- 串口扫描 / 连接 / 断开 / 心跳检测 / 重连
+- I2C 扫描、IC 类型与从机地址选择
+- PMIC 电压配置（DRVDD / VCMVDD / IOVDD）与 LDO 使能
+- 寄存器单读 / 单写 / 批量读 + 自动持久化
+- 示波器 8 通道 60 fps 渲染、视图切换、拖拽缩放、十字光标读值
+- 信号发生器 Linear / Cosine / Sawtooth（参数下发，由 STM32 执行波形）
+- 周期写、命令分发串行化、流帧 backpressure
+- 协议 CRC16 与固件对齐，采样间隔表对齐协议 v1.9
+- 串口调试模拟器（端到端验证不依赖真实硬件）
 
-已验证：
+仍为占位 / stub：
 
-- CMake 配置通过
-- 项目编译通过
-- `MotorDev.exe` 可成功启动
-- `Scan / Connect / Disconnect / IC / Slave ID` 基础交互可用
-- 串口基础收数链路已做手工验证
+- FwFlash 固件烧录（整体未实现）
+- ConfigTab 的 Config File 行（文件选 / Browse / Write / Read）
+- RegisterRW 底部"批量读写"用户文件选择
+- TopBar 多语言切换 combo
+- ActivityBar 设置按钮
 
 ## License
 

@@ -25,7 +25,7 @@
 /// 非线程安全，仅在主线程中使用。
 class ChannelBuffer {
 public:
-    static constexpr int kUiRingSize = 3000;  ///< UI 环形缓冲区容量（最大显示样本数）
+    static constexpr int kUiRingSize = 8192;  ///< UI 环形缓冲区容量（最大显示样本数）
 
     /// @brief 配置缓冲区参数（调用后自动清空）
     /// @param rawRingSize   原始数据环容量
