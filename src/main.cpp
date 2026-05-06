@@ -18,12 +18,15 @@
 
 #include <QApplication>
 #include <QDateTime>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QGuiApplication>
 #include <QIcon>
 #include <QMessageLogContext>
 #include <QMetaObject>
 #include <QPixmap>
+#include <QScreen>
 #include <QSplashScreen>
 #include <QStandardPaths>
 #include <QString>
@@ -117,6 +120,12 @@ int main(int argc, char *argv[]) {
     // 注册 QtMsgType 元类型，使其可通过 QueuedConnection 跨线程传递
     qRegisterMetaType<QtMsgType>("QtMsgType");
 
+    // 显式锁定 high-DPI scale factor 取整策略（保持 Qt 6 默认 PassThrough，不改变现有视觉表现）。
+    // 必须在 QApplication 构造之前调用，否则无效。配合 Windows manifest 中的 PerMonitorV2 声明，
+    // 确保锁屏-解锁等边界条件下进程仍获取稳定的 per-monitor DPI，避免字体随系统 DPI 误判而漂移。
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+        Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+
     QApplication app(argc, argv);
     initializeLogFile();
     qInstallMessageHandler(motorDevMessageHandler);
@@ -136,6 +145,15 @@ int main(int argc, char *argv[]) {
     QSplashScreen splash(splashPixmap, Qt::WindowStaysOnTopHint);
     splash.show();
     app.processEvents();  // 确保启动画面立即渲染
+
+    // 一次性启动诊断日志：复现"锁屏后字体变小"问题时用于对比正常/异常两次启动的 DPI 取值。
+    // 此时 LogPanel 单例尚未创建，日志会落到磁盘日志文件与 stderr。
+    if (auto *primary = QGuiApplication::primaryScreen()) {
+        qDebug().noquote() << QStringLiteral("[startup] primaryScreen=%1 logicalDPI=%2 devicePixelRatio=%3")
+                                  .arg(primary->name())
+                                  .arg(primary->logicalDotsPerInch())
+                                  .arg(primary->devicePixelRatio());
+    }
 
     // 创建并显示主窗口
     MainWindow window;

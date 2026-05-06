@@ -88,9 +88,17 @@ qt_add_executable(MotorDev
 
 if(WIN32)
     set_target_properties(MotorDev PROPERTIES WIN32_EXECUTABLE FALSE)
+    # motordev_manifest.rc 引用 motordev.manifest，声明 PerMonitorV2 DPI awareness。
+    # 必须显式接入，否则 Qt 进程在锁屏-解锁等边界条件下可能拿到不稳定的 system DPI，
+    # 导致 QSS/字体按错误的 scale 渲染（参见 plan_dpi_lockscreen_font_fix）。
     target_sources(MotorDev PRIVATE
         resources/app_icon.rc
+        resources/motordev_manifest.rc
     )
+    if(MSVC)
+        # 禁止 MSVC 链接器自动生成默认 manifest，由 motordev_manifest.rc 显式提供。
+        target_link_options(MotorDev PRIVATE "/MANIFEST:NO")
+    endif()
 endif()
 
 target_include_directories(MotorDev PRIVATE src)

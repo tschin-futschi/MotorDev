@@ -42,6 +42,8 @@ qrc_*.cpp
 *.rc
 *.res
 !resources/app_icon.rc
+!resources/motordev_manifest.rc
+!resources/motordev.manifest
 /platforms/
 /styles/
 /imageformats/
