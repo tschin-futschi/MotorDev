@@ -224,6 +224,7 @@ void MainWindow::connectSignals() {
     // --- 示波器控件双向同步：TopBar ↔ OscilloscopTab ---
     connect(m_topBar, &TopBar::viewModeChanged, m_scopeTab, &OscilloscopTab::onViewModeChangeRequested);
     connect(m_topBar, &TopBar::styleToggleRequested, m_scopeTab, &OscilloscopTab::onStyleToggleRequested);
+    connect(m_topBar, &TopBar::crosshairToggleRequested, m_scopeTab, &OscilloscopTab::onCrosshairToggleRequested);
     connect(m_scopeTab, &OscilloscopTab::viewModeChanged, m_topBar, &TopBar::setViewMode);
 
     // --- 调试模拟器数据流 → 示波器 ---

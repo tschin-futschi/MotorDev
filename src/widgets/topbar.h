@@ -34,6 +34,10 @@ signals:
     /// @brief 样式面板折叠/展开请求
     void styleToggleRequested();
 
+    /// @brief 十字光标启用/禁用请求
+    /// @param enabled true=启用十字光标，false=禁用
+    void crosshairToggleRequested(bool enabled);
+
 public slots:
     /// @brief 串口连接成功 → 更新端口/波特率文字和指示灯
     void onSerialConnected(const QString &port, qint32 baudRate);
@@ -49,6 +53,10 @@ public slots:
     /// @param mode 0=Overlay, 1=Stacked
     void setViewMode(int mode);
 
+    /// @brief 设置十字光标按钮状态（同步按钮文字与按下态，不发信号）
+    /// @param enabled true=开启，false=关闭
+    void setCrosshairEnabled(bool enabled);
+
 private:
     /// @brief 构建 UI 布局
     void setupUi();
@@ -62,6 +70,7 @@ private:
     QLabel *m_connectionLabel = nullptr;        ///< 连接状态文字（"已连接"/"未连接"）
     QToolButton *m_viewModeButton = nullptr;    ///< Overlay/Stacked 切换按钮
     QToolButton *m_styleButton = nullptr;       ///< 样式面板开关按钮
+    QToolButton *m_crosshairButton = nullptr;   ///< 十字光标启用/禁用按钮
     QComboBox *m_languageCombo = nullptr;       ///< 语言选择下拉框
     int m_viewMode = 0;                         ///< 当前视图模式（0=Overlay, 1=Stacked）
 };

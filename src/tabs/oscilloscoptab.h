@@ -94,6 +94,10 @@ public slots:
     /// @brief 样式面板折叠/展开切换（由 TopBar 触发）
     void onStyleToggleRequested();
 
+    /// @brief 十字光标启用/禁用（由 TopBar 触发）
+    /// @param enabled true=启用，false=禁用
+    void onCrosshairToggleRequested(bool enabled);
+
 protected:
     /// @brief 键盘事件处理 — Escape 退出全屏
     void keyPressEvent(QKeyEvent *event) override;

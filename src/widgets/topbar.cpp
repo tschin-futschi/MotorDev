@@ -11,6 +11,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QSpacerItem>
 #include <QToolButton>
@@ -29,6 +30,7 @@ TopBar::TopBar(QWidget *parent)
     connectSignals();
     setScopeControlsVisible(false);
     setViewMode(0);
+    setCrosshairEnabled(false);
 }
 
 TopBar::~TopBar() = default;
@@ -40,6 +42,7 @@ TopBar::~TopBar() = default;
 void TopBar::connectSignals() {
     m_viewModeButton->setToolTip(tr("Toggle view mode"));
     m_styleButton->setToolTip(tr("Toggle channel style panel"));
+    m_crosshairButton->setToolTip(tr("Toggle crosshair cursor"));
 
     // Overlay ↔ Stacked 切换
     connect(m_viewModeButton, &QToolButton::clicked, this, [this]() {
@@ -51,6 +54,12 @@ void TopBar::connectSignals() {
     // 样式面板开关
     connect(m_styleButton, &QToolButton::clicked, this, [this]() {
         emit styleToggleRequested();
+    });
+
+    // 十字光标开关
+    connect(m_crosshairButton, &QToolButton::toggled, this, [this](bool checked) {
+        setCrosshairEnabled(checked);
+        emit crosshairToggleRequested(checked);
     });
 }
 
@@ -79,6 +88,7 @@ void TopBar::onSerialDisconnected() {
 void TopBar::setScopeControlsVisible(bool visible) {
     m_viewModeButton->setVisible(visible);
     m_styleButton->setVisible(visible);
+    m_crosshairButton->setVisible(visible);
 }
 
 void TopBar::setViewMode(int mode) {
@@ -86,6 +96,14 @@ void TopBar::setViewMode(int mode) {
     m_viewModeButton->setText(m_viewMode == 0
             ? QStringLiteral("Overlay")
             : QStringLiteral("Stacked"));
+}
+
+void TopBar::setCrosshairEnabled(bool enabled) {
+    const QSignalBlocker blocker(m_crosshairButton);
+    m_crosshairButton->setChecked(enabled);
+    m_crosshairButton->setText(enabled
+            ? tr("使用十字光标：开启")
+            : tr("使用十字光标：关闭"));
 }
 
 // =============================================================================
@@ -163,6 +181,14 @@ void TopBar::setupUi() {
     m_styleButton->setCheckable(true);
     m_styleButton->setText(QStringLiteral("Style"));
     topBarLayout->addWidget(m_styleButton);
+
+    m_crosshairButton = new QToolButton(this);
+    m_crosshairButton->setObjectName(QStringLiteral("crosshairButton"));
+    m_crosshairButton->setMinimumSize(QSize(132, 22));
+    m_crosshairButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+    m_crosshairButton->setCheckable(true);
+    m_crosshairButton->setText(tr("使用十字光标：关闭"));
+    topBarLayout->addWidget(m_crosshairButton);
 
     // 弹性间距
     topBarLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));

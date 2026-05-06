@@ -275,6 +275,14 @@ void ScopePlotWidget::resetView() {
     resetZoom();
 }
 
+void ScopePlotWidget::setCrosshairEnabled(bool enabled) {
+    if (m_crosshairEnabled == enabled) {
+        return;
+    }
+    m_crosshairEnabled = enabled;
+    update();
+}
+
 void ScopePlotWidget::resetZoom() {
     m_dragSelecting = false;
     m_dragMode = DragZoomMode::None;
@@ -973,6 +981,9 @@ void ScopePlotWidget::paintFrameTimeReadout(QPainter *painter, const QRect &rect
 ///   3. 底部时间读数
 void ScopePlotWidget::paintCrosshair(QPainter *painter, const QRect &plotRect,
                                      double yMin, double yMax) {
+    if (!m_crosshairEnabled) {
+        return;
+    }
     if (!m_cursorInPlot || m_dragSelecting) {
         return;
     }

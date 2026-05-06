@@ -101,6 +101,10 @@ public slots:
     /// @brief 重置视图（清空数据 + 重置缩放）
     void resetView();
 
+    /// @brief 启用/禁用十字光标（垂直虚线 + 吸附圆点 + 数值标签框）
+    /// @param enabled true=启用，false=禁用（关闭时立即重绘清除残留）
+    void setCrosshairEnabled(bool enabled);
+
 signals:
     /// @brief 全屏切换请求（双击触发）
     void fullscreenToggleRequested();
@@ -213,6 +217,7 @@ private:
     // --- 十字准线 ---
     QPoint m_cursorPos;                             ///< 鼠标当前位置
     bool m_cursorInPlot = false;                    ///< 鼠标是否在绘图区内
+    bool m_crosshairEnabled = false;                ///< 十字光标整体启用开关（默认关闭）
 
     // --- 帧率统计 ---
     QTimer *m_renderTimer = nullptr;                ///< 渲染刷新定时器

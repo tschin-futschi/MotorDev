@@ -352,6 +352,13 @@ void OscilloscopTab::onStyleToggleRequested() {
     toggleStylePanel();
 }
 
+void OscilloscopTab::onCrosshairToggleRequested(bool enabled) {
+    m_plotWidget->setCrosshairEnabled(enabled);
+    qDebug().noquote() << QStringLiteral("[Scope GUI] Crosshair %1")
+                              .arg(enabled ? QStringLiteral("ON")
+                                           : QStringLiteral("OFF"));
+}
+
 void OscilloscopTab::setDebugStreamActive(bool active) {
     m_service->setDebugStreamActive(active);
 }
