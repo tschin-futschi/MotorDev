@@ -28,6 +28,8 @@ qt_add_executable(MotorDev
     src/protocol/register_utils.h
     src/protocol/sampling_config.cpp
     src/protocol/sampling_config.h
+    src/protocol/firmware_parser.cpp
+    src/protocol/firmware_parser.h
     src/services/configservice.cpp
     src/services/configservice.h
     src/services/commanddispatcher.cpp
@@ -44,6 +46,20 @@ qt_add_executable(MotorDev
     src/services/simulatorserial.h
     src/services/simulatorservice.cpp
     src/services/simulatorservice.h
+    src/services/flashstrategy.cpp
+    src/services/flashstrategy.h
+    src/services/flashstrategyregistry.cpp
+    src/services/flashstrategyregistry.h
+    src/services/fwflashservice.cpp
+    src/services/fwflashservice.h
+    src/services/flashstrategies/aw86006_strategy.cpp
+    src/services/flashstrategies/aw86006_strategy.h
+    src/services/flashstrategies/aw86100_strategy.cpp
+    src/services/flashstrategies/aw86100_strategy.h
+    src/services/flashstrategies/dw9786_strategy.cpp
+    src/services/flashstrategies/dw9786_strategy.h
+    src/services/flashstrategies/dw9788_strategy.cpp
+    src/services/flashstrategies/dw9788_strategy.h
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
@@ -73,6 +89,12 @@ qt_add_executable(MotorDev
     src/widgets/scopestylepanel.h
     src/widgets/topbar.cpp
     src/widgets/topbar.h
+    src/widgets/fwfileinfopanel.cpp
+    src/widgets/fwfileinfopanel.h
+    src/widgets/fwflashcontrolpanel.cpp
+    src/widgets/fwflashcontrolpanel.h
+    src/widgets/fwflashlogpanel.cpp
+    src/widgets/fwflashlogpanel.h
     src/tabs/configtab.cpp
     src/tabs/configtab.h
     src/tabs/registerrwtab.cpp

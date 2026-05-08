@@ -62,7 +62,20 @@
 - `src/protocol/sampling_config` `[协议]` — 采样间隔/显示窗口的 UI 文本 ↔ 协议索引映射
 
 ### 固件烧录
-- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab（功能待实现）
+> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入 → 关 PMIC）+ worker 线程烧录 + 协作式取消。具体烧录算法为 stub，由用户后续填入。
+
+- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局
+- `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
+- `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板（开始/取消按钮、进度条、阶段标签）
+- `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
+- `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 上限
+- `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + worker 线程烧录调用 + 进度/日志/状态信号
+- `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
+- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（按 IC 型号枚举/查找）
+- `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（stub，待用户填入算法）
+- `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 AW86006，烧录算法等同）
+- `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）
+- `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 烧录策略（stub）
 
 ### 串口调试模拟器
 - `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
@@ -106,7 +119,7 @@
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
-| 固件烧录 | `src/tabs/fwflashtab` | 整体未实现 |
+| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | 框架已完成（UI / 文件解析 / 策略路由 / 前置序列 / worker 线程 / 取消），4 款 IC（AW86006 / AW86100 / DW9786 / DW9788）的 `flash()` 函数体为 stub，待用户填入真实烧录算法 |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
 
@@ -119,12 +132,12 @@
 | 应用入口 | `src/main.cpp` |
 | 传输层 | `src/frameparser` |
 | 通信层 | `src/serialmanager` |
-| 协议层 | `src/protocol/motor_protocol`, `src/protocol/register_utils`, `src/protocol/sampling_config` |
+| 协议层 | `src/protocol/motor_protocol`, `src/protocol/register_utils`, `src/protocol/sampling_config`, `src/protocol/firmware_parser` |
 | 数据模型层 | `src/devicecontext`, `src/models/scopechannelmodel`, `src/models/channelbuffer` |
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
-| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel` |
-| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice` |
+| UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel`, `src/widgets/fwfileinfopanel`, `src/widgets/fwflashcontrolpanel`, `src/widgets/fwflashlogpanel` |
+| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |
@@ -143,4 +156,5 @@
 - `src/devicecontext` — 当前 IC 类型和从机地址，目前仅 configtab 读写；其他 Tab 尚未接入
 - `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
-- `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、fwflashtab、oscilloscoptab 四个 Tab 共用
+- `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、oscilloscoptab 三个 Tab 共用（fwflashtab 已不使用 Sidebar）
+- `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ConfigService::disablePmic()` / `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，4 个 Service 的实现签名变化会影响烧录前置序列

@@ -176,6 +176,16 @@ inline const QColor ScopeWaveCh8(220, 220, 220);   ///< 通道 8：浅灰色
 inline const QColor LogWarning("#B85C00");           ///< 警告日志文字颜色（橙色）
 inline const QColor LogError("#C0392B");             ///< 错误日志文字颜色（红色）
 inline const QColor LogInfo("#2E7D32");              ///< 信息日志文字颜色（绿色）
+
+// --- 固件烧录页面 ---
+inline const QColor FwFlashFileInfoLabelFg("#666666"); ///< 文件信息面板标签文字
+inline const QColor FwFlashFileInfoValueFg("#333333"); ///< 文件信息面板值文字
+inline const QColor FwFlashFileInfoErrorFg("#E24B4A"); ///< 文件信息面板错误文字
+inline const QColor FwFlashStageLabelFg("#555555");    ///< 烧录阶段标签文字
+inline const QColor FwFlashLogInfoFg("#333333");       ///< 烧录日志 INFO 文字
+inline const QColor FwFlashLogWarnFg("#854F0B");       ///< 烧录日志 WARN 文字
+inline const QColor FwFlashLogErrorFg("#E24B4A");      ///< 烧录日志 ERROR 文字
+inline const QColor FwFlashLogOkFg("#639922");         ///< 烧录日志 OK 文字
 }
 
 // ---------------------------------------------------------------------------
@@ -297,6 +307,14 @@ inline constexpr int ScopeSamplingButtonMinH = 24;    ///< 采样启停按钮最
 // --- 信号发生器面板 ---
 inline constexpr int GeneratorPanelMinW = 420;        ///< 发生器面板最小宽度
 inline constexpr int GeneratorPanelMinH = 340;        ///< 发生器面板最小高度
+
+// --- 固件烧录页面 ---
+inline constexpr int FwFlashIcComboW = 200;            ///< IC 型号下拉框最小宽度
+inline constexpr int FwFlashStartButtonW = 120;        ///< 开始烧录按钮宽度
+inline constexpr int FwFlashStartButtonH = 32;         ///< 开始烧录按钮高度
+inline constexpr int FwFlashCancelButtonW = 100;       ///< 取消烧录按钮宽度
+inline constexpr int FwFlashCancelButtonH = 32;        ///< 取消烧录按钮高度
+inline constexpr int FwFlashProgressH = 18;            ///< 烧录进度条高度
 }
 
 // ---------------------------------------------------------------------------

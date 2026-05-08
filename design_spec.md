@@ -309,24 +309,160 @@ Sidebar 内容:
 
 ---
 
-## FW 烧录页面规格（待细化）
+## FW 烧录页面规格
 
 ```
-布局（上到下）:
-1. 文件选择区（高度 60px）
-   - 路径输入框（只读）+ 浏览按钮
-   - 文件信息：名称、大小、格式（.bin/.hex）
+整体布局（水平，无 Sidebar）:
+[主内容区横向两栏]
 
-2. 烧录控制区（高度 80px）
-   - 开始烧录按钮（绿色，连接后可用）
-   - 进度条（QProgressBar，0～100%）
-   - 进度文字：已发送 X KB / 总计 Y KB
+[左栏 固定 400px 逻辑像素：参数区]      | [右栏 stretch：执行 / 输出区]
 
-3. 状态日志区（剩余空间）
-   - 只读文本区域
-   - 时间戳 + 操作日志
-   - 自动滚动到底部
+左栏（垂直）:
+  ┌── GroupBox "目标 IC"  ─────┐
+  │  IC 下拉框 + IC 描述文字   │
+  └────────────────────────────┘
+  ┌── GroupBox "固件文件" ─────┐
+  │  路径行 [QLineEdit][浏览][清空] │
+  │  ── HLine 分隔线 ──            │
+  │  内嵌 FwFileInfoPanel（QWidget）│
+  │    · 空: "请先选择固件文件"    │
+  │    · 合法: 字段网格            │
+  │    · 错误: 红色错误信息        │
+  └────────────────────────────┘
+  (剩余空间留白)
+
+右栏（垂直）:
+  ┌── GroupBox "烧录控制" ─────┐
+  │  [开始烧录][取消烧录] 阶段标签  │
+  │  ▓▓▓▓▓░░░░░░░░░░░ 进度条        │
+  └────────────────────────────┘
+  ┌── GroupBox "操作日志" stretch=1 ┐
+  │  [HH:mm:ss.zzz] [LEVEL] 消息    │
+  │  ...                            │
+  │  [清空]（右下）                 │
+  └────────────────────────────────┘
+
+QSplitter 把手宽度: Style::Size::SplitterHandleWidth (8px)
+首次显示比例: 左 400px / 右占满；childrenCollapsible=false
+未连接串口时整个 FwFlashTab 内容区禁用（与其他 Tab 一致）
 ```
+
+### 卡片视觉
+
+4 张 GroupBox 均使用与 ConfigTab 一致的卡片风格：
+- `QGraphicsDropShadowEffect`：offset (0,1)、blur 6、color `Style::Color::PanelShadow`
+- `WA_Hover` + `GroupHoverFilter` → 悬停时设置 `hovered` 动态属性，QSS 可重涂边框/阴影
+
+### 无 Sidebar
+
+不同于其他 Tab，FwFlashTab 直接以左右两栏占满主内容区，不挂 `Sidebar` 容器。
+"操作步骤说明"功能由文件信息卡片下方的提示文字 + 阶段标签自然替代。
+
+### 卡片"目标 IC"
+
+单列布局：IC 下拉框（`Style::Size::FwFlashIcComboW = 200`）默认显示 `请选择目标 IC...`，下方显示选中策略的 `icDescription()`（`Style::Color::MutedText`，11px）。
+
+下拉框列表按 `FlashStrategyRegistry` 注册顺序：`AW86006` / `AW86100` / `DW9786` / `DW9788`。
+
+### 卡片"固件文件"
+
+两段式：
+
+```
+[QLineEdit 只读 stretch] [浏览...] [清空]
+─────── HLine 分隔线 ───────
+FwFileInfoPanel（内嵌 QWidget，QStackedWidget 三页）
+```
+
+文件过滤器：`Firmware Files (*.bin *.hex);;Binary (*.bin);;Intel HEX (*.hex)`
+解析触发：点击「浏览...」选定后立即调用 `FirmwareParser::parseFile()`
+
+`FwFileInfoPanel` 三页：
+
+| 状态 | 内容 |
+|------|------|
+| 空 | 单行 `请先选择固件文件`（`Style::Color::MutedText`） |
+| 合法 | 网格 2 列：标签（11px `#666`）/ 值（11px monospace `#333`），可选中复制 |
+| 错误 | 单行 `Style::Color::FwFlashFileInfoErrorFg` 文字 `解析失败：<原因>` |
+
+合法状态字段（`.hex` 时多 3 行，`.bin` 时隐藏）：
+
+| 字段 | 来源 |
+|---|---|
+| 文件名 | `FirmwareInfo::fileName` |
+| 文件大小 | `<bytes> 字节 (<KB> KB)` |
+| 文件格式 | `Binary` / `Intel HEX` |
+| CRC32 | `0xXXXXXXXX`（基于合并后 `data`） |
+| 段数（仅 .hex） | `segments.size()` |
+| 地址范围（仅 .hex） | `0xXXXXXXXX - 0xYYYYYYYY` |
+| 有效字节（仅 .hex） | `effectiveBytes` |
+
+### 卡片"烧录控制"（FwFlashControlPanel）
+
+紧凑两行布局：
+
+```
+[ 开始烧录（120×32） ] [ 取消烧录（100×32） ]  阶段标签 11px stretch
+[ QProgressBar 高 18px，0~100，textVisible，主绿色 ]
+```
+
+阶段标签与按钮同行，靠左与按钮间留 8px 间距，`stretch=1` 吃掉剩余空间。
+
+阶段标签文本由 FwFlashService 推送：
+- `空闲`
+- `准备中...`
+- `停止采样...` / `停止信号发生器...` / `停止循环写入...` / `关闭 PMIC...`
+- `烧录中 12.3 KB / 60.0 KB (20.5%)`
+- `烧录完成` / `失败：<原因>` / `已取消`
+
+### 卡片"操作日志"（FwFlashLogPanel，右栏 stretch=1）
+
+```
+[ QPlainTextEdit 只读，monospace 11px，maximumBlockCount=2000 ]
+[ 右下角「清空」按钮 ]
+```
+
+行格式：`[HH:mm:ss.zzz] [LEVEL] <内容>`，按级别上色：
+
+| LEVEL | 颜色常量 |
+|---|---|
+| `INFO ` | `Style::Color::FwFlashLogInfoFg` |
+| `WARN ` | `Style::Color::FwFlashLogWarnFg` |
+| `ERROR` | `Style::Color::FwFlashLogErrorFg` |
+| `OK   ` | `Style::Color::FwFlashLogOkFg` |
+
+仅当滚动条已在底部时新日志才自动滚到底部，避免打断用户阅读历史（与全局 `LogPanel` 行为一致）。
+
+### 视觉常量（已加入 `style_constants.h`）
+
+```
+Style::Color:: FwFlashFileInfoLabelFg / FwFlashFileInfoValueFg / FwFlashFileInfoErrorFg
+                FwFlashStageLabelFg
+                FwFlashLogInfoFg / FwFlashLogWarnFg / FwFlashLogErrorFg / FwFlashLogOkFg
+Style::Size::  FwFlashIcComboW=200
+                FwFlashStartButtonW=120 / FwFlashStartButtonH=32
+                FwFlashCancelButtonW=100 / FwFlashCancelButtonH=32
+                FwFlashProgressH=18
+```
+
+### 烧录前置序列（产品决策）
+
+点击「开始烧录」后，FwFlashService 在主线程依次触发：
+
+1. 停止采样（fire-and-forget）
+2. 停止信号发生器（fire-and-forget）
+3. 停止循环写入（fire-and-forget）
+4. 关闭 PMIC（fire-and-forget）
+
+任一步失败仅写 `WARN` 日志，**不阻断**烧录调用。烧录完成 / 失败 / 取消后**不**自动恢复采样、发生器、循环写入或 PMIC，由用户决定是否手动重启。
+
+不弹二次确认弹窗。
+
+### 烧录函数留空架构
+
+每款 IC 一个 `FlashStrategy` 子类，`flash()` 函数体留空（当前为 1 KB / 100 ms 的联调用模拟实现），由用户后续填入真实烧录算法。AW86100 与 AW86006 烧录算法等同，因此 `AW86100Strategy` 直接继承 `AW86006Strategy`，仅 override `icModel()` / `icDescription()`。
+
+新增 IC 流程：在 `src/services/flashstrategies/` 下新增子类 + 在 `FlashStrategyRegistry::registerBuiltins()` 加一行 `add(...)` 即可，UI 自动列出。
 
 ---
 

@@ -19,6 +19,7 @@ class ActivityBar;
 class CommandDispatcher;
 class ConfigTab;
 class DeviceContext;
+class FwFlashTab;
 class LogPanel;
 class OscilloscopTab;
 class QStackedWidget;
@@ -66,6 +67,7 @@ private:
     // --- Tab 页面 ---
     ConfigTab *m_configTab = nullptr;                ///< 配置 Tab（串口/IC/PMIC）
     RegisterRwTab *m_registerTab = nullptr;          ///< 寄存器读写 Tab
+    FwFlashTab *m_fwFlashTab = nullptr;              ///< 固件烧录 Tab
     OscilloscopTab *m_scopeTab = nullptr;            ///< 示波器 Tab
     SerialDebugTab *m_debugTab = nullptr;            ///< 串口调试模拟器（浮动窗口）
 };

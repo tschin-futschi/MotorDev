@@ -12,6 +12,10 @@
 #include "protocol/motor_protocol.h"
 #include "serialmanager.h"
 #include "services/commanddispatcher.h"
+#include "services/configservice.h"
+#include "services/cyclicwriteservice.h"
+#include "services/generatorservice.h"
+#include "services/scopeservice.h"
 #include "tabs/configtab.h"
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
@@ -22,13 +26,19 @@
 #include "widgets/logpanel.h"
 #include "widgets/topbar.h"
 
+#include <QPointer>
+
 #include <QDebug>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLoggingCategory>
 #include <QPushButton>
+#include <QScreen>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 using namespace MotorDev;
 
@@ -41,8 +51,24 @@ Q_LOGGING_CATEGORY(lcMainWindow, "motordev.main")
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
     setWindowTitle(tr("MotorDev"));
-    resize(Style::Size::WindowWidth, Style::Size::WindowHeight);
-    setMinimumSize(Style::Size::MinWindowWidth, Style::Size::MinWindowHeight);
+
+    // 自适应屏幕尺寸：默认窗口大小与最小窗口大小都不允许超过当前屏幕可用区域
+    // （减去 40 像素留出任务栏 / 边框余量）。在小屏笔记本上启动时窗口仍能完整显示，
+    // 不会因为默认 1280×800 / minimum 1024×600 大于屏幕物理像素而溢出屏幕。
+    QScreen *screen = QGuiApplication::primaryScreen();
+    const QSize available = screen != nullptr
+                                ? screen->availableGeometry().size()
+                                : QSize(Style::Size::WindowWidth, Style::Size::WindowHeight);
+    const int safeW = std::max(0, available.width() - 40);
+    const int safeH = std::max(0, available.height() - 40);
+
+    const int prefW = std::min(Style::Size::WindowWidth, safeW);
+    const int prefH = std::min(Style::Size::WindowHeight, safeH);
+    const int minW = std::min(Style::Size::MinWindowWidth, prefW);
+    const int minH = std::min(Style::Size::MinWindowHeight, prefH);
+
+    resize(prefW, prefH);
+    setMinimumSize(minW, minH);
 
     // 初始化核心服务
     m_serialManager = new SerialManager(this);
@@ -52,13 +78,13 @@ MainWindow::MainWindow(QWidget *parent)
     setupUi();
     connectSignals();
 
-    // 初始状态：串口未连接，禁用寄存器/烧录页面，示波器页面始终可用
+    // 临时：解除所有页面的串口未连接锁定，便于 UI 浏览/调试
     m_registerTab->setConnected(false);
-    m_registerTab->setEnabled(false);
-    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
-    m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
+    m_registerTab->setEnabled(true);
+    m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
+    m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
     m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
-    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+    m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
     m_scopeTab->setEnabled(true);
 }
 
@@ -166,10 +192,31 @@ void MainWindow::setupUi() {
     m_registerTab = new RegisterRwTab(m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_registerTab); // index 1: 寄存器读写页
 
-    m_contentStack->addWidget(new FwFlashTab(m_contentStack));  // index 2: 固件烧录页
+    m_fwFlashTab = new FwFlashTab(m_contentStack);
+    m_contentStack->addWidget(m_fwFlashTab);  // index 2: 固件烧录页
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_scopeTab);    // index 3: 示波器页
+
+    // 烧录前置序列：从 ConfigTab/OscilloscopTab 持有的 service 实例查找并注入回调
+    // findChild 依赖各 service 在对应 tab 构造时以 this 作为 QObject parent，
+    // 取不到时仅写日志、跳过该步骤（fire-and-forget 语义）
+    if (auto *cfg = m_configTab->findChild<ConfigService *>()) {
+        QPointer<ConfigService> p(cfg);
+        m_fwFlashTab->setDisablePmicCallback([p]() { if (p) p->disablePmic(); });
+    }
+    if (auto *scope = m_scopeTab->findChild<ScopeService *>()) {
+        QPointer<ScopeService> p(scope);
+        m_fwFlashTab->setStopScopeCallback([p]() { if (p) p->requestStop(); });
+    }
+    if (auto *gen = m_scopeTab->findChild<GeneratorService *>()) {
+        QPointer<GeneratorService> p(gen);
+        m_fwFlashTab->setStopGeneratorCallback([p]() { if (p) p->stop(); });
+    }
+    if (auto *cyclic = m_scopeTab->findChild<CyclicWriteService *>()) {
+        QPointer<CyclicWriteService> p(cyclic);
+        m_fwFlashTab->setStopCyclicWriteCallback([p]() { if (p) p->stop(); });
+    }
 
     // 串口调试模拟器为浮动窗口，不占 ContentStack
     m_debugTab = new SerialDebugTab(this);
@@ -244,14 +291,14 @@ void MainWindow::connectSignals() {
         m_scopeTab->setEnabled(true);
     });
 
-    // --- 串口断开：禁用受限页面 ---
+    // --- 串口断开：临时解除所有页面锁定 ---
     connect(m_configTab, &ConfigTab::serialDisconnected, this, [this]() {
         m_registerTab->setConnected(false);
-        m_registerTab->setEnabled(false);
-        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, false);
-        m_activityBar->setPageEnabled(ActivityBar::FlashPage, false);
-        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);   // 示波器始终可用
-        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(false);
+        m_registerTab->setEnabled(true);
+        m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
+        m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
+        m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
     });
 
