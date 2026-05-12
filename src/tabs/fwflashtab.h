@@ -24,6 +24,7 @@
 #include <functional>
 #include <memory>
 
+class CommandDispatcher;
 class FlashStrategyRegistry;
 class FwFileInfoPanel;
 class FwFlashControlPanel;
@@ -39,7 +40,7 @@ class FwFlashTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit FwFlashTab(QWidget *parent = nullptr);
+    explicit FwFlashTab(CommandDispatcher *dispatcher, QWidget *parent = nullptr);
     ~FwFlashTab() override;
 
     /// @brief 注入"立即停止"回调，由 MainWindow 绑定到对应 Service。

@@ -62,20 +62,22 @@
 - `src/protocol/sampling_config` `[协议]` — 采样间隔/显示窗口的 UI 文本 ↔ 协议索引映射
 
 ### 固件烧录
-> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入 → 关 PMIC）+ worker 线程烧录 + 协作式取消。具体烧录算法为 stub，由用户后续填入。
+> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入 → 关 PMIC）+ worker 线程烧录 + 协作式取消。AW86006 / AW86100 通过 `AwSdkStrategy` 调用厂家 SDK DLL 完成 5 步烧录序列（联调 dummy DLL，等内网替换真实 DLL）；DW9786 / DW9788 仍为 stub。
 
-- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局
+- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `CommandDispatcher *` 并构造 `LogSink` lambda 注入 registry，让 AW SDK strategy 的 OutputLog 转发到 `FwFlashLogPanel`
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
-- `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板（开始/取消按钮、进度条、阶段标签）
+- `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
 - `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 上限
 - `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + worker 线程烧录调用 + 进度/日志/状态信号
 - `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
-- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（按 IC 型号枚举/查找）
-- `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（stub，待用户填入算法）
-- `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 AW86006，烧录算法等同）
+- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `CommandDispatcher *` 与 `AwSdkStrategy::LogSink`，按 IC 型号枚举/查找）
+- `src/services/flashstrategies/aw_sdk_strategy` `[通信]` — Awinic SDK 烧录策略共用基类（QLibrary 动态加载 AW86100.dll + 5 步流程 + 3 ExtFunc 回调 + 同步 I2C 透传 + 字节累计驱动进度 + 取消传播 + 失败/取消强制收尾）
+- `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwSdkStrategy`，仅声明型号 / 描述 / DLL 文件名）
+- `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwSdkStrategy`，与 AW86006 共用同一份 AW86100.dll）
 - `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）
 - `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 烧录策略（stub）
+- `src/protocol/motor_protocol` `[协议]` — I2C 透传协议码 `0x30`（写）/ `0x31`（读）编解码：任意 7-bit DevId + 任意寄存器地址字节数（含 0）+ 任意读写长度
 
 ### 串口调试模拟器
 - `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
@@ -119,7 +121,7 @@
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
-| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | 框架已完成（UI / 文件解析 / 策略路由 / 前置序列 / worker 线程 / 取消），4 款 IC（AW86006 / AW86100 / DW9786 / DW9788）的 `flash()` 函数体为 stub，待用户填入真实烧录算法 |
+| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 已落地：通过 `AwSdkStrategy` 调用厂家 SDK DLL（QLibrary 动态加载 AW86100.dll + 5 步流程 + I2C 透传协议 0x30/0x31）；联调 dummy DLL 中，等内网替换真实 DLL。DW9786 / DW9788 仍为 stub。**待解疑（OPEN）**：协议 0x30/0x31 的 `AddrSize == 0` 在 STM32 端的 HAL 调法已按推测实现（HAL_I2C_Master_Transmit/Receive，跳过寄存器地址段），等供应商最终确认 |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
 

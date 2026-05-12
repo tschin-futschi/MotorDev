@@ -2,16 +2,21 @@
 // @file    aw86100_strategy.h
 // @brief   AW86100 烧录策略（Awinic）
 //
-// AW86100 与 AW86006 烧录算法完全等同，因此本类直接继承自 AW86006Strategy，
-// 仅 override icModel() 与 icDescription() 用于 UI 区分；flash() 不重写。
+// 与 AW86006 烧录算法完全相同，二者共用同一份 AW86100.dll。
+// 本类不再继承 AW86006Strategy（v1 plan 决议），直接继承 AwSdkStrategy 基类，
+// 仅 override 型号 / 描述 / DLL 文件名。
 // =============================================================================
 #pragma once
 
-#include "services/flashstrategies/aw86006_strategy.h"
+#include "services/flashstrategies/aw_sdk_strategy.h"
 
-class AW86100Strategy : public AW86006Strategy {
+class AW86100Strategy : public AwSdkStrategy {
 public:
+    AW86100Strategy(CommandDispatcher *dispatcher, AwSdkStrategy::LogSink logSink);
+
     QString icModel() const override;
     QString icDescription() const override;
-    // flash() 不 override，直接复用 AW86006Strategy::flash()
+
+protected:
+    QString dllPath() const override;
 };

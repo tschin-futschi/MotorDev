@@ -192,7 +192,7 @@ void MainWindow::setupUi() {
     m_registerTab = new RegisterRwTab(m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_registerTab); // index 1: 寄存器读写页
 
-    m_fwFlashTab = new FwFlashTab(m_contentStack);
+    m_fwFlashTab = new FwFlashTab(m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_fwFlashTab);  // index 2: 固件烧录页
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);

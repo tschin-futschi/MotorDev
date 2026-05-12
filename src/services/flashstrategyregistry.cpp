@@ -10,15 +10,20 @@
 #include "services/flashstrategies/dw9788_strategy.h"
 #include "services/flashstrategy.h"
 
-FlashStrategyRegistry::FlashStrategyRegistry() {
+#include <utility>
+
+FlashStrategyRegistry::FlashStrategyRegistry(CommandDispatcher *dispatcher,
+                                              AwSdkStrategy::LogSink awLogSink)
+    : m_dispatcher(dispatcher)
+    , m_awLogSink(std::move(awLogSink)) {
     registerBuiltins();
 }
 
 FlashStrategyRegistry::~FlashStrategyRegistry() = default;
 
 void FlashStrategyRegistry::registerBuiltins() {
-    add(std::make_unique<AW86006Strategy>());
-    add(std::make_unique<AW86100Strategy>());
+    add(std::make_unique<AW86006Strategy>(m_dispatcher, m_awLogSink));
+    add(std::make_unique<AW86100Strategy>(m_dispatcher, m_awLogSink));
     add(std::make_unique<DW9786Strategy>());
     add(std::make_unique<DW9788Strategy>());
 }

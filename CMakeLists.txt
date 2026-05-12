@@ -52,6 +52,8 @@ qt_add_executable(MotorDev
     src/services/flashstrategyregistry.h
     src/services/fwflashservice.cpp
     src/services/fwflashservice.h
+    src/services/flashstrategies/aw_sdk_strategy.cpp
+    src/services/flashstrategies/aw_sdk_strategy.h
     src/services/flashstrategies/aw86006_strategy.cpp
     src/services/flashstrategies/aw86006_strategy.h
     src/services/flashstrategies/aw86100_strategy.cpp
@@ -133,3 +135,14 @@ target_link_libraries(MotorDev PRIVATE
     Qt6::PrintSupport
     Qt6::OpenGLWidgets
 )
+
+# 部署 Awinic SDK dummy DLL 到运行 exe 同级目录，让 AwSdkStrategy 的 QLibrary
+# 能在首次烧录时按相对路径加载到。内网替换真实 DLL 后无需改 CMake，只需替换该文件。
+if(WIN32)
+    add_custom_command(TARGET MotorDev POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/ThirdParty/FlashLoad/AW86100/x64/AW86100.dll"
+            "$<TARGET_FILE_DIR:MotorDev>/AW86100.dll"
+        COMMENT "Deploying AW86100.dll (dummy) next to MotorDev.exe"
+        VERBATIM)
+endif()

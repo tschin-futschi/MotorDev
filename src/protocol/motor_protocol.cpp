@@ -30,6 +30,8 @@ const char *commandName(uint8_t cmd) {
     case CmdReadRegister: return "ReadRegister";
     case CmdWriteRegister: return "WriteRegister";
     case CmdBulkRead: return "BulkRead";
+    case CmdI2cTransferWrite: return "I2cTransferWrite";
+    case CmdI2cTransferRead: return "I2cTransferRead";
     case CmdStartSampling: return "StartSampling";
     case CmdStopSampling: return "StopSampling";
     case CmdSetSampleInterval: return "SetSampleInterval";
@@ -71,6 +73,39 @@ QByteArray encodeWriteRegister(quint16 addr, qint16 value) {
     const quint16 rawValue = static_cast<quint16>(value);
     payload.append(static_cast<char>(rawValue >> 8));     // 值高字节
     payload.append(static_cast<char>(rawValue & 0xFF));   // 值低字节
+    return payload;
+}
+
+/// @brief 编码 I2C 透传写
+QByteArray encodeI2cTransferWrite(uint8_t devId,
+                                  const uint8_t *addr, uint8_t addrSize,
+                                  const uint8_t *data, uint8_t dataLen) {
+    QByteArray payload;
+    payload.reserve(3 + addrSize + dataLen);
+    payload.append(static_cast<char>(devId & 0x7F));   // 7-bit 从机地址（高位强制清零，防呆）
+    payload.append(static_cast<char>(addrSize));
+    if (addrSize > 0 && addr != nullptr) {
+        payload.append(reinterpret_cast<const char *>(addr), addrSize);
+    }
+    payload.append(static_cast<char>(dataLen));
+    if (dataLen > 0 && data != nullptr) {
+        payload.append(reinterpret_cast<const char *>(data), dataLen);
+    }
+    return payload;
+}
+
+/// @brief 编码 I2C 透传读
+QByteArray encodeI2cTransferRead(uint8_t devId,
+                                 const uint8_t *addr, uint8_t addrSize,
+                                 uint8_t readLen) {
+    QByteArray payload;
+    payload.reserve(3 + addrSize);
+    payload.append(static_cast<char>(devId & 0x7F));
+    payload.append(static_cast<char>(addrSize));
+    if (addrSize > 0 && addr != nullptr) {
+        payload.append(reinterpret_cast<const char *>(addr), addrSize);
+    }
+    payload.append(static_cast<char>(readLen));
     return payload;
 }
 

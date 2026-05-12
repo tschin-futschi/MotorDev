@@ -1,0 +1,13 @@
+EXPORTS
+    AwBootcontrol @1
+    AwFlashDownload @2
+    AwFlashRead @3
+    AwGet7bitI2CAsynAddr @4
+    AwGet7bitI2CSlaveAddr @5
+    AwGetDllVersion @6
+    AwMoveBinDownload @7
+    AwOIS_ExtFuncInit @8
+    AwResetChip @9
+    AwSet7bitI2CAsynAddr @10
+    AwSet7bitI2CSlaveAddr @11
+    Aw_OIS_ExtFuncDeInit @12

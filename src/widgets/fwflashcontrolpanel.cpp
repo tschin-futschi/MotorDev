@@ -83,13 +83,15 @@ void FwFlashControlPanel::setupUi() {
         "}"
         "QProgressBar#fwFlashProgress::chunk {"
         "  background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
-        "                                     stop:0 #5BA02E, stop:1 #97C459);"
+        "                                     stop:0 %4, stop:1 %5);"
         "  border-radius: 4px;"
         "  margin: 1px;"
         "}")
         .arg(Style::Color::DefaultBorder.name())
         .arg(Style::Color::WindowBackground.name())
-        .arg(Style::Color::AppText.name()));
+        .arg(Style::Color::AppText.name())
+        .arg(Style::Color::FwFlashProgressChunkStart.name())
+        .arg(Style::Color::FwFlashProgressChunkEnd.name()));
     root->addWidget(m_progress);
 
     connect(m_startBtn, &QPushButton::clicked, this, &FwFlashControlPanel::startRequested);

@@ -1,13 +1,23 @@
 // =============================================================================
 // @file    aw86100_strategy.cpp
-// @brief   AW86100 烧录策略实现 — 仅区分型号文本，烧录算法复用 AW86006
+// @brief   AW86100 烧录策略实现 — 仅声明型号 / 描述 / DLL 文件名，算法在基类
 // =============================================================================
 #include "services/flashstrategies/aw86100_strategy.h"
+
+#include <utility>
+
+AW86100Strategy::AW86100Strategy(CommandDispatcher *dispatcher, AwSdkStrategy::LogSink logSink)
+    : AwSdkStrategy(dispatcher, std::move(logSink)) {
+}
 
 QString AW86100Strategy::icModel() const {
     return QStringLiteral("AW86100");
 }
 
 QString AW86100Strategy::icDescription() const {
-    return QStringLiteral("Awinic 电机驱动 IC（与 AW86006 烧录算法等同）");
+    return QStringLiteral("Awinic 电机驱动 IC");
+}
+
+QString AW86100Strategy::dllPath() const {
+    return QStringLiteral("AW86100.dll");  // AW86006 / AW86100 共用同一份 DLL
 }

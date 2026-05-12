@@ -186,6 +186,8 @@ inline const QColor FwFlashLogInfoFg("#333333");       ///< 烧录日志 INFO �
 inline const QColor FwFlashLogWarnFg("#854F0B");       ///< 烧录日志 WARN 文字
 inline const QColor FwFlashLogErrorFg("#E24B4A");      ///< 烧录日志 ERROR 文字
 inline const QColor FwFlashLogOkFg("#639922");         ///< 烧录日志 OK 文字
+inline const QColor FwFlashProgressChunkStart("#5BA02E"); ///< 烧录进度条 chunk 渐变起色（深绿）
+inline const QColor FwFlashProgressChunkEnd("#97C459");   ///< 烧录进度条 chunk 渐变止色（浅绿）
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@
 #include "tabs/fwflashtab.h"
 
 #include "protocol/firmware_parser.h"
+#include "services/flashstrategies/aw_sdk_strategy.h"
 #include "services/flashstrategy.h"
 #include "services/flashstrategyregistry.h"
 #include "ui/repolish.h"
@@ -28,6 +29,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMetaObject>
+#include <QPointer>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QShowEvent>
@@ -73,12 +76,30 @@ void enableCardHover(QWidget *widget, GroupHoverFilter *filter) {
 
 }  // namespace
 
-FwFlashTab::FwFlashTab(QWidget *parent)
-    : QWidget(parent)
-    , m_registry(std::make_unique<FlashStrategyRegistry>()) {
+FwFlashTab::FwFlashTab(CommandDispatcher *dispatcher, QWidget *parent)
+    : QWidget(parent) {
+    setupUi();
+
+    // FwFlashLogPanel 在 setupUi() 中创建；构造 logSink lambda 把 AwSdkStrategy 的
+    // 4 级日志 marshal 到 GUI 线程并转发到面板的 4 个 append 槽。QPointer 防御面板
+    // 先于 strategy 销毁。
+    QPointer<FwFlashLogPanel> logPanelPtr(m_logPanel);
+    auto logSink = [logPanelPtr](AwSdkStrategy::LogLevel lv, const QString &msg) {
+        if (logPanelPtr.isNull()) return;
+        QMetaObject::invokeMethod(logPanelPtr.data(), [logPanelPtr, lv, msg]() {
+            if (logPanelPtr.isNull()) return;
+            switch (lv) {
+            case AwSdkStrategy::LogLevel::Info:  logPanelPtr->appendInfo(msg); break;
+            case AwSdkStrategy::LogLevel::Warn:  logPanelPtr->appendWarn(msg); break;
+            case AwSdkStrategy::LogLevel::Error: logPanelPtr->appendError(msg); break;
+            case AwSdkStrategy::LogLevel::Ok:    logPanelPtr->appendOk(msg); break;
+            }
+        }, Qt::QueuedConnection);
+    };
+
+    m_registry = std::make_unique<FlashStrategyRegistry>(dispatcher, logSink);
     m_service = new FwFlashService(m_registry.get(), this);
 
-    setupUi();
     connectSignals();
     rebuildIcCombo();
 

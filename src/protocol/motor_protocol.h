@@ -43,6 +43,8 @@ inline constexpr uint8_t CmdPmicDisable = 0x0A;         ///< PMIC 禁用
 inline constexpr uint8_t CmdReadRegister = 0x20;        ///< 读寄存器（载荷: 2 字节地址）
 inline constexpr uint8_t CmdWriteRegister = 0x21;       ///< 写寄存器（载荷: 2 字节地址 + 2 字节值）
 inline constexpr uint8_t CmdBulkRead = 0x22;            ///< 批量读寄存器
+inline constexpr uint8_t CmdI2cTransferWrite = 0x30;    ///< I2C 透传写（任意 7-bit 从机 + 任意寄存器地址长度 + 任意数据长度）
+inline constexpr uint8_t CmdI2cTransferRead = 0x31;     ///< I2C 透传读
 
 // --- 示波器采样 ---
 inline constexpr uint8_t CmdStartSampling = 0x50;       ///< 启动采样
@@ -80,6 +82,34 @@ QByteArray encodeReadRegister(quint16 addr);
 /// @param value  16 位寄存器值（有符号）
 /// @return 4 字节载荷（地址 + 值，大端）
 QByteArray encodeWriteRegister(quint16 addr, qint16 value);
+
+/// @brief 编码 I2C 透传写请求载荷（CmdI2cTransferWrite, 0x30）
+///
+/// 载荷格式：[DevId(7-bit)] [AddrSize] [AddrBytes(AddrSize 字节)] [DataLen] [Data(DataLen 字节)]
+/// AddrSize == 0 时跳过寄存器地址段（直接对从机写一段字节流）。
+/// @param devId      7-bit I2C 从机地址（0x00–0x7F）
+/// @param addr       寄存器地址字节流；可为 nullptr 当 addrSize == 0
+/// @param addrSize   寄存器地址字节数（0 表示无寄存器地址）
+/// @param data       数据字节流；可为 nullptr 当 dataLen == 0
+/// @param dataLen    数据字节数
+/// @return 完整载荷字节流
+QByteArray encodeI2cTransferWrite(uint8_t devId,
+                                  const uint8_t *addr, uint8_t addrSize,
+                                  const uint8_t *data, uint8_t dataLen);
+
+/// @brief 编码 I2C 透传读请求载荷（CmdI2cTransferRead, 0x31）
+///
+/// 载荷格式：[DevId(7-bit)] [AddrSize] [AddrBytes(AddrSize 字节)] [ReadLen]
+/// AddrSize == 0 时跳过寄存器地址段（直接从从机读一段字节流）。
+/// 成功响应数据段即为读到的 readLen 字节内容。
+/// @param devId      7-bit I2C 从机地址（0x00–0x7F）
+/// @param addr       寄存器地址字节流；可为 nullptr 当 addrSize == 0
+/// @param addrSize   寄存器地址字节数（0 表示无寄存器地址）
+/// @param readLen    要读的字节数
+/// @return 完整载荷字节流
+QByteArray encodeI2cTransferRead(uint8_t devId,
+                                 const uint8_t *addr, uint8_t addrSize,
+                                 uint8_t readLen);
 
 /// @brief 编码 I2C 总线扫描请求载荷
 /// @param busIndex  总线索引（默认 0x02）
