@@ -64,15 +64,15 @@
 ### 固件烧录
 > 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ worker 线程烧录 + 协作式取消。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 通过 `AwSdkStrategy` 调用厂家 SDK DLL 完成 5 步烧录序列（DLL 路径由基类用 `applicationDirPath()` 拼成绝对路径，加载失败时输出完整路径 + 文件存在性诊断；联调 dummy DLL，等内网替换真实 DLL）；DW9786 / DW9788 仍为 stub。
 
-- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `CommandDispatcher *` 并构造 `LogSink` lambda 注入 registry，让 AW SDK strategy 的 OutputLog 转发到 `FwFlashLogPanel`
+- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `CommandDispatcher *` 与 `AwSdkStrategy::AddrProvider`（IC 7-bit 地址 lambda，从 `DeviceContext` 取），并构造 `LogSink` lambda 注入 registry，让 AW SDK strategy 的 OutputLog 转发到 `FwFlashLogPanel`
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
 - `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
 - `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 上限
 - `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + worker 线程烧录调用 + 进度/日志/状态信号
 - `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
-- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `CommandDispatcher *` 与 `AwSdkStrategy::LogSink`，按 IC 型号枚举/查找）
-- `src/services/flashstrategies/aw_sdk_strategy` `[通信]` — Awinic SDK 烧录策略共用基类（QLibrary 动态加载 AW86100.dll + 5 步流程 + 3 ExtFunc 回调 + 同步 I2C 透传 + 字节累计驱动进度 + 取消传播 + 失败/取消强制收尾）
+- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `CommandDispatcher *`、`AwSdkStrategy::LogSink` 与 `AwSdkStrategy::AddrProvider`，按 IC 型号枚举/查找）
+- `src/services/flashstrategies/aw_sdk_strategy` `[通信]` — Awinic SDK 烧录策略共用基类（QLibrary 动态加载 AW86100.dll + 5 步流程 + Init 后通过 `AwSet7bitI2CSlaveAddr` 将 `DeviceContext` 配置地址同步给 DLL + 3 ExtFunc 回调 + 同步 I2C 透传 + 字节累计驱动进度 + 取消传播 + 失败/取消强制收尾）
 - `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwSdkStrategy`，仅声明型号 / 描述 / DLL 文件名）
 - `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwSdkStrategy`，与 AW86006 共用同一份 AW86100.dll）
 - `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）

@@ -191,7 +191,13 @@ void MainWindow::setupUi() {
     m_registerTab = new RegisterRwTab(m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_registerTab); // index 1: 寄存器读写页
 
-    m_fwFlashTab = new FwFlashTab(m_dispatcher, m_contentStack);
+    // 烧录链路需要把 configtab 配置的 IC 7-bit 地址同步给真实 AW SDK DLL。
+    // 用 QPointer + lambda 实时取 DeviceContext::slaveId()，避免地址被缓存而漂移。
+    QPointer<DeviceContext> devCtxPtr(m_deviceContext);
+    auto awAddrProvider = [devCtxPtr]() -> uint8_t {
+        return devCtxPtr ? devCtxPtr->slaveId() : uint8_t(0);
+    };
+    m_fwFlashTab = new FwFlashTab(m_dispatcher, awAddrProvider, m_contentStack);
     m_contentStack->addWidget(m_fwFlashTab);  // index 2: 固件烧录页
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);

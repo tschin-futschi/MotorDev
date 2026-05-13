@@ -76,7 +76,9 @@ void enableCardHover(QWidget *widget, GroupHoverFilter *filter) {
 
 }  // namespace
 
-FwFlashTab::FwFlashTab(CommandDispatcher *dispatcher, QWidget *parent)
+FwFlashTab::FwFlashTab(CommandDispatcher *dispatcher,
+                        AwSdkStrategy::AddrProvider awAddrProvider,
+                        QWidget *parent)
     : QWidget(parent) {
     setupUi();
 
@@ -97,7 +99,7 @@ FwFlashTab::FwFlashTab(CommandDispatcher *dispatcher, QWidget *parent)
         }, Qt::QueuedConnection);
     };
 
-    m_registry = std::make_unique<FlashStrategyRegistry>(dispatcher, logSink);
+    m_registry = std::make_unique<FlashStrategyRegistry>(dispatcher, logSink, std::move(awAddrProvider));
     m_service = new FwFlashService(m_registry.get(), this);
 
     connectSignals();

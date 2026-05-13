@@ -40,9 +40,10 @@ thread_local AwSdkStrategy *AwSdkStrategy::s_currentInstance = nullptr;
 // 构造 / 析构
 // -----------------------------------------------------------------------------
 
-AwSdkStrategy::AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink)
+AwSdkStrategy::AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink, AddrProvider addrProvider)
     : m_dispatcher(dispatcher)
-    , m_logSink(std::move(logSink)) {
+    , m_logSink(std::move(logSink))
+    , m_addrProvider(std::move(addrProvider)) {
 }
 
 AwSdkStrategy::~AwSdkStrategy() {
@@ -91,6 +92,9 @@ bool AwSdkStrategy::flash(const QByteArray &firmware,
     // 1. AwOIS_ExtFuncInit
     if (checkCancel()) return bail(false);
     if (!doInit(errorMessage)) return bail(false);
+
+    // 1.5 把用户 configtab 配置的 IC 7-bit 地址同步给 DLL（必须在 Init 之后、Bootcontrol 之前）
+    if (!applySlaveAddress(errorMessage)) return bail(false);
 
     // 2. AwBootcontrol
     if (checkCancel()) return bail(false);
@@ -190,6 +194,9 @@ bool AwSdkStrategy::ensureDllLoaded(QString *errorMessage) {
     if (!resolveOrFail("AwResetChip", &p)) return false;
     m_fnResetChip = reinterpret_cast<FnResetChip>(p);
 
+    if (!resolveOrFail("AwSet7bitI2CSlaveAddr", &p)) return false;
+    m_fnSetSlaveAddr = reinterpret_cast<FnSetSlaveAddr>(p);
+
     return true;
 }
 
@@ -264,6 +271,28 @@ bool AwSdkStrategy::doResetChip(QString *errorMessage) {
         return false;
     }
     m_bootEntered = false;
+    return true;
+}
+
+bool AwSdkStrategy::applySlaveAddress(QString *errorMessage) {
+    const uint8_t addr = m_addrProvider ? m_addrProvider() : uint8_t(0);
+    if (addr == 0 || addr > 0x7F) {
+        const QString msg = QStringLiteral(
+            "IC 7-bit I2C 从机地址未配置或非法（0x%1），请先在配置 Tab 选择 IC 类型并写入 SlaveID")
+            .arg(addr, 2, 16, QLatin1Char('0'));
+        if (errorMessage) *errorMessage = msg;
+        log(LogLevel::Error, msg);
+        return false;
+    }
+    log(LogLevel::Info, QStringLiteral("设置 DLL I2C 7-bit 从机地址：0x%1")
+                            .arg(addr, 2, 16, QLatin1Char('0')));
+    const int ret = m_fnSetSlaveAddr(static_cast<DllByte>(addr));
+    if (ret != 0) {
+        const QString msg = QStringLiteral("AwSet7bitI2CSlaveAddr failed (return %1)").arg(ret);
+        if (errorMessage) *errorMessage = msg;
+        log(LogLevel::Error, msg);
+        return false;
+    }
     return true;
 }
 

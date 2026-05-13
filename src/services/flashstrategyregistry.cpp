@@ -13,17 +13,19 @@
 #include <utility>
 
 FlashStrategyRegistry::FlashStrategyRegistry(CommandDispatcher *dispatcher,
-                                              AwSdkStrategy::LogSink awLogSink)
+                                              AwSdkStrategy::LogSink awLogSink,
+                                              AwSdkStrategy::AddrProvider awAddrProvider)
     : m_dispatcher(dispatcher)
-    , m_awLogSink(std::move(awLogSink)) {
+    , m_awLogSink(std::move(awLogSink))
+    , m_awAddrProvider(std::move(awAddrProvider)) {
     registerBuiltins();
 }
 
 FlashStrategyRegistry::~FlashStrategyRegistry() = default;
 
 void FlashStrategyRegistry::registerBuiltins() {
-    add(std::make_unique<AW86006Strategy>(m_dispatcher, m_awLogSink));
-    add(std::make_unique<AW86100Strategy>(m_dispatcher, m_awLogSink));
+    add(std::make_unique<AW86006Strategy>(m_dispatcher, m_awLogSink, m_awAddrProvider));
+    add(std::make_unique<AW86100Strategy>(m_dispatcher, m_awLogSink, m_awAddrProvider));
     add(std::make_unique<DW9786Strategy>());
     add(std::make_unique<DW9788Strategy>());
 }

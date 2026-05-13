@@ -12,7 +12,9 @@
 
 class AW86006Strategy : public AwSdkStrategy {
 public:
-    AW86006Strategy(CommandDispatcher *dispatcher, AwSdkStrategy::LogSink logSink);
+    AW86006Strategy(CommandDispatcher *dispatcher,
+                    AwSdkStrategy::LogSink logSink,
+                    AwSdkStrategy::AddrProvider addrProvider);
 
     QString icModel() const override;
     QString icDescription() const override;

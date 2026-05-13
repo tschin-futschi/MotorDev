@@ -25,7 +25,8 @@ class CommandDispatcher;
 class FlashStrategyRegistry {
 public:
     FlashStrategyRegistry(CommandDispatcher *dispatcher,
-                          AwSdkStrategy::LogSink awLogSink);
+                          AwSdkStrategy::LogSink awLogSink,
+                          AwSdkStrategy::AddrProvider awAddrProvider);
     ~FlashStrategyRegistry();
 
     FlashStrategyRegistry(const FlashStrategyRegistry &) = delete;
@@ -43,5 +44,6 @@ private:
 
     CommandDispatcher *m_dispatcher = nullptr;
     AwSdkStrategy::LogSink m_awLogSink;
+    AwSdkStrategy::AddrProvider m_awAddrProvider;
     std::vector<std::unique_ptr<FlashStrategy>> m_strategies;
 };

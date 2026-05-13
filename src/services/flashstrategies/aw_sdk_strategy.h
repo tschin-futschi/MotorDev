@@ -39,7 +39,12 @@ public:
     /// @brief 日志接收 sink；实现方需自行 marshal 到 GUI 线程（推荐 invokeMethod + QueuedConnection）
     using LogSink = std::function<void(LogLevel level, const QString &message)>;
 
-    AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink);
+    /// @brief IC 7-bit I2C 从机地址 provider；烧录开始时实时取 configtab 已配置的地址，
+    /// 通过 `AwSet7bitI2CSlaveAddr` 同步给真实 DLL（DLL 内部默认地址未必等于用户的 IC 地址）。
+    /// 合法范围 1~0x7F；返回 0 视为"未配置"，flash() 会以错误终止并提示用户先去配置 Tab 设置。
+    using AddrProvider = std::function<uint8_t()>;
+
+    AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink, AddrProvider addrProvider);
     ~AwSdkStrategy() override;
 
     bool flash(const QByteArray &firmware,
@@ -79,6 +84,7 @@ private:
     using FnBootcontrol     = DllInt (*)(DllInt times, DllInt nDelayTime);
     using FnMoveBinDownload = DllInt (*)(DllByte *bypBinBuf, DllUInt32 u32Len, DllInt eNumOfPackType);
     using FnResetChip       = DllInt (*)();
+    using FnSetSlaveAddr    = DllInt (*)(DllByte byAddr);
 
     // ---- DLL 加载 ----
     bool ensureDllLoaded(QString *errorMessage);
@@ -89,6 +95,9 @@ private:
     bool doDownload(QByteArray firmware, QString *errorMessage);
     bool doResetChip(QString *errorMessage);
     void doDeInit();
+
+    // ---- 把用户在 configtab 配置的 IC 7-bit 地址同步给 DLL（必须在 doInit 之后、doBootcontrol 之前调用） ----
+    bool applySlaveAddress(QString *errorMessage);
 
     // ---- 异常退出收尾（失败 / 取消） ----
     void emergencyCleanup();
@@ -123,6 +132,7 @@ private:
 
     CommandDispatcher *m_dispatcher = nullptr;
     LogSink m_logSink;
+    AddrProvider m_addrProvider;
 
     QLibrary          m_library;
     FnExtFuncInit     m_fnInit = nullptr;
@@ -130,6 +140,7 @@ private:
     FnBootcontrol     m_fnBootcontrol = nullptr;
     FnMoveBinDownload m_fnMoveBinDownload = nullptr;
     FnResetChip       m_fnResetChip = nullptr;
+    FnSetSlaveAddr    m_fnSetSlaveAddr = nullptr;
 
     // ---- flash() 调用期间使用 ----
     const std::atomic<bool> *m_cancelFlag = nullptr;

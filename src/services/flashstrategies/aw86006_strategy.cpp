@@ -6,8 +6,10 @@
 
 #include <utility>
 
-AW86006Strategy::AW86006Strategy(CommandDispatcher *dispatcher, AwSdkStrategy::LogSink logSink)
-    : AwSdkStrategy(dispatcher, std::move(logSink)) {
+AW86006Strategy::AW86006Strategy(CommandDispatcher *dispatcher,
+                                  AwSdkStrategy::LogSink logSink,
+                                  AwSdkStrategy::AddrProvider addrProvider)
+    : AwSdkStrategy(dispatcher, std::move(logSink), std::move(addrProvider)) {
 }
 
 QString AW86006Strategy::icModel() const {
