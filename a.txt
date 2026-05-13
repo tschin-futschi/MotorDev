@@ -228,4 +228,29 @@ FileTimeUTC  : 2026-05-13T09:19:29
   AwWriteTargetX
   AwWriteTargetY
 
+
+
+
+--------------------------------------------------------------------------
+[20:09:09.408] [INFO ] 已加载固件：Haitun_V_0x0267_sunny.bin（33976 字节，CRC32 0x3dfb4194）
+[20:09:11.125] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[20:09:11.126] [INFO ] 停止采样
+[20:09:11.126] [INFO ] 停止信号发生器
+[20:09:11.131] [INFO ] 停止循环写入
+[20:09:11.131] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[20:09:11.152] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260513-3/MotorDev/build_make_qt/AW86100.dll
+[20:09:11.153] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[20:09:11.153] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[20:09:11.153] [INFO ] [DLL] Enter boot control function. 
+[20:09:11.364] [ERROR] I2C 透传写失败：STM32 error 0x03
+[20:09:11.364] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
+[20:09:11.394] [ERROR] I2C 透传写失败：STM32 error 0x03
+[20:09:11.394] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
+[20:09:11.716] [INFO ] [DLL] Flash Hand Compare Check Failed! 
+[20:09:11.716] [ERROR] AwBootcontrol failed (return -23)
+[20:09:11.717] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[20:09:11.717] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[20:09:11.717] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[20:09:11.718] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
+
 ===== End =====
