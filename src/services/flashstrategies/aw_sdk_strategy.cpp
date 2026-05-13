@@ -103,7 +103,7 @@ bool AwSdkStrategy::flash(const QByteArray &firmware,
     // 4. AwResetChip
     if (!doResetChip(errorMessage)) return bail(false);
 
-    // 5. Aw_OIS_ExtFuncDeInit
+    // 5. AW_OIS_ExtFuncDeInit
     doDeInit();
 
     s_currentInstance = nullptr;
@@ -124,7 +124,7 @@ void AwSdkStrategy::emergencyCleanup() {
         m_bootEntered = false;
     }
     if (m_initCalled) {
-        log(LogLevel::Info, QStringLiteral("收尾：调用 Aw_OIS_ExtFuncDeInit()"));
+        log(LogLevel::Info, QStringLiteral("收尾：调用 AW_OIS_ExtFuncDeInit()"));
         doDeInit();
     }
 }
@@ -178,7 +178,7 @@ bool AwSdkStrategy::ensureDllLoaded(QString *errorMessage) {
     if (!resolveOrFail("AwOIS_ExtFuncInit", &p)) return false;
     m_fnInit = reinterpret_cast<FnExtFuncInit>(p);
 
-    if (!resolveOrFail("Aw_OIS_ExtFuncDeInit", &p)) return false;
+    if (!resolveOrFail("AW_OIS_ExtFuncDeInit", &p)) return false;
     m_fnDeInit = reinterpret_cast<FnExtFuncDeInit>(p);
 
     if (!resolveOrFail("AwBootcontrol", &p)) return false;
@@ -269,10 +269,10 @@ bool AwSdkStrategy::doResetChip(QString *errorMessage) {
 
 void AwSdkStrategy::doDeInit() {
     if (m_fnDeInit == nullptr) return;
-    log(LogLevel::Info, QStringLiteral("步骤 5/5：Aw_OIS_ExtFuncDeInit"));
+    log(LogLevel::Info, QStringLiteral("步骤 5/5：AW_OIS_ExtFuncDeInit"));
     const int ret = m_fnDeInit();
     if (ret != 0) {
-        log(LogLevel::Warn, QStringLiteral("Aw_OIS_ExtFuncDeInit 返回 %1（忽略）").arg(ret));
+        log(LogLevel::Warn, QStringLiteral("AW_OIS_ExtFuncDeInit 返回 %1（忽略）").arg(ret));
     }
     m_initCalled = false;
 }

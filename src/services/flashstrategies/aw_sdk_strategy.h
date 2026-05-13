@@ -5,13 +5,13 @@
 // 核心职责：
 // - 通过 QLibrary 动态加载厂家 DLL（默认 AW86100.dll），运行时 resolve 函数指针
 // - 编排 5 步流程：
-//     AwOIS_ExtFuncInit → AwBootcontrol → AwMoveBinDownload → AwResetChip → Aw_OIS_ExtFuncDeInit
+//     AwOIS_ExtFuncInit → AwBootcontrol → AwMoveBinDownload → AwResetChip → AW_OIS_ExtFuncDeInit
 // - 实现 3 个 ExtFunc 回调：
 //     pFunc_I2C_Read  → 通过 CommandDispatcher 同步发送 0x31 等待响应
 //     pFunc_I2C_Write → 通过 CommandDispatcher 同步发送 0x30 等待响应；下载阶段累计字节驱动进度
 //     pFunc_OutputLog → 调 LogSink 转发到 FwFlashLogPanel
 // - 取消传播：cancelFlag 翻 true 时 I2C 回调返回非零让 DLL 主动中止
-// - 失败 / 取消收尾：强制 AwResetChip + Aw_OIS_ExtFuncDeInit 让 IC 回到正常模式 + 释放 DLL 资源
+// - 失败 / 取消收尾：强制 AwResetChip + AW_OIS_ExtFuncDeInit 让 IC 回到正常模式 + 释放 DLL 资源
 // - 返回值统一：DLL 函数返回 0 视为成功，非零均失败（不区分枚举来源）
 //
 // 不 include AW86100.h；DLL 接口签名以 typedef 复刻在本文件，避免 dummy / 真实头文件耦合。

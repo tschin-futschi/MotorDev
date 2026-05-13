@@ -103,7 +103,7 @@ extern "C" {
     //Init
     DLLEXPORT INT AwOIS_ExtFuncInit(DLL_ExtFuncList* pExtFuncList);
     //DelInit
-    DLLEXPORT INT Aw_OIS_ExtFuncDeInit();
+    DLLEXPORT INT AW_OIS_ExtFuncDeInit();
 
     //BootControl
     DLLEXPORT INT AwBootcontrol(INT times = 20, INT nDelayTime = 7);

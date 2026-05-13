@@ -17,7 +17,7 @@ DLLEXPORT INT AwOIS_ExtFuncInit(DLL_ExtFuncList* pExtFuncList)
     return RET_EXTFUNCINIT_OK;
 }
 
-DLLEXPORT INT Aw_OIS_ExtFuncDeInit()
+DLLEXPORT INT AW_OIS_ExtFuncDeInit()
 {
     return RET_OK;
 }

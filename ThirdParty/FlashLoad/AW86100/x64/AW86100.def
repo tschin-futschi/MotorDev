@@ -10,4 +10,4 @@ EXPORTS
     AwResetChip @9
     AwSet7bitI2CAsynAddr @10
     AwSet7bitI2CSlaveAddr @11
-    Aw_OIS_ExtFuncDeInit @12
+    AW_OIS_ExtFuncDeInit @12
