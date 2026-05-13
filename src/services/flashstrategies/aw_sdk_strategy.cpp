@@ -8,7 +8,10 @@
 #include "services/commanddispatcher.h"
 
 #include <QByteArray>
+#include <QCoreApplication>
 #include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
 #include <QMetaObject>
 #include <QMutex>
 #include <QMutexLocker>
@@ -131,15 +134,34 @@ void AwSdkStrategy::emergencyCleanup() {
 // -----------------------------------------------------------------------------
 
 bool AwSdkStrategy::ensureDllLoaded(QString *errorMessage) {
+    // dllPath() 仅返回文件名（如 "AW86100.dll"）。在此与 exe 所在目录拼成绝对路径，
+    // 让 LoadLibrary 不依赖 CWD/系统默认搜索顺序，避免从 IDE/快捷方式启动时找不到 DLL。
     const QString name = dllPath();
-    m_library.setFileName(name);
+    const QString exeDir = QCoreApplication::applicationDirPath();
+    const QString absPath = QDir(exeDir).absoluteFilePath(name);
+    m_library.setFileName(absPath);
     if (!m_library.load()) {
         const QString reason = m_library.errorString();
-        if (errorMessage) *errorMessage = QStringLiteral("Failed to load %1: %2").arg(name, reason);
-        log(LogLevel::Error, QStringLiteral("加载 DLL 失败：%1（%2）").arg(name, reason));
+        const bool fileExists = QFileInfo::exists(absPath);
+        const QString detail = fileExists
+            ? QStringLiteral("文件存在但加载失败（疑似依赖缺失/架构不匹配/损坏）")
+            : QStringLiteral("文件不存在于该路径");
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("Failed to load %1: %2 [path=%3, exists=%4]")
+                                .arg(name, reason, absPath,
+                                     fileExists ? QStringLiteral("true") : QStringLiteral("false"));
+        }
+        log(LogLevel::Error,
+            QStringLiteral("加载 DLL 失败：%1（%2）").arg(name, reason));
+        log(LogLevel::Error,
+            QStringLiteral("  完整路径：%1").arg(absPath));
+        log(LogLevel::Error,
+            QStringLiteral("  exe 目录：%1").arg(exeDir));
+        log(LogLevel::Error,
+            QStringLiteral("  诊断：%1").arg(detail));
         return false;
     }
-    log(LogLevel::Info, QStringLiteral("已加载 DLL：%1").arg(name));
+    log(LogLevel::Info, QStringLiteral("已加载 DLL：%1").arg(absPath));
 
     auto resolveOrFail = [&](const char *fn, void **out) -> bool {
         QFunctionPointer p = m_library.resolve(fn);

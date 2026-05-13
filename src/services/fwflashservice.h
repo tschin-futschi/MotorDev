@@ -4,8 +4,9 @@
 //
 // 职责：
 // - 接收 UI 的 startFlash / cancelFlash 请求
-// - 顺序触发前置停止序列（采样 → 发生器 → 循环写入 → PMIC），通过 4 个回调下发
+// - 顺序触发前置停止序列（采样 → 发生器 → 循环写入），通过 3 个回调下发
 //   （fire-and-forget，不强等 ACK；任一步失败仅写日志，不阻断烧录）
+//   注：PMIC 不在前置序列中关闭，烧录期间 IC 必须保持正常供电
 // - 在独立 worker 线程内调用 FlashStrategy::flash()
 // - 通过信号回 UI 上报状态、阶段文本、进度、日志、最终结果
 // - 取消通过 std::atomic<bool> cancelFlag 协作式实现
@@ -41,7 +42,6 @@ public:
         StoppingScope,
         StoppingGenerator,
         StoppingCyclic,
-        DisablingPmic,
         Flashing,
         Completed,
         Failed,
@@ -70,7 +70,6 @@ public:
     void setStopScopeCallback(StopCallback cb);
     void setStopGeneratorCallback(StopCallback cb);
     void setStopCyclicWriteCallback(StopCallback cb);
-    void setDisablePmicCallback(StopCallback cb);
 
     /// @brief 当前状态
     State state() const { return m_state; }
@@ -105,7 +104,6 @@ private:
     StopCallback m_stopScope;
     StopCallback m_stopGenerator;
     StopCallback m_stopCyclic;
-    StopCallback m_disablePmic;
 
     State m_state = State::Idle;
     qint64 m_totalBytes = 0;

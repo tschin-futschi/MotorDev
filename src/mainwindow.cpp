@@ -12,7 +12,6 @@
 #include "protocol/motor_protocol.h"
 #include "serialmanager.h"
 #include "services/commanddispatcher.h"
-#include "services/configservice.h"
 #include "services/cyclicwriteservice.h"
 #include "services/generatorservice.h"
 #include "services/scopeservice.h"
@@ -198,13 +197,10 @@ void MainWindow::setupUi() {
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_scopeTab);    // index 3: 示波器页
 
-    // 烧录前置序列：从 ConfigTab/OscilloscopTab 持有的 service 实例查找并注入回调
+    // 烧录前置序列：从 OscilloscopTab 持有的 service 实例查找并注入回调
     // findChild 依赖各 service 在对应 tab 构造时以 this 作为 QObject parent，
     // 取不到时仅写日志、跳过该步骤（fire-and-forget 语义）
-    if (auto *cfg = m_configTab->findChild<ConfigService *>()) {
-        QPointer<ConfigService> p(cfg);
-        m_fwFlashTab->setDisablePmicCallback([p]() { if (p) p->disablePmic(); });
-    }
+    // PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电
     if (auto *scope = m_scopeTab->findChild<ScopeService *>()) {
         QPointer<ScopeService> p(scope);
         m_fwFlashTab->setStopScopeCallback([p]() { if (p) p->requestStop(); });

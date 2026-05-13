@@ -48,7 +48,6 @@ bool FwFlashService::isBusy() const {
     case State::StoppingScope:
     case State::StoppingGenerator:
     case State::StoppingCyclic:
-    case State::DisablingPmic:
     case State::Flashing:
         return true;
     default:
@@ -59,7 +58,6 @@ bool FwFlashService::isBusy() const {
 void FwFlashService::setStopScopeCallback(StopCallback cb) { m_stopScope = std::move(cb); }
 void FwFlashService::setStopGeneratorCallback(StopCallback cb) { m_stopGenerator = std::move(cb); }
 void FwFlashService::setStopCyclicWriteCallback(StopCallback cb) { m_stopCyclic = std::move(cb); }
-void FwFlashService::setDisablePmicCallback(StopCallback cb) { m_disablePmic = std::move(cb); }
 
 void FwFlashService::setState(State s) {
     if (m_state == s) return;
@@ -144,10 +142,7 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
     emitLog(LogLevel::Info, QStringLiteral("停止循环写入"));
     invokeIfSet(m_stopCyclic);
 
-    setState(State::DisablingPmic);
-    emit stageMessage(QStringLiteral("关闭 PMIC..."));
-    emitLog(LogLevel::Info, QStringLiteral("关闭 PMIC"));
-    invokeIfSet(m_disablePmic);
+    // PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电
 
     // 前置期间用户已点取消则提前结束
     if (m_cancelFlag->load()) {

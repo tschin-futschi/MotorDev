@@ -48,7 +48,8 @@ public:
                QString *errorMessage) override;
 
 protected:
-    /// @brief 子类返回 DLL 文件名（相对运行 exe 同级目录）
+    /// @brief 子类返回 DLL 文件名（仅文件名，无路径），由基类与 `QCoreApplication::applicationDirPath()`
+    /// 拼成绝对路径后加载，避免依赖 CWD 或系统默认搜索顺序。
     virtual QString dllPath() const = 0;
 
 private:

@@ -10,10 +10,11 @@
 //   5. FwFlashLogPanel
 //
 // 业务逻辑全部下沉到 FwFlashService；本类仅负责 UI 状态与信号转发。
-// 烧录前置序列（停采样/停发生器/停循环写入/关 PMIC）通过外部注入的 4 个
-// std::function 回调由 FwFlashService 触发；MainWindow 在持有 ConfigService /
-// ScopeService / GeneratorService / CyclicWriteService 的对象上 findChild 取
-// 实例并 wrap 为回调注入本 Tab。回调未设置时 Service 仅写日志，跳过该步骤。
+// 烧录前置序列（停采样/停发生器/停循环写入）通过外部注入的 3 个
+// std::function 回调由 FwFlashService 触发；MainWindow 在持有 ScopeService /
+// GeneratorService / CyclicWriteService 的对象上 findChild 取实例并 wrap 为
+// 回调注入本 Tab。回调未设置时 Service 仅写日志，跳过该步骤。
+// PMIC 不参与前置序列：烧录期间 IC 必须保持正常供电。
 // =============================================================================
 #pragma once
 
@@ -48,7 +49,6 @@ public:
     void setStopScopeCallback(std::function<void()> cb);
     void setStopGeneratorCallback(std::function<void()> cb);
     void setStopCyclicWriteCallback(std::function<void()> cb);
-    void setDisablePmicCallback(std::function<void()> cb);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

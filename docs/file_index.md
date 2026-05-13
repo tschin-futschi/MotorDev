@@ -62,7 +62,7 @@
 - `src/protocol/sampling_config` `[协议]` — 采样间隔/显示窗口的 UI 文本 ↔ 协议索引映射
 
 ### 固件烧录
-> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入 → 关 PMIC）+ worker 线程烧录 + 协作式取消。AW86006 / AW86100 通过 `AwSdkStrategy` 调用厂家 SDK DLL 完成 5 步烧录序列（联调 dummy DLL，等内网替换真实 DLL）；DW9786 / DW9788 仍为 stub。
+> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ worker 线程烧录 + 协作式取消。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 通过 `AwSdkStrategy` 调用厂家 SDK DLL 完成 5 步烧录序列（DLL 路径由基类用 `applicationDirPath()` 拼成绝对路径，加载失败时输出完整路径 + 文件存在性诊断；联调 dummy DLL，等内网替换真实 DLL）；DW9786 / DW9788 仍为 stub。
 
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `CommandDispatcher *` 并构造 `LogSink` lambda 注入 registry，让 AW SDK strategy 的 OutputLog 转发到 `FwFlashLogPanel`
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
@@ -159,4 +159,4 @@
 - `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
 - `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、oscilloscoptab 三个 Tab 共用（fwflashtab 已不使用 Sidebar）
-- `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ConfigService::disablePmic()` / `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，4 个 Service 的实现签名变化会影响烧录前置序列
+- `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，3 个 Service 的实现签名变化会影响烧录前置序列。PMIC 不在前置序列中关闭，烧录期间 IC 必须保持正常供电

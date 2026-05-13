@@ -139,9 +139,6 @@ void FwFlashTab::setStopGeneratorCallback(std::function<void()> cb) {
 void FwFlashTab::setStopCyclicWriteCallback(std::function<void()> cb) {
     m_service->setStopCyclicWriteCallback(std::move(cb));
 }
-void FwFlashTab::setDisablePmicCallback(std::function<void()> cb) {
-    m_service->setDisablePmicCallback(std::move(cb));
-}
 
 // -----------------------------------------------------------------------------
 // UI 构建
