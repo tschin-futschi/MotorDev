@@ -1,0 +1,29 @@
+===== AW DLL Inspection =====
+File         : D:\echo.qfq\26_Qt\MotorDev\ThirdParty\FlashLoad\AW86100\x64\AW86100.dll
+Size         : 37700 bytes
+Architecture : x86-64 (PE32+)
+Machine code : 0x8664
+FileTimeUTC  : 2026-05-08T14:18:40
+
+----- Imports (Static, statically linked DLLs) -----
+  KERNEL32.dll
+  msvcrt.dll
+
+----- Imports (Delay-load) -----
+  (none)
+
+----- Exports (exported symbols, count = 12) -----
+  Aw_OIS_ExtFuncDeInit
+  AwBootcontrol
+  AwFlashDownload
+  AwFlashRead
+  AwGet7bitI2CAsynAddr
+  AwGet7bitI2CSlaveAddr
+  AwGetDllVersion
+  AwMoveBinDownload
+  AwOIS_ExtFuncInit
+  AwResetChip
+  AwSet7bitI2CAsynAddr
+  AwSet7bitI2CSlaveAddr
+
+===== End =====

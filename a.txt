@@ -1,0 +1,25 @@
+powershell -ExecutionPolicy Bypass -File .\inspect_aw86100_dll.ps1 -DLLPath .\AW86100.dll
+
+ 脚本路径：D:\echo.qfq\26_Qt\MotorDev\inspect_aw86100_dll.ps1
+
+  实验室运行步骤（从脚本头注释复制）：
+
+  1. 把真实 AW86100.dll 放到任一位置：
+    -
+  默认位置：D:\echo.qfq\26_Qt\MotorDev\ThirdParty\FlashLoad\AW86100\x64\AW86100.dll（脚本默认会读这里）
+    - 或自定义路径用 -DllPath 参数指定
+  2. PowerShell 运行：
+  powershell -ExecutionPolicy Bypass -File .\inspect_aw86100_dll.ps1
+  2. 或：
+  powershell -ExecutionPolicy Bypass -File .\inspect_aw86100_dll.ps1 -DllPath 'C:\path\to\AW86100.dll'
+  3. 输出会同时打印到屏幕并保存为 aw86100_inspection.txt，把这个文件的内容贴回来即可。
+
+  脚本特性：
+  - 纯 PowerShell + .NET 解析 PE，不依赖 objdump / dumpbin（实验室机不用装额外工具）
+  - 输出：架构、文件大小、完整导出符号清单（用来对照代码 resolve 字符串）、静态依赖 DLL 列表（确认 FFTW
+  文件名）、延迟加载 DLL 列表
+  - 已用本地 stub DLL 烟雾测试通过，正确 dump 出 12 个符号 + 2 个依赖
+  - 纯英文输出，避开 PowerShell 5.1 在中文 Windows 下 UTF-8 .ps1 编码坑
+
+  拿到 aw86100_inspection.txt 内容后我会一次性把所有不匹配的 resolve 字符串改正、把 FFTW 加入 CMake
+  POST_BUILD 自动部署。
