@@ -77,6 +77,30 @@ public slots:
     /// @param data  载荷数据（默认为空）
     void sendCommand(uint8_t cmd, const QByteArray &data = {});
 
+    /// @brief 同步发送一条控制帧并等待匹配响应（**必须在 SerialManager 工作线程内调用**）
+    ///
+    /// 烧录链路专用 fast-path：worker QObject moveToThread(serialManager->thread()) 之后，
+    /// 在工作线程内同步执行整个 send + wait + parse，全程不跨线程、不经过 dispatcher，
+    /// 用 `QSerialPort::waitForBytesWritten` / `waitForReadyRead` 等同步 I/O。
+    /// 调用期间不接收任何采样流帧或其它服务的命令响应（其它信号也不会被分发）。
+    ///
+    /// 注意：调用前应先 `stopHeartbeat()`，结束后再 `startHeartbeat()`，避免心跳定时器在
+    /// 这条同步路径之外被错误阻塞。
+    ///
+    /// @param cmd       要发送的命令字节
+    /// @param data      命令载荷
+    /// @param outCmd    [out] 收到的响应命令字节
+    /// @param outSeq    [out] 收到的响应序列号
+    /// @param outData   [out] 收到的响应载荷
+    /// @param timeoutMs 整体超时（包含写完成与等响应两段）
+    /// @return true=收到响应（含 CmdErrorResponse 错误响应也算收到）；false=超时/写失败/未连接
+    bool sendAndWaitResponse(uint8_t cmd,
+                              const QByteArray &data,
+                              uint8_t &outCmd,
+                              uint8_t &outSeq,
+                              QByteArray &outData,
+                              int timeoutMs);
+
 signals:
     /// @brief 串口连接成功
     void connected();

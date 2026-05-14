@@ -26,7 +26,7 @@
 #include <functional>
 #include <memory>
 
-class CommandDispatcher;
+class SerialManager;
 class FlashStrategyRegistry;
 class FwFileInfoPanel;
 class FwFlashControlPanel;
@@ -42,7 +42,7 @@ class FwFlashTab : public QWidget {
     Q_OBJECT
 
 public:
-    FwFlashTab(CommandDispatcher *dispatcher,
+    FwFlashTab(SerialManager *serialManager,
                AwSdkStrategy::AddrProvider awAddrProvider,
                QWidget *parent = nullptr);
     ~FwFlashTab() override;

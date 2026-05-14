@@ -29,7 +29,7 @@
 
 class FlashStrategy;
 class FlashStrategyRegistry;
-class QThread;
+class SerialManager;
 
 class FwFlashService : public QObject {
     Q_OBJECT
@@ -63,7 +63,9 @@ public:
     /// @brief 构造服务
     /// @param registry 策略注册中心；外部持有，service 不接管所有权
     /// @param parent QObject parent
-    explicit FwFlashService(FlashStrategyRegistry *registry, QObject *parent = nullptr);
+    FwFlashService(FlashStrategyRegistry *registry,
+                   SerialManager *serialManager,
+                   QObject *parent = nullptr);
     ~FwFlashService() override;
 
     /// @brief 注入"立即停止"回调；nullptr-safe，未设置时跳过该步骤（仅写日志）
@@ -101,13 +103,14 @@ private:
     void shutdownWorker();
 
     FlashStrategyRegistry *m_registry = nullptr;
+    SerialManager *m_serialManager = nullptr;
     StopCallback m_stopScope;
     StopCallback m_stopGenerator;
     StopCallback m_stopCyclic;
 
     State m_state = State::Idle;
     qint64 m_totalBytes = 0;
+    bool m_flashInFlight = false;  ///< 烧录任务已投递到 SerialManager 工作线程且尚未回报
 
     std::shared_ptr<std::atomic<bool>> m_cancelFlag;
-    QThread *m_workerThread = nullptr;
 };

@@ -11,21 +11,24 @@
 // =============================================================================
 #include "services/fwflashservice.h"
 
+#include "serialmanager.h"
 #include "services/flashstrategy.h"
 #include "services/flashstrategyregistry.h"
 
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <QPointer>
-#include <QThread>
 
 namespace {
 Q_LOGGING_CATEGORY(lcFwFlash, "motordev.fwflash")
 }
 
-FwFlashService::FwFlashService(FlashStrategyRegistry *registry, QObject *parent)
+FwFlashService::FwFlashService(FlashStrategyRegistry *registry,
+                               SerialManager *serialManager,
+                               QObject *parent)
     : QObject(parent)
-    , m_registry(registry) {
+    , m_registry(registry)
+    , m_serialManager(serialManager) {
 }
 
 FwFlashService::~FwFlashService() {
@@ -33,13 +36,10 @@ FwFlashService::~FwFlashService() {
 }
 
 void FwFlashService::shutdownWorker() {
+    // 烧录任务跑在 SerialManager 工作线程内（fast-path）。析构时只能尽力让任务自我退出：
+    // 翻 cancelFlag 让 strategy 在下一次 I2C 透传后协作式中止；不能强行 quit 该线程
+    // （那是 SerialManager 自己的工作线程，析构后整个应用都不工作了）。
     if (m_cancelFlag) m_cancelFlag->store(true);
-    if (m_workerThread) {
-        if (m_workerThread->isRunning()) {
-            m_workerThread->quit();
-            m_workerThread->wait();
-        }
-    }
 }
 
 bool FwFlashService::isBusy() const {
@@ -161,16 +161,29 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
                 .arg(strategy->icModel())
                 .arg(QString::number(firmware.size() / 1024.0, 'f', 1)));
 
-    // worker 线程：仅跑 flash()，结果通过 invokeMethod 回主线程
-    auto cancelFlag = m_cancelFlag;       // shared_ptr 拷贝，保证 worker 内访问安全
-    const qint64 total = m_totalBytes;
-    QPointer<FwFlashService> self(this);  // 防御 service 在 worker 完成前被销毁
+    if (m_serialManager == nullptr) {
+        setState(State::Failed);
+        emitLog(LogLevel::Error, QStringLiteral("SerialManager 未注入，无法启动烧录"));
+        emit finished(false, QStringLiteral("内部错误：SerialManager 未注入"));
+        setState(State::Idle);
+        return;
+    }
 
-    m_workerThread = QThread::create([self, strategy, firmware, cancelFlag, total]() {
+    // 烧录任务投递到 SerialManager 工作线程同步执行（fast-path：strategy 内的
+    // syncI2c{Write,Read} 直接调 m_serialManager->sendAndWaitResponse，全程零跨线程）。
+    // QueuedConnection fire-and-forget；结果再通过 invokeMethod 回主线程触发 finished。
+    auto cancelFlag = m_cancelFlag;
+    const qint64 total = m_totalBytes;
+    QPointer<FwFlashService> self(this);
+
+    m_flashInFlight = true;
+
+    QMetaObject::invokeMethod(m_serialManager, [self, strategy, firmware, cancelFlag, total]() {
+        if (self.isNull()) return;
         QString errorMsg;
         auto progress = [self, total](qint64 sent) {
             if (self.isNull()) return;
-            // 跨线程 emit：AutoConnection 自动转 QueuedConnection 到主线程
+            // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
             emit self->progressUpdated(sent, total);
             const double pct = total > 0 ? (sent * 100.0 / total) : 0.0;
             emit self->stageMessage(
@@ -187,6 +200,7 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
             self.data(),
             [self, ok, wasCancelled, errorMsg, total]() {
                 if (self.isNull()) return;
+                self->m_flashInFlight = false;
                 if (ok) {
                     emit self->progressUpdated(total, total);
                     self->setState(State::Completed);
@@ -207,12 +221,5 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
                 self->setState(State::Idle);
             },
             Qt::QueuedConnection);
-    });
-
-    connect(m_workerThread, &QThread::finished, m_workerThread, &QObject::deleteLater);
-    QPointer<QThread> threadPtr(m_workerThread);
-    connect(m_workerThread, &QThread::finished, this, [this, threadPtr]() {
-        if (m_workerThread == threadPtr.data()) m_workerThread = nullptr;
-    });
-    m_workerThread->start();
+    }, Qt::QueuedConnection);
 }

@@ -20,11 +20,11 @@
 #include <vector>
 
 class FlashStrategy;
-class CommandDispatcher;
+class SerialManager;
 
 class FlashStrategyRegistry {
 public:
-    FlashStrategyRegistry(CommandDispatcher *dispatcher,
+    FlashStrategyRegistry(SerialManager *serialManager,
                           AwSdkStrategy::LogSink awLogSink,
                           AwSdkStrategy::AddrProvider awAddrProvider);
     ~FlashStrategyRegistry();
@@ -42,7 +42,7 @@ private:
     void registerBuiltins();
     void add(std::unique_ptr<FlashStrategy> s);
 
-    CommandDispatcher *m_dispatcher = nullptr;
+    SerialManager *m_serialManager = nullptr;
     AwSdkStrategy::LogSink m_awLogSink;
     AwSdkStrategy::AddrProvider m_awAddrProvider;
     std::vector<std::unique_ptr<FlashStrategy>> m_strategies;

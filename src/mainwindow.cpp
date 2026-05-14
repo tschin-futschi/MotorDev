@@ -197,7 +197,7 @@ void MainWindow::setupUi() {
     auto awAddrProvider = [devCtxPtr]() -> uint8_t {
         return devCtxPtr ? devCtxPtr->slaveId() : uint8_t(0);
     };
-    m_fwFlashTab = new FwFlashTab(m_dispatcher, awAddrProvider, m_contentStack);
+    m_fwFlashTab = new FwFlashTab(m_serialManager, awAddrProvider, m_contentStack);
     m_contentStack->addWidget(m_fwFlashTab);  // index 2: 固件烧录页
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);

@@ -5,7 +5,7 @@
 #include "services/flashstrategies/aw_sdk_strategy.h"
 
 #include "protocol/motor_protocol.h"
-#include "services/commanddispatcher.h"
+#include "serialmanager.h"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -13,11 +13,9 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMetaObject>
-#include <QMutex>
-#include <QMutexLocker>
 #include <QPointer>
 #include <QString>
-#include <QWaitCondition>
+#include <QThread>
 
 #include <chrono>
 #include <cstring>
@@ -41,8 +39,8 @@ thread_local AwSdkStrategy *AwSdkStrategy::s_currentInstance = nullptr;
 // 构造 / 析构
 // -----------------------------------------------------------------------------
 
-AwSdkStrategy::AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink, AddrProvider addrProvider)
-    : m_dispatcher(dispatcher)
+AwSdkStrategy::AwSdkStrategy(SerialManager *serialManager, LogSink logSink, AddrProvider addrProvider)
+    : m_serialManager(serialManager)
     , m_logSink(std::move(logSink))
     , m_addrProvider(std::move(addrProvider)) {
 }
@@ -418,89 +416,49 @@ int AwSdkStrategy::onOutputLog(const char *str) {
 }
 
 // -----------------------------------------------------------------------------
-// 同步 I2C 透传
+// 同步 I2C 透传（fast-path：strategy 在 SerialManager 工作线程内执行，
+// 直接调 SerialManager::sendAndWaitResponse，全程同步、零跨线程、零跨主线程）
 // -----------------------------------------------------------------------------
-
-namespace {
-
-struct I2cWaitState {
-    QMutex mutex;
-    QWaitCondition cond;
-    bool received = false;
-    bool isError = false;
-    QByteArray data;
-    QString errMsg;
-
-    // 分段诊断时间戳（仅在 verbose 阶段使用；download 阶段跳过）
-    using TimePoint = std::chrono::steady_clock::time_point;
-    TimePoint tEnter{};       // syncI2c{Write,Read} 入口（worker 线程）
-    TimePoint tAfterInvoke{}; // 投递 invokeMethod 之后（worker 线程）
-    TimePoint tCallback{};    // 主线程 callback 收到响应入口
-    TimePoint tWake{};        // worker wait 醒来之后
-};
-
-}  // namespace
 
 int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *addr,
                                  uint8_t dataLen, const uint8_t *data, int timeoutMs) {
     Q_ASSERT_X(devId < 0x80, "AwSdkStrategy::syncI2cWrite",
                "devId must be 7-bit (0x00-0x7F), R/W bit not allowed");
-    if (m_dispatcher == nullptr) {
-        log(LogLevel::Error, QStringLiteral("CommandDispatcher 未注入，无法发送 I2C 透传"));
+    if (m_serialManager == nullptr) {
+        log(LogLevel::Error, QStringLiteral("SerialManager 未注入，无法发送 I2C 透传"));
         return -1;
     }
+    Q_ASSERT_X(QThread::currentThread() == m_serialManager->thread(),
+               "AwSdkStrategy::syncI2cWrite",
+               "must run in SerialManager worker thread (fast-path)");
 
     const bool verbose = !m_inDownload;
+    const auto t0 = std::chrono::steady_clock::now();
 
     const QByteArray payload =
         MotorProtocol::encodeI2cTransferWrite(devId, addr, addrSize, data, dataLen);
 
-    auto state = std::make_shared<I2cWaitState>();
-    if (verbose) state->tEnter = std::chrono::steady_clock::now();
+    uint8_t outCmd = 0, outSeq = 0;
+    QByteArray outData;
+    const bool ok = m_serialManager->sendAndWaitResponse(
+        MotorProtocol::CmdI2cTransferWrite, payload, outCmd, outSeq, outData, timeoutMs);
 
-    auto callback = [state, verbose](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
-        QMutexLocker locker(&state->mutex);
-        if (verbose) state->tCallback = std::chrono::steady_clock::now();
-        state->received = true;
-        if (cmd == MotorProtocol::CmdErrorResponse || cmd == CommandDispatcher::LocalErrorCode) {
-            state->isError = true;
-            const uint8_t code = MotorProtocol::decodeErrorCode(respData);
-            state->errMsg = QStringLiteral("STM32 error 0x%1").arg(code, 2, 16, QLatin1Char('0'));
-        }
-        state->cond.wakeOne();
-    };
-
-    QPointer<CommandDispatcher> disp(m_dispatcher);
-    QMetaObject::invokeMethod(m_dispatcher, [disp, payload, callback]() {
-        if (disp.isNull()) return;
-        disp->submitCommand(MotorProtocol::CmdI2cTransferWrite, payload,
-                             CommandDispatcher::High, callback);
-    }, Qt::QueuedConnection);
-
-    if (verbose) state->tAfterInvoke = std::chrono::steady_clock::now();
-
-    QMutexLocker locker(&state->mutex);
-    while (!state->received) {
-        if (!state->cond.wait(&state->mutex, static_cast<unsigned long>(timeoutMs))) {
-            log(LogLevel::Error, QStringLiteral("I2C 透传写超时（%1 ms）").arg(timeoutMs));
-            return -1;
-        }
-        if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
-    }
     if (verbose) {
-        state->tWake = std::chrono::steady_clock::now();
-        auto us = [](I2cWaitState::TimePoint a, I2cWaitState::TimePoint b) -> qint64 {
-            return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
-        };
+        const auto t1 = std::chrono::steady_clock::now();
+        const qint64 elapsedUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-W TIMING] enter->invoke=%1us  invoke->cb=%2us  cb->wake=%3us  total=%4us")
-                .arg(us(state->tEnter, state->tAfterInvoke))
-                .arg(us(state->tAfterInvoke, state->tCallback))
-                .arg(us(state->tCallback, state->tWake))
-                .arg(us(state->tEnter, state->tWake)));
+            QStringLiteral("[I2C-W TIMING] total=%1us  (single-thread fast-path)").arg(elapsedUs));
     }
-    if (state->isError) {
-        log(LogLevel::Error, QStringLiteral("I2C 透传写失败：%1").arg(state->errMsg));
+
+    if (!ok) {
+        log(LogLevel::Error, QStringLiteral("I2C 透传写超时或链路失败（%1 ms）").arg(timeoutMs));
+        return -1;
+    }
+    if (outCmd == MotorProtocol::CmdErrorResponse) {
+        const uint8_t code = MotorProtocol::decodeErrorCode(outData);
+        log(LogLevel::Error, QStringLiteral("I2C 透传写失败：STM32 error 0x%1")
+                                .arg(code, 2, 16, QLatin1Char('0')));
         return -1;
     }
     return 0;
@@ -510,73 +468,50 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
                                 uint8_t readLen, uint8_t *outBuf, int timeoutMs) {
     Q_ASSERT_X(devId < 0x80, "AwSdkStrategy::syncI2cRead",
                "devId must be 7-bit (0x00-0x7F), R/W bit not allowed");
-    if (m_dispatcher == nullptr) {
-        log(LogLevel::Error, QStringLiteral("CommandDispatcher 未注入，无法发送 I2C 透传"));
+    if (m_serialManager == nullptr) {
+        log(LogLevel::Error, QStringLiteral("SerialManager 未注入，无法发送 I2C 透传"));
         return -1;
     }
+    Q_ASSERT_X(QThread::currentThread() == m_serialManager->thread(),
+               "AwSdkStrategy::syncI2cRead",
+               "must run in SerialManager worker thread (fast-path)");
 
     const bool verbose = !m_inDownload;
+    const auto t0 = std::chrono::steady_clock::now();
 
     const QByteArray payload =
         MotorProtocol::encodeI2cTransferRead(devId, addr, addrSize, readLen);
 
-    auto state = std::make_shared<I2cWaitState>();
-    if (verbose) state->tEnter = std::chrono::steady_clock::now();
+    uint8_t outCmd = 0, outSeq = 0;
+    QByteArray outData;
+    const bool ok = m_serialManager->sendAndWaitResponse(
+        MotorProtocol::CmdI2cTransferRead, payload, outCmd, outSeq, outData, timeoutMs);
 
-    auto callback = [state, verbose](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
-        QMutexLocker locker(&state->mutex);
-        if (verbose) state->tCallback = std::chrono::steady_clock::now();
-        state->received = true;
-        if (cmd == MotorProtocol::CmdErrorResponse || cmd == CommandDispatcher::LocalErrorCode) {
-            state->isError = true;
-            const uint8_t code = MotorProtocol::decodeErrorCode(respData);
-            state->errMsg = QStringLiteral("STM32 error 0x%1").arg(code, 2, 16, QLatin1Char('0'));
-        } else {
-            state->data = respData;
-        }
-        state->cond.wakeOne();
-    };
-
-    QPointer<CommandDispatcher> disp(m_dispatcher);
-    QMetaObject::invokeMethod(m_dispatcher, [disp, payload, callback]() {
-        if (disp.isNull()) return;
-        disp->submitCommand(MotorProtocol::CmdI2cTransferRead, payload,
-                             CommandDispatcher::High, callback);
-    }, Qt::QueuedConnection);
-
-    if (verbose) state->tAfterInvoke = std::chrono::steady_clock::now();
-
-    QMutexLocker locker(&state->mutex);
-    while (!state->received) {
-        if (!state->cond.wait(&state->mutex, static_cast<unsigned long>(timeoutMs))) {
-            log(LogLevel::Error, QStringLiteral("I2C 透传读超时（%1 ms）").arg(timeoutMs));
-            return -1;
-        }
-        if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
-    }
     if (verbose) {
-        state->tWake = std::chrono::steady_clock::now();
-        auto us = [](I2cWaitState::TimePoint a, I2cWaitState::TimePoint b) -> qint64 {
-            return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
-        };
+        const auto t1 = std::chrono::steady_clock::now();
+        const qint64 elapsedUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-R TIMING] enter->invoke=%1us  invoke->cb=%2us  cb->wake=%3us  total=%4us")
-                .arg(us(state->tEnter, state->tAfterInvoke))
-                .arg(us(state->tAfterInvoke, state->tCallback))
-                .arg(us(state->tCallback, state->tWake))
-                .arg(us(state->tEnter, state->tWake)));
+            QStringLiteral("[I2C-R TIMING] total=%1us  (single-thread fast-path)").arg(elapsedUs));
     }
-    if (state->isError) {
-        log(LogLevel::Error, QStringLiteral("I2C 透传读失败：%1").arg(state->errMsg));
+
+    if (!ok) {
+        log(LogLevel::Error, QStringLiteral("I2C 透传读超时或链路失败（%1 ms）").arg(timeoutMs));
         return -1;
     }
-    if (state->data.size() < readLen) {
+    if (outCmd == MotorProtocol::CmdErrorResponse) {
+        const uint8_t code = MotorProtocol::decodeErrorCode(outData);
+        log(LogLevel::Error, QStringLiteral("I2C 透传读失败：STM32 error 0x%1")
+                                .arg(code, 2, 16, QLatin1Char('0')));
+        return -1;
+    }
+    if (outData.size() < readLen) {
         log(LogLevel::Error, QStringLiteral("I2C 透传读返回长度不足：%1 < %2")
-                                .arg(state->data.size()).arg(readLen));
+                                .arg(outData.size()).arg(readLen));
         return -1;
     }
     if (outBuf != nullptr && readLen > 0) {
-        std::memcpy(outBuf, state->data.constData(), readLen);
+        std::memcpy(outBuf, outData.constData(), readLen);
     }
     return 0;
 }

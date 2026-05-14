@@ -9,6 +9,7 @@
 #include "serialmanager.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <QSerialPort>
@@ -230,6 +231,92 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
     // 启动重试定时器
     if (m_retryTimer != nullptr) {
         m_retryTimer->start(RetryTimeoutMs);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 同步发送 + 等待响应（烧录链路 fast-path）
+// -----------------------------------------------------------------------------
+//
+// 在 SerialManager 工作线程内同步运行，全程使用 QSerialPort 的同步 I/O：
+//   write → waitForBytesWritten → 循环 waitForReadyRead + readAll + FrameParser
+// 整条路径不经过 dispatcher、不跨线程，专为消除 PC 端 Qt 跨线程 + 主线程拥堵
+// 给烧录链路带来的 10-20ms/次延迟而设计。
+//
+// 边界处理：
+// - 严格断言调用线程 = SerialManager 工作线程
+// - 错误响应（CmdErrorResponse，seq=0xFF）无条件归属本次调用，立即返回
+// - 流帧 / cmd 匹配但 seq 不匹配的控制帧 → 直接丢弃（烧录前置已停采样/发生器）
+// - 调用期间 onReadyRead 自然不会触发（数据被 waitForReadyRead 同步消费），
+//   m_parser 与常规 onReadyRead 共用同一份状态机；烧录前应无残余帧
+//
+bool SerialManager::sendAndWaitResponse(uint8_t cmd,
+                                         const QByteArray &data,
+                                         uint8_t &outCmd,
+                                         uint8_t &outSeq,
+                                         QByteArray &outData,
+                                         int timeoutMs) {
+    Q_ASSERT_X(QThread::currentThread() == m_thread,
+               "SerialManager::sendAndWaitResponse",
+               "must be called within SerialManager worker thread");
+
+    if (m_serial == nullptr || !m_serial->isOpen()) {
+        return false;
+    }
+
+    // 同期不应该有其它命令在等待（dispatcher 不参与本路径，但防御一下）
+    if (!m_pendingFrame.isEmpty()) {
+        qCWarning(lcSerialManager).noquote()
+            << "sendAndWaitResponse: another pending command exists, refuse fast-path";
+        return false;
+    }
+
+    const uint8_t seq = m_nextSeq++;
+    const QByteArray frame = FrameParser::encodeControlFrame(seq, cmd, data);
+
+    QElapsedTimer elapsed;
+    elapsed.start();
+
+    // 1. 写
+    const qint64 written = m_serial->write(frame);
+    if (written != frame.size()) {
+        qCWarning(lcSerialManager).noquote()
+            << QStringLiteral("sendAndWaitResponse: write failed (wrote %1/%2)")
+                   .arg(written).arg(frame.size());
+        return false;
+    }
+    const int remainingForWrite = static_cast<int>(timeoutMs - elapsed.elapsed());
+    if (remainingForWrite <= 0 || !m_serial->waitForBytesWritten(remainingForWrite)) {
+        qCWarning(lcSerialManager).noquote() << "sendAndWaitResponse: waitForBytesWritten timeout";
+        return false;
+    }
+
+    // 2. 等响应
+    while (true) {
+        const int remaining = static_cast<int>(timeoutMs - elapsed.elapsed());
+        if (remaining <= 0) {
+            return false;  // 整体超时
+        }
+        if (!m_serial->waitForReadyRead(remaining)) {
+            return false;  // 超时
+        }
+        const QByteArray bytes = m_serial->readAll();
+        for (char raw : bytes) {
+            const auto frameType = m_parser.feedByte(static_cast<uint8_t>(raw));
+            if (frameType == FrameParser::FrameType::Control) {
+                const ControlFrame &cf = m_parser.controlFrame();
+                // 错误响应 seq=0xFF（CRC 错失败），其它响应必须 seq 匹配
+                const bool match = (cf.cmd == MotorProtocol::CmdErrorResponse) || (cf.seq == seq);
+                if (match) {
+                    outCmd = cf.cmd;
+                    outSeq = cf.seq;
+                    outData = cf.data;
+                    return true;
+                }
+                // 不匹配（心跳响应或其它无关响应）— 烧录链路丢弃
+            }
+            // 流帧也直接丢弃
+        }
     }
 }
 

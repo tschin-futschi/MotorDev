@@ -10,9 +10,11 @@
 
 #include "services/flashstrategies/aw_sdk_strategy.h"
 
+class SerialManager;
+
 class AW86006Strategy : public AwSdkStrategy {
 public:
-    AW86006Strategy(CommandDispatcher *dispatcher,
+    AW86006Strategy(SerialManager *serialManager,
                     AwSdkStrategy::LogSink logSink,
                     AwSdkStrategy::AddrProvider addrProvider);
 

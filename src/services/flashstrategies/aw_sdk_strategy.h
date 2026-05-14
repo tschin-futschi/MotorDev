@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <functional>
 
-class CommandDispatcher;
+class SerialManager;
 
 class AwSdkStrategy : public FlashStrategy {
 public:
@@ -44,7 +44,7 @@ public:
     /// 合法范围 1~0x7F；返回 0 视为"未配置"，flash() 会以错误终止并提示用户先去配置 Tab 设置。
     using AddrProvider = std::function<uint8_t()>;
 
-    AwSdkStrategy(CommandDispatcher *dispatcher, LogSink logSink, AddrProvider addrProvider);
+    AwSdkStrategy(SerialManager *serialManager, LogSink logSink, AddrProvider addrProvider);
     ~AwSdkStrategy() override;
 
     bool flash(const QByteArray &firmware,
@@ -130,7 +130,7 @@ private:
     // ---- 日志辅助 ----
     void log(LogLevel level, const QString &message) const;
 
-    CommandDispatcher *m_dispatcher = nullptr;
+    SerialManager *m_serialManager = nullptr;
     LogSink m_logSink;
     AddrProvider m_addrProvider;
 
