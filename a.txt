@@ -254,3 +254,150 @@ FileTimeUTC  : 2026-05-13T09:19:29
 [20:09:11.718] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
 
 ===== End =====
+
+
+------------------------------------------------------------------------------------------>----<----------------------------------
+[19:03:29.584] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[19:03:29.584] [INFO ] 停止采样
+[19:03:29.585] [INFO ] 停止信号发生器
+[19:03:29.590] [INFO ] 停止循环写入
+[19:03:29.590] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[19:03:29.609] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260514/MotorDev/build_make_qt/AW86100.dll
+[19:03:29.611] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[19:03:29.611] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[19:03:29.611] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[19:03:29.611] [INFO ] [DLL] Enter boot control function. 
+[19:03:29.612] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[19:03:29.632] [INFO ] [I2C-W TIMING] enter->invoke=0us invoke->cb=41254us cb->wake=20us total=41275us
+[19:03:29.633] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=41311us
+[19:03:29.646] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
+[19:03:29.664] [INFO ] [I2C-W TIMING] enter->invoke=3us invoke->cb=30092us cb->wake=47us total=30143us
+[19:03:29.665] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=30210us
+[19:03:29.680] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
+[19:03:29.700] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=33272us cb->wake=49us total=33324us
+[19:03:29.700] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=33377us
+[19:03:29.715] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
+[19:03:29.756] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=41661us cb->wake=92us total=41755us
+[19:03:29.757] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=41821us
+[19:03:29.757] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
+[19:03:29.777] [INFO ] [I2C-R TIMING] enter->invoke=3us invoke->cb=20729us cb->wake=43us total=20777us
+[19:03:29.778] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=20816us
+[19:03:29.796] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
+[19:03:29.833] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=47012us cb->wake=83us total=47097us
+[19:03:29.833] [ERROR] I2C 透传写失败：STM32 error 0x03
+[19:03:29.833] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=47129us
+[19:03:29.833] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL5! 
+[19:03:29.834] [ERROR] AwBootcontrol failed (return -17)
+[19:03:29.834] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[19:03:29.834] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[19:03:29.834] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[19:03:29.835] [ERROR] 烧录失败：AwBootcontrol failed (return -17)
+[19:03:32.450] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[19:03:32.450] [INFO ] 停止采样
+[19:03:32.450] [INFO ] 停止信号发生器
+[19:03:32.455] [INFO ] 停止循环写入
+[19:03:32.456] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[19:03:32.480] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260514/MotorDev/build_make_qt/AW86100.dll
+[19:03:32.480] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[19:03:32.481] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[19:03:32.481] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[19:03:32.481] [INFO ] [DLL] Enter boot control function. 
+[19:03:32.481] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[19:03:32.501] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=43001us cb->wake=14us total=43016us
+[19:03:32.502] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=43058us
+[19:03:32.529] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
+[19:03:32.547] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=43685us cb->wake=13us total=43700us
+[19:03:32.547] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=43815us
+[19:03:32.561] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
+[19:03:32.580] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=30289us cb->wake=13us total=30306us
+[19:03:32.580] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=30357us
+[19:03:32.595] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
+[19:03:32.615] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=20057us cb->wake=14us total=20072us
+[19:03:32.615] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=20139us
+[19:03:32.616] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
+[19:03:32.631] [INFO ] [I2C-R TIMING] enter->invoke=1us invoke->cb=15932us cb->wake=29us total=15964us
+[19:03:32.631] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=16018us
+[19:03:32.647] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
+[19:03:32.664] [INFO ] [I2C-W TIMING] enter->invoke=3us invoke->cb=30815us cb->wake=21us total=30840us
+[19:03:32.664] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=30941us
+[19:03:32.679] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
+[19:03:32.696] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=30405us cb->wake=14us total=30421us
+[19:03:32.697] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=30515us
+[19:03:32.712] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
+[19:03:32.730] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=32022us cb->wake=52us total=32077us
+[19:03:32.730] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=32139us
+[19:03:32.746] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.764] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=27035us cb->wake=16us total=27054us
+[19:03:32.764] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=27143us
+[19:03:32.765] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.781] [INFO ] [I2C-W TIMING] enter->invoke=21us invoke->cb=16610us cb->wake=36us total=16667us
+[19:03:32.782] [ERROR] I2C 透传写失败：STM32 error 0x03
+[19:03:32.782] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=16692us
+[19:03:32.782] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
+[19:03:32.782] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.806] [INFO ] [I2C-W TIMING] enter->invoke=0us invoke->cb=24516us cb->wake=14us total=24531us
+[19:03:32.806] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=24550us
+[19:03:32.806] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.821] [INFO ] [I2C-W TIMING] enter->invoke=3us invoke->cb=15689us cb->wake=12us total=15706us
+[19:03:32.821] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15772us
+[19:03:32.822] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.846] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=24731us cb->wake=12us total=24745us
+[19:03:32.846] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=24786us
+[19:03:32.846] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.863] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=17508us cb->wake=15us total=17524us
+[19:03:32.864] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17553us
+[19:03:32.864] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.879] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=16299us cb->wake=25us total=16326us
+[19:03:32.879] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16397us
+[19:03:32.881] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.897] [INFO ] [I2C-W TIMING] enter->invoke=8us invoke->cb=16470us cb->wake=13us total=16492us
+[19:03:32.897] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16554us
+[19:03:32.898] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.914] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=17000us cb->wake=17us total=17019us
+[19:03:32.914] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17067us
+[19:03:32.915] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.931] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=17032us cb->wake=14us total=17049us
+[19:03:32.932] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17136us
+[19:03:32.932] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.947] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=15514us cb->wake=12us total=15527us
+[19:03:32.947] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15557us
+[19:03:32.947] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.963] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=17102us cb->wake=15us total=17119us
+[19:03:32.964] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17176us
+[19:03:32.964] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.981] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=16379us cb->wake=15us total=16396us
+[19:03:32.981] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16429us
+[19:03:32.981] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:32.996] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=16045us cb->wake=14us total=16061us
+[19:03:32.997] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16108us
+[19:03:32.997] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.013] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=16797us cb->wake=12us total=16810us
+[19:03:33.013] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16843us
+[19:03:33.014] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.030] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=17029us cb->wake=16us total=17047us
+[19:03:33.031] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17121us
+[19:03:33.031] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.047] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=16663us cb->wake=19us total=16683us
+[19:03:33.048] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16736us
+[19:03:33.048] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.064] [INFO ] [I2C-W TIMING] enter->invoke=2us invoke->cb=16820us cb->wake=13us total=16836us
+[19:03:33.064] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16916us
+[19:03:33.064] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.080] [INFO ] [I2C-W TIMING] enter->invoke=1us invoke->cb=15964us cb->wake=11us total=15977us
+[19:03:33.080] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16026us
+[19:03:33.080] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[19:03:33.096] [INFO ] [I2C-W TIMING] enter->invoke=0us invoke->cb=16254us cb->wake=13us total=16269us
+[19:03:33.097] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16299us
+[19:03:33.097] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
+[19:03:33.115] [INFO ] [I2C-W TIMING] enter->invoke=9us invoke->cb=18336us cb->wake=15us total=18361us
+[19:03:33.115] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=18443us
+[19:03:33.129] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
+[19:03:33.152] [INFO ] [I2C-R TIMING] enter->invoke=1us invoke->cb=34677us cb->wake=14us total=34693us
+[19:03:33.153] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=34788us
+[19:03:33.153] [INFO ] [DLL] Flash Hand Compare Check Failed! 
+[19:03:33.153] [ERROR] AwBootcontrol failed (return -23)
+[19:03:33.153] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[19:03:33.153] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[19:03:33.154] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[19:03:33.154] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
+---------------------------------------------------------------------------------->--------------------<------------------
