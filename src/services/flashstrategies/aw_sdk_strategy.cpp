@@ -19,6 +19,7 @@
 #include <QString>
 #include <QWaitCondition>
 
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <utility>
@@ -336,38 +337,58 @@ int AwSdkStrategy::extOutputLogThunk(const char *str) {
 int AwSdkStrategy::onReadI2c(DllByte devId, DllByte addrSize, DllByte *pAddr,
                               DllByte rdSize, DllByte *pRdBuf) {
     if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
-    // 调试日志：打印 DLL 实际传入的参数；download 阶段量大不打，避免淹没日志/拖慢 GUI
-    if (!m_inDownload) {
+
+    // 进入日志带 DLL 传入参数 + 起始时间戳；download 阶段量大不打，避免淹没日志/拖慢 GUI
+    const bool verbose = !m_inDownload;
+    const auto t0 = std::chrono::steady_clock::now();
+    if (verbose) {
         const QByteArray addrBa = (addrSize > 0 && pAddr != nullptr)
             ? QByteArray(reinterpret_cast<const char *>(pAddr), addrSize)
             : QByteArray();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-R] devId=0x%1 addrSize=%2 addr=%3 rdSize=%4")
+            QStringLiteral("[I2C-R ENTER] devId=0x%1 addrSize=%2 addr=%3 rdSize=%4")
                 .arg(devId, 2, 16, QLatin1Char('0'))
                 .arg(addrSize)
                 .arg(addrBa.isEmpty() ? QStringLiteral("<empty>")
                                        : QString::fromLatin1(addrBa.toHex(' ')).toUpper())
                 .arg(rdSize));
     }
-    return syncI2cRead(devId, addrSize, pAddr, rdSize, pRdBuf, kI2cTimeoutMs);
+
+    const int rc = syncI2cRead(devId, addrSize, pAddr, rdSize, pRdBuf, kI2cTimeoutMs);
+
+    if (verbose) {
+        const auto t1 = std::chrono::steady_clock::now();
+        const qint64 elapsedUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-R EXIT ] devId=0x%1 rc=%2 elapsed=%3us")
+                .arg(devId, 2, 16, QLatin1Char('0'))
+                .arg(rc)
+                .arg(elapsedUs));
+    }
+    return rc;
 }
 
 int AwSdkStrategy::onWriteI2c(DllByte devId, DllByte wrSize, DllByte *wrData) {
     if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
-    // 调试日志：打印 DLL 实际传入的参数；download 阶段量大不打，避免淹没日志/拖慢 GUI
-    if (!m_inDownload) {
+
+    // 进入日志带 DLL 传入参数 + 起始时间戳；download 阶段量大不打，避免淹没日志/拖慢 GUI
+    const bool verbose = !m_inDownload;
+    const auto t0 = std::chrono::steady_clock::now();
+    if (verbose) {
         const int dumpLen = qMin<int>(wrSize, 16);
         const QByteArray dataBa = (wrSize > 0 && wrData != nullptr)
             ? QByteArray(reinterpret_cast<const char *>(wrData), dumpLen)
             : QByteArray();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-W] devId=0x%1 wrSize=%2 data=%3%4")
+            QStringLiteral("[I2C-W ENTER] devId=0x%1 wrSize=%2 data=%3%4")
                 .arg(devId, 2, 16, QLatin1Char('0'))
                 .arg(wrSize)
                 .arg(dataBa.isEmpty() ? QStringLiteral("<empty>")
                                        : QString::fromLatin1(dataBa.toHex(' ')).toUpper())
                 .arg(wrSize > 16 ? QStringLiteral("...(+%1 bytes)").arg(wrSize - 16) : QString()));
     }
+
     // I2C 写时寄存器地址与数据由 DLL 拼成单个 wrData 一并交给我们；
     // 透传协议 AddrSize 恒为 0，STM32 端在软件位拼 I2C 总线上以单次 transaction
     // 发送（START → addr+W → wrData 整段 → STOP），不解析或重组。
@@ -375,6 +396,17 @@ int AwSdkStrategy::onWriteI2c(DllByte devId, DllByte wrSize, DllByte *wrData) {
                                  wrSize, wrData, kI2cTimeoutMs);
     if (rc == 0 && m_inDownload) {
         notifyProgress(static_cast<qint64>(wrSize));
+    }
+
+    if (verbose) {
+        const auto t1 = std::chrono::steady_clock::now();
+        const qint64 elapsedUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-W EXIT ] devId=0x%1 rc=%2 elapsed=%3us")
+                .arg(devId, 2, 16, QLatin1Char('0'))
+                .arg(rc)
+                .arg(elapsedUs));
     }
     return rc;
 }
