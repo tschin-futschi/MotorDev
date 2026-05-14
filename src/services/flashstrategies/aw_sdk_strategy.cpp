@@ -336,11 +336,38 @@ int AwSdkStrategy::extOutputLogThunk(const char *str) {
 int AwSdkStrategy::onReadI2c(DllByte devId, DllByte addrSize, DllByte *pAddr,
                               DllByte rdSize, DllByte *pRdBuf) {
     if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
+    // 调试日志：打印 DLL 实际传入的参数；download 阶段量大不打，避免淹没日志/拖慢 GUI
+    if (!m_inDownload) {
+        const QByteArray addrBa = (addrSize > 0 && pAddr != nullptr)
+            ? QByteArray(reinterpret_cast<const char *>(pAddr), addrSize)
+            : QByteArray();
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-R] devId=0x%1 addrSize=%2 addr=%3 rdSize=%4")
+                .arg(devId, 2, 16, QLatin1Char('0'))
+                .arg(addrSize)
+                .arg(addrBa.isEmpty() ? QStringLiteral("<empty>")
+                                       : QString::fromLatin1(addrBa.toHex(' ')).toUpper())
+                .arg(rdSize));
+    }
     return syncI2cRead(devId, addrSize, pAddr, rdSize, pRdBuf, kI2cTimeoutMs);
 }
 
 int AwSdkStrategy::onWriteI2c(DllByte devId, DllByte wrSize, DllByte *wrData) {
     if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
+    // 调试日志：打印 DLL 实际传入的参数；download 阶段量大不打，避免淹没日志/拖慢 GUI
+    if (!m_inDownload) {
+        const int dumpLen = qMin<int>(wrSize, 16);
+        const QByteArray dataBa = (wrSize > 0 && wrData != nullptr)
+            ? QByteArray(reinterpret_cast<const char *>(wrData), dumpLen)
+            : QByteArray();
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-W] devId=0x%1 wrSize=%2 data=%3%4")
+                .arg(devId, 2, 16, QLatin1Char('0'))
+                .arg(wrSize)
+                .arg(dataBa.isEmpty() ? QStringLiteral("<empty>")
+                                       : QString::fromLatin1(dataBa.toHex(' ')).toUpper())
+                .arg(wrSize > 16 ? QStringLiteral("...(+%1 bytes)").arg(wrSize - 16) : QString()));
+    }
     // I2C 写时寄存器地址与数据由 DLL 拼成单个 wrData 一并交给我们；
     // 透传协议 AddrSize 恒为 0，STM32 端在软件位拼 I2C 总线上以单次 transaction
     // 发送（START → addr+W → wrData 整段 → STOP），不解析或重组。
