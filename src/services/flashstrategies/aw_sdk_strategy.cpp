@@ -430,6 +430,13 @@ struct I2cWaitState {
     bool isError = false;
     QByteArray data;
     QString errMsg;
+
+    // 分段诊断时间戳（仅在 verbose 阶段使用；download 阶段跳过）
+    using TimePoint = std::chrono::steady_clock::time_point;
+    TimePoint tEnter{};       // syncI2c{Write,Read} 入口（worker 线程）
+    TimePoint tAfterInvoke{}; // 投递 invokeMethod 之后（worker 线程）
+    TimePoint tCallback{};    // 主线程 callback 收到响应入口
+    TimePoint tWake{};        // worker wait 醒来之后
 };
 
 }  // namespace
@@ -443,12 +450,17 @@ int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *
         return -1;
     }
 
+    const bool verbose = !m_inDownload;
+
     const QByteArray payload =
         MotorProtocol::encodeI2cTransferWrite(devId, addr, addrSize, data, dataLen);
 
     auto state = std::make_shared<I2cWaitState>();
-    auto callback = [state](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
+    if (verbose) state->tEnter = std::chrono::steady_clock::now();
+
+    auto callback = [state, verbose](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
         QMutexLocker locker(&state->mutex);
+        if (verbose) state->tCallback = std::chrono::steady_clock::now();
         state->received = true;
         if (cmd == MotorProtocol::CmdErrorResponse || cmd == CommandDispatcher::LocalErrorCode) {
             state->isError = true;
@@ -465,6 +477,8 @@ int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *
                              CommandDispatcher::High, callback);
     }, Qt::QueuedConnection);
 
+    if (verbose) state->tAfterInvoke = std::chrono::steady_clock::now();
+
     QMutexLocker locker(&state->mutex);
     while (!state->received) {
         if (!state->cond.wait(&state->mutex, static_cast<unsigned long>(timeoutMs))) {
@@ -472,6 +486,18 @@ int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *
             return -1;
         }
         if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
+    }
+    if (verbose) {
+        state->tWake = std::chrono::steady_clock::now();
+        auto us = [](I2cWaitState::TimePoint a, I2cWaitState::TimePoint b) -> qint64 {
+            return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
+        };
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-W TIMING] enter->invoke=%1us  invoke->cb=%2us  cb->wake=%3us  total=%4us")
+                .arg(us(state->tEnter, state->tAfterInvoke))
+                .arg(us(state->tAfterInvoke, state->tCallback))
+                .arg(us(state->tCallback, state->tWake))
+                .arg(us(state->tEnter, state->tWake)));
     }
     if (state->isError) {
         log(LogLevel::Error, QStringLiteral("I2C 透传写失败：%1").arg(state->errMsg));
@@ -489,12 +515,17 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
         return -1;
     }
 
+    const bool verbose = !m_inDownload;
+
     const QByteArray payload =
         MotorProtocol::encodeI2cTransferRead(devId, addr, addrSize, readLen);
 
     auto state = std::make_shared<I2cWaitState>();
-    auto callback = [state](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
+    if (verbose) state->tEnter = std::chrono::steady_clock::now();
+
+    auto callback = [state, verbose](uint8_t cmd, uint8_t /*seq*/, const QByteArray &respData) {
         QMutexLocker locker(&state->mutex);
+        if (verbose) state->tCallback = std::chrono::steady_clock::now();
         state->received = true;
         if (cmd == MotorProtocol::CmdErrorResponse || cmd == CommandDispatcher::LocalErrorCode) {
             state->isError = true;
@@ -513,6 +544,8 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
                              CommandDispatcher::High, callback);
     }, Qt::QueuedConnection);
 
+    if (verbose) state->tAfterInvoke = std::chrono::steady_clock::now();
+
     QMutexLocker locker(&state->mutex);
     while (!state->received) {
         if (!state->cond.wait(&state->mutex, static_cast<unsigned long>(timeoutMs))) {
@@ -520,6 +553,18 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
             return -1;
         }
         if (m_cancelFlag != nullptr && m_cancelFlag->load()) return -1;
+    }
+    if (verbose) {
+        state->tWake = std::chrono::steady_clock::now();
+        auto us = [](I2cWaitState::TimePoint a, I2cWaitState::TimePoint b) -> qint64 {
+            return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
+        };
+        log(LogLevel::Info,
+            QStringLiteral("[I2C-R TIMING] enter->invoke=%1us  invoke->cb=%2us  cb->wake=%3us  total=%4us")
+                .arg(us(state->tEnter, state->tAfterInvoke))
+                .arg(us(state->tAfterInvoke, state->tCallback))
+                .arg(us(state->tCallback, state->tWake))
+                .arg(us(state->tEnter, state->tWake)));
     }
     if (state->isError) {
         log(LogLevel::Error, QStringLiteral("I2C 透传读失败：%1").arg(state->errMsg));
