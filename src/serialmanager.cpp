@@ -289,17 +289,19 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     // 1. 写串口 + 强制 flush（QSerialPort::write 仅 append 到 internal buffer，需要
     //    event loop 跑起来才异步 flush；嵌套 event loop 启动前必须先 flush 一次，
     //    否则数据滞留在 QSerialPort 缓冲区，STM32 端永远收不到帧）
+    // 诊断字段累积到 m_lastDiag，调用方（strategy）调完后立即读取打到自己的日志面板
+    m_lastDiag = FastPathDiag{};
+
     const qint64 written = m_serial->write(frame);
+    m_lastDiag.wroteBytes = written;
     if (written != frame.size()) {
         qCWarning(lcSerialManager).noquote()
             << QStringLiteral("sendAndWaitResponse: write failed (wrote %1/%2)")
                    .arg(written).arg(frame.size());
         return false;
     }
-    const bool flushed = m_serial->flush();
-    qCInfo(lcSerialManager).noquote()
-        << QStringLiteral("[FP-DIAG] TX wrote=%1 flush=%2 bytesToWrite_after=%3")
-               .arg(written).arg(flushed ? "ok" : "fail").arg(m_serial->bytesToWrite());
+    m_lastDiag.flushOk = m_serial->flush();
+    m_lastDiag.bytesToWriteAfterFlush = m_serial->bytesToWrite();
 
     // 2. 启动 fast-path 状态
     QEventLoop loop;
@@ -311,7 +313,7 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     m_fastPath.gotMatch = false;
     m_fastPath.loop = &loop;
 
-    // 3. 超时定时器（lambda 包装能记录真实触发时间）+ 1s 探针 timer 验证 loop 在跑
+    // 3. 超时定时器 + 1s 探针 timer 验证 loop 在跑
     bool timerFired = false;
     QTimer::singleShot(timeoutMs, &loop, [&loop, &timerFired]() {
         timerFired = true;
@@ -321,19 +323,15 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
         qCInfo(lcSerialManager).noquote() << "[FP-DIAG] 1000ms probe timer fired (loop is alive)";
     });
 
-    // 4. 嵌套 event loop（记录 loop.exec 真实耗时 + 退出原因）
+    // 4. 嵌套 event loop（记录 loop.exec 真实耗时）
     QElapsedTimer execTimer;
     execTimer.start();
-    qCInfo(lcSerialManager).noquote() << "[FP-DIAG] loop.exec() about to enter";
     loop.exec();
-    const qint64 execMs = execTimer.elapsed();
-    qCInfo(lcSerialManager).noquote()
-        << QStringLiteral("[FP-DIAG] loop.exec() returned: elapsed=%1ms gotMatch=%2 timerFired=%3 bytesAvail=%4 bytesToWrite=%5")
-               .arg(execMs)
-               .arg(m_fastPath.gotMatch ? "true" : "false")
-               .arg(timerFired ? "true" : "false")
-               .arg(m_serial ? m_serial->bytesAvailable() : -1)
-               .arg(m_serial ? m_serial->bytesToWrite() : -1);
+    m_lastDiag.execMs = execTimer.elapsed();
+    m_lastDiag.timerFired = timerFired;
+    m_lastDiag.gotMatch = m_fastPath.gotMatch;
+    m_lastDiag.bytesAvailableAfter = m_serial ? m_serial->bytesAvailable() : -1;
+    m_lastDiag.bytesToWriteAfter = m_serial ? m_serial->bytesToWrite() : -1;
 
     // 5. 收尾
     const bool matched = m_fastPath.gotMatch;

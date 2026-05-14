@@ -442,13 +442,24 @@ int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *
     QByteArray outData;
     const bool ok = m_serialManager->sendAndWaitResponse(
         MotorProtocol::CmdI2cTransferWrite, payload, outCmd, outSeq, outData, timeoutMs);
+    const auto diag = m_serialManager->lastFastPathDiag();
 
     if (verbose) {
         const auto t1 = std::chrono::steady_clock::now();
         const qint64 elapsedUs =
             std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-W TIMING] total=%1us  (single-thread fast-path)").arg(elapsedUs));
+            QStringLiteral("[I2C-W TIMING] total=%1us").arg(elapsedUs));
+        log(LogLevel::Info,
+            QStringLiteral("[FP-DIAG] wrote=%1 flush=%2 btw_afterFlush=%3 execMs=%4 timerFired=%5 match=%6 bytesAvail=%7 btw_final=%8")
+                .arg(diag.wroteBytes)
+                .arg(diag.flushOk ? "ok" : "fail")
+                .arg(diag.bytesToWriteAfterFlush)
+                .arg(diag.execMs)
+                .arg(diag.timerFired ? "true" : "false")
+                .arg(diag.gotMatch ? "true" : "false")
+                .arg(diag.bytesAvailableAfter)
+                .arg(diag.bytesToWriteAfter));
     }
 
     if (!ok) {
@@ -486,13 +497,24 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
     QByteArray outData;
     const bool ok = m_serialManager->sendAndWaitResponse(
         MotorProtocol::CmdI2cTransferRead, payload, outCmd, outSeq, outData, timeoutMs);
+    const auto diag = m_serialManager->lastFastPathDiag();
 
     if (verbose) {
         const auto t1 = std::chrono::steady_clock::now();
         const qint64 elapsedUs =
             std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
         log(LogLevel::Info,
-            QStringLiteral("[I2C-R TIMING] total=%1us  (single-thread fast-path)").arg(elapsedUs));
+            QStringLiteral("[I2C-R TIMING] total=%1us").arg(elapsedUs));
+        log(LogLevel::Info,
+            QStringLiteral("[FP-DIAG] wrote=%1 flush=%2 btw_afterFlush=%3 execMs=%4 timerFired=%5 match=%6 bytesAvail=%7 btw_final=%8")
+                .arg(diag.wroteBytes)
+                .arg(diag.flushOk ? "ok" : "fail")
+                .arg(diag.bytesToWriteAfterFlush)
+                .arg(diag.execMs)
+                .arg(diag.timerFired ? "true" : "false")
+                .arg(diag.gotMatch ? "true" : "false")
+                .arg(diag.bytesAvailableAfter)
+                .arg(diag.bytesToWriteAfter));
     }
 
     if (!ok) {

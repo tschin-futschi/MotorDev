@@ -102,6 +102,22 @@ public slots:
                               QByteArray &outData,
                               int timeoutMs);
 
+public:
+    /// @brief 最近一次 sendAndWaitResponse 的诊断字段（供烧录链路定位延迟来源）
+    struct FastPathDiag {
+        qint64 wroteBytes = 0;
+        bool   flushOk = false;
+        qint64 bytesToWriteAfterFlush = 0;
+        qint64 execMs = 0;           ///< loop.exec() 阻塞耗时
+        bool   timerFired = false;   ///< 是否由 5s 超时 timer 触发退出
+        bool   gotMatch = false;     ///< 是否收到匹配响应
+        qint64 bytesAvailableAfter = 0;
+        qint64 bytesToWriteAfter = 0;
+    };
+
+    /// @brief 读最近一次 sendAndWaitResponse 的诊断快照（必须在同线程紧接调用）
+    FastPathDiag lastFastPathDiag() const { return m_lastDiag; }
+
 signals:
     /// @brief 串口连接成功
     void connected();
@@ -184,6 +200,7 @@ private:
         QEventLoop *loop = nullptr;
     };
     FastPathState m_fastPath;
+    FastPathDiag  m_lastDiag;     ///< 最近一次 sendAndWaitResponse 的诊断快照
 
     // --- 常量 ---
     static constexpr int MaxRetries = 2;             ///< 最大重试次数
