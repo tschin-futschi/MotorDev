@@ -286,7 +286,9 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     const uint8_t seq = m_nextSeq++;
     const QByteArray frame = FrameParser::encodeControlFrame(seq, cmd, data);
 
-    // 1. 写串口（QSerialPort::write 异步入队，会通过 event loop 触发底层 OVERLAPPED 写）
+    // 1. 写串口 + 强制 flush（QSerialPort::write 仅 append 到 internal buffer，需要
+    //    event loop 跑起来才异步 flush；嵌套 event loop 启动前必须先 flush 一次，
+    //    否则数据滞留在 QSerialPort 缓冲区，STM32 端永远收不到帧）
     const qint64 written = m_serial->write(frame);
     if (written != frame.size()) {
         qCWarning(lcSerialManager).noquote()
@@ -294,6 +296,13 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                    .arg(written).arg(frame.size());
         return false;
     }
+    if (!m_serial->flush()) {
+        qCWarning(lcSerialManager).noquote()
+            << "sendAndWaitResponse: flush failed (data may stay in QSerialPort buffer)";
+    }
+    qCDebug(lcSerialManager).noquote()
+        << QStringLiteral("sendAndWaitResponse: TX wrote=%1 bytesToWrite=%2")
+               .arg(written).arg(m_serial->bytesToWrite());
 
     // 2. 启动 fast-path 状态，让 handleControlFrame 在嵌套 event loop 期间分流
     QEventLoop loop;
