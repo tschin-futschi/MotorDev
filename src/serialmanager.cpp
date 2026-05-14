@@ -296,15 +296,12 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                    .arg(written).arg(frame.size());
         return false;
     }
-    if (!m_serial->flush()) {
-        qCWarning(lcSerialManager).noquote()
-            << "sendAndWaitResponse: flush failed (data may stay in QSerialPort buffer)";
-    }
-    qCDebug(lcSerialManager).noquote()
-        << QStringLiteral("sendAndWaitResponse: TX wrote=%1 bytesToWrite=%2")
-               .arg(written).arg(m_serial->bytesToWrite());
+    const bool flushed = m_serial->flush();
+    qCInfo(lcSerialManager).noquote()
+        << QStringLiteral("[FP-DIAG] TX wrote=%1 flush=%2 bytesToWrite_after=%3")
+               .arg(written).arg(flushed ? "ok" : "fail").arg(m_serial->bytesToWrite());
 
-    // 2. 启动 fast-path 状态，让 handleControlFrame 在嵌套 event loop 期间分流
+    // 2. 启动 fast-path 状态
     QEventLoop loop;
     m_fastPath.active = true;
     m_fastPath.expectedSeq = seq;
@@ -314,11 +311,29 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     m_fastPath.gotMatch = false;
     m_fastPath.loop = &loop;
 
-    // 3. 超时定时器 → 触发 loop.quit()（gotMatch 仍为 false）
-    QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
+    // 3. 超时定时器（lambda 包装能记录真实触发时间）+ 1s 探针 timer 验证 loop 在跑
+    bool timerFired = false;
+    QTimer::singleShot(timeoutMs, &loop, [&loop, &timerFired]() {
+        timerFired = true;
+        loop.quit();
+    });
+    QTimer::singleShot(1000, &loop, [](){
+        qCInfo(lcSerialManager).noquote() << "[FP-DIAG] 1000ms probe timer fired (loop is alive)";
+    });
 
-    // 4. 嵌套 event loop 同步等响应；本线程 readyRead / 定时器 / 投递事件正常分发
+    // 4. 嵌套 event loop（记录 loop.exec 真实耗时 + 退出原因）
+    QElapsedTimer execTimer;
+    execTimer.start();
+    qCInfo(lcSerialManager).noquote() << "[FP-DIAG] loop.exec() about to enter";
     loop.exec();
+    const qint64 execMs = execTimer.elapsed();
+    qCInfo(lcSerialManager).noquote()
+        << QStringLiteral("[FP-DIAG] loop.exec() returned: elapsed=%1ms gotMatch=%2 timerFired=%3 bytesAvail=%4 bytesToWrite=%5")
+               .arg(execMs)
+               .arg(m_fastPath.gotMatch ? "true" : "false")
+               .arg(timerFired ? "true" : "false")
+               .arg(m_serial ? m_serial->bytesAvailable() : -1)
+               .arg(m_serial ? m_serial->bytesToWrite() : -1);
 
     // 5. 收尾
     const bool matched = m_fastPath.gotMatch;
