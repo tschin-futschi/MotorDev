@@ -28,6 +28,7 @@
 
 #include <cstdint>
 
+class QEventLoop;
 class QSerialPort;
 class QThread;
 class QTimer;
@@ -171,6 +172,18 @@ private:
     // --- 心跳保活 ---
     QTimer *m_heartbeatTimer = nullptr;   ///< 心跳定时器（周期触发）
     int m_missedHeartbeats = 0;           ///< 连续未收到心跳响应的次数
+
+    // --- 烧录链路 fast-path 状态（仅在 sendAndWaitResponse 嵌套 event loop 期间有效） ---
+    struct FastPathState {
+        bool active = false;
+        uint8_t expectedSeq = 0;
+        uint8_t outCmd = 0;
+        uint8_t outSeq = 0;
+        QByteArray outData;
+        bool gotMatch = false;
+        QEventLoop *loop = nullptr;
+    };
+    FastPathState m_fastPath;
 
     // --- 常量 ---
     static constexpr int MaxRetries = 2;             ///< 最大重试次数

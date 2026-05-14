@@ -10,6 +10,7 @@
 
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QEventLoop>
 #include <QLoggingCategory>
 #include <QMetaObject>
 #include <QSerialPort>
@@ -238,17 +239,25 @@ void SerialManager::sendCommand(uint8_t cmd, const QByteArray &data) {
 // 同步发送 + 等待响应（烧录链路 fast-path）
 // -----------------------------------------------------------------------------
 //
-// 在 SerialManager 工作线程内同步运行，全程使用 QSerialPort 的同步 I/O：
-//   write → waitForBytesWritten → 循环 waitForReadyRead + readAll + FrameParser
-// 整条路径不经过 dispatcher、不跨线程，专为消除 PC 端 Qt 跨线程 + 主线程拥堵
-// 给烧录链路带来的 10-20ms/次延迟而设计。
+// 在 SerialManager 工作线程内运行，**用嵌套 QEventLoop** 同步等待响应：
+//   write → 设置 fastPath → loop.exec() → onReadyRead 正常分发 →
+//   handleControlFrame 截获目标响应 → loop.quit()
+// 整条路径不经过 dispatcher、不跨主线程，所有事件仍在 SerialManager 工作线程内
+// 完成。专为消除 PC 端 Qt 跨线程 + 主线程拥堵给烧录链路带来的延迟而设计。
+//
+// 为什么不用 QSerialPort::waitForReadyRead：Qt 在 Windows 上的同步等待依赖
+// pending overlapped read，同步阻塞模式下没有 pending read 时会**立即返回 false**，
+// 实际无法等到数据到达。嵌套 event loop 让 QSerialPort 的 readyRead 信号正常
+// 分发，是 Qt 推荐的同步等异步事件的标准做法。
 //
 // 边界处理：
 // - 严格断言调用线程 = SerialManager 工作线程
-// - 错误响应（CmdErrorResponse，seq=0xFF）无条件归属本次调用，立即返回
-// - 流帧 / cmd 匹配但 seq 不匹配的控制帧 → 直接丢弃（烧录前置已停采样/发生器）
-// - 调用期间 onReadyRead 自然不会触发（数据被 waitForReadyRead 同步消费），
-//   m_parser 与常规 onReadyRead 共用同一份状态机；烧录前应无残余帧
+// - 通过 m_fastPath 状态字段标记当前在 fast-path；handleControlFrame 据此分流
+// - 心跳响应仍走原 handleControlFrame 路径（reset m_missedHeartbeats），
+//   避免烧录期间因丢心跳被误判断开
+// - cmd 匹配但 seq 不匹配的控制帧 / 流帧 → 直接丢弃（烧录前置已停采样/发生器）
+// - 嵌套 event loop 期间会处理心跳定时器 / 其他 invokeMethod 投递；
+//   dispatcher 在烧录期间无活动，不冲突
 //
 bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                                          const QByteArray &data,
@@ -263,21 +272,21 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     if (m_serial == nullptr || !m_serial->isOpen()) {
         return false;
     }
-
-    // 同期不应该有其它命令在等待（dispatcher 不参与本路径，但防御一下）
     if (!m_pendingFrame.isEmpty()) {
         qCWarning(lcSerialManager).noquote()
             << "sendAndWaitResponse: another pending command exists, refuse fast-path";
+        return false;
+    }
+    if (m_fastPath.active) {
+        qCWarning(lcSerialManager).noquote()
+            << "sendAndWaitResponse: fast-path already active (recursive call?)";
         return false;
     }
 
     const uint8_t seq = m_nextSeq++;
     const QByteArray frame = FrameParser::encodeControlFrame(seq, cmd, data);
 
-    QElapsedTimer elapsed;
-    elapsed.start();
-
-    // 1. 写
+    // 1. 写串口（QSerialPort::write 异步入队，会通过 event loop 触发底层 OVERLAPPED 写）
     const qint64 written = m_serial->write(frame);
     if (written != frame.size()) {
         qCWarning(lcSerialManager).noquote()
@@ -285,39 +294,34 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                    .arg(written).arg(frame.size());
         return false;
     }
-    const int remainingForWrite = static_cast<int>(timeoutMs - elapsed.elapsed());
-    if (remainingForWrite <= 0 || !m_serial->waitForBytesWritten(remainingForWrite)) {
-        qCWarning(lcSerialManager).noquote() << "sendAndWaitResponse: waitForBytesWritten timeout";
-        return false;
-    }
 
-    // 2. 等响应
-    while (true) {
-        const int remaining = static_cast<int>(timeoutMs - elapsed.elapsed());
-        if (remaining <= 0) {
-            return false;  // 整体超时
-        }
-        if (!m_serial->waitForReadyRead(remaining)) {
-            return false;  // 超时
-        }
-        const QByteArray bytes = m_serial->readAll();
-        for (char raw : bytes) {
-            const auto frameType = m_parser.feedByte(static_cast<uint8_t>(raw));
-            if (frameType == FrameParser::FrameType::Control) {
-                const ControlFrame &cf = m_parser.controlFrame();
-                // 错误响应 seq=0xFF（CRC 错失败），其它响应必须 seq 匹配
-                const bool match = (cf.cmd == MotorProtocol::CmdErrorResponse) || (cf.seq == seq);
-                if (match) {
-                    outCmd = cf.cmd;
-                    outSeq = cf.seq;
-                    outData = cf.data;
-                    return true;
-                }
-                // 不匹配（心跳响应或其它无关响应）— 烧录链路丢弃
-            }
-            // 流帧也直接丢弃
-        }
+    // 2. 启动 fast-path 状态，让 handleControlFrame 在嵌套 event loop 期间分流
+    QEventLoop loop;
+    m_fastPath.active = true;
+    m_fastPath.expectedSeq = seq;
+    m_fastPath.outCmd = 0;
+    m_fastPath.outSeq = 0;
+    m_fastPath.outData.clear();
+    m_fastPath.gotMatch = false;
+    m_fastPath.loop = &loop;
+
+    // 3. 超时定时器 → 触发 loop.quit()（gotMatch 仍为 false）
+    QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
+
+    // 4. 嵌套 event loop 同步等响应；本线程 readyRead / 定时器 / 投递事件正常分发
+    loop.exec();
+
+    // 5. 收尾
+    const bool matched = m_fastPath.gotMatch;
+    if (matched) {
+        outCmd = m_fastPath.outCmd;
+        outSeq = m_fastPath.outSeq;
+        outData = m_fastPath.outData;
     }
+    m_fastPath.active = false;
+    m_fastPath.loop = nullptr;
+    m_fastPath.outData.clear();
+    return matched;
 }
 
 // -----------------------------------------------------------------------------
@@ -463,10 +467,28 @@ void SerialManager::stopHeartbeatTimer() {
 /// 4. seq 匹配 → 清除挂起命令并转发响应
 /// 5. seq 不匹配 → 仍然转发（可能是设备主动上报帧，如调试信息）
 void SerialManager::handleControlFrame(const ControlFrame &frame) {
-    // 心跳响应：重置丢失计数器
+    // 心跳响应：无论是否在 fast-path 都正常处理（重置丢失计数器，避免烧录期间被误判断开）
     if (frame.cmd == MotorProtocol::CmdHeartbeat) {
         qCDebug(lcSerialManager) << "Heartbeat response received";
         m_missedHeartbeats = 0;
+        return;
+    }
+
+    // 烧录链路 fast-path：sendAndWaitResponse 正在嵌套 event loop 中等响应。
+    // 错误响应 seq=0xFF（CRC 失败）无条件归属当前调用；其他响应按 seq 匹配。
+    // 不匹配的控制帧直接丢弃（烧录期间无其他业务命令在飞）。
+    if (m_fastPath.active) {
+        const bool match = (frame.cmd == MotorProtocol::CmdErrorResponse) ||
+                           (frame.seq == m_fastPath.expectedSeq);
+        if (match) {
+            m_fastPath.outCmd = frame.cmd;
+            m_fastPath.outSeq = frame.seq;
+            m_fastPath.outData = frame.data;
+            m_fastPath.gotMatch = true;
+            if (m_fastPath.loop != nullptr) {
+                m_fastPath.loop->quit();
+            }
+        }
         return;
     }
 
