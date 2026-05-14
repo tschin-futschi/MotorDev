@@ -401,3 +401,44 @@ FileTimeUTC  : 2026-05-13T09:19:29
 [19:03:33.154] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
 [19:03:33.154] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
 ---------------------------------------------------------------------------------->--------------------<------------------
+[20:03:12.817] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[20:03:12.817] [INFO ] 停止采样
+[20:03:12.817] [INFO ] 停止信号发生器
+[20:03:12.821] [INFO ] 停止循环写入
+[20:03:12.822] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[20:03:12.842] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260514/MotorDev/build_make_qt/AW86100.dll
+[20:03:12.842] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[20:03:12.843] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[20:03:12.843] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[20:03:12.843] [INFO ] [DLL] Enter boot control function. 
+[20:03:12.843] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[20:03:12.844] [INFO ] [I2C-W TIMING] total=5591us (single-thread fast-path)
+[20:03:12.844] [ERROR] I2C 透传写超时或链路失败（5000 ms）
+[20:03:12.844] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=5612us
+[20:03:12.844] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
+[20:03:12.844] [ERROR] AwBootcontrol failed (return -11)
+[20:03:12.845] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[20:03:12.845] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[20:03:12.845] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[20:03:12.845] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
+[20:03:25.142] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[20:03:25.142] [INFO ] 停止采样
+[20:03:25.142] [INFO ] 停止信号发生器
+[20:03:25.147] [INFO ] 停止循环写入
+[20:03:25.147] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[20:03:25.167] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260514/MotorDev/build_make_qt/AW86100.dll
+[20:03:25.168] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[20:03:25.168] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[20:03:25.168] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[20:03:25.168] [INFO ] [DLL] Enter boot control function. 
+[20:03:25.168] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[20:03:25.169] [INFO ] [I2C-W TIMING] total=5414us (single-thread fast-path)
+[20:03:25.169] [ERROR] I2C 透传写超时或链路失败（5000 ms）
+[20:03:25.169] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=5429us
+[20:03:25.169] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
+[20:03:25.170] [ERROR] AwBootcontrol failed (return -11)
+[20:03:25.170] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[20:03:25.170] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[20:03:25.170] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[20:03:25.170] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
+--------------------------------------------------------------------------------------------------------------------------
