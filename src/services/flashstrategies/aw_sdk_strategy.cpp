@@ -243,6 +243,20 @@ bool AwSdkStrategy::doDownload(QByteArray firmware, QString *errorMessage) {
 
     DllByte *buf = reinterpret_cast<DllByte *>(firmware.data());
     const DllUInt32 len = static_cast<DllUInt32>(firmware.size());
+
+    // 调用前打印传入 DLL 的实际参数与缓冲区前 16 字节，便于排查供应商 DLL 拒收的根因
+    {
+        const int previewLen = qMin<int>(static_cast<int>(len), 16);
+        const QByteArray preview(reinterpret_cast<const char *>(buf), previewLen);
+        log(LogLevel::Info,
+            QStringLiteral("[MoveBinDownload CALL] buf=%1 len=%2 (0x%3) packType=%4 firstBytes=%5")
+                .arg(reinterpret_cast<quintptr>(buf), 0, 16)
+                .arg(len)
+                .arg(len, 0, 16)
+                .arg(static_cast<int>(kDLNumType_0))
+                .arg(QString::fromLatin1(preview.toHex(' ')).toUpper()));
+    }
+
     const int ret = m_fnMoveBinDownload(buf, len, static_cast<DllInt>(kDLNumType_0));
     m_inDownload = false;
 
