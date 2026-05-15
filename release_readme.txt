@@ -12,7 +12,10 @@ MotorDev Release 打包说明
 - styles\ / iconengines\ / imageformats\    其它 Qt 插件
 - AW86100.dll                    !!! dummy 版本 !!! 必须替换为真实 DLL
 
-下面 4 个文件需要你手工放进 build_release\ 目录，与 MotorDev.exe 同级。
+下面 6 个文件需要你手工放进 build_release\ 目录（共 3 类），与 MotorDev.exe 同级：
+    类 1（1 个）: AW86100.dll（真实供应商版）
+    类 2（1 个）: libfftw3-3.dll
+    类 3（4 个）: mfc140u.dll / MSVCP140.dll / VCRUNTIME140.dll / VCRUNTIME140_1.dll
 
 
 ----------------------------------------------------------------
@@ -52,28 +55,51 @@ MotorDev 启动时 AW86100.dll 也会 load 失败。
 3. MSVC / MFC 运行时（共 4 个）
 ----------------------------------------------------------------
 
-来源：装过 Visual Studio 2015-2022 的机器 C:\Windows\System32\
-      或 Microsoft Visual C++ Redistributable 安装目录
-目标路径：build_release\ 下并列放 4 个文件
-
 需要的文件：
     mfc140u.dll
     MSVCP140.dll
     VCRUNTIME140.dll
     VCRUNTIME140_1.dll
 
-替换命令示例：
-    copy /Y "C:\Windows\System32\mfc140u.dll"      "build_release\"
-    copy /Y "C:\Windows\System32\MSVCP140.dll"     "build_release\"
-    copy /Y "C:\Windows\System32\VCRUNTIME140.dll" "build_release\"
-    copy /Y "C:\Windows\System32\VCRUNTIME140_1.dll" "build_release\"
-
 为什么需要：真实 AW86100.dll 用 MSVC 编译，依赖这套 C/C++ 运行库；
 目标机器若没装过 VC Redistributable 就会缺这些 dll，烧录页一加载
 AW86100.dll 就报"找不到指定的模块"。
 
-备用方案：在目标机器上装一次 Microsoft Visual C++ Redistributable
-        (x64) 安装包，4 个 dll 就齐了，不必随包带。
+获取方式有 3 种，按推荐顺序：
+
+【方法 A 推荐】在目标机器装一次微软官方运行库（一次性）
+
+    下载："Microsoft Visual C++ Redistributable for Visual Studio
+           2015-2022 (x64)"
+    地址：https://aka.ms/vs/17/release/vc_redist.x64.exe
+    装完后 4 个 dll 自动落到 C:\Windows\System32\
+
+    走方法 A 时这 4 个 dll 不用随 zip 发，只发安装包 + zip 即可。
+
+【方法 B】从自己机器的 System32 拷过来（你装过 VS 或 VC Redist）
+
+    先确认存在：
+        dir C:\Windows\System32\mfc140u.dll
+        dir C:\Windows\System32\msvcp140.dll
+        dir C:\Windows\System32\vcruntime140.dll
+        dir C:\Windows\System32\vcruntime140_1.dll
+    任一报"找不到"说明本机也没装过 → 改走方法 A
+
+    拷贝命令：
+        copy /Y "C:\Windows\System32\mfc140u.dll"        "build_release\"
+        copy /Y "C:\Windows\System32\msvcp140.dll"       "build_release\"
+        copy /Y "C:\Windows\System32\vcruntime140.dll"   "build_release\"
+        copy /Y "C:\Windows\System32\vcruntime140_1.dll" "build_release\"
+
+【方法 C】从 Visual Studio 安装目录的 Redist 子目录拷
+
+    路径模板（<Edition> = Community / Professional / Enterprise,
+              <version> = 14.xx 子版本号）：
+        C:\Program Files\Microsoft Visual Studio\2022\<Edition>\VC\Redist\MSVC\<version>\x64\Microsoft.VC143.CRT\
+        C:\Program Files\Microsoft Visual Studio\2022\<Edition>\VC\Redist\MSVC\<version>\x64\Microsoft.VC143.MFC\
+
+    .CRT\ 里有 MSVCP140.dll / VCRUNTIME140.dll / VCRUNTIME140_1.dll
+    .MFC\ 里有 mfc140u.dll
 
 
 ----------------------------------------------------------------
