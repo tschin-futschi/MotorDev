@@ -265,21 +265,25 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                                          uint8_t &outSeq,
                                          QByteArray &outData,
                                          int timeoutMs) {
-    Q_ASSERT_X(QThread::currentThread() == m_thread,
-               "SerialManager::sendAndWaitResponse",
-               "must be called within SerialManager worker thread");
+    // 诊断字段在入口立即重置，所有早退路径都会留下可读 exitReason
+    m_lastDiag = FastPathDiag{};
+    m_lastDiag.sameThread = (QThread::currentThread() == m_thread);
+    m_lastDiag.serialOpen = (m_serial != nullptr && m_serial->isOpen());
 
-    if (m_serial == nullptr || !m_serial->isOpen()) {
+    if (!m_lastDiag.sameThread) {
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::WrongThread;
+        return false;
+    }
+    if (!m_lastDiag.serialOpen) {
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::NotOpen;
         return false;
     }
     if (!m_pendingFrame.isEmpty()) {
-        qCWarning(lcSerialManager).noquote()
-            << "sendAndWaitResponse: another pending command exists, refuse fast-path";
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::PendingCommand;
         return false;
     }
     if (m_fastPath.active) {
-        qCWarning(lcSerialManager).noquote()
-            << "sendAndWaitResponse: fast-path already active (recursive call?)";
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::AlreadyActive;
         return false;
     }
 
@@ -289,15 +293,10 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     // 1. 写串口 + 强制 flush（QSerialPort::write 仅 append 到 internal buffer，需要
     //    event loop 跑起来才异步 flush；嵌套 event loop 启动前必须先 flush 一次，
     //    否则数据滞留在 QSerialPort 缓冲区，STM32 端永远收不到帧）
-    // 诊断字段累积到 m_lastDiag，调用方（strategy）调完后立即读取打到自己的日志面板
-    m_lastDiag = FastPathDiag{};
-
     const qint64 written = m_serial->write(frame);
     m_lastDiag.wroteBytes = written;
     if (written != frame.size()) {
-        qCWarning(lcSerialManager).noquote()
-            << QStringLiteral("sendAndWaitResponse: write failed (wrote %1/%2)")
-                   .arg(written).arg(frame.size());
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::WriteFailed;
         return false;
     }
     m_lastDiag.flushOk = m_serial->flush();
@@ -339,6 +338,9 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
         outCmd = m_fastPath.outCmd;
         outSeq = m_fastPath.outSeq;
         outData = m_fastPath.outData;
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::CompletedMatch;
+    } else {
+        m_lastDiag.exitReason = FastPathDiag::ExitReason::CompletedTimeout;
     }
     m_fastPath.active = false;
     m_fastPath.loop = nullptr;

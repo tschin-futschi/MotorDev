@@ -105,6 +105,20 @@ public slots:
 public:
     /// @brief 最近一次 sendAndWaitResponse 的诊断字段（供烧录链路定位延迟来源）
     struct FastPathDiag {
+        /// @brief 函数退出路径标记，用于定位早退原因
+        enum class ExitReason : int {
+            None              = 0, ///< 未调用 / 未初始化
+            NotOpen           = 1, ///< m_serial 为空或未打开
+            PendingCommand    = 2, ///< 已有挂起命令
+            AlreadyActive     = 3, ///< fast-path 已激活（递归调用）
+            WriteFailed       = 4, ///< QSerialPort::write 字节数与帧不一致
+            WrongThread       = 5, ///< 调用线程不是 SerialManager 工作线程
+            CompletedMatch    = 6, ///< 正常收到响应
+            CompletedTimeout  = 7  ///< 嵌套 event loop 超时退出
+        };
+        ExitReason exitReason = ExitReason::None;
+        bool   sameThread = false;   ///< 调用线程是否为 SerialManager 工作线程
+        bool   serialOpen = false;   ///< 入口时 m_serial->isOpen()
         qint64 wroteBytes = 0;
         bool   flushOk = false;
         qint64 bytesToWriteAfterFlush = 0;
@@ -114,6 +128,21 @@ public:
         qint64 bytesAvailableAfter = 0;
         qint64 bytesToWriteAfter = 0;
     };
+
+    /// @brief 将 ExitReason 转为可读字符串（调用方日志使用）
+    static const char *fastPathExitReasonName(FastPathDiag::ExitReason r) {
+        switch (r) {
+        case FastPathDiag::ExitReason::None:             return "None";
+        case FastPathDiag::ExitReason::NotOpen:          return "NotOpen";
+        case FastPathDiag::ExitReason::PendingCommand:   return "PendingCommand";
+        case FastPathDiag::ExitReason::AlreadyActive:    return "AlreadyActive";
+        case FastPathDiag::ExitReason::WriteFailed:      return "WriteFailed";
+        case FastPathDiag::ExitReason::WrongThread:      return "WrongThread";
+        case FastPathDiag::ExitReason::CompletedMatch:   return "CompletedMatch";
+        case FastPathDiag::ExitReason::CompletedTimeout: return "CompletedTimeout";
+        }
+        return "?";
+    }
 
     /// @brief 读最近一次 sendAndWaitResponse 的诊断快照（必须在同线程紧接调用）
     FastPathDiag lastFastPathDiag() const { return m_lastDiag; }
