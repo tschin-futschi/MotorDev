@@ -236,28 +236,41 @@ bool AwSdkStrategy::doBootcontrol(QString *errorMessage) {
 }
 
 bool AwSdkStrategy::doDownload(QByteArray firmware, QString *errorMessage) {
-    log(LogLevel::Info, QStringLiteral("步骤 3/5：AwMoveBinDownload (%1 bytes, DL_NumType_0)")
-                            .arg(firmware.size()));
+    // AwMoveBinDownload 的 u32Len 单位是 **word（4 byte）**，不是 byte。
+    // 供应商口头确认（2026-05-15）；之前按 byte 传给 DLL 会被解读为 4× 实际长度，
+    // 超出 IC ISP 容量后报 -26 RET_ISP_SPACE_ERROR。
+    const qsizetype byteSize = firmware.size();
+    if ((byteSize % 4) != 0) {
+        const QString msg = QStringLiteral(
+            "固件大小 %1 字节不是 4 字节对齐，无法换算为 word 数传给 AwMoveBinDownload")
+            .arg(byteSize);
+        if (errorMessage) *errorMessage = msg;
+        log(LogLevel::Error, msg);
+        return false;
+    }
+    const DllUInt32 wordLen = static_cast<DllUInt32>(byteSize / 4);
+
+    log(LogLevel::Info, QStringLiteral("步骤 3/5：AwMoveBinDownload (%1 bytes / %2 words, DL_NumType_0)")
+                            .arg(byteSize).arg(wordLen));
     m_inDownload = true;
     if (m_progress) m_progress(0);
 
     DllByte *buf = reinterpret_cast<DllByte *>(firmware.data());
-    const DllUInt32 len = static_cast<DllUInt32>(firmware.size());
 
-    // 调用前打印传入 DLL 的实际参数与缓冲区前 16 字节，便于排查供应商 DLL 拒收的根因
+    // 调用前打印传入 DLL 的实际参数与缓冲区前 16 字节，便于核对
     {
-        const int previewLen = qMin<int>(static_cast<int>(len), 16);
+        const int previewLen = qMin<int>(static_cast<int>(byteSize), 16);
         const QByteArray preview(reinterpret_cast<const char *>(buf), previewLen);
         log(LogLevel::Info,
-            QStringLiteral("[MoveBinDownload CALL] buf=%1 len=%2 (0x%3) packType=%4 firstBytes=%5")
+            QStringLiteral("[MoveBinDownload CALL] buf=%1 wordLen=%2 (0x%3) packType=%4 firstBytes=%5")
                 .arg(reinterpret_cast<quintptr>(buf), 0, 16)
-                .arg(len)
-                .arg(len, 0, 16)
+                .arg(wordLen)
+                .arg(wordLen, 0, 16)
                 .arg(static_cast<int>(kDLNumType_0))
                 .arg(QString::fromLatin1(preview.toHex(' ')).toUpper()));
     }
 
-    const int ret = m_fnMoveBinDownload(buf, len, static_cast<DllInt>(kDLNumType_0));
+    const int ret = m_fnMoveBinDownload(buf, wordLen, static_cast<DllInt>(kDLNumType_0));
     m_inDownload = false;
 
     // 取消优先：DLL 即便返回失败，也归类为用户取消
