@@ -1,42 +1,43 @@
-[10:10:32.927] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[10:10:32.927] [INFO ] 停止采样
-[10:10:32.927] [INFO ] 停止信号发生器
-[10:10:32.931] [INFO ] 停止循环写入
-[10:10:32.931] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[10:10:32.947] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_make_qt/AW86100.dll
-[10:10:32.947] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[10:10:32.947] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[10:10:32.948] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[10:10:32.948] [INFO ] [DLL] Enter boot control function. 
-[10:10:32.948] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[10:10:32.948] [INFO ] [I2C-W TIMING] total=5601us
-[10:10:32.949] [INFO ] [FP-DIAG] wrote=0 flush=fail btw_afterFlush=0 execMs=0 timerFired=false match=false bytesAvail=0 btw_final=0
-[10:10:32.949] [ERROR] I2C 透传写超时或链路失败（5000 ms）
-[10:10:32.949] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=5628us
-[10:10:32.949] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
-[10:10:32.950] [ERROR] AwBootcontrol failed (return -11)
-[10:10:32.950] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
-[10:10:32.950] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[10:10:32.950] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[10:10:32.951] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
-[10:10:35.041] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[10:10:35.041] [INFO ] 停止采样
-[10:10:35.042] [INFO ] 停止信号发生器
-[10:10:35.045] [INFO ] 停止循环写入
-[10:10:35.045] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[10:10:35.062] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_make_qt/AW86100.dll
-[10:10:35.063] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[10:10:35.063] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[10:10:35.063] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[10:10:35.063] [INFO ] [DLL] Enter boot control function. 
-[10:10:35.064] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[10:10:35.064] [INFO ] [I2C-W TIMING] total=5354us
-[10:10:35.064] [INFO ] [FP-DIAG] wrote=0 flush=fail btw_afterFlush=0 execMs=0 timerFired=false match=false bytesAvail=0 btw_final=0
-[10:10:35.065] [ERROR] I2C 透传写超时或链路失败（5000 ms）
-[10:10:35.065] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=5371us
-[10:10:35.065] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
-[10:10:35.065] [ERROR] AwBootcontrol failed (return -11)
-[10:10:35.065] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
-[10:10:35.066] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[10:10:35.066] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[10:10:35.066] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
+[10:33:57.081] [INFO ] 已加载固件：Haitun_V_0x0267_sunny.bin（33976 字节，CRC32 0x3dfb4194）
+[10:34:04.701] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[10:34:04.701] [INFO ] 停止采样
+[10:34:04.701] [INFO ] 停止信号发生器
+[10:34:04.706] [INFO ] 停止循环写入
+[10:34:04.707] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[10:34:04.728] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_make_qt/AW86100.dll
+[10:34:04.728] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[10:34:04.728] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[10:34:04.728] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[10:34:04.729] [INFO ] [DLL] Enter boot control function. 
+[10:34:04.729] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[10:34:04.729] [INFO ] [I2C-W TIMING] total=1us
+[10:34:04.729] [INFO ] [FP-DIAG] exit=PendingCommand sameThread=true open=true wrote=0 flush=fail btw_afterFlush=0 execMs=0 timerFired=false match=false bytesAvail=0 btw_final=0
+[10:34:04.729] [ERROR] I2C 透传写超时或链路失败（5000 ms）
+[10:34:04.729] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=20us
+[10:34:04.730] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
+[10:34:04.730] [ERROR] AwBootcontrol failed (return -11)
+[10:34:04.730] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[10:34:04.730] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[10:34:04.730] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[10:34:04.731] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
+[10:34:20.408] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[10:34:20.408] [INFO ] 停止采样
+[10:34:20.408] [INFO ] 停止信号发生器
+[10:34:20.412] [INFO ] 停止循环写入
+[10:34:20.412] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[10:34:20.435] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_make_qt/AW86100.dll
+[10:34:20.436] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[10:34:20.436] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[10:34:20.436] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[10:34:20.436] [INFO ] [DLL] Enter boot control function. 
+[10:34:20.436] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[10:34:20.437] [INFO ] [I2C-W TIMING] total=2us
+[10:34:20.437] [INFO ] [FP-DIAG] exit=PendingCommand sameThread=true open=true wrote=0 flush=fail btw_afterFlush=0 execMs=0 timerFired=false match=false bytesAvail=0 btw_final=0
+[10:34:20.437] [ERROR] I2C 透传写超时或链路失败（5000 ms）
+[10:34:20.437] [INFO ] [I2C-W EXIT ] devId=0x6b rc=-1 elapsed=18us
+[10:34:20.437] [INFO ] [DLL] Reset chip Fail with RET_BOOTCONTROL_RESET_W_ASYN_ADDR_FAIL1! 
+[10:34:20.438] [ERROR] AwBootcontrol failed (return -11)
+[10:34:20.438] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[10:34:20.438] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[10:34:20.438] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[10:34:20.439] [ERROR] 烧录失败：AwBootcontrol failed (return -11)
