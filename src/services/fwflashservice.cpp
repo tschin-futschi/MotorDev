@@ -185,10 +185,14 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
             if (self.isNull()) return;
             // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
             emit self->progressUpdated(sent, total);
-            const double pct = total > 0 ? (sent * 100.0 / total) : 0.0;
+            // 累计 wrSize 包含 DLL 拼入的寄存器地址/pack 头开销，可能超出 firmware 字节数；
+            // 进度条 setProgress 自身已 qBound 到 100%，这里把"X KB / Y KB (Z%)"文本也 clamp，
+            // 避免显示 105% / 35.0 KB / 33.2 KB 这种用户视角不一致的数字。
+            const qint64 displaySent = qMin(sent, total);
+            const double pct = total > 0 ? (displaySent * 100.0 / total) : 0.0;
             emit self->stageMessage(
                 QStringLiteral("烧录中 %1 KB / %2 KB (%3%)")
-                    .arg(QString::number(sent / 1024.0, 'f', 1))
+                    .arg(QString::number(displaySent / 1024.0, 'f', 1))
                     .arg(QString::number(total / 1024.0, 'f', 1))
                     .arg(QString::number(pct, 'f', 1)));
         };
