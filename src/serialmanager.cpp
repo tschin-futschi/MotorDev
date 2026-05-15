@@ -278,9 +278,15 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
         m_lastDiag.exitReason = FastPathDiag::ExitReason::NotOpen;
         return false;
     }
+    // Housekeeping 命令的 in-flight pending（stopScope/stopGenerator/stopCyclic
+    // 走 sendCommand 路径会占用 m_pendingFrame）必须为 fast-path 让路：
+    // 烧录开始前 dispatcher 队列里的 stop 命令仍在等响应；如果在此早退，
+    // I2C 帧永远写不出去。强制 clearPendingCommand() 后继续，丢失的 stop 响应
+    // 由 fast-path 期间 handleControlFrame 作为 stray frame 丢弃。
+    // 已知短板：dispatcher 端 m_waitingResponse 不会被通知，需要断连重连恢复。
     if (!m_pendingFrame.isEmpty()) {
-        m_lastDiag.exitReason = FastPathDiag::ExitReason::PendingCommand;
-        return false;
+        m_lastDiag.pendingCleared = true;
+        clearPendingCommand();
     }
     if (m_fastPath.active) {
         m_lastDiag.exitReason = FastPathDiag::ExitReason::AlreadyActive;

@@ -119,6 +119,7 @@ public:
         ExitReason exitReason = ExitReason::None;
         bool   sameThread = false;   ///< 调用线程是否为 SerialManager 工作线程
         bool   serialOpen = false;   ///< 入口时 m_serial->isOpen()
+        bool   pendingCleared = false; ///< 入口时检测到 housekeeping pending，已强制清除
         qint64 wroteBytes = 0;
         bool   flushOk = false;
         qint64 bytesToWriteAfterFlush = 0;

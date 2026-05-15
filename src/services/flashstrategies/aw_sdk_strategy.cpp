@@ -451,10 +451,11 @@ int AwSdkStrategy::syncI2cWrite(uint8_t devId, uint8_t addrSize, const uint8_t *
         log(LogLevel::Info,
             QStringLiteral("[I2C-W TIMING] total=%1us").arg(elapsedUs));
         log(LogLevel::Info,
-            QStringLiteral("[FP-DIAG] exit=%1 sameThread=%2 open=%3 wrote=%4 flush=%5 btw_afterFlush=%6 execMs=%7 timerFired=%8 match=%9 bytesAvail=%10 btw_final=%11")
+            QStringLiteral("[FP-DIAG] exit=%1 sameThread=%2 open=%3 pendingCleared=%4 wrote=%5 flush=%6 btw_afterFlush=%7 execMs=%8 timerFired=%9 match=%10 bytesAvail=%11 btw_final=%12")
                 .arg(QLatin1String(SerialManager::fastPathExitReasonName(diag.exitReason)))
                 .arg(diag.sameThread ? "true" : "false")
                 .arg(diag.serialOpen ? "true" : "false")
+                .arg(diag.pendingCleared ? "true" : "false")
                 .arg(diag.wroteBytes)
                 .arg(diag.flushOk ? "ok" : "fail")
                 .arg(diag.bytesToWriteAfterFlush)
@@ -509,10 +510,11 @@ int AwSdkStrategy::syncI2cRead(uint8_t devId, uint8_t addrSize, const uint8_t *a
         log(LogLevel::Info,
             QStringLiteral("[I2C-R TIMING] total=%1us").arg(elapsedUs));
         log(LogLevel::Info,
-            QStringLiteral("[FP-DIAG] exit=%1 sameThread=%2 open=%3 wrote=%4 flush=%5 btw_afterFlush=%6 execMs=%7 timerFired=%8 match=%9 bytesAvail=%10 btw_final=%11")
+            QStringLiteral("[FP-DIAG] exit=%1 sameThread=%2 open=%3 pendingCleared=%4 wrote=%5 flush=%6 btw_afterFlush=%7 execMs=%8 timerFired=%9 match=%10 bytesAvail=%11 btw_final=%12")
                 .arg(QLatin1String(SerialManager::fastPathExitReasonName(diag.exitReason)))
                 .arg(diag.sameThread ? "true" : "false")
                 .arg(diag.serialOpen ? "true" : "false")
+                .arg(diag.pendingCleared ? "true" : "false")
                 .arg(diag.wroteBytes)
                 .arg(diag.flushOk ? "ok" : "fail")
                 .arg(diag.bytesToWriteAfterFlush)
