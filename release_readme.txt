@@ -147,4 +147,41 @@ build_release\ 目录最少要有以下文件：
 - 目标机器要求 Windows 10 x64 及以上
 - 串口驱动（CH340 / CP2102 / FTDI 等）由对方自己安装
 
+
+----------------------------------------------------------------
+6. !!! 必做 !!! 调整 USB-Serial Latency Timer 为 1 ms
+----------------------------------------------------------------
+
+新机器第一次烧录前必须改这个 Windows 驱动设置；不改的话烧录大概率
+会卡在 AwBootcontrol 阶段失败，日志面板报：
+    [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER
+    [DLL] Flash Hand Compare Check Failed!
+    AwBootcontrol failed (return -23)
+
+根因：Windows 默认 USB-Serial Latency Timer = 16 ms，导致每次 I2C
+透传往返耗时 15-17 ms；OIS IC 在 boot 模式握手序列对命令间隔有窗口
+约束，间隔太大 IC 会自动 STOP_BOOTLOADER 退回正常模式，握手失败。
+改到 1 ms 后单次透传降到 1-2 ms，握手能在窗口内完成。
+
+操作步骤：
+
+  1. 按 Win + X，打开 设备管理器
+  2. 展开 "端口（COM 和 LPT）"
+  3. 找到正在用的 USB-Serial 设备
+     例：USB Serial Port (COMx) / CH340 (COMx) / Silicon Labs CP210x (COMx)
+  4. 右键 → 属性
+  5. 切到 Port Settings 选项卡（中文系统是"端口设置"）
+  6. 点 Advanced... 按钮（中文系统是"高级"）
+  7. 找到 Latency Timer (msec) 下拉框（中文系统是"延迟计时器"）
+  8. 默认 16，改成 1
+  9. 确定 → 退出所有对话框
+  10. 拔出 USB 重新插入，让设置生效
+
+  快速验证：MotorDev 烧录页烧一次，日志面板里 [I2C-W TIMING] / [I2C-R
+  TIMING] 应该是 us 级（几百到几千 us），不应该是 15000+ us。
+  [FP-DIAG] 里的 execMs 应该是 0-2，不应该是 13-17。
+
+  注意：这个设置是按"该 USB-Serial 设备 + 当前 Windows 用户"持久化的，
+  换 USB-Serial 设备 / 换电脑 / 换用户 都要重新改一次。
+
 ================================================================
