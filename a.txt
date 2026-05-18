@@ -1,329 +1,140 @@
------------------- 双芝电脑烧录不成功 ---------------------------------------
-[17:50:05.939] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[17:50:05.939] [INFO ] 停止采样
-[17:50:05.940] [INFO ] 停止信号发生器
-[17:50:05.946] [INFO ] 停止循环写入
-[17:50:05.946] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[17:50:05.947] [INFO ] 已加载 DLL：C:/Users/W60040799/Desktop/build_release/build_release/AW86100.dll
-[17:50:05.948] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[17:50:05.948] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[17:50:05.948] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[17:50:05.948] [INFO ] [DLL] Enter boot control function. 
-[17:50:05.948] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[17:50:05.967] [INFO ] [I2C-W TIMING] total=4394us
-[17:50:05.967] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=4 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:05.968] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=4415us
-[17:50:05.968] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
-[17:50:05.968] [INFO ] [I2C-W TIMING] total=14270us
-[17:50:05.968] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:05.968] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14291us
-[17:50:05.978] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
-[17:50:05.988] [INFO ] [I2C-W TIMING] total=13397us
-[17:50:05.988] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:05.988] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13419us
-[17:50:06.003] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
-[17:50:06.020] [INFO ] [I2C-W TIMING] total=17323us
-[17:50:06.020] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=17 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.020] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=17368us
-[17:50:06.021] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
-[17:50:06.036] [INFO ] [I2C-R TIMING] total=15796us
-[17:50:06.036] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.036] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=15840us
-[17:50:06.037] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
-[17:50:06.053] [INFO ] [I2C-W TIMING] total=13972us
-[17:50:06.053] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.053] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14034us
-[17:50:06.053] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
-[17:50:06.069] [INFO ] [I2C-W TIMING] total=14040us
-[17:50:06.069] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.070] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14096us
-[17:50:06.070] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
-[17:50:06.086] [INFO ] [I2C-W TIMING] total=13844us
-[17:50:06.087] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.087] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13900us
-[17:50:06.088] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.104] [INFO ] [I2C-W TIMING] total=8845us
-[17:50:06.105] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=8 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.105] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=9050us
-[17:50:06.106] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.119] [INFO ] [I2C-W TIMING] total=15883us
-[17:50:06.120] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.120] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15935us
-[17:50:06.120] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.137] [INFO ] [I2C-W TIMING] total=16000us
-[17:50:06.138] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.139] [ERROR] I2C 透传写失败：STM32 error 0x03
-[17:50:06.139] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=16058us
-[17:50:06.140] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
-[17:50:06.140] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.155] [INFO ] [I2C-W TIMING] total=15924us
-[17:50:06.155] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.157] [ERROR] I2C 透传写失败：STM32 error 0x03
-[17:50:06.157] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=15980us
-[17:50:06.158] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
-[17:50:06.159] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.160] [INFO ] [I2C-W TIMING] total=15691us
-[17:50:06.160] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.161] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15732us
-[17:50:06.163] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.176] [INFO ] [I2C-W TIMING] total=16118us
-[17:50:06.176] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.177] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16161us
-[17:50:06.177] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.191] [INFO ] [I2C-W TIMING] total=15931us
-[17:50:06.191] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.191] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15992us
-[17:50:06.193] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.208] [INFO ] [I2C-W TIMING] total=16140us
-[17:50:06.208] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.208] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16199us
-[17:50:06.209] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.224] [INFO ] [I2C-W TIMING] total=15788us
-[17:50:06.225] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.225] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15849us
-[17:50:06.226] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.238] [INFO ] [I2C-W TIMING] total=15800us
-[17:50:06.240] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.240] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15905us
-[17:50:06.240] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.255] [INFO ] [I2C-W TIMING] total=16391us
-[17:50:06.256] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.256] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16507us
-[17:50:06.256] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.271] [INFO ] [I2C-W TIMING] total=15462us
-[17:50:06.272] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.272] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15588us
-[17:50:06.272] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.287] [INFO ] [I2C-W TIMING] total=15775us
-[17:50:06.287] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.288] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15899us
-[17:50:06.288] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.303] [INFO ] [I2C-W TIMING] total=15749us
-[17:50:06.303] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.303] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15779us
-[17:50:06.303] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.319] [INFO ] [I2C-W TIMING] total=16092us
-[17:50:06.321] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.321] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16156us
-[17:50:06.323] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.338] [INFO ] [I2C-W TIMING] total=16029us
-[17:50:06.338] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.338] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16091us
-[17:50:06.339] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.357] [INFO ] [I2C-W TIMING] total=15845us
-[17:50:06.358] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.359] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15869us
-[17:50:06.359] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.379] [INFO ] [I2C-W TIMING] total=15964us
-[17:50:06.379] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.380] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16011us
-[17:50:06.380] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.393] [INFO ] [I2C-W TIMING] total=16184us
-[17:50:06.394] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.395] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16348us
-[17:50:06.395] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:50:06.404] [INFO ] [I2C-W TIMING] total=15553us
-[17:50:06.405] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.405] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15614us
-[17:50:06.405] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
-[17:50:06.419] [INFO ] [I2C-W TIMING] total=16149us
-[17:50:06.420] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=19 flush=ok btw_afterFlush=19 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.420] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16253us
-[17:50:06.421] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
-[17:50:06.437] [INFO ] [I2C-R TIMING] total=13735us
-[17:50:06.437] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=10 flush=ok btw_afterFlush=10 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:50:06.437] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=13870us
-[17:50:06.438] [INFO ] [DLL] Flash Hand Compare Check Failed! 
-[17:50:06.438] [ERROR] AwBootcontrol failed (return -23)
-[17:50:06.438] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
-[17:50:06.439] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[17:50:06.439] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[17:50:06.439] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
------------------------------------------- 秦福麒电脑烧录成功 ----------------------------------------------------------------------------------------
-[17:53:59.321] [INFO ] 已加载固件：Haitun_V_0xD268_20251127_93547_SHUNYU_ONJIG.bin（34024 字节，CRC32 0xc2e037e3）
-[17:54:00.434] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[17:54:00.434] [INFO ] 停止采样
-[17:54:00.435] [INFO ] 停止信号发生器
-[17:54:00.438] [INFO ] 停止循环写入
-[17:54:00.439] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[17:54:00.459] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_release/AW86100.dll
-[17:54:00.459] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[17:54:00.459] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[17:54:00.460] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[17:54:00.460] [INFO ] [DLL] Enter boot control function. 
-[17:54:00.460] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[17:54:00.460] [INFO ] [I2C-W TIMING] total=1709us
-[17:54:00.460] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=true wrote=13 flush=ok btw_afterFlush=20 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.461] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1722us
-[17:54:00.461] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
-[17:54:00.461] [INFO ] [I2C-W TIMING] total=1041us
-[17:54:00.461] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.461] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1057us
-[17:54:00.461] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
-[17:54:00.462] [INFO ] [I2C-W TIMING] total=985us
-[17:54:00.462] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.462] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=997us
-[17:54:00.485] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
-[17:54:00.485] [INFO ] [I2C-W TIMING] total=2015us
-[17:54:00.485] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.486] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=2057us
-[17:54:00.486] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
-[17:54:00.486] [INFO ] [I2C-R TIMING] total=940us
-[17:54:00.486] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.486] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=950us
-[17:54:00.487] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
-[17:54:00.487] [INFO ] [I2C-W TIMING] total=1048us
-[17:54:00.487] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.487] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1060us
-[17:54:00.487] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
-[17:54:00.488] [INFO ] [I2C-W TIMING] total=826us
-[17:54:00.488] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.488] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=839us
-[17:54:00.488] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
-[17:54:00.488] [INFO ] [I2C-W TIMING] total=1126us
-[17:54:00.489] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.489] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1136us
-[17:54:00.503] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.504] [INFO ] [I2C-W TIMING] total=1068us
-[17:54:00.504] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.504] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1084us
-[17:54:00.504] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.505] [INFO ] [I2C-W TIMING] total=1295us
-[17:54:00.505] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.505] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1306us
-[17:54:00.505] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.505] [INFO ] [I2C-W TIMING] total=1574us
-[17:54:00.506] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.506] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1586us
-[17:54:00.506] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.506] [INFO ] [I2C-W TIMING] total=1061us
-[17:54:00.506] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.507] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1072us
-[17:54:00.507] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.507] [INFO ] [I2C-W TIMING] total=1020us
-[17:54:00.507] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.507] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1031us
-[17:54:00.507] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.507] [INFO ] [I2C-W TIMING] total=911us
-[17:54:00.507] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.508] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=922us
-[17:54:00.508] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.508] [INFO ] [I2C-W TIMING] total=884us
-[17:54:00.508] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.510] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=893us
-[17:54:00.510] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.510] [INFO ] [I2C-W TIMING] total=1082us
-[17:54:00.510] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.511] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1114us
-[17:54:00.511] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.512] [INFO ] [I2C-W TIMING] total=908us
-[17:54:00.512] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.512] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=918us
-[17:54:00.512] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.512] [INFO ] [I2C-W TIMING] total=1046us
-[17:54:00.512] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.513] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1056us
-[17:54:00.514] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.514] [INFO ] [I2C-W TIMING] total=918us
-[17:54:00.514] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.514] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=928us
-[17:54:00.514] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.514] [INFO ] [I2C-W TIMING] total=1000us
-[17:54:00.514] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.514] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1008us
-[17:54:00.515] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.515] [INFO ] [I2C-W TIMING] total=995us
-[17:54:00.515] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.515] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1005us
-[17:54:00.515] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.515] [INFO ] [I2C-W TIMING] total=989us
-[17:54:00.517] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.517] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=997us
-[17:54:00.517] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.517] [INFO ] [I2C-W TIMING] total=975us
-[17:54:00.518] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.518] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=983us
-[17:54:00.518] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.518] [INFO ] [I2C-W TIMING] total=939us
-[17:54:00.518] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.519] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=948us
-[17:54:00.519] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.519] [INFO ] [I2C-W TIMING] total=1085us
-[17:54:00.519] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.520] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1094us
-[17:54:00.520] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.521] [INFO ] [I2C-W TIMING] total=1254us
-[17:54:00.521] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.521] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1271us
-[17:54:00.521] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.521] [INFO ] [I2C-W TIMING] total=1753us
-[17:54:00.521] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.522] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1765us
-[17:54:00.522] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[17:54:00.522] [INFO ] [I2C-W TIMING] total=1175us
-[17:54:00.523] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.523] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1206us
-[17:54:00.523] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
-[17:54:00.523] [INFO ] [I2C-W TIMING] total=1666us
-[17:54:00.523] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=19 flush=ok btw_afterFlush=19 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.523] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=1674us
-[17:54:00.537] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
-[17:54:00.537] [INFO ] [I2C-R TIMING] total=2119us
-[17:54:00.537] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=10 flush=ok btw_afterFlush=10 execMs=2 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:00.537] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=2130us
-[17:54:00.538] [INFO ] [DLL] BootControl HankConnect success 
-[17:54:00.538] [INFO ] 步骤 3/5：AwMoveBinDownload (34024 bytes / 8506 words, DL_NumType_0)
-[17:54:00.538] [INFO ] [MoveBinDownload CALL] buf=1bc9cd7df10 wordLen=8506 (0x213a) packType=0 firstBytes=00 40 00 20 CD 82 FF 1F C3 1B FF 1F C3 1B FF 1F
-[17:54:00.538] [INFO ] [DLL] Enter Move Bin Download CAW2233DllAPI. 
-[17:54:04.339] [INFO ] [DLL] Move Bin Download success. 
-[17:54:04.340] [INFO ] 步骤 4/5：AwResetChip
-[17:54:04.340] [INFO ] [DLL] Enter Reset chip. 
-[17:54:04.340] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[17:54:04.352] [INFO ] [I2C-W TIMING] total=1589us
-[17:54:04.353] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.353] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1619us
-[17:54:04.353] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
-[17:54:04.353] [INFO ] [I2C-W TIMING] total=1375us
-[17:54:04.353] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.354] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1386us
-[17:54:04.354] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
-[17:54:04.354] [INFO ] [I2C-W TIMING] total=869us
-[17:54:04.354] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=0 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.355] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=891us
-[17:54:04.369] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
-[17:54:04.370] [INFO ] [I2C-W TIMING] total=1591us
-[17:54:04.370] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.370] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=1621us
-[17:54:04.370] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
-[17:54:04.370] [INFO ] [I2C-R TIMING] total=1435us
-[17:54:04.370] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.370] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=1448us
-[17:54:04.372] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
-[17:54:04.373] [INFO ] [I2C-W TIMING] total=2000us
-[17:54:04.373] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.373] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=2024us
-[17:54:04.374] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
-[17:54:04.386] [INFO ] [I2C-W TIMING] total=5480us
-[17:54:04.387] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=5 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.387] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=5495us
-[17:54:04.387] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
-[17:54:04.387] [INFO ] [I2C-W TIMING] total=4215us
-[17:54:04.388] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=4 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.388] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=4245us
-[17:54:04.433] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF A7 rdSize=1
-[17:54:04.445] [INFO ] [I2C-R TIMING] total=1447us
-[17:54:04.445] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.445] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=1483us
-[17:54:04.484] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF A7 rdSize=1
-[17:54:04.497] [INFO ] [I2C-R TIMING] total=1789us
-[17:54:04.498] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.498] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=1844us
-[17:54:04.536] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF A7 rdSize=1
-[17:54:04.550] [INFO ] [I2C-R TIMING] total=1054us
-[17:54:04.550] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=1 timerFired=false match=true bytesAvail=0 btw_final=0
-[17:54:04.551] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=1086us
-[17:54:04.551] [INFO ] [DLL] Reset Chip Success. 
-[17:54:04.551] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[17:54:04.551] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[17:54:04.552] [OK ] 烧录完成
-----------------------------------------------------------------------------------------------------------------------------------------------
+[14:15:14.183] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[14:15:14.183] [INFO ] 停止采样
+[14:15:14.183] [INFO ] 停止信号发生器
+[14:15:14.189] [INFO ] 停止循环写入
+[14:15:14.190] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[14:15:14.190] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260515/MotorDev/build_release/AW86100.dll
+[14:15:14.190] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
+[14:15:14.190] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
+[14:15:14.191] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
+[14:15:14.191] [INFO ] [DLL] Enter boot control function. 
+[14:15:14.191] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
+[14:15:14.210] [INFO ] [I2C-W TIMING] total=2876us
+[14:15:14.210] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=2 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.210] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=2889us
+[14:15:14.210] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
+[14:15:14.211] [INFO ] [I2C-W TIMING] total=14148us
+[14:15:14.211] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.211] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14162us
+[14:15:14.211] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
+[14:15:14.233] [INFO ] [I2C-W TIMING] total=14027us
+[14:15:14.234] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.234] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14045us
+[14:15:14.250] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
+[14:15:14.266] [INFO ] [I2C-W TIMING] total=16962us
+[14:15:14.267] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.267] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=16989us
+[14:15:14.267] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
+[14:15:14.283] [INFO ] [I2C-R TIMING] total=15904us
+[14:15:14.283] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.284] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=15920us
+[14:15:14.284] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
+[14:15:14.300] [INFO ] [I2C-W TIMING] total=13956us
+[14:15:14.300] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.301] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13975us
+[14:15:14.301] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
+[14:15:14.316] [INFO ] [I2C-W TIMING] total=13892us
+[14:15:14.317] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.317] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13913us
+[14:15:14.318] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
+[14:15:14.333] [INFO ] [I2C-W TIMING] total=14141us
+[14:15:14.333] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.333] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14161us
+[14:15:14.334] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.350] [INFO ] [I2C-W TIMING] total=9139us
+[14:15:14.351] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=9 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.351] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=9164us
+[14:15:14.351] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.366] [INFO ] [I2C-W TIMING] total=16043us
+[14:15:14.367] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.367] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16082us
+[14:15:14.368] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.383] [INFO ] [I2C-W TIMING] total=15629us
+[14:15:14.383] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.384] [ERROR] I2C 透传写失败：STM32 error 0x03
+[14:15:14.384] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=15650us
+[14:15:14.384] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
+[14:15:14.384] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.385] [INFO ] [I2C-W TIMING] total=16040us
+[14:15:14.385] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.385] [ERROR] I2C 透传写失败：STM32 error 0x03
+[14:15:14.385] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=16066us
+[14:15:14.386] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
+[14:15:14.386] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.401] [INFO ] [I2C-W TIMING] total=15941us
+[14:15:14.401] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.401] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15961us
+[14:15:14.402] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.418] [INFO ] [I2C-W TIMING] total=16897us
+[14:15:14.419] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.419] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=17007us
+[14:15:14.419] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.433] [INFO ] [I2C-W TIMING] total=14947us
+[14:15:14.434] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.434] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=14966us
+[14:15:14.435] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.450] [INFO ] [I2C-W TIMING] total=16045us
+[14:15:14.450] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.451] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16062us
+[14:15:14.451] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.467] [INFO ] [I2C-W TIMING] total=16024us
+[14:15:14.467] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.468] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16040us
+[14:15:14.468] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.483] [INFO ] [I2C-W TIMING] total=16048us
+[14:15:14.485] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.485] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16064us
+[14:15:14.485] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.500] [INFO ] [I2C-W TIMING] total=15897us
+[14:15:14.501] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.501] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15916us
+[14:15:14.501] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.517] [INFO ] [I2C-W TIMING] total=15896us
+[14:15:14.517] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.518] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15915us
+[14:15:14.518] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.533] [INFO ] [I2C-W TIMING] total=15924us
+[14:15:14.534] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.534] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15943us
+[14:15:14.535] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.550] [INFO ] [I2C-W TIMING] total=16047us
+[14:15:14.551] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.551] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16073us
+[14:15:14.551] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.566] [INFO ] [I2C-W TIMING] total=15941us
+[14:15:14.567] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.567] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15963us
+[14:15:14.567] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.583] [INFO ] [I2C-W TIMING] total=15915us
+[14:15:14.584] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.584] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15936us
+[14:15:14.584] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.599] [INFO ] [I2C-W TIMING] total=16218us
+[14:15:14.600] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.600] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16237us
+[14:15:14.601] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.616] [INFO ] [I2C-W TIMING] total=15776us
+[14:15:14.617] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.617] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15796us
+[14:15:14.617] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.633] [INFO ] [I2C-W TIMING] total=16000us
+[14:15:14.633] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.634] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16018us
+[14:15:14.634] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
+[14:15:14.650] [INFO ] [I2C-W TIMING] total=16414us
+[14:15:14.650] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.651] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16435us
+[14:15:14.651] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
+[14:15:14.666] [INFO ] [I2C-W TIMING] total=15435us
+[14:15:14.667] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=19 flush=ok btw_afterFlush=19 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.668] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15455us
+[14:15:14.668] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
+[14:15:14.683] [INFO ] [I2C-R TIMING] total=14000us
+[14:15:14.684] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=10 flush=ok btw_afterFlush=10 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
+[14:15:14.684] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=14017us
+[14:15:14.684] [INFO ] [DLL] Flash Hand Compare Check Failed! 
+[14:15:14.684] [ERROR] AwBootcontrol failed (return -23)
+[14:15:14.684] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
+[14:15:14.685] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
+[14:15:14.685] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
+[14:15:14.685] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
