@@ -1,181 +1,755 @@
------------------------------------------------------------------------------------------------
-[12:19:25.149] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[12:19:25.150] [INFO ] 停止采样
-[12:19:25.150] [INFO ] 停止信号发生器
-[12:19:25.154] [INFO ] 停止循环写入
-[12:19:25.155] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[12:19:25.156] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260519/MotorDev/build_release/AW86100.dll
-[12:19:25.156] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[12:19:25.156] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[12:19:25.156] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[12:19:25.157] [INFO ] [DLL] Enter boot control function. 
-[12:19:25.157] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[12:19:25.171] [INFO ] [I2C-W TIMING] total=15106us
-[12:19:25.171] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.171] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=15127us
-[12:19:25.181] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
-[12:19:25.198] [INFO ] [I2C-W TIMING] total=14078us
-[12:19:25.199] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.199] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14105us
-[12:19:25.199] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
-[12:19:25.217] [INFO ] [I2C-W TIMING] total=13789us
-[12:19:25.218] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.218] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13807us
-[12:19:25.218] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
-[12:19:25.235] [INFO ] [I2C-W TIMING] total=17212us
-[12:19:25.236] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=17 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.236] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=17254us
-[12:19:25.236] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
-[12:19:25.265] [INFO ] [I2C-R TIMING] total=15951us
-[12:19:25.265] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.266] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=15968us
-[12:19:25.266] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
-[12:19:25.284] [INFO ] [I2C-W TIMING] total=13751us
-[12:19:25.286] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.288] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13769us
-[12:19:25.289] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
-[12:19:25.289] [INFO ] [I2C-W TIMING] total=15062us
-[12:19:25.289] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.289] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=15113us
-[12:19:25.290] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
-[12:19:25.315] [INFO ] [I2C-W TIMING] total=16160us
-[12:19:25.315] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.316] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=16191us
-[12:19:25.316] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.316] [INFO ] [I2C-W TIMING] total=5756us
-[12:19:25.316] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=5 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.316] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=5770us
-[12:19:25.317] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.332] [INFO ] [I2C-W TIMING] total=15924us
-[12:19:25.333] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.333] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15938us
-[12:19:25.333] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.348] [INFO ] [I2C-W TIMING] total=15942us
-[12:19:25.349] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.349] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15956us
-[12:19:25.350] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.366] [INFO ] [I2C-W TIMING] total=15956us
-[12:19:25.366] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.366] [ERROR] I2C 透传写失败：STM32 error 0x03
-[12:19:25.367] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=15973us
-[12:19:25.367] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
-[12:19:25.367] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.382] [INFO ] [I2C-W TIMING] total=16050us
-[12:19:25.382] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.383] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16064us
-[12:19:25.383] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.399] [INFO ] [I2C-W TIMING] total=15984us
-[12:19:25.399] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.399] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15999us
-[12:19:25.400] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.415] [INFO ] [I2C-W TIMING] total=15876us
-[12:19:25.415] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.415] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15890us
-[12:19:25.416] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.432] [INFO ] [I2C-W TIMING] total=16221us
-[12:19:25.432] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.432] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16234us
-[12:19:25.433] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.448] [INFO ] [I2C-W TIMING] total=15917us
-[12:19:25.449] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.449] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15931us
-[12:19:25.449] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.465] [INFO ] [I2C-W TIMING] total=15920us
-[12:19:25.465] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.465] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15934us
-[12:19:25.465] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.481] [INFO ] [I2C-W TIMING] total=16136us
-[12:19:25.482] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.482] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16151us
-[12:19:25.482] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.498] [INFO ] [I2C-W TIMING] total=15945us
-[12:19:25.498] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.498] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15961us
-[12:19:25.499] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.514] [INFO ] [I2C-W TIMING] total=16079us
-[12:19:25.515] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.515] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16093us
-[12:19:25.515] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.532] [INFO ] [I2C-W TIMING] total=15668us
-[12:19:25.533] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.533] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15681us
-[12:19:25.533] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.551] [INFO ] [I2C-W TIMING] total=16878us
-[12:19:25.551] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.551] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16912us
-[12:19:25.552] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.565] [INFO ] [I2C-W TIMING] total=15136us
-[12:19:25.566] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.566] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15155us
-[12:19:25.566] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.582] [INFO ] [I2C-W TIMING] total=16137us
-[12:19:25.582] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.582] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16151us
-[12:19:25.583] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.598] [INFO ] [I2C-W TIMING] total=16397us
-[12:19:25.599] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.599] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16412us
-[12:19:25.600] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.615] [INFO ] [I2C-W TIMING] total=15434us
-[12:19:25.615] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.616] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15451us
-[12:19:25.616] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[12:19:25.632] [INFO ] [I2C-W TIMING] total=16021us
-[12:19:25.632] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.632] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16038us
-[12:19:25.633] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
-[12:19:25.648] [INFO ] [I2C-W TIMING] total=16225us
-[12:19:25.649] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=19 flush=ok btw_afterFlush=19 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.649] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16247us
-[12:19:25.649] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
-[12:19:25.665] [INFO ] [I2C-R TIMING] total=13850us
-[12:19:25.665] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=10 flush=ok btw_afterFlush=10 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[12:19:25.666] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=13868us
-[12:19:25.666] [INFO ] [DLL] Flash Hand Compare Check Failed! 
-[12:19:25.666] [ERROR] AwBootcontrol failed (return -23)
-[12:19:25.666] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
-[12:19:25.666] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[12:19:25.667] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[12:19:25.667] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
--------------------------------------------------------------------------------------------------------
-[2026-05-19 12:18:15.215] [debug] [default] Scan started
-[2026-05-19 12:18:15.239] [debug] [default] Scan found 4 ports: COM1, COM16, COM2, COM3
-[2026-05-19 12:18:17.077] [info] [motordev.config] Connect request port=COM16 baud=460800
-[2026-05-19 12:18:17.082] [info] [motordev.serial] Opening port COM16 at 460800 (8N1)...
-[2026-05-19 12:18:17.223] [info] [motordev.serial] FT232 Latency Timer set to 1 ms (index=0,COM16)
-[2026-05-19 12:18:17.229] [info] [motordev.serial] Port COM16 opened successfully
-[2026-05-19 12:18:17.232] [info] [motordev.config] Serial connected
-[2026-05-19 12:18:17.235] [info] [motordev.serial] Heartbeat started
-[2026-05-19 12:18:18.232] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:18.252] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 12:18:19.236] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:19.244] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 12:18:19.627] [info] [motordev.config] Disconnect request
-[2026-05-19 12:18:19.744] [info] [motordev.serial] Port closed
-[2026-05-19 12:18:19.751] [info] [motordev.config] Serial disconnected
-[2026-05-19 12:18:19.755] [info] [motordev.serial] Heartbeat stopped
-[2026-05-19 12:18:20.355] [debug] [default] Scan started
-[2026-05-19 12:18:20.373] [debug] [default] Scan found 4 ports: COM1, COM16, COM2, COM3
-[2026-05-19 12:18:21.071] [info] [motordev.config] Connect request port=COM16 baud=460800
-[2026-05-19 12:18:21.075] [info] [motordev.serial] Opening port COM16 at 460800 (8N1)...
-[2026-05-19 12:18:21.216] [info] [motordev.serial] FT232 Latency Timer set to 1 ms (index=0,COM16)
-[2026-05-19 12:18:21.222] [info] [motordev.serial] Port COM16 opened successfully
-[2026-05-19 12:18:21.225] [info] [motordev.config] Serial connected
-[2026-05-19 12:18:21.228] [info] [motordev.serial] Heartbeat started
-[2026-05-19 12:18:22.235] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:22.246] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 12:18:22.532] [info] [motordev.config] SetPmicVoltage TX DRVDD=1.80V IOVDD=2.80V VCMVDD=3.20V payload=00 B4 01 18 01 40
-[2026-05-19 12:18:22.538] [debug] [motordev.serial] TX control frame: seq=0X0A cmd=0X09(SetPmicVoltage) len=6 payload=00 B4 01 18 01 40
-[2026-05-19 12:18:22.549] [debug] [motordev.serial] RX control frame: seq=0X0A cmd=0X09(SetPmicVoltage) len=0 payload=<empty>
-[2026-05-19 12:18:22.554] [info] [motordev.config] SetPmicVoltage RX ACK payload=<empty>
-[2026-05-19 12:18:22.557] [info] [motordev.config] PmicEnable TX payload=<empty>
-[2026-05-19 12:18:22.560] [debug] [motordev.serial] TX control frame: seq=0X0B cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 12:18:22.598] [debug] [motordev.serial] RX control frame: seq=0X0B cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 12:18:22.603] [info] [motordev.config] PmicEnable RX ACK payload=<empty>
-[2026-05-19 12:18:22.606] [debug] [default] PMIC configured successfully
-[2026-05-19 12:18:23.229] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:23.237] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 12:18:24.233] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:24.246] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 12:18:25.245] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 12:18:25.253] [debug] [motordev.serial] Heartbeat response received
+-------------------------------aw_uboot_isp.h------------------------------------------------
+
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
+* Description: IIC header file, IIC related parameter definition file
+*/
+#ifndef __AW_UBOOT_REGISTER_H
+#define __AW_UBOOT_REGISTER_H
+
+#define FLASH_BASE		(0x01000000)
+#define FLASH_SIZE		(0x20000)
+#define FLASH_TOP		(FLASH_BASE + FLASH_SIZE)
+
+#include "aw_uboot_bufbuilt.h"
+#include "main.h"
+
+enum isp_status{
+	ISP_OK = 0,
+	ISP_ADDR_ERROR,
+	ISP_PBUF_ERROR,
+	ISP_HANK_ERROR,
+	ISP_JUMP_ERROR,
+	ISP_FLASH_ERROR,
+	ISP_SPACE_ERROR,
+};
+typedef enum isp_status ISP_STATUS_E;
+
+ISP_STATUS_E aw_boot_control();
+ISP_STATUS_E aw_reset_chip();
+ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len);
+ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_hank_connect_check(void);
+ISP_STATUS_E aw_flash_jump_check(AW_U32 addr);
+ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff);
+ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen);
+
+void delay_ms(AW_U32 xms);
+void aw_i2c_stop_uboot(void);
+void aw_i2c_write(AW_U8 *buff, AW_U8 len);
+void aw_i2c_read (AW_U8 *buff, AW_U8 len);
+
+#endif
+--------------------------------------aw_uboot_isp.c---------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
+* Description: spi correlation function
+*/
+#include "aw_uboot_isp.h"
+#include "string.h"
+
+void delay_ms(AW_U32 xms)
+{
+}
+
+//stay in UBOOT state (stop UBOOT)
+//It needs to be sent multiple times within 8ms when power on
+void aw_i2c_stop_uboot(void)
+{
+	AW_U8 tmp = 0xAC;
+	aw_i2c_write(&tmp, 1);
+}
+
+//The underlying interface
+void aw_i2c_write(AW_U8 *buff, AW_U8 len)
+{
+}
+
+
+void aw_i2c_read(AW_U8 *buff, AW_U8 len)
+{
+}
+
+ISP_STATUS_E aw_reset_chip()
+{
+	// I2CSlaveAddr, Write, Data,
+	0x6b, w, 0xff, 0xa3, 0x02,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x5a,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x00,
+	// Delay 15 ms
+	delay_ms(15)
+	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
+	0x6b, r, 0xff, 0xf0 = 0x01,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xa3, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x01,
+	
+	delay_ms(15)
+}
+
+ISP_STATUS_E aw_boot_control()
+{
+	// I2CSlaveAddr, Write, Data,
+	0x6b, w, 0xff, 0xa3, 0x02,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x5a,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x00,
+	// Delay 15 ms
+	delay_ms(15)
+	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
+	0x6b, r, 0xff, 0xf0 = 0x01,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xa3, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x01,
+	// Delay 7 ms
+	delay_ms(7)
+	// I2CSlaveAddr, Write, Data,
+	// 20 times
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+}
+
+//len is the length of the word(4Byte)
+ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 space = 0;
+
+
+	//bin_buff pointer check
+	if (bin_buf == (void *)0) {
+		return ISP_PBUF_ERROR;
+	}
+
+	//isp download address check
+	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
+		return ISP_ADDR_ERROR;
+	}
+
+	//isp download space check
+	space = FLASH_TOP - addr;
+	if (space < len * 4) {
+		return ISP_SPACE_ERROR;
+	}
+
+//Send a handshake frame to confirm that the chip works properly
+	if (aw_hank_connect_check() != ISP_OK) {
+		return ISP_HANK_ERROR ;
+	}
+
+//Download the program to flash ISP
+	if (aw_flash_download_check(addr, bin_buf, len) != ISP_OK) {
+		return ISP_FLASH_ERROR ;
+	}
+
+//Jump to flash ISP
+	if (aw_flash_jump_check(addr) != ISP_OK) {
+		return ISP_JUMP_ERROR ;
+	}
+	return ret;
+}
+
+//len is the length of the word(4Byte)
+ISP_STATUS_E aw_i2c_isp_upload(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 space = 0;
+
+
+	//bin_buff pointer check
+	if (bin_buf == (void *)0) {
+		return ISP_PBUF_ERROR;
+	}
+
+	//isp download address check
+	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
+		return ISP_ADDR_ERROR;
+	}
+
+	//isp download space check
+	space = FLASH_TOP - addr;
+	if (space < len * 4) {
+		return ISP_SPACE_ERROR;
+	}
+
+//Send a handshake frame to confirm that the chip works properly
+	if (aw_hank_connect_check() != ISP_OK) {
+		return ISP_HANK_ERROR ;
+	}
+	
+	if(aw_flash_read(addr, len, bin_buf)){
+		return ISP_FLASH_ERROR ;
+	}
+}
+
+ISP_STATUS_E aw_flash_jump_check(AW_U32 addr)
+{
+	/*ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[4]  = {0};
+	AW_U8 w_buff[13] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i] = (AW_U8)(addr >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_END;
+	uboot_structure.uboot_event = END_FLASH_JUMP;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = 4;
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 13);
+
+	delay_ms(10);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = END_FLASH_JUMP_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_JUMP_ERROR;
+		return ret;
+	}
+	return ret;*/
+	return ISP_OK;
+}
+
+ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 l_buff[6] = { 0 };
+	AW_U8 w_buff[78] = { 0 };
+	AW_U8 r_buff[69] = { 0 };
+	AW_U8 d_buff[69] = { 0 };
+	AW_U32 i = 0;
+	AW_U8 tmp = -1;
+
+	for (i = 0; i < 2; i++) {
+		l_buff[i] = (AW_U8)((u32ReadLen * 4) >> (i * 8));
+	}
+	for (i = 0; i < 4; i++) {
+		l_buff[i + 2] = (AW_U8)((u32Addr + u32PackNum * 64) >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_struct;
+	uboot_struct.uboot_ways = UBOOT_I2C;
+	uboot_struct.uboot_module = UBOOT_FLASH;
+	uboot_struct.uboot_event = FLASH_READ;
+	uboot_struct.uboot_ack = UBOOT_CTL;
+	uboot_struct.uboot_data_len = 6;
+	uboot_struct.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_struct);
+
+	aw_i2c_write(w_buff, 15);
+
+	delay_ms(1);
+
+	aw_i2c_read(r_buff, u32ReadLen * 4 + 1 + 4 + 9);
+
+	if (r_buff[9] == 0) {
+		tmp = 0;
+	}
+
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	for (int i = 0; i < u32ReadLen * 4; i++) {
+		byDataBuff[u32PackNum * 64 + i] = r_buff[14 + i];
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 divisor = 0;
+	AW_U32 block_cnt = 0;
+	AW_U8 remaind = 0;
+	AW_U32 i = 0;
+
+	if (dataBuff == (void*)0) {
+		ret = ISP_PBUF_ERROR;
+		return ret;
+	}
+
+	divisor = len / 16;
+	remaind = len % 16;
+	block_cnt = len / 1024 + ((len % 1024) ? 1 : 0);
+
+	for (i = 0; i < divisor; i++) {
+		if (aw_flash_pack_read(addr, i, dataBuff, 16) != ISP_OK) {
+			ret = ISP_FLASH_ERROR;
+			return ret;
+		}
+	}
+	if (remaind != 0) {
+		if (aw_flash_pack_read(addr, i, dataBuff, remaind) != ISP_OK) {
+			ret = ISP_FLASH_ERROR;
+			return ret;
+		}
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[6]  = {0};
+	AW_U8 w_buff[15] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	l_buff[0] = (AW_U8)len;
+	l_buff[1] = 0x00;
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i + 2] = (AW_U8)(addr >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_FLASH;
+	uboot_structure.uboot_event = FLASH_ERASE_BLOCK;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = 6;
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 15);
+
+	delay_ms(25 * len);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = FLASH_ERASE_BLOCK_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[68]  = {0};
+	AW_U8 w_buff[77] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i] = (AW_U8)((addr + block_num * 64) >> (i * 8));
+	}
+	for (i = 0; i < (len * 4); i++) {
+		l_buff[i + 4] = (bin_buf + block_num * 64)[i];
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_FLASH;
+	uboot_structure.uboot_event = FLASH_WRITE;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = (AW_U8)(4 + 4 * len);
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, (AW_U8)(13 + 4 * len));
+
+	delay_ms(1);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = FLASH_WRITE_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	return ret;
+}
+
+
+ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 remaind = 0;
+	AW_U32 block_cnt = 0;
+	AW_U32 i = 0;
+	AW_U32 divisor = 0;
+
+	divisor = len / 16;
+	remaind = len % 16;
+	block_cnt = len / 1024 + ((len % 1024)? 1 : 0);
+
+	//Erases sectors that need to be used
+	if (aw_flash_block_erase_check(addr, block_cnt) != ISP_OK) {
+		return ISP_FLASH_ERROR;
+	}
+
+	for (i = 0; i < divisor; i++) {
+		//Data is written to the FLASH sector and checked
+		if (aw_flash_block_write_ckeck(addr, i, bin_buf,16) != ISP_OK) {
+			return ISP_FLASH_ERROR;
+		}
+	}
+	if (remaind != 0) {
+		//Data is written to the FLASH sector and checked
+		if (aw_flash_block_write_ckeck(addr, i, bin_buf, remaind) != ISP_OK) {
+			return ISP_FLASH_ERROR;
+		}
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_hank_connect_check(void)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 tmp = 0;
+	AW_U8 w_buff[255] = {0};
+	AW_U8 r_buff[255] = {0};
+	AW_U8 d_buff[5]   = {0x00, 0x01,0x00, 0x00, 0x00};
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_module = UBOOT_HANK;
+	uboot_structure.uboot_event = HANK_CONNECT;
+	uboot_structure.uboot_data_len = 0;
+	uboot_structure.p_uboot_data =  0;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 9);
+
+	delay_ms(2);
+
+	aw_i2c_read(r_buff, 14);
+
+	uboot_structure.uboot_event = HANK_CONNECT_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 5;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 14);
+	if (tmp != 0) {
+		ret = ISP_HANK_ERROR;
+	}
+
+	return ret;
+}
+------------------------------------------------------------aw_uboot_bufbuilt.h----------------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
+* Description: IIC header file, IIC related parameter definition file
+*/
+#ifndef __AW_UBOOT_BUFBUILT_H
+#define __AW_UBOOT_BUFBUILT_H
+
+enum uboot_status{
+	UBOOT_OK = 0,
+	UBOOT_ERROR,
+};
+typedef enum uboot_status UBOOT_STATUS_E;
+
+enum uboot_way{
+	UBOOT_I2C = 0,
+	UBOOT_SPI,
+};
+typedef enum uboot_way UBOOT_WAY_E;
+
+enum uboot_ack{
+	UBOOT_CTL = 0,
+	UBOOT_ACK,
+};
+typedef enum uboot_ack UBOOT_ACK_E;
+
+
+enum uboot_module{
+	UBOOT_HANK  = 0x01,
+	UBOOT_SRAM   =0x02,
+	UBOOT_FLASH = 0x03,
+	UBOOT_END   = 0x04,
+};
+typedef enum uboot_module UBOOT_MODULE_E;
+
+enum hank_event{
+	HANK_CONNECT        = 0x01,
+	HANK_CONNECT_ACK    = 0x02,
+	HANK_PROTICOL       = 0x11,
+	HANK_PROTICOL_ACK   = 0x12,
+	HANK_VERSION        = 0x21,
+	HANK_VERSION_ACK    = 0x22,
+	HANK_ID             = 0x31,
+	HANK_ID_ACK         = 0x32,
+	HANK_DATE           = 0x33,
+	HANK_DATA_ACK       = 0x34,
+};
+typedef enum hank_event HANK_EVENT_E;
+
+enum sram_event{
+	SRAM_WRITE          = 0x01,
+	SRAM_WRITE_ACK      = 0x02,
+	SRAM_READ           = 0x11,
+	SRAM_READ_ACK       = 0x12,
+};
+typedef enum sram_event SRAM_EVENT_E;
+
+enum flash_event{
+	FLASH_WRITE           = 0x01,
+	FLASH_WRITE_ACK       = 0x02,
+	FLASH_READ            = 0x11,
+	FLASH_READ_ACK        = 0x12,
+	FLASH_ERASE_BLOCK     = 0x21,
+	FLASH_ERASE_BLOCK_ACK = 0x22,
+	FLASH_ERASE_CHIP      = 0x23,
+	FLASH_ERASE_CHIP_ACK  = 0x24,
+};
+typedef enum flash_event FLASH_EVENT_E;
+
+
+
+enum end_event{
+	END_SRAM_JUMP           = 0x01,
+	END_SRAM_JUMP_ACK       = 0x02,
+	END_FLASH_JUMP          = 0x11,
+	END_FLASH_JUMP_ACK      = 0x12,
+	END_ERASE_ROM_JUMP      = 0x21,
+	END_ERASE_ROM_JUMP_ACK  = 0x22,
+};
+typedef enum end_event END_EVENT_E;
+
+struct uboot_protocol{
+	unsigned char  checksum;
+	unsigned char  protocol_ver;
+	unsigned char  addr;
+	unsigned char  module;
+	unsigned char  event;
+	unsigned char  len[2];
+	unsigned char  ack;
+	unsigned char  sum;
+	unsigned char  reserved[3];
+};
+typedef struct uboot_protocol UBOOT_PROTOCOL_TYPE_S;
+
+struct uboot_buf{
+	unsigned char uboot_ways;		//UBOOT通信方式I2C或SPI
+	unsigned char uboot_module;		//UBOOT模块Module
+	unsigned char uboot_event;		//UBOOT事件Event
+	unsigned char uboot_ack;		//UBOOT发送还是应答帧
+	unsigned char uboot_data_len;	//数据层字节长度
+	unsigned char reserved[3];
+	unsigned char *p_uboot_data;	//数据层buff指针
+
+};
+typedef struct uboot_buf UBOOT_BUF_TYPE_S;
+
+
+#define IS_UBOOT_WAYS(WAYS)				((WAYS ==UBOOT_I2C) || (WAYS ==UBOOT_SPI))
+
+#define IS_UBOOT_ACK(ACK)				((ACK ==UBOOT_CTL) || (ACK == UBOOT_ACK))
+
+#define IS_HANK_MODULE(MODULE)			((MODULE ==UBOOT_HANK) || (MODULE ==UBOOT_SRAM) || \
+										 (MODULE ==UBOOT_FLASH) || (MODULE ==UBOOT_END))
+
+#define IS_HANK_EVENT(EVENT)			((EVENT ==HANK_CONNECT) || (EVENT ==HANK_PROTICOL) || \
+										 (EVENT ==HANK_VERSION) || (EVENT ==HANK_ID) || (EVENT ==HANK_DATE))
+
+#define IS_SRAM_EVENT(EVENT)			((EVENT ==SRAM_WRITE) || (EVENT ==SRAM_READ))
+
+#define IS_FLASH_EVENT(EVENT)			((EVENT ==FLASH_WRITE) || (EVENT ==FLASH_READ) || \
+										 (EVENT ==FLASH_ERASE_BLOCK) || (EVENT ==FLASH_ERASE_CHIP))
+
+#define IS_END_EVENT(EVENT)				((EVENT ==END_SRAM_JUMP) || (EVENT ==END_FLASH_JUMP) || \
+										 (EVENT ==END_ERASE_ROM_JUMP))
+
+UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct);
+unsigned char protocol_sum(void);
+unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct);
+
+#define assert_param(expr) ((void)0)
+
+#endif
+-----------------------------------aw_uboot_bufbuilt.c--------------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
+* Description: spi correlation function
+*/
+#include "aw_uboot_bufbuilt.h"
+
+
+static UBOOT_PROTOCOL_TYPE_S protocol_struct = {0};
+
+UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct)
+{
+	unsigned char i = 0;
+	UBOOT_STATUS_E ret = UBOOT_ERROR;
+	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
+
+	if ((buf == (void *)0) || ((uboot_struct == (void *)0))) {
+		return ret;
+	}
+
+	assert_param(IS_UBOOT_WAYS(uboot_struct->uboot_ways));
+	assert_param(IS_UBOOT_ACK(uboot_struct->uboot_ack));
+	assert_param(IS_HANK_MODULE(uboot_struct->uboot_module));
+
+	switch(uboot_struct->uboot_module) {
+		case UBOOT_HANK:
+			assert_param(IS_HANK_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_SRAM:
+			assert_param(IS_SRAM_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_FLASH:
+			assert_param(IS_FLASH_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_END:
+			assert_param(IS_END_EVENT(uboot_struct->uboot_event));
+			break;
+		default:
+			break;
+	}
+
+	if (uboot_struct->p_uboot_data == (void *)0) {
+		uboot_struct->uboot_data_len = 0;
+		protocol_struct.len[0] = 0;
+	}
+
+	protocol_struct.protocol_ver = 0x01;
+
+	if (uboot_struct->uboot_ack == UBOOT_CTL) {
+		protocol_struct.addr = 0x82;
+	} else {
+		protocol_struct.addr = 0x28;
+	}
+	protocol_struct.module = uboot_struct->uboot_module;
+	protocol_struct.event = uboot_struct->uboot_event;
+	protocol_struct.ack = 0x01;
+
+	protocol_struct.len[0] = uboot_struct->uboot_data_len;
+	protocol_struct.sum = data_sum(uboot_struct);
+	protocol_struct.checksum = protocol_sum();
+
+
+	if (uboot_struct->uboot_ways == UBOOT_I2C) {
+		for(i = 0; i < 9; i++) {
+			buf[i] = p_protocol[i];
+		}
+
+		for(i = 0; i < (protocol_struct.len[0]); i++) {
+			buf[i + 9] = uboot_struct->p_uboot_data[i];
+		}
+	} else {
+		buf[0] = 0x5A;
+		for(i = 0; i < 9; i++) {
+			buf[i + 1] = p_protocol[i];
+		}
+
+		for(i = 0; i < (protocol_struct.len[0]); i++) {
+			buf[i + 10] = uboot_struct->p_uboot_data[i];
+		}
+	}
+
+	ret = UBOOT_OK;
+	return ret;
+}
+
+
+unsigned char protocol_sum(void)
+{
+	unsigned char sum = 0;
+	unsigned char i = 0;
+	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
+	
+	for (i = 1; i < 9 ; i++) {
+		sum += p_protocol[i];
+	}
+	return sum;
+}
+
+unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct)
+{
+	unsigned char sum = 0;
+	unsigned char i = 0;
+
+	for (i = 0; i < uboot_struct->uboot_data_len; i++) {
+		sum += uboot_struct->p_uboot_data[i];
+	}
+	return sum;
+}
+---------------------------------------------------------------------------------------------------------
+
+以上内容我要拿出来方便我编入到程序中，将来给其他同事使用。
