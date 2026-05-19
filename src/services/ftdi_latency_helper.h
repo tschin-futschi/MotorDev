@@ -20,7 +20,8 @@ namespace FtdiLatencyHelper {
 // @brief 把指定 COM 端口对应 FT232 芯片的 Latency Timer 设置为 latencyMs
 // @param portName       Qt COM 端口名（如 "COM5"）
 // @param latencyMs      目标 Latency Timer 值，1-255 ms
-// @param outSerialNumber 出参：成功时填充 FTDI 序列号，便于日志定位
+// @param outSerialNumber 出参：成功时填充 FTDI 设备标识（形如 "index=N,COMN"），仅用于日志定位；
+//                          不再保证是 FTDI 芯片烧写的 serial（部分 FT232 未烧 serial）
 // @param outErrorMessage 出参：失败时填充原因短语
 // @return 成功 true / 失败 false（best-effort，调用方失败时仅打日志，不阻断打开串口）
 bool setLatencyTimerForPort(const QString &portName,

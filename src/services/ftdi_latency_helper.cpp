@@ -4,8 +4,10 @@
 //
 // 实现要点：
 //   - 运行时 LoadLibrary("ftd2xx.dll")，避免编译期对 FTDI SDK 的硬依赖
-//   - 通过 QSerialPortInfo 拿 portName 对应设备的 serialNumber，
-//     用 FT_OpenEx + FT_OPEN_BY_SERIAL_NUMBER 精确匹配 FT232 设备
+//   - 通过 FT_CreateDeviceInfoList 枚举所有 FTDI 设备，逐个 FT_Open(index)
+//     后调 FT_GetComPortNumber 反查 COM 编号，与 portName（"COM<n>"）匹配
+//     —— 不依赖 Qt 暴露的 serialNumber（部分 FT232 出厂未烧 serial 时
+//     QSerialPortInfo 会返回 Windows USB 实例 ID，导致按 serial 打开失败）
 //   - 设置完 LatencyTimer 后立即 FT_Close，不持有 D2XX 句柄，
 //     避免与后续 QSerialPort（VCP 模式）打开互锁
 //   - LatencyTimer 写入 FT232 芯片寄存器是持久的，D2XX 关闭后
@@ -32,25 +34,26 @@ using FT_STATUS = unsigned long;
 using FT_HANDLE = void *;
 
 constexpr FT_STATUS FT_OK = 0;
-constexpr unsigned long FT_OPEN_BY_SERIAL_NUMBER = 1;
 constexpr unsigned short FTDI_VENDOR_ID = 0x0403;
 
 using PFN_FT_CreateDeviceInfoList = FT_STATUS (WINAPI *)(unsigned long *);
-using PFN_FT_OpenEx               = FT_STATUS (WINAPI *)(void *, unsigned long, FT_HANDLE *);
+using PFN_FT_Open                 = FT_STATUS (WINAPI *)(int, FT_HANDLE *);
+using PFN_FT_GetComPortNumber     = FT_STATUS (WINAPI *)(FT_HANDLE, long *);
 using PFN_FT_SetLatencyTimer      = FT_STATUS (WINAPI *)(FT_HANDLE, unsigned char);
 using PFN_FT_Close                = FT_STATUS (WINAPI *)(FT_HANDLE);
 
 struct D2xxProcs {
     HMODULE module = nullptr;
     PFN_FT_CreateDeviceInfoList createDeviceInfoList = nullptr;
-    PFN_FT_OpenEx               openEx               = nullptr;
+    PFN_FT_Open                 openByIndex          = nullptr;
+    PFN_FT_GetComPortNumber     getComPortNumber     = nullptr;
     PFN_FT_SetLatencyTimer      setLatencyTimer      = nullptr;
     PFN_FT_Close                closeHandle          = nullptr;
 
     bool valid() const {
         return (module != nullptr) && (createDeviceInfoList != nullptr)
-               && (openEx != nullptr) && (setLatencyTimer != nullptr)
-               && (closeHandle != nullptr);
+               && (openByIndex != nullptr) && (getComPortNumber != nullptr)
+               && (setLatencyTimer != nullptr) && (closeHandle != nullptr);
     }
 };
 
@@ -62,8 +65,10 @@ D2xxProcs loadD2xx() {
     }
     procs.createDeviceInfoList = reinterpret_cast<PFN_FT_CreateDeviceInfoList>(
         ::GetProcAddress(procs.module, "FT_CreateDeviceInfoList"));
-    procs.openEx = reinterpret_cast<PFN_FT_OpenEx>(
-        ::GetProcAddress(procs.module, "FT_OpenEx"));
+    procs.openByIndex = reinterpret_cast<PFN_FT_Open>(
+        ::GetProcAddress(procs.module, "FT_Open"));
+    procs.getComPortNumber = reinterpret_cast<PFN_FT_GetComPortNumber>(
+        ::GetProcAddress(procs.module, "FT_GetComPortNumber"));
     procs.setLatencyTimer = reinterpret_cast<PFN_FT_SetLatencyTimer>(
         ::GetProcAddress(procs.module, "FT_SetLatencyTimer"));
     procs.closeHandle = reinterpret_cast<PFN_FT_Close>(
@@ -78,9 +83,9 @@ void unloadD2xx(D2xxProcs &procs) {
     }
 }
 
-// 通过 QSerialPortInfo 查找 portName 对应设备的 FTDI 序列号；
-// 同时确认 VID == 0x0403，避免误把非 FTDI 桥（CP210x / CH340）当 FTDI 处理。
-QString findFtdiSerialForPort(const QString &portName, QString &outErrorMessage) {
+// 仅通过 VID 确认 portName 对应的是 FTDI 桥（不再依赖 serialNumber），
+// 用于在加载 D2XX 前快速过滤掉 CP210x / CH340 等非 FTDI 设备，给出清晰错误。
+bool isFtdiPortByVid(const QString &portName, QString &outErrorMessage) {
     const auto ports = QSerialPortInfo::availablePorts();
     for (const auto &info : ports) {
         if (info.portName() != portName) {
@@ -91,17 +96,23 @@ QString findFtdiSerialForPort(const QString &portName, QString &outErrorMessage)
                                   .arg(portName)
                                   .arg(info.hasVendorIdentifier() ? info.vendorIdentifier() : 0,
                                        4, 16, QLatin1Char('0'));
-            return {};
+            return false;
         }
-        const QString serial = info.serialNumber();
-        if (serial.isEmpty()) {
-            outErrorMessage = QStringLiteral("FTDI port %1 has empty serial number").arg(portName);
-            return {};
-        }
-        return serial;
+        return true;
     }
     outErrorMessage = QStringLiteral("port %1 not found in available ports").arg(portName);
-    return {};
+    return false;
+}
+
+// 从 "COM<n>" 形式解析 n；非该形式返回 -1。
+int parseComPortNumber(const QString &portName) {
+    const QString trimmed = portName.trimmed();
+    if (!trimmed.startsWith(QLatin1String("COM"), Qt::CaseInsensitive)) {
+        return -1;
+    }
+    bool ok = false;
+    const int n = trimmed.mid(3).toInt(&ok);
+    return (ok && n > 0) ? n : -1;
 }
 
 }  // namespace
@@ -113,11 +124,19 @@ bool setLatencyTimerForPort(const QString &portName,
     outSerialNumber.clear();
     outErrorMessage.clear();
 
-    const QString serial = findFtdiSerialForPort(portName, outErrorMessage);
-    if (serial.isEmpty()) {
+    // 0. 通过 VID 快速过滤非 FTDI 桥，避免无谓加载 D2XX
+    if (!isFtdiPortByVid(portName, outErrorMessage)) {
         return false;
     }
 
+    // 1. 解析目标 COM 号（FT_GetComPortNumber 返回的就是这个整数）
+    const int targetComNo = parseComPortNumber(portName);
+    if (targetComNo < 0) {
+        outErrorMessage = QStringLiteral("port name %1 is not in COM<n> form").arg(portName);
+        return false;
+    }
+
+    // 2. 动态加载 ftd2xx.dll
     D2xxProcs procs = loadD2xx();
     if (!procs.valid()) {
         unloadD2xx(procs);
@@ -125,30 +144,69 @@ bool setLatencyTimerForPort(const QString &portName,
         return false;
     }
 
+    // 3. 枚举 FTDI 设备，逐个 FT_Open(index) → FT_GetComPortNumber 反查 COM 号匹配
     bool ok = false;
     do {
-        const QByteArray serialAscii = serial.toLatin1();
-        FT_HANDLE handle = nullptr;
-        FT_STATUS st = procs.openEx(const_cast<char *>(serialAscii.constData()),
-                                     FT_OPEN_BY_SERIAL_NUMBER,
-                                     &handle);
-        if (st != FT_OK || handle == nullptr) {
-            outErrorMessage = QStringLiteral("FT_OpenEx failed for serial=%1 (st=%2)")
-                                  .arg(serial).arg(st);
-            break;
-        }
-
-        st = procs.setLatencyTimer(handle, latencyMs);
+        unsigned long numDevs = 0;
+        FT_STATUS st = procs.createDeviceInfoList(&numDevs);
         if (st != FT_OK) {
-            outErrorMessage = QStringLiteral("FT_SetLatencyTimer(%1) failed (st=%2)")
-                                  .arg(latencyMs).arg(st);
-            (void)procs.closeHandle(handle);
+            outErrorMessage = QStringLiteral("FT_CreateDeviceInfoList failed (st=%1)").arg(st);
+            break;
+        }
+        if (numDevs == 0) {
+            outErrorMessage = QStringLiteral("no FTDI devices found via D2XX");
             break;
         }
 
-        (void)procs.closeHandle(handle);
-        outSerialNumber = serial;
-        ok = true;
+        QString lastInnerError;
+        for (unsigned long i = 0; i < numDevs; ++i) {
+            FT_HANDLE handle = nullptr;
+            st = procs.openByIndex(static_cast<int>(i), &handle);
+            if (st != FT_OK || handle == nullptr) {
+                lastInnerError = QStringLiteral("FT_Open(index=%1) failed (st=%2)")
+                                     .arg(i).arg(st);
+                continue;
+            }
+
+            long comNo = -1;
+            st = procs.getComPortNumber(handle, &comNo);
+            if (st != FT_OK) {
+                lastInnerError = QStringLiteral("FT_GetComPortNumber(index=%1) failed (st=%2)")
+                                     .arg(i).arg(st);
+                (void)procs.closeHandle(handle);
+                continue;
+            }
+            if (comNo < 0 || comNo != targetComNo) {
+                (void)procs.closeHandle(handle);
+                continue;
+            }
+
+            // 匹配上目标 COM 号 —— 设置 LatencyTimer 后立即关闭，让 VCP 接管
+            st = procs.setLatencyTimer(handle, latencyMs);
+            if (st != FT_OK) {
+                outErrorMessage = QStringLiteral(
+                    "FT_SetLatencyTimer(%1) failed for index=%2 (st=%3)")
+                    .arg(latencyMs).arg(i).arg(st);
+                (void)procs.closeHandle(handle);
+                break;
+            }
+            (void)procs.closeHandle(handle);
+            outSerialNumber = QStringLiteral("index=%1,COM%2").arg(i).arg(comNo);
+            ok = true;
+            break;
+        }
+
+        if (!ok && outErrorMessage.isEmpty()) {
+            if (!lastInnerError.isEmpty()) {
+                outErrorMessage = QStringLiteral(
+                    "no FTDI device matched %1 (scanned %2 devices; last error: %3)")
+                    .arg(portName).arg(numDevs).arg(lastInnerError);
+            } else {
+                outErrorMessage = QStringLiteral(
+                    "no FTDI device matched %1 (scanned %2 devices, none reported this COM)")
+                    .arg(portName).arg(numDevs);
+            }
+        }
     } while (false);
 
     unloadD2xx(procs);

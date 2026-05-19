@@ -157,7 +157,7 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
         QString ftdiError;
         if (FtdiLatencyHelper::setLatencyTimerForPort(portName, 1, ftdiSerial, ftdiError)) {
             qCInfo(lcSerialManager).noquote()
-                << QStringLiteral("FT232 Latency Timer set to 1 ms (serial=%1)").arg(ftdiSerial);
+                << QStringLiteral("FT232 Latency Timer set to 1 ms (%1)").arg(ftdiSerial);
         } else {
             qCWarning(lcSerialManager).noquote()
                 << QStringLiteral("FT232 Latency Timer auto-set skipped: %1").arg(ftdiError);
