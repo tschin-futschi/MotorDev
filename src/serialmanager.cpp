@@ -8,6 +8,8 @@
 
 #include "serialmanager.h"
 
+#include "services/ftdi_latency_helper.h"
+
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QEventLoop>
@@ -146,6 +148,21 @@ void SerialManager::openPort(const QString &portName, qint32 baudRate) {
     qCInfo(lcSerialManager).noquote() << QStringLiteral("Opening port %1 at %2 (8N1)...")
                               .arg(portName)
                               .arg(baudRate);
+
+    // 在打开 VCP 之前，先通过 D2XX 把 FT232 芯片端 Latency Timer 强制设为 1 ms，
+    // 消除默认 16 ms 对烧录链路 RTT 的拖累。best-effort：失败仅打 warning，
+    // 不阻断后续 VCP 打开（非 FTDI 桥、D2XX 不可用等场景应继续工作）。
+    {
+        QString ftdiSerial;
+        QString ftdiError;
+        if (FtdiLatencyHelper::setLatencyTimerForPort(portName, 1, ftdiSerial, ftdiError)) {
+            qCInfo(lcSerialManager).noquote()
+                << QStringLiteral("FT232 Latency Timer set to 1 ms (serial=%1)").arg(ftdiSerial);
+        } else {
+            qCWarning(lcSerialManager).noquote()
+                << QStringLiteral("FT232 Latency Timer auto-set skipped: %1").arg(ftdiError);
+        }
+    }
 
     if (!m_serial->open(QIODevice::ReadWrite)) {
         const QString message = QStringLiteral("Failed to open %1: %2").arg(portName, m_serial->errorString());

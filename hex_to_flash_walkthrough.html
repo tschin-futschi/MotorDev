@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>从打开 HEX 到烧录完成 — 当前代码的完整执行路径</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #fafbfc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+                 sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  main {
+    max-width: 980px;
+    margin: 40px auto;
+    padding: 0 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 17px;
+    margin-top: 28px;
+    color: var(--accent);
+  }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li > ul { margin-top: 4px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, "Cascadia Mono",
+                 "SF Mono", Menlo, monospace;
+    font-size: 0.92em;
+    color: #24292f;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-header-bg);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  .callout {
+    background: #fff8c5;
+    border-left: 4px solid #d4a72c;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .note {
+    background: #ddf4ff;
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .ok {
+    background: #dafbe1;
+    border-left: 4px solid #2da44e;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+  .step {
+    color: var(--muted);
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .file {
+    color: var(--muted);
+    font-size: 0.92em;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>从打开 HEX 到烧录完成 — 当前代码的完整执行路径</h1>
+<p class="meta">
+  项目：MotorDev &nbsp;|&nbsp;
+  范围：<code>src/tabs/fwflashtab</code> · <code>src/protocol/firmware_parser</code> ·
+  <code>src/services/fwflashservice</code> · <code>src/services/flashstrategies/aw_sdk_strategy</code> ·
+  <code>src/protocol/motor_protocol</code>
+</p>
+
+<div class="note">
+  本文按代码当前实际行为逐步描述，从用户在 UI 上点击「浏览...」选择 <code>.hex</code> 文件，到一次完整烧录序列结束。
+  每一步都标注 file:line，便于跳转源码核对。
+</div>
+
+<h2>零、整体阶段一览</h2>
+
+<pre><code>[1] 选择文件         FwFlashTab::onBrowseClicked          (主线程, UI)
+[2] 解析固件         FirmwareParser::parseFile            (主线程, 同步)
+[3] 显示文件信息     FwFileInfoPanel::setInfo             (主线程, UI)
+[4] 点击开始         FwFlashTab::onStartRequested         (主线程, UI)
+[5] 前置停止序列     FwFlashService::runPreflightAndFlash (主线程, fire-and-forget)
+[6] worker 线程烧录  QThread + AwSdkStrategy::flash       (worker 线程)
+[7] DLL 5 步流程     ExtFuncInit → Bootcontrol →          (worker 线程)
+                     MoveBinDownload → ResetChip → DeInit
+[8] I2C 透传回调     onWriteI2c → syncI2cWrite (cmd 0x30) (worker → dispatcher)
+[9] 完成/失败/取消   invokeMethod 回主线程切状态           (worker → 主线程)
+</code></pre>
+
+<hr>
+
+<h2>一、选择文件（UI 主线程）</h2>
+
+<p>
+  用户点击「浏览...」按钮触发 <code>QFileDialog</code>，过滤器只允许 <code>.bin</code> 与 <code>.hex</code>。
+  选中后立即调用 <code>parseAndShowFile(path)</code> 把后续工作交给协议层。
+</p>
+
+<pre><code>void FwFlashTab::onBrowseClicked() {
+    const QString path = QFileDialog::getOpenFileName(
+        this,
+        tr("选择固件文件"),
+        QString(),
+        tr("Firmware Files (*.bin *.hex);;Binary (*.bin);;Intel HEX (*.hex)"));
+    if (path.isEmpty()) return;
+    parseAndShowFile(path);
+}</code></pre>
+
+<p class="file">来源：<code>src/tabs/fwflashtab.cpp:324</code></p>
+
+<h2>二、解析固件文件（协议层）</h2>
+
+<p>
+  <code>FirmwareParser::parseFile(path)</code> 是一个静态工具方法，返回一个值类型 <code>FirmwareInfo</code>。
+  对 <code>.hex</code> 文件，它做的事不仅是逐行解析，还包括<strong>段合并</strong>与<strong>CRC32 计算</strong>，
+  下游 UI 和烧录策略都直接使用 <code>FirmwareInfo::data</code>，不再二次处理。
+</p>
+
+<table>
+  <thead>
+    <tr><th>字段</th><th>含义</th><th>谁会读</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>valid / errorMessage</code></td><td>解析是否成功 + 失败原因</td><td>UI 三页切换</td></tr>
+    <tr><td><code>data</code></td><td>合并后的连续二进制（hex 段间用 0xFF 填充）</td><td>策略层烧录原料</td></tr>
+    <tr><td><code>crc32</code></td><td>对 <code>data</code> 做 IEEE 802.3 CRC32</td><td>UI 显示 + 日志</td></tr>
+    <tr><td><code>segments / minAddress / maxAddress</code></td><td>hex 段元信息</td><td>UI 显示</td></tr>
+    <tr><td><code>fileSizeBytes / effectiveBytes</code></td><td>原文件大小 / 有效数据字节数</td><td>UI 显示</td></tr>
+  </tbody>
+</table>
+
+<p>约束：</p>
+<ul>
+  <li>固件大小上限 <strong>1024 KB</strong>（<code>FirmwareParser::MaxFileBytes</code>），合并后超过即视为非法。</li>
+  <li>Intel HEX 支持类型 04（高 16 位扩展地址），段间用 0xFF 填充对齐。</li>
+  <li>解析失败时其他字段无意义，只有 <code>errorMessage</code> 可用。</li>
+</ul>
+
+<p class="file">来源：<code>src/protocol/firmware_parser.h:36-64</code></p>
+
+<h2>三、显示文件信息（UI）</h2>
+
+<p>
+  <code>parseAndShowFile</code> 拿到 <code>FirmwareInfo</code> 后，根据 <code>valid</code> 切换三种 UI 状态，
+  并把 <code>data</code> 拷贝到成员 <code>m_currentFirmwareData</code>（后续启动烧录时直接使用）。
+</p>
+
+<pre><code>void FwFlashTab::parseAndShowFile(const QString &path) {
+    m_currentFilePath = path;
+    m_pathEdit->setText(path);
+
+    const FirmwareInfo info = FirmwareParser::parseFile(path);
+    m_infoPanel->setInfo(info);          // FwFileInfoPanel 内部 QStackedWidget 切页
+
+    if (!info.valid) {
+        m_currentFileValid = false;
+        m_currentFirmwareData.clear();
+        m_currentFirmwareTotal = 0;
+        m_logPanel->appendError(tr("文件解析失败：%1").arg(info.errorMessage));
+    } else {
+        m_currentFileValid = true;
+        m_currentFirmwareData = info.data;
+        m_currentFirmwareTotal = info.data.size();
+        m_logPanel->appendInfo(
+            tr("已加载固件：%1（%2 字节，CRC32 0x%3）")
+                .arg(info.fileName).arg(info.data.size())
+                .arg(info.crc32, 8, 16, QLatin1Char('0')));
+    }
+    updateStartEnabled();                // 同步「开始」按钮可用状态
+}</code></pre>
+
+<p>
+  <code>updateStartEnabled()</code> 的启用条件：<strong>IC 已选 + 文件有效 + 服务非 busy</strong>。
+  任一不满足，「开始」按钮保持禁用。
+</p>
+
+<p class="file">来源：<code>src/tabs/fwflashtab.cpp:339-398</code></p>
+
+<h2>四、点击「开始」触发烧录服务</h2>
+
+<p>
+  <code>FwFlashControlPanel</code> 的「开始」按钮 emit <code>startRequested</code>，
+  转到 <code>FwFlashTab::onStartRequested()</code>，再下发到 <code>FwFlashService::startFlash()</code>。
+</p>
+
+<pre><code>void FwFlashTab::onStartRequested() {
+    const QString icModel = m_icCombo->currentData().toString();
+    if (icModel.isEmpty() || !m_currentFileValid) {
+        m_logPanel->appendWarn(tr("请先选择 IC 与有效固件文件"));
+        return;
+    }
+    m_service->startFlash(icModel, m_currentFirmwareData, m_currentFirmwareTotal);
+}</code></pre>
+
+<p>
+  <code>FwFlashService::startFlash()</code> 做四件事：
+</p>
+<ol>
+  <li>检查 <code>isBusy()</code>、<code>m_registry</code>、IC 注册情况、固件非空，任一失败立刻 <code>finished(false, ...)</code> 返回。</li>
+  <li>回收旧 worker 线程（防御性，正常路径下应已退出）。</li>
+  <li>创建新的 <code>std::shared_ptr&lt;std::atomic&lt;bool&gt;&gt; m_cancelFlag</code>，初值 false。</li>
+  <li>切状态 <code>Preparing</code>，发首条 stageMessage + 进度 0，进入 <code>runPreflightAndFlash()</code>。</li>
+</ol>
+
+<p class="file">来源：<code>src/tabs/fwflashtab.cpp:404-411</code> · <code>src/services/fwflashservice.cpp:74-113</code></p>
+
+<h2>五、前置停止序列（主线程，fire-and-forget）</h2>
+
+<p>
+  烧录前需要保证 STM32 端处于安静状态：停掉示波器采样、停掉波形发生器、停掉循环写入、关掉 PMIC 输出。
+  这四个动作通过 <code>FwFlashTab</code> 在构造时由 <code>MainWindow</code> 注入的 <code>std::function&lt;void()&gt;</code> 回调触发。
+</p>
+
+<pre><code>// runPreflightAndFlash() 摘要
+setState(StoppingScope);     invokeIfSet(m_stopScope);
+setState(StoppingGenerator); invokeIfSet(m_stopGenerator);
+setState(StoppingCyclic);    invokeIfSet(m_stopCyclic);
+setState(DisablingPmic);     invokeIfSet(m_disablePmic);
+
+if (m_cancelFlag->load()) {
+    // 前置期间用户已点取消 → 直接 Cancelled 收尾
+}</code></pre>
+
+<div class="callout">
+  <strong>fire-and-forget 语义：</strong>四个回调中任何一个未注入或失败，Service 只写日志，<strong>绝不阻断后续烧录</strong>。
+  这是产品决策——不假设这些远端动作必须成功，且不强等 ACK。
+</div>
+
+<p class="file">来源：<code>src/services/fwflashservice.cpp:131-160</code></p>
+
+<h2>六、进入 worker 线程执行烧录</h2>
+
+<p>
+  前置序列完成且未取消后，Service 切到 <code>Flashing</code> 状态，
+  用 <code>QThread::create</code> 启动一个一次性 worker 线程，把 <code>strategy-&gt;flash(...)</code> 放进去跑。
+</p>
+
+<pre><code>m_workerThread = QThread::create([self, strategy, firmware, cancelFlag, total]() {
+    QString errorMsg;
+    auto progress = [self, total](qint64 sent) {
+        // 跨线程 emit，AutoConnection 自动转 QueuedConnection 到主线程
+        emit self->progressUpdated(sent, total);
+        emit self->stageMessage(QStringLiteral("烧录中 %1 KB / %2 KB (%3%)")...);
+    };
+    const bool ok = strategy->flash(firmware, progress, *cancelFlag, &errorMsg);
+    const bool wasCancelled = cancelFlag->load();
+
+    QMetaObject::invokeMethod(self.data(), [self, ok, wasCancelled, errorMsg, total]() {
+        // 在主线程切 Completed / Failed / Cancelled 并 emit finished
+    }, Qt::QueuedConnection);
+});
+m_workerThread->start();</code></pre>
+
+<p>
+  注意两点：
+</p>
+<ul>
+  <li><code>QPointer&lt;FwFlashService&gt; self</code> 防御 service 在 worker 完成前被销毁。</li>
+  <li><code>cancelFlag</code> 是 <code>shared_ptr</code> 拷贝，保证 worker 内对原子标志的访问始终安全。</li>
+</ul>
+
+<p class="file">来源：<code>src/services/fwflashservice.cpp:162-223</code></p>
+
+<h2>七、AwSdkStrategy 五步流程（worker 线程内同步串行）</h2>
+
+<p>
+  <code>AwSdkStrategy::flash()</code> 是 <code>AW86006</code> / <code>AW86100</code> 共用的烧录算法，
+  通过 <code>QLibrary</code> 动态加载厂家 DLL（默认 <code>AW86100.dll</code>），按固定顺序调用 5 个导出符号。
+</p>
+
+<h3>步骤 0：加载 DLL 与符号 resolve</h3>
+<p>
+  <code>ensureDllLoaded()</code> 先 <code>m_library.setFileName(dllPath())</code> + <code>load()</code>，
+  然后逐一 <code>resolve</code> 5 个符号；任一缺失立即失败并写 <code>errorMessage</code>。
+</p>
+
+<pre><code>resolve: AwOIS_ExtFuncInit
+         Aw_OIS_ExtFuncDeInit
+         AwBootcontrol
+         AwMoveBinDownload
+         AwResetChip</code></pre>
+
+<h3>步骤 1：AwOIS_ExtFuncInit</h3>
+<p>
+  把 3 个 C 风格回调（thunk）注册给 DLL：
+</p>
+<pre><code>DllExtFuncList list = {
+    &AwSdkStrategy::extReadI2cThunk,    // pFunc_I2C_Read
+    &AwSdkStrategy::extWriteI2cThunk,   // pFunc_I2C_Write
+    &AwSdkStrategy::extOutputLogThunk,  // pFunc_OutputLog
+};
+const int ret = m_fnInit(&list);        // 0 视为成功</code></pre>
+<p>
+  成功后置 <code>m_initCalled = true</code>（决定收尾路径是否需要 DeInit）。
+  Thunk 通过静态 <code>thread_local s_currentInstance</code> 路由回当前 strategy 实例方法。
+</p>
+
+<h3>步骤 2：AwBootcontrol(20, 7)</h3>
+<p>
+  让 IC 进入 boot 模式，参数 <code>(times=20, delay=7)</code> 是厂家给定默认。
+  成功后置 <code>m_bootEntered = true</code>（决定收尾路径是否需要 ResetChip）。
+</p>
+
+<h3>步骤 3：AwMoveBinDownload(buf, len, 0)</h3>
+<p>
+  把 <code>QByteArray</code> 的裸指针交给 DLL，DLL 内部循环切包并通过回调下发到 I2C 总线。
+  第 3 参 <code>kDLNumType_0</code>（16 word per pack）已由用户决议固定为 0。
+</p>
+<p>
+  下载阶段 <code>m_inDownload = true</code>，每次 <code>onWriteI2c</code> 成功后累计字节并节流上报进度。
+</p>
+
+<h3>步骤 4：AwResetChip</h3>
+<p>
+  复位 IC，使其从 boot 模式退出回到正常运行模式。成功后清 <code>m_bootEntered</code>。
+</p>
+
+<h3>步骤 5：Aw_OIS_ExtFuncDeInit</h3>
+<p>
+  释放 DLL 内部资源。返回值若非零仅写 warn 日志，不报失败（已经走到这一步意味着核心流程完成）。
+</p>
+
+<div class="callout">
+  <strong>取消与异常收尾：</strong>每步前 <code>checkCancel()</code>，任一步失败走 <code>emergencyCleanup()</code>：
+  若已进 boot 强制调 <code>AwResetChip</code>；若已 Init 强制调 <code>DeInit</code>。
+  目的是让 IC 不被卡在 boot 模式。收尾本身的失败不覆盖原始 <code>errorMessage</code>，仅追加日志。
+</div>
+
+<p class="file">来源：<code>src/services/flashstrategies/aw_sdk_strategy.cpp:53-256</code></p>
+
+<h2>八、I2C 透传回调（下载阶段循环触发）</h2>
+
+<p>
+  下载阶段，DLL 内部每打包一帧数据就回调 <code>I2C_Write</code> 一次。完整调用链：
+</p>
+
+<pre><code>DLL  ─►  extWriteI2cThunk(devId, wrSize, wrData)        // C-style, 无 this
+       │   通过 thread_local s_currentInstance 路由
+       ▼
+       onWriteI2c(devId, wrSize, wrData)                 // 实例方法
+       │   检查 cancelFlag；按 addrSize=0 调
+       ▼
+       syncI2cWrite(devId, 0, nullptr, wrSize, wrData, 5000ms)
+       │   1) MotorProtocol::encodeI2cTransferWrite()    // cmd 0x30
+       │   2) QMetaObject::invokeMethod(dispatcher, ..., QueuedConnection)
+       │      dispatcher 在主线程 submitCommand(High, callback)
+       │   3) QMutex + QWaitCondition 阻塞等待响应
+       │   4) STM32 回帧 → CommandDispatcher 触发 callback
+       │      检查是否为 CmdErrorResponse / LocalErrorCode
+       │   5) wakeOne() 解除阻塞
+       ▼
+       返回 0 → notifyProgress(wrSize) 累计字节并节流上报</code></pre>
+
+<p>
+  关键设计：
+</p>
+<ul>
+  <li><strong>同步阻塞</strong>：DLL 的 I2C 回调必须同步返回结果，但我们的串口通信是异步的，
+      所以 worker 线程用 <code>QWaitCondition</code> 把异步响应"压"成同步语义。</li>
+  <li><strong>跨线程提交</strong>：<code>CommandDispatcher</code> 生存在主线程，worker 通过
+      <code>invokeMethod + QueuedConnection</code> 把 <code>submitCommand</code> 转过去执行。</li>
+  <li><strong>AddrSize == 0</strong>：寄存器地址段交给 DLL 自己拼进 <code>wrData</code>，
+      STM32 端按 <code>HAL_I2C_Master_Transmit</code> 直接发送整段 data（地址段跳过）。</li>
+  <li><strong>取消传播</strong>：等待循环每次 wait 后再检查 <code>cancelFlag</code>，
+      标志翻 true 立刻返回 -1，DLL 收到非零会主动中止下载。</li>
+  <li><strong>超时 5s</strong>：单次 I2C 透传最长等 5000ms，超时返回 -1。</li>
+</ul>
+
+<p>
+  进度上报节流：<code>notifyProgress()</code> 不是每包都 emit，而是按 <strong>16ms 间隔</strong> 或 <strong>每 1KB</strong>
+  二者满足其一才上报，避免 UI 线程被频繁刷屏。
+</p>
+
+<p>
+  读操作 <code>syncI2cRead</code>（cmd <code>0x31</code>）机制对称，多一步把响应 <code>memcpy</code>
+  进 DLL 的 <code>pRdBuf</code>，并校验返回长度不小于请求长度。
+</p>
+
+<p class="file">来源：<code>src/services/flashstrategies/aw_sdk_strategy.cpp:262-422</code></p>
+
+<h2>九、完成 / 失败 / 取消收尾</h2>
+
+<p>
+  worker 线程内 <code>flash()</code> 返回后，结果通过 <code>QMetaObject::invokeMethod</code> 切回主线程：
+</p>
+
+<table>
+  <thead>
+    <tr><th>结果</th><th>状态切换</th><th>UI 表现</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>成功（ok == true）</td>
+      <td><code>Flashing → Completed → Idle</code></td>
+      <td>进度条 100%、stage "烧录完成"、Ok 日志、<code>finished(true, "成功")</code></td>
+    </tr>
+    <tr>
+      <td>取消（cancelFlag == true）</td>
+      <td><code>Flashing → Cancelled → Idle</code></td>
+      <td>stage "已取消"、Info 日志、<code>finished(false, "已取消")</code></td>
+    </tr>
+    <tr>
+      <td>失败</td>
+      <td><code>Flashing → Failed → Idle</code></td>
+      <td>stage "失败：xxx"、Error 日志、<code>finished(false, errorMsg)</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  <code>FwFlashTab</code> 的 <code>onServiceFinished</code> 槽再调一次 <code>updateStartEnabled()</code>，
+  按钮、Combo、Browse / Clear 恢复可用。
+</p>
+
+<p class="file">来源：<code>src/services/fwflashservice.cpp:191-223</code> · <code>src/tabs/fwflashtab.cpp:442</code></p>
+
+<hr>
+
+<h2>附录 A：协议帧（I2C 透传 0x30 / 0x31）</h2>
+
+<p>
+  烧录期间所有底层 I2C 通信都封装为以下两个命令码：
+</p>
+
+<table>
+  <thead>
+    <tr><th>命令</th><th>方向</th><th>编码函数</th><th>含义</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>0x30</code> <code>CmdI2cTransferWrite</code></td>
+      <td>上位机 → STM32</td>
+      <td><code>MotorProtocol::encodeI2cTransferWrite</code></td>
+      <td>同步 I2C 写：任意 DevId + AddrSize 字节地址 + DataLen 字节数据</td>
+    </tr>
+    <tr>
+      <td><code>0x31</code> <code>CmdI2cTransferRead</code></td>
+      <td>上位机 → STM32</td>
+      <td><code>MotorProtocol::encodeI2cTransferRead</code></td>
+      <td>同步 I2C 读：任意 DevId + AddrSize 字节地址 + 期望读取长度</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  本场景下 <code>AddrSize == 0</code>，地址段由 DLL 拼在 <code>wrData</code> 内，STM32 端跳过寄存器地址段直发 data。
+  该 HAL 调法目前按推测实现，等供应商最终确认（参见 <code>docs/file_index.md</code> OPEN 项）。
+</p>
+
+<h2>附录 B：线程与同步要点</h2>
+
+<ul>
+  <li><strong>FwFlashService 自身</strong>：生存于主线程，<code>m_state</code> 仅在主线程修改。</li>
+  <li><strong>前置停止序列</strong>：在主线程同步完成，回调内部行为由各 Service 自行决定（多半是 invokeMethod 转到 SerialManager 线程）。</li>
+  <li><strong>strategy-&gt;flash()</strong>：在 worker 线程跑，期间所有 emit signal 走 Qt AutoConnection 自动转 QueuedConnection 回主线程。</li>
+  <li><strong>CommandDispatcher</strong>：生存于主线程，worker 通过 invokeMethod 跨线程 submit。</li>
+  <li><strong>SerialManager</strong>：在独立线程，但本流程不直接调它，全部走 dispatcher 中转。</li>
+  <li><strong>cancelFlag</strong>：<code>shared_ptr&lt;atomic&lt;bool&gt;&gt;</code>，主线程置位，worker 与各 I2C 等待循环查询。</li>
+</ul>
+
+<h2>附录 C：常见失败点速查</h2>
+
+<table>
+  <thead>
+    <tr><th>失败位置</th><th>典型表现</th><th>处理方式</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>FirmwareParser 解析</td>
+      <td>UI 切到错误页 + 红色日志，「开始」按钮保持禁用</td>
+      <td>用户重新选择文件即可，无副作用</td>
+    </tr>
+    <tr>
+      <td>DLL 加载或符号 resolve</td>
+      <td>"加载 DLL 失败"或"DLL 缺少导出符号"</td>
+      <td>直接失败返回，无 boot 状态需要回滚</td>
+    </tr>
+    <tr>
+      <td>AwBootcontrol 失败</td>
+      <td>IC 未进入 boot 模式，DLL 返回非零</td>
+      <td>仅做 DeInit；IC 仍在正常模式，无需 ResetChip</td>
+    </tr>
+    <tr>
+      <td>AwMoveBinDownload 失败</td>
+      <td>I2C 中途失败或 DLL 校验失败</td>
+      <td>emergencyCleanup 强制 ResetChip + DeInit，IC 退出 boot</td>
+    </tr>
+    <tr>
+      <td>I2C 透传超时（5s）</td>
+      <td>STM32 长时间未回帧</td>
+      <td>onWriteI2c 返回 -1，DLL 中止；emergencyCleanup 收尾</td>
+    </tr>
+    <tr>
+      <td>用户点取消</td>
+      <td>cancelFlag 翻 true，I2C 回调返回 -1 让 DLL 中止</td>
+      <td>emergencyCleanup 收尾，UI 切 Cancelled</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="ok">
+  本文描述的是<strong>当前代码现状</strong>，覆盖 AW86006 / AW86100 通过 <code>AwSdkStrategy</code> + dummy DLL 联调的完整链路。
+  DW9786 / DW9788 仍为 stub，与本流程无关。
+</div>
+
+</main>
+</body>
+</html>

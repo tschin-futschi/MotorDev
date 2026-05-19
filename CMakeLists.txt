@@ -36,6 +36,8 @@ qt_add_executable(MotorDev
     src/services/commanddispatcher.h
     src/services/cyclicwriteservice.cpp
     src/services/cyclicwriteservice.h
+    src/services/ftdi_latency_helper.cpp
+    src/services/ftdi_latency_helper.h
     src/services/generatorservice.cpp
     src/services/generatorservice.h
     src/services/registerservice.cpp

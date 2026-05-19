@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FW 烧录代码 — 实现细节深入讲解</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --green: #1a7f37;
+    --green-soft: #dafbe1;
+    --purple: #8250df;
+    --purple-soft: #fbefff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.8;
+  }
+  main { max-width: 940px; margin: 40px auto; padding: 0 28px 80px; }
+  h1 { font-size: 28px; margin: 0 0 10px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+  h2 {
+    font-size: 24px; margin-top: 56px;
+    padding: 12px 16px;
+    background: linear-gradient(to right, var(--accent-soft), transparent);
+    border-left: 5px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  h3 { font-size: 18px; margin-top: 30px; color: var(--accent); }
+  h4 { font-size: 15px; margin-top: 20px; font-weight: 600; }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 22px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.9em; color: #24292f;
+  }
+  pre {
+    background: #0d1117; color: #e6edf3;
+    border: 1px solid #30363d; border-radius: 6px;
+    padding: 16px 18px; overflow-x: auto;
+    line-height: 1.6; font-size: 13.5px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+  pre .kw { color: #ff7b72; }
+  pre .ty { color: #ffa657; }
+  pre .fn { color: #d2a8ff; }
+  pre .str { color: #a5d6ff; }
+  pre .cmt { color: #8b949e; font-style: italic; }
+  pre .num { color: #79c0ff; }
+
+  .cpp-box {
+    background: var(--purple-soft);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .cpp-box::before {
+    content: "📘 C++ 概念";
+    display: block;
+    color: var(--purple);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .cpp-box strong { color: var(--purple); }
+
+  .why {
+    background: var(--green-soft);
+    border-left: 4px solid var(--green);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .why::before {
+    content: "💡 为什么这么写：";
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .pitfall {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .pitfall::before {
+    content: "⚠ 容易困惑：";
+    color: #845a00;
+    font-weight: 600;
+  }
+
+  .note {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  thead th { background: var(--code-bg); font-weight: 600; }
+
+  .file-banner {
+    background: #1f2328;
+    color: #e6edf3;
+    padding: 10px 16px;
+    border-radius: 6px 6px 0 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 14px;
+    margin-top: 24px;
+    margin-bottom: 0;
+  }
+  .file-banner + pre {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-top: 0;
+  }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>FW 烧录代码 — 实现细节深入讲解</h1>
+<p class="meta">本文聚焦 .cpp 文件里的实现代码，逐段讲解函数体的真实内容 &nbsp;|&nbsp; 与"阅读指南"配套使用</p>
+
+<div class="note">
+  <strong>本文档的定位：</strong>"阅读指南"告诉你<strong>读什么、什么顺序读</strong>；这份文档告诉你<strong>每个函数体里到底写了什么、为什么这样写</strong>。如果你已经读过指南，这份是更深一层的展开。<br><br>
+  涉及的 C++/Qt 新概念会在第一次出现时讲清楚（紫色 📘 框）。一些已经在前面的指南里讲过的概念（虚函数、lambda、std::atomic、shared_ptr 等）这里会简略提及。
+</div>
+
+<h2>覆盖的实现内容（10 个核心函数）</h2>
+
+<table>
+  <thead><tr><th>章节</th><th>函数</th><th>所属文件</th><th>本章新概念</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>AwSdkStrategy::AwSdkStrategy()</code> 构造</td><td><code>aw_sdk_strategy.cpp</code></td><td>初始化列表、std::move</td></tr>
+    <tr><td>2</td><td><code>~AwSdkStrategy()</code> 析构</td><td>同上</td><td>QLibrary、isLoaded/unload</td></tr>
+    <tr><td>3</td><td><code>ensureDllLoaded()</code></td><td>同上</td><td>reinterpret_cast、QFunctionPointer</td></tr>
+    <tr><td>4</td><td><code>flash()</code> 5 步主体</td><td>同上</td><td>RAII 思想（bail lambda）</td></tr>
+    <tr><td>5</td><td><code>doInit / doDownload</code> 等 5 步</td><td>同上</td><td>取成员函数地址、static_cast、结构体初始化</td></tr>
+    <tr><td>6</td><td>3 个 thunk + onWriteI2c</td><td>同上</td><td>（已在指南讲过，本节简化）</td></tr>
+    <tr><td>7</td><td><code>syncI2cWrite()</code></td><td>同上</td><td>匿名 namespace、struct vs class、QMutex/QMutexLocker、QWaitCondition、虚假唤醒</td></tr>
+    <tr><td>8</td><td><code>notifyProgress()</code></td><td>同上</td><td>QDateTime 时间戳</td></tr>
+    <tr><td>9</td><td><code>emergencyCleanup()</code></td><td>同上</td><td>状态机式收尾</td></tr>
+    <tr><td>10</td><td><code>FwFlashService::startFlash()</code> + worker</td><td><code>fwflashservice.cpp</code></td><td>QThread::create</td></tr>
+  </tbody>
+</table>
+
+<h2>1. 构造函数：<code>AwSdkStrategy::AwSdkStrategy()</code></h2>
+
+<div class="file-banner">📄 aw_sdk_strategy.cpp（构造函数）</div>
+<pre><code><span class="ty">AwSdkStrategy</span>::<span class="fn">AwSdkStrategy</span>(<span class="ty">CommandDispatcher</span> *dispatcher, <span class="ty">LogSink</span> logSink)
+    : <span class="fn">m_dispatcher</span>(dispatcher)
+    , <span class="fn">m_logSink</span>(<span class="ty">std</span>::<span class="fn">move</span>(logSink)) {
+}</code></pre>
+
+<p>构造函数函数体是空的（<code>{ }</code> 里面什么都没写）。所有"工作"发生在<strong>那个奇怪的 <code>:</code> 后面那段</strong>，叫"<strong>初始化列表</strong>"。</p>
+
+<div class="cpp-box">
+  <strong>初始化列表（member initializer list）：</strong>构造函数参数列表后面、函数体前面，用 <code>: m_a(a), m_b(b)</code> 这种形式给成员变量赋初值。<br><br>
+  <strong>语法：</strong><br>
+  <pre style="margin:6px 0;"><code><span class="ty">ClassName</span>::<span class="fn">ClassName</span>(参数们)
+    : 成员1(初值1)
+    , 成员2(初值2)
+    , 成员3(初值3) {
+    <span class="cmt">// 函数体（可空）</span>
+}</code></pre>
+  每个成员单独一行，开头用 <code>:</code> 或 <code>,</code> 分隔。
+</div>
+
+<div class="why">
+  <strong>为什么用初始化列表，而不是在函数体里赋值？</strong><br><br>
+  对比两种写法：<br><br>
+  <strong>写法 A（函数体赋值）：</strong>
+  <pre style="margin:6px 0;"><code><span class="ty">AwSdkStrategy</span>::<span class="fn">AwSdkStrategy</span>(<span class="ty">CommandDispatcher</span> *d, <span class="ty">LogSink</span> s) {
+    m_dispatcher = d;          <span class="cmt">// 先默认构造，再赋值（两步）</span>
+    m_logSink = s;
+}</code></pre>
+  <strong>写法 B（初始化列表）：</strong>
+  <pre style="margin:6px 0;"><code><span class="ty">AwSdkStrategy</span>::<span class="fn">AwSdkStrategy</span>(<span class="ty">CommandDispatcher</span> *d, <span class="ty">LogSink</span> s)
+    : <span class="fn">m_dispatcher</span>(d), <span class="fn">m_logSink</span>(<span class="ty">std</span>::<span class="fn">move</span>(s)) {}     <span class="cmt">// 一步直接初始化</span></code></pre>
+  <ul>
+    <li>写法 A：成员先被<strong>默认构造</strong>（创建空对象），再被<strong>赋值</strong>，多一次操作</li>
+    <li>写法 B：成员<strong>直接</strong>用参数构造，更高效</li>
+  </ul>
+  对内置类型（int、指针）影响不大，但对复杂类型（QString、std::function、QByteArray）就有性能差别。<strong>C++ 良好习惯：能用初始化列表就用初始化列表</strong>。<br><br>
+  另外，<code>const</code> 成员、引用成员、没有默认构造函数的成员，<strong>必须</strong>用初始化列表。
+</div>
+
+<div class="cpp-box">
+  <strong><code>std::move(logSink)</code></strong> 的作用：把 <code>logSink</code> 标记为"我不再需要了"，然后让 <code>m_logSink</code> 直接<strong>窃取</strong>它的内容（而不是复制）。<br><br>
+  对 <code>std::function</code> 这种内部可能持有大对象（lambda 捕获了大堆变量）的类型，<code>move</code> 比拷贝快得多。<br><br>
+  <strong>第一遍读规则：</strong>看到 <code>std::move(x)</code>，就把它理解成"把 x 高效地搬过来"。
+</div>
+
+<h2>2. 析构函数：<code>~AwSdkStrategy()</code></h2>
+
+<div class="file-banner">📄 aw_sdk_strategy.cpp（析构函数）</div>
+<pre><code><span class="ty">AwSdkStrategy</span>::<span class="fn">~AwSdkStrategy</span>() {
+    <span class="kw">if</span> (m_library.<span class="fn">isLoaded</span>()) m_library.<span class="fn">unload</span>();
+}</code></pre>
+
+<p>整段就一行：如果 DLL 当前还加载着，就卸载它。</p>
+
+<div class="cpp-box">
+  <strong><code>QLibrary</code></strong> 是 Qt 提供的"<strong>动态库加载器</strong>"。Windows 下加载 <code>.dll</code>、Linux 下加载 <code>.so</code>，接口统一。<br><br>
+  常用方法：
+  <ul>
+    <li><code>setFileName(path)</code> — 设置要加载的文件</li>
+    <li><code>load()</code> — 实际加载，成功返回 true</li>
+    <li><code>isLoaded()</code> — 当前是否已加载</li>
+    <li><code>resolve(fnName)</code> — 找到 DLL 里的某个导出函数，返回函数指针</li>
+    <li><code>unload()</code> — 卸载</li>
+  </ul>
+</div>
+
+<div class="why">
+  <strong>为什么要检查 <code>isLoaded()</code>？</strong><br>
+  <code>AwSdkStrategy</code> 对象创建时<strong>没</strong>立刻加载 DLL（构造函数没调 <code>load</code>），DLL 是在第一次 <code>flash()</code> 调用 <code>ensureDllLoaded()</code> 时才加载的。如果对象创建后从未被烧录过就被销毁，<code>m_library</code> 处于"<strong>未加载</strong>"状态，<code>unload</code> 在这种状态下行为未定义，所以加一道保险。
+</div>
+
+<h2>3. <code>ensureDllLoaded()</code> — DLL 加载与符号解析</h2>
+
+<p>这是 5 步流程的"<strong>第 0 步</strong>"——把 <code>AW86100.dll</code> 加载进进程，并把里面的 6 个导出函数地址保存到成员变量。</p>
+
+<div class="file-banner">📄 aw_sdk_strategy.cpp（ensureDllLoaded，节选）</div>
+<pre><code><span class="ty">bool</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">ensureDllLoaded</span>(<span class="ty">QString</span> *errorMessage) {
+    <span class="kw">const</span> <span class="ty">QString</span> name = <span class="fn">dllPath</span>();          <span class="cmt">// 子类返回 "AW86100.dll"</span>
+    m_library.<span class="fn">setFileName</span>(name);
+    <span class="kw">if</span> (!m_library.<span class="fn">load</span>()) {
+        <span class="cmt">// 加载失败：写错误信息并返回</span>
+        <span class="kw">const</span> <span class="ty">QString</span> reason = m_library.<span class="fn">errorString</span>();
+        <span class="kw">if</span> (errorMessage) *errorMessage = <span class="fn">QStringLiteral</span>(<span class="str">"Failed to load %1: %2"</span>).<span class="fn">arg</span>(name, reason);
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }</code></pre>
+
+<p>第一段：调 <code>m_library.load()</code> 加载 DLL。失败的话用 Qt 的 <code>QStringLiteral("...").arg(...)</code> 拼出错误字串写到 <code>errorMessage</code> 出参。</p>
+
+<p><code>QStringLiteral("...")</code> 是 Qt 的字面量字符串构造，比 <code>QString("...")</code> 快（编译期生成）。<code>%1</code>、<code>%2</code> 是占位符，<code>.arg(a, b)</code> 把它们替换为 <code>a</code>、<code>b</code>。</p>
+
+<h3>3.1 用 lambda 包装"解析或失败"的重复逻辑</h3>
+
+<pre><code>    <span class="kw">auto</span> resolveOrFail = [&amp;](<span class="kw">const char</span> *fn, <span class="ty">void</span> **out) -&gt; <span class="ty">bool</span> {
+        <span class="ty">QFunctionPointer</span> p = m_library.<span class="fn">resolve</span>(fn);
+        <span class="kw">if</span> (p == <span class="kw">nullptr</span>) {
+            <span class="kw">if</span> (errorMessage) *errorMessage = <span class="fn">QStringLiteral</span>(<span class="str">"DLL 缺少导出符号：%1"</span>).<span class="fn">arg</span>(fn);
+            <span class="kw">return</span> <span class="kw">false</span>;
+        }
+        *out = <span class="kw">reinterpret_cast</span>&lt;<span class="ty">void</span> *&gt;(p);
+        <span class="kw">return</span> <span class="kw">true</span>;
+    };</code></pre>
+
+<p>这个 lambda 接收"<strong>函数名</strong>"和"<strong>用来接收地址的指针的指针</strong>"，去 DLL 里查这个名字，找到了就把地址写到 <code>*out</code>，找不到就报错返回 false。</p>
+
+<div class="cpp-box">
+  <strong>函数指针 vs <code>void*</code>：</strong><br><br>
+  C++ 标准上，函数指针和数据指针（<code>void*</code>）是<strong>不同的东西</strong>，不能直接互转。但 Qt 的 <code>QLibrary::resolve</code> 返回的是 <code>QFunctionPointer</code>（一种通用函数指针类型），需要转成具体的函数指针类型才能调用。<br><br>
+  <strong><code>reinterpret_cast&lt;T&gt;(x)</code></strong> 是 C++ 的"<strong>强制类型转换</strong>"，最霸道的一种 — 它告诉编译器"我不管你怎么想，把这个数据按 T 类型解释"。常用于：
+  <ul>
+    <li>函数指针 ↔ <code>void*</code></li>
+    <li>不同类型的指针之间</li>
+    <li>整数 ↔ 指针</li>
+  </ul>
+  <strong>用 <code>reinterpret_cast</code> 是危险的</strong>，但在与 C 库 / 操作系统接口对接时不可避免。<br><br>
+  <strong>对比 C 风格 <code>(T)x</code>：</strong>C 风格的强制转换会自动选择各种 cast 中的一种，不明显 — C++ 推荐用具体名字 <code>static_cast / reinterpret_cast / const_cast / dynamic_cast</code>，让代码更显眼、更可读。
+</div>
+
+<div class="cpp-box">
+  <strong><code>void **out</code> 是什么？</strong>"<strong>指向指针的指针</strong>"。<br><br>
+  为什么要这样？因为 lambda 要"<strong>修改外面的指针</strong>"。如果只传 <code>void *out</code>，lambda 内部 <code>out = ...</code> 改的是参数副本，外面看不到。所以传地址（指针的指针），<code>*out = ...</code> 才能改到外面那个指针。<br><br>
+  调用时用 <code>&amp;p</code>：
+  <pre style="margin:6px 0;"><code><span class="ty">void</span> *p = <span class="kw">nullptr</span>;
+<span class="fn">resolveOrFail</span>(<span class="str">"AwOIS_ExtFuncInit"</span>, &amp;p);   <span class="cmt">// 传指针 p 的地址</span></code></pre>
+</div>
+
+<h3>3.2 6 次解析（每个导出函数一次）</h3>
+
+<pre><code>    <span class="ty">void</span> *p = <span class="kw">nullptr</span>;
+    <span class="kw">if</span> (!<span class="fn">resolveOrFail</span>(<span class="str">"AwOIS_ExtFuncInit"</span>, &amp;p)) <span class="kw">return</span> <span class="kw">false</span>;
+    m_fnInit = <span class="kw">reinterpret_cast</span>&lt;<span class="ty">FnExtFuncInit</span>&gt;(p);
+
+    <span class="kw">if</span> (!<span class="fn">resolveOrFail</span>(<span class="str">"Aw_OIS_ExtFuncDeInit"</span>, &amp;p)) <span class="kw">return</span> <span class="kw">false</span>;
+    m_fnDeInit = <span class="kw">reinterpret_cast</span>&lt;<span class="ty">FnExtFuncDeInit</span>&gt;(p);
+
+    <span class="cmt">// ... 4 次类似 ...</span>
+
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre>
+
+<p>每次：<code>resolveOrFail</code> 拿到 <code>void*</code>，再 <code>reinterpret_cast</code> 成对应函数指针类型存到成员变量。这 6 个成员变量（<code>m_fnInit / m_fnDeInit / m_fnBootcontrol / ...</code>）就是后面 5 步流程实际调用的"DLL 函数把柄"。</p>
+
+<div class="why">
+  <strong>为什么不直接 <code>reinterpret_cast&lt;FnExtFuncInit&gt;(m_library.resolve("..."))</code>？</strong><br>
+  那样做也对，但每次都要写一长串。提取成 lambda 后每次只需要一行，还能集中处理"找不到符号"的错误情况。<strong>抽取重复逻辑成 lambda</strong> 是 C++ 现代风格的常见做法。
+</div>
+
+<h2>4. <code>flash()</code> 主体 — 5 步流程的指挥棒</h2>
+
+<p>这部分前面的指南讲过框架，这里聚焦实现细节。</p>
+
+<div class="file-banner">📄 aw_sdk_strategy.cpp（flash 函数主体，关键节选）</div>
+<pre><code><span class="ty">bool</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">flash</span>(...) {
+    <span class="cmt">// 状态复位（每次烧录都从干净状态开始）</span>
+    m_cancelFlag = &amp;cancelFlag;
+    m_progress = <span class="ty">std</span>::<span class="fn">move</span>(progress);
+    m_sentBytes = <span class="num">0</span>;
+    m_lastReportedBytes = <span class="num">0</span>;
+    m_lastReportTimeMs = <span class="ty">QDateTime</span>::<span class="fn">currentMSecsSinceEpoch</span>();
+    m_inDownload = <span class="kw">false</span>;
+    m_initCalled = <span class="kw">false</span>;
+    m_bootEntered = <span class="kw">false</span>;
+
+    s_currentInstance = <span class="kw">this</span>;            <span class="cmt">// thunk 路由用</span>
+
+    <span class="kw">auto</span> bail = [&amp;](<span class="ty">bool</span> ok) -&gt; <span class="ty">bool</span> {
+        <span class="kw">if</span> (!ok) <span class="fn">emergencyCleanup</span>();
+        s_currentInstance = <span class="kw">nullptr</span>;
+        m_cancelFlag = <span class="kw">nullptr</span>;
+        m_progress = <span class="kw">nullptr</span>;
+        <span class="kw">return</span> ok;
+    };
+    <span class="cmt">// ... 5 步流程，每步前 checkCancel ...</span>
+}</code></pre>
+
+<p>关键点：</p>
+
+<ol>
+  <li><strong>状态复位段</strong>：8 个成员变量被显式清零/置默认。这是<strong>防御性编程</strong> — 即便上次烧录失败留下脏状态，本次也是干净开始。</li>
+  <li><strong><code>s_currentInstance = this</code></strong>：把"当前正在烧录的实例"记到 thread_local 静态变量。后面 DLL 通过 thunk 回调时才能找到这个实例。</li>
+  <li><strong><code>bail</code> lambda</strong>：函数退出时统一调用，做收尾工作（清空指针、必要时调 <code>emergencyCleanup</code>）。</li>
+</ol>
+
+<div class="why">
+  <strong>为什么要个 <code>bail</code> lambda 而不直接写收尾代码？</strong><br>
+  函数有 5 个失败退出点（5 步流程每步都可能失败），如果每个退出点都写一遍 3 行收尾，代码会冗余且容易写漏。<code>bail</code> 把"返回前必做的事"集中起来，每个退出点写 <code>return bail(false)</code> 就够。<br><br>
+  这是 C 程序员常用的"<strong>goto cleanup</strong>"模式在 C++ 里的现代化等价表达。
+</div>
+
+<h2>5. 5 步具体实现：<code>doInit / doBootcontrol / doDownload / doResetChip / doDeInit</code></h2>
+
+<h3>5.1 <code>doInit()</code> — 注入 thunk 函数指针</h3>
+
+<pre><code><span class="ty">bool</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">doInit</span>(<span class="ty">QString</span> *errorMessage) {
+    <span class="ty">DllExtFuncList</span> list = {
+        &amp;<span class="ty">AwSdkStrategy</span>::extReadI2cThunk,
+        &amp;<span class="ty">AwSdkStrategy</span>::extWriteI2cThunk,
+        &amp;<span class="ty">AwSdkStrategy</span>::extOutputLogThunk,
+    };
+    <span class="kw">const</span> <span class="ty">int</span> ret = <span class="fn">m_fnInit</span>(&amp;list);
+    <span class="kw">if</span> (ret != <span class="num">0</span>) {
+        <span class="cmt">// 失败处理</span>
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }
+    m_initCalled = <span class="kw">true</span>;
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre>
+
+<div class="cpp-box">
+  <strong><code>DllExtFuncList list = { ..., ..., ... };</code></strong> 是<strong>聚合初始化（aggregate initialization）</strong>。如果一个结构体只有公开数据成员、没有自定义构造函数，可以用 <code>{ 值1, 值2, 值3 }</code> 按声明顺序赋值。<br><br>
+  <code>DllExtFuncList</code> 在头文件里定义为：
+  <pre style="margin:6px 0;"><code><span class="kw">struct</span> <span class="ty">DllExtFuncList</span> {
+    <span class="ty">FnReadI2c</span>   pFunc_I2C_Read;
+    <span class="ty">FnWriteI2c</span>  pFunc_I2C_Write;
+    <span class="ty">FnOutputLog</span> pFunc_OutputLog;
+};</code></pre>
+  所以 <code>{a, b, c}</code> 按顺序填充 3 个成员。这是 C 风格语法，C++ 沿用。
+</div>
+
+<div class="cpp-box">
+  <strong><code>&amp;AwSdkStrategy::extReadI2cThunk</code></strong> 是"<strong>取一个静态成员函数的地址</strong>"。<br><br>
+  对于<strong>静态</strong>成员函数，<code>&amp;ClassName::funcName</code> 拿到的就是普通函数指针，类型与 <code>FnReadI2c</code> 等价，可以直接赋给 <code>DllExtFuncList</code> 的字段。<br><br>
+  <strong>注意：</strong>如果是<strong>非静态</strong>成员函数，<code>&amp;ClassName::method</code> 是<strong>成员函数指针</strong>，是另一种东西，不能直接当 C 函数指针用。这就是为什么 thunk 必须是 <code>static</code> 的。
+</div>
+
+<p><code>m_fnInit(&amp;list)</code> 就是真正调 DLL 里的 <code>AwOIS_ExtFuncInit</code> 函数。<code>m_fnInit</code> 是函数指针，<code>(&amp;list)</code> 是参数。</p>
+
+<p>调用成功后设 <code>m_initCalled = true</code>，告诉 <code>emergencyCleanup</code>："如果失败回收，记得调对应的 DeInit"。</p>
+
+<h3>5.2 <code>doDownload()</code> — 真正烧录的关键</h3>
+
+<pre><code><span class="ty">bool</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">doDownload</span>(<span class="ty">QByteArray</span> firmware, <span class="ty">QString</span> *errorMessage) {
+    m_inDownload = <span class="kw">true</span>;                       <span class="cmt">// 标记进入下载段（让 onWriteI2c 累计进度）</span>
+    <span class="kw">if</span> (m_progress) <span class="fn">m_progress</span>(<span class="num">0</span>);             <span class="cmt">// UI 进度条归零</span>
+
+    <span class="ty">DllByte</span> *buf = <span class="kw">reinterpret_cast</span>&lt;<span class="ty">DllByte</span> *&gt;(firmware.<span class="fn">data</span>());
+    <span class="kw">const</span> <span class="ty">DllUInt32</span> len = <span class="kw">static_cast</span>&lt;<span class="ty">DllUInt32</span>&gt;(firmware.<span class="fn">size</span>());
+    <span class="kw">const</span> <span class="ty">int</span> ret = <span class="fn">m_fnMoveBinDownload</span>(buf, len, <span class="kw">static_cast</span>&lt;<span class="ty">DllInt</span>&gt;(kDLNumType_0));
+    m_inDownload = <span class="kw">false</span>;                      <span class="cmt">// DLL 调用结束</span>
+
+    <span class="cmt">// 取消优先：DLL 即便返回失败，只要 cancelFlag 是 true 就归类为"用户取消"</span>
+    <span class="kw">if</span> (m_cancelFlag != <span class="kw">nullptr</span> &amp;&amp; m_cancelFlag-&gt;<span class="fn">load</span>()) {
+        <span class="kw">if</span> (errorMessage) *errorMessage = <span class="fn">QStringLiteral</span>(<span class="str">"用户取消"</span>);
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }
+    <span class="kw">if</span> (ret != <span class="num">0</span>) {
+        <span class="cmt">// 真失败</span>
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre>
+
+<div class="cpp-box">
+  <strong><code>static_cast&lt;T&gt;(x)</code></strong> 是相对"<strong>安全</strong>"的强制类型转换，主要用于：
+  <ul>
+    <li>整数类型之间（如 <code>int → unsigned int</code>）</li>
+    <li>浮点 ↔ 整数</li>
+    <li>父类指针 ↔ 子类指针（向下转有运行时检查）</li>
+    <li>显式调用类型转换运算符</li>
+  </ul>
+  比 <code>reinterpret_cast</code> 安全，但仍然是显式转换。<br><br>
+  这里 <code>firmware.size()</code> 返回 <code>qsizetype</code>（可能是 long long），<code>DllUInt32</code> 是 32 位 unsigned。这种"<strong>缩窄转换</strong>"必须显式 cast，否则编译器警告。
+</div>
+
+<div class="cpp-box">
+  <strong><code>reinterpret_cast&lt;DllByte *&gt;(firmware.data())</code></strong>：<br>
+  <code>QByteArray::data()</code> 返回 <code>char*</code>，但 DLL 接口要求 <code>unsigned char*</code>（即 <code>DllByte*</code>）。两者底层都是字节，但类型不同。<code>reinterpret_cast</code> 强行解释。这是与 C 接口对接时的常见操作。
+</div>
+
+<div class="why">
+  <strong>"取消优先"为什么这样写？</strong><br>
+  当用户取消时：<br>
+  ① <code>cancelFlag</code> 被置 true<br>
+  ② 后续 <code>onWriteI2c</code> 看到 cancelFlag 后返回非零<br>
+  ③ DLL 收到非零返回值，<code>AwMoveBinDownload</code> 自己中止并返回错误码<br><br>
+  此时 <code>ret != 0</code>，但<strong>真实原因是用户取消，不是 DLL 失败</strong>。所以代码先看 <code>cancelFlag</code>，是 true 就归类成"用户取消"，这样 UI 显示的提示更准确。
+</div>
+
+<p>其他 4 步（<code>doBootcontrol / doResetChip / doDeInit</code>）结构都一样：调 DLL 函数 → 检查返回值 → 失败则填错误信息。<code>doInit / doBootcontrol</code> 成功时还会翻转对应状态标志（<code>m_initCalled / m_bootEntered</code>），用于异常收尾决策。</p>
+
+<h2>6. 回调路由：3 个 thunk + 3 个 on 方法</h2>
+
+<p>前面指南详细讲过 thunk 模式。这里只展示一组实际代码。</p>
+
+<pre><code><span class="cmt">// 静态 thunk — DLL 直接调这个</span>
+<span class="ty">int</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">extWriteI2cThunk</span>(<span class="ty">DllByte</span> devId, <span class="ty">DllByte</span> wrSize, <span class="ty">DllByte</span> *wrData) {
+    <span class="ty">AwSdkStrategy</span> *inst = s_currentInstance;
+    <span class="kw">if</span> (inst == <span class="kw">nullptr</span>) <span class="kw">return</span> -<span class="num">1</span>;
+    <span class="kw">return</span> inst-&gt;<span class="fn">onWriteI2c</span>(devId, wrSize, wrData);
+}
+
+<span class="cmt">// 实例方法 — 真正干活</span>
+<span class="ty">int</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">onWriteI2c</span>(<span class="ty">DllByte</span> devId, <span class="ty">DllByte</span> wrSize, <span class="ty">DllByte</span> *wrData) {
+    <span class="kw">if</span> (m_cancelFlag != <span class="kw">nullptr</span> &amp;&amp; m_cancelFlag-&gt;<span class="fn">load</span>()) <span class="kw">return</span> -<span class="num">1</span>;
+    <span class="kw">const</span> <span class="ty">int</span> rc = <span class="fn">syncI2cWrite</span>(devId, <span class="cmt">/*addrSize=*/</span><span class="num">0</span>, <span class="cmt">/*addr=*/</span><span class="kw">nullptr</span>,
+                                wrSize, wrData, kI2cTimeoutMs);
+    <span class="kw">if</span> (rc == <span class="num">0</span> &amp;&amp; m_inDownload) {
+        <span class="fn">notifyProgress</span>(<span class="kw">static_cast</span>&lt;<span class="ty">qint64</span>&gt;(wrSize));
+    }
+    <span class="kw">return</span> rc;
+}</code></pre>
+
+<p>Thunk 体只有 3 行：从 thread_local 拿到当前实例 → 调实例方法。<code>onWriteI2c</code> 做 3 件事：检查取消、调同步 I2C、累计进度。</p>
+
+<div class="pitfall">
+  注释 <code>/*addrSize=*/0</code> 这种语法是给读者看的"<strong>命名参数提示</strong>"。函数调用时，看不到参数名只看到值，加这种行内注释可以让代码更易读。<strong>不是 C++ 语法</strong>，是注释而已。
+</div>
+
+<h2>7. <code>syncI2cWrite()</code> — 异步包同步详解</h2>
+
+<p>整个烧录代码<strong>最复杂的一段</strong>，但理解后就豁然开朗。</p>
+
+<h3>7.1 等待状态结构体</h3>
+
+<pre><code><span class="kw">namespace</span> {
+
+<span class="kw">struct</span> <span class="ty">I2cWaitState</span> {
+    <span class="ty">QMutex</span> mutex;
+    <span class="ty">QWaitCondition</span> cond;
+    <span class="ty">bool</span> received = <span class="kw">false</span>;
+    <span class="ty">bool</span> isError = <span class="kw">false</span>;
+    <span class="ty">QByteArray</span> data;
+    <span class="ty">QString</span> errMsg;
+};
+
+}  <span class="cmt">// namespace</span></code></pre>
+
+<div class="cpp-box">
+  <strong>匿名 namespace（无名命名空间）</strong>：<code>namespace { ... }</code>。里面定义的东西<strong>只在当前 .cpp 文件可见</strong>。<br><br>
+  类似 C 的 <code>static</code> 关键字（static 文件作用域），但更现代、更通用。常用于在 .cpp 里定义"<strong>仅本文件用</strong>"的辅助类型/函数，不污染其他文件。<br><br>
+  这里 <code>I2cWaitState</code> 只在 <code>syncI2cWrite</code> 和 <code>syncI2cRead</code> 里用，没必要让其他文件看到。
+</div>
+
+<div class="cpp-box">
+  <strong><code>struct</code> 与 <code>class</code> 的区别：</strong>几乎一样，唯一区别是<strong>默认访问权限</strong>：
+  <ul>
+    <li><code>struct</code> 默认 public</li>
+    <li><code>class</code> 默认 private</li>
+  </ul>
+  C++ 习惯：<strong>纯数据（数据袋）用 <code>struct</code>，有行为/封装的用 <code>class</code></strong>。<code>I2cWaitState</code> 就是个"等待响应时几个变量打包在一起"的数据袋，用 <code>struct</code> 合适。
+</div>
+
+<p>这个结构装着等待响应需要的所有信息：互斥锁、条件变量、是否已收到、是否出错、数据、错误信息。</p>
+
+<h3>7.2 函数主体</h3>
+
+<pre><code><span class="ty">int</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">syncI2cWrite</span>(<span class="ty">uint8_t</span> devId, ..., <span class="ty">int</span> timeoutMs) {
+    <span class="kw">if</span> (m_dispatcher == <span class="kw">nullptr</span>) <span class="kw">return</span> -<span class="num">1</span>;
+
+    <span class="cmt">// ① 编码协议帧负载</span>
+    <span class="kw">const</span> <span class="ty">QByteArray</span> payload =
+        <span class="ty">MotorProtocol</span>::<span class="fn">encodeI2cTransferWrite</span>(devId, addr, addrSize, data, dataLen);
+
+    <span class="cmt">// ② 创建共享的等待状态</span>
+    <span class="kw">auto</span> state = <span class="ty">std</span>::<span class="fn">make_shared</span>&lt;<span class="ty">I2cWaitState</span>&gt;();
+
+    <span class="cmt">// ③ 准备响应回调</span>
+    <span class="kw">auto</span> callback = [state](<span class="ty">uint8_t</span> cmd, <span class="ty">uint8_t</span> /*seq*/, <span class="kw">const</span> <span class="ty">QByteArray</span> &amp;respData) {
+        <span class="ty">QMutexLocker</span> <span class="fn">locker</span>(&amp;state-&gt;mutex);
+        state-&gt;received = <span class="kw">true</span>;
+        <span class="kw">if</span> (cmd == <span class="ty">MotorProtocol</span>::CmdErrorResponse || ...) {
+            state-&gt;isError = <span class="kw">true</span>;
+            state-&gt;errMsg = ...;
+        }
+        state-&gt;cond.<span class="fn">wakeOne</span>();
+    };</code></pre>
+
+<p>逐行讲：</p>
+
+<ul>
+  <li><strong>①</strong> <code>MotorProtocol::encodeI2cTransferWrite(...)</code> 把要发的内容（设备 ID、寄存器地址、数据）打包成协议帧字节流。这是<strong>协议层</strong>的工具函数，本文不展开。</li>
+  <li><strong>②</strong> 用 <code>make_shared</code> 在堆上创建一个 <code>I2cWaitState</code> 实例，<code>state</code> 是 <code>std::shared_ptr&lt;I2cWaitState&gt;</code>。</li>
+  <li><strong>③</strong> 创建一个 lambda 作为响应到达时的回调。<strong>关键</strong>：lambda 按值捕获了 <code>state</code> — 这意味着 <code>shared_ptr</code> 引用计数 +1，确保 worker 拿到响应时 <code>state</code> 还活着。</li>
+</ul>
+
+<div class="why">
+  <strong>为什么 <code>state</code> 用 shared_ptr，而不是直接放局部变量？</strong><br>
+  因为 <code>callback</code> lambda 会被发到主线程的 dispatcher 队列里。如果 worker 函数提前返回（比如超时），栈上的局部 <code>I2cWaitState</code> 会被销毁；可主线程 dispatcher 之后才执行 callback，访问已销毁的对象 → 崩溃。<br><br>
+  shared_ptr 让 worker 和主线程 dispatcher <strong>共享所有权</strong>：谁后用完谁负责销毁。这是跨线程对象的标配。
+</div>
+
+<h3>7.3 跨线程发请求</h3>
+
+<pre><code>    <span class="ty">QPointer</span>&lt;<span class="ty">CommandDispatcher</span>&gt; <span class="fn">disp</span>(m_dispatcher);
+    <span class="ty">QMetaObject</span>::<span class="fn">invokeMethod</span>(m_dispatcher, [disp, payload, callback]() {
+        <span class="kw">if</span> (disp.<span class="fn">isNull</span>()) <span class="kw">return</span>;
+        disp-&gt;<span class="fn">submitCommand</span>(<span class="ty">MotorProtocol</span>::CmdI2cTransferWrite, payload,
+                             <span class="ty">CommandDispatcher</span>::High, callback);
+    }, <span class="ty">Qt</span>::QueuedConnection);</code></pre>
+
+<p>把"调 dispatcher 发命令"这件事投递到<strong>主线程</strong>执行（因为 dispatcher 住在主线程，worker 不能直接调它）。lambda 按值捕获 <code>disp / payload / callback</code>，这三个对象会被复制到主线程使用。</p>
+
+<h3>7.4 worker 阻塞等待</h3>
+
+<pre><code>    <span class="ty">QMutexLocker</span> <span class="fn">locker</span>(&amp;state-&gt;mutex);
+    <span class="kw">while</span> (!state-&gt;received) {
+        <span class="kw">if</span> (!state-&gt;cond.<span class="fn">wait</span>(&amp;state-&gt;mutex, <span class="kw">static_cast</span>&lt;<span class="kw">unsigned long</span>&gt;(timeoutMs))) {
+            <span class="cmt">// 超时</span>
+            <span class="kw">return</span> -<span class="num">1</span>;
+        }
+        <span class="kw">if</span> (m_cancelFlag != <span class="kw">nullptr</span> &amp;&amp; m_cancelFlag-&gt;<span class="fn">load</span>()) <span class="kw">return</span> -<span class="num">1</span>;
+    }
+    <span class="kw">if</span> (state-&gt;isError) <span class="kw">return</span> -<span class="num">1</span>;
+    <span class="kw">return</span> <span class="num">0</span>;
+}</code></pre>
+
+<div class="cpp-box">
+  <strong><code>QMutexLocker locker(&amp;mutex);</code></strong> 是 RAII 风格的自动锁。<br>
+  构造时调 <code>mutex.lock()</code>，析构时（变量出作用域）自动调 <code>mutex.unlock()</code>。<br><br>
+  这样写的好处：<strong>不用记得手动解锁</strong>。即使中间 <code>return</code> 提前退出，编译器保证 locker 对象被销毁，锁一定会被释放。<br><br>
+  对比手写版：
+  <pre style="margin:6px 0;"><code>mutex.<span class="fn">lock</span>();
+<span class="cmt">// ... 各种 return ...</span>
+mutex.<span class="fn">unlock</span>();   <span class="cmt">// 容易忘，或某条 return 路径漏掉 → 死锁</span></code></pre>
+</div>
+
+<div class="cpp-box">
+  <strong><code>QWaitCondition::wait(&amp;mutex, ms)</code></strong>：<br>
+  调用时做 3 件事：① 释放 mutex；② 阻塞当前线程；③ 被唤醒后重新获取 mutex。<br><br>
+  <strong>返回值：</strong>true = 被 <code>wakeOne()</code>/<code>wakeAll()</code> 唤醒；false = 超时。<br><br>
+  代码 <code>if (!state-&gt;cond.wait(...))</code> 等价于"如果是超时（不是被唤醒）"。
+</div>
+
+<div class="cpp-box">
+  <strong>为什么是 <code>while (!state-&gt;received)</code> 不是 <code>if</code>？</strong><br><br>
+  因为 <code>QWaitCondition::wait</code> 可能"<strong>虚假唤醒</strong>"（spurious wakeup）— 没人真的 <code>wakeOne</code>，但 wait 自己醒来。这是底层操作系统 API 的特性，所有条件变量都有这毛病。<br><br>
+  <strong>正确范式：</strong>用循环检查实际条件：
+  <pre style="margin:6px 0;"><code><span class="kw">while</span> (!条件成立) {
+    cond.<span class="fn">wait</span>(&amp;mutex);   <span class="cmt">// 醒来后重新检查条件</span>
+}</code></pre>
+  <strong>记住：所有条件变量的等待都应该写在 while 循环里。</strong>
+</div>
+
+<p>整个 wait 循环逻辑：</p>
+<ul>
+  <li>每次被唤醒后看 <code>state-&gt;received</code> — 如果真的收到响应了，跳出循环</li>
+  <li>如果没收到（虚假唤醒），继续等</li>
+  <li>等的过程中如果超时，返回 -1</li>
+  <li>等的过程中如果用户取消，也返回 -1</li>
+</ul>
+
+<h2>8. <code>notifyProgress()</code> — 节流策略</h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">notifyProgress</span>(<span class="ty">qint64</span> sentDelta) {
+    m_sentBytes += sentDelta;
+    <span class="kw">const</span> <span class="ty">qint64</span> now = <span class="ty">QDateTime</span>::<span class="fn">currentMSecsSinceEpoch</span>();
+    <span class="kw">const</span> <span class="ty">bool</span> intervalElapsed = now - m_lastReportTimeMs &gt;= kProgressMinIntervalMs;
+    <span class="kw">const</span> <span class="ty">bool</span> bytesAccumulated = m_sentBytes - m_lastReportedBytes &gt;= kProgressMinBytes;
+    <span class="kw">if</span> (sentDelta == <span class="num">0</span> || intervalElapsed || bytesAccumulated) {
+        <span class="kw">if</span> (m_progress) <span class="fn">m_progress</span>(m_sentBytes);
+        m_lastReportedBytes = m_sentBytes;
+        m_lastReportTimeMs = now;
+    }
+}</code></pre>
+
+<p>逻辑：累计字节数，<strong>满足以下任一</strong>才真正触发回调：</p>
+<ol>
+  <li><code>sentDelta == 0</code> — 强制初始化（doDownload 开头会调一次以归零进度条）</li>
+  <li><strong>距上次上报超过 16ms</strong>（<code>kProgressMinIntervalMs</code>）— 时间够久了，让 UI 走两步</li>
+  <li><strong>字节数增量超过 1KB</strong>（<code>kProgressMinBytes</code>）— 累积够多了</li>
+</ol>
+
+<div class="why">
+  <strong>为什么要节流？</strong><br>
+  DLL 在 <code>AwMoveBinDownload</code> 内部可能每写 64 字节就回调一次。一个 1MB 固件 = 1.6 万次回调。如果每次都触发 UI 更新，进度条会被狂刷，主线程事件队列爆炸。<br><br>
+  16ms 对应 60Hz 刷新率，正好是人眼极限；1KB 是合理的最小可见进度增量。
+</div>
+
+<h2>9. <code>emergencyCleanup()</code> — 失败收尾</h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">AwSdkStrategy</span>::<span class="fn">emergencyCleanup</span>() {
+    <span class="kw">if</span> (m_bootEntered &amp;&amp; m_fnResetChip != <span class="kw">nullptr</span>) {
+        <span class="kw">const</span> <span class="ty">int</span> ret = <span class="fn">m_fnResetChip</span>();
+        <span class="kw">if</span> (ret != <span class="num">0</span>) {
+            <span class="fn">log</span>(LogLevel::Warn, <span class="fn">QStringLiteral</span>(<span class="str">"收尾 AwResetChip 返回 %1（忽略）"</span>).<span class="fn">arg</span>(ret));
+        }
+        m_bootEntered = <span class="kw">false</span>;
+    }
+    <span class="kw">if</span> (m_initCalled) {
+        <span class="fn">doDeInit</span>();
+    }
+}</code></pre>
+
+<p>失败 / 取消时被 <code>bail</code> 调用，根据 <code>m_bootEntered / m_initCalled</code> 两个状态标志决定收尾步骤：</p>
+
+<table>
+  <thead><tr><th>失败发生在</th><th><code>m_initCalled</code></th><th><code>m_bootEntered</code></th><th>需要收尾</th></tr></thead>
+  <tbody>
+    <tr><td>DLL 加载阶段</td><td>false</td><td>false</td><td>什么都不用</td></tr>
+    <tr><td>doInit 失败</td><td>false</td><td>false</td><td>什么都不用</td></tr>
+    <tr><td>doBootcontrol 失败</td><td>true</td><td>false</td><td>调 DeInit</td></tr>
+    <tr><td>doDownload 失败</td><td>true</td><td>true</td><td>先 ResetChip 让 IC 退出 boot 模式，再 DeInit</td></tr>
+  </tbody>
+</table>
+
+<div class="why">
+  <strong>为什么 ResetChip 失败时只记 warn 不返回错误？</strong><br>
+  因为收尾本身的失败<strong>不应该掩盖原始错误</strong>。比如下载真失败的原因是"DLL 写 I2C 超时"，这是用户需要看到的真原因。如果收尾时 ResetChip 又恰好失败，那把"ResetChip 失败"当成主错误返回会误导用户。所以收尾错误只记日志。
+</div>
+
+<h2>10. <code>FwFlashService::startFlash</code> + worker 创建</h2>
+
+<p>这部分前面指南已经详细讲过，这里只简单回顾要点。</p>
+
+<div class="file-banner">📄 fwflashservice.cpp（关键节选）</div>
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">startFlash</span>(<span class="kw">const</span> <span class="ty">QString</span> &amp;icModel, ...) {
+    <span class="cmt">// 校验</span>
+    <span class="kw">if</span> (<span class="fn">isBusy</span>()) <span class="kw">return</span>;
+    <span class="ty">FlashStrategy</span> *strategy = m_registry-&gt;<span class="fn">find</span>(icModel);
+    <span class="kw">if</span> (strategy == <span class="kw">nullptr</span>) <span class="kw">return</span>;
+
+    <span class="cmt">// 准备</span>
+    m_cancelFlag = <span class="ty">std</span>::<span class="fn">make_shared</span>&lt;<span class="ty">std</span>::<span class="ty">atomic</span>&lt;<span class="ty">bool</span>&gt;&gt;(<span class="kw">false</span>);
+    <span class="fn">setState</span>(<span class="ty">State</span>::Preparing);
+
+    <span class="cmt">// 进入主流程</span>
+    <span class="fn">runPreflightAndFlash</span>(strategy, firmware);
+}</code></pre>
+
+<p>跳过前置 4 步停止序列后，进入 worker 线程创建：</p>
+
+<pre><code>    <span class="kw">auto</span> cancelFlag = m_cancelFlag;        <span class="cmt">// shared_ptr 拷贝（计数+1）</span>
+    <span class="kw">const</span> <span class="ty">qint64</span> total = m_totalBytes;
+    <span class="ty">QPointer</span>&lt;<span class="ty">FwFlashService</span>&gt; <span class="fn">self</span>(<span class="kw">this</span>);
+
+    m_workerThread = <span class="ty">QThread</span>::<span class="fn">create</span>([self, strategy, firmware, cancelFlag, total]() {
+        <span class="ty">QString</span> errorMsg;
+        <span class="kw">auto</span> progress = [self, total](<span class="ty">qint64</span> sent) {
+            <span class="kw">if</span> (self.<span class="fn">isNull</span>()) <span class="kw">return</span>;
+            <span class="kw">emit</span> self-&gt;<span class="fn">progressUpdated</span>(sent, total);
+        };
+
+        <span class="cmt">// 真正烧录在这里跑（worker 线程被阻塞几秒到十几秒）</span>
+        <span class="kw">const</span> <span class="ty">bool</span> ok = strategy-&gt;<span class="fn">flash</span>(firmware, progress, *cancelFlag, &amp;errorMsg);
+
+        <span class="cmt">// 结果回主线程</span>
+        <span class="ty">QMetaObject</span>::<span class="fn">invokeMethod</span>(self.<span class="fn">data</span>(), [self, ok, errorMsg]() {
+            <span class="kw">if</span> (ok) self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Completed);
+            <span class="kw">else</span>    self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Failed);
+            <span class="kw">emit</span> self-&gt;<span class="fn">finished</span>(ok, ok ? <span class="str">"成功"</span> : errorMsg);
+        }, <span class="ty">Qt</span>::QueuedConnection);
+    });
+
+    <span class="kw">connect</span>(m_workerThread, &amp;<span class="ty">QThread</span>::finished, m_workerThread, &amp;<span class="ty">QObject</span>::deleteLater);
+    m_workerThread-&gt;<span class="fn">start</span>();</code></pre>
+
+<p>关键流程：</p>
+<ol>
+  <li><code>QThread::create(lambda)</code> 创建一个新线程对象，启动后跑 lambda</li>
+  <li>Lambda 按值捕获 5 个变量到新线程使用</li>
+  <li>新线程调 <code>strategy-&gt;flash()</code>（同步阻塞，几秒到十几秒）</li>
+  <li>结果通过 <code>invokeMethod</code> 回主线程切状态机</li>
+  <li><code>connect(thread, finished, thread, deleteLater)</code> — 线程结束后自动销毁线程对象</li>
+</ol>
+
+<div class="cpp-box">
+  <strong><code>connect(发送方, 信号, 接收方, 槽)</code></strong> 是 Qt 信号槽机制的核心。当"发送方"发出指定信号时，自动调用"接收方"的指定槽。<br><br>
+  <code>&amp;QThread::finished</code> 是取信号地址（C++ 函数指针写法）。<br>
+  <code>&amp;QObject::deleteLater</code> 是取槽地址。<br><br>
+  这一行的意思是："当 worker 线程完成时，让线程对象自己执行 deleteLater 销毁自己"——避免内存泄漏。
+</div>
+
+<h2>实现层面的整体回顾</h2>
+
+<p>读完整个实现，你会发现整段代码的"逻辑骨架"其实很清晰：</p>
+
+<ol>
+  <li><strong>构造函数 / 析构函数</strong>定义类的"出生与死亡"</li>
+  <li><strong>flash() 主体</strong>是流程指挥棒，本身不干活，只编排顺序与异常处理</li>
+  <li><strong>5 个 do* 函数</strong>各自调一个 DLL 函数，模式高度一致</li>
+  <li><strong>3 个 thunk + 3 个 on*</strong>是 C 接口与 C++ 类的桥接层</li>
+  <li><strong>syncI2cWrite/Read</strong>把异步串口包装成同步接口供 DLL 用</li>
+  <li><strong>notifyProgress / emergencyCleanup</strong>是"边边角角"的辅助 — 节流和异常收尾</li>
+  <li><strong>FwFlashService</strong>把上面这一整套搬到 worker 线程跑，避免阻塞 UI</li>
+</ol>
+
+<p>整段代码涉及的 C++/Qt 工具看似多，但每一个都解决一个具体问题：</p>
+
+<table>
+  <thead><tr><th>工具</th><th>解决的问题</th></tr></thead>
+  <tbody>
+    <tr><td>初始化列表</td><td>构造时高效初始化成员，<code>const</code>/引用成员的强制要求</td></tr>
+    <tr><td>std::move</td><td>避免不必要的拷贝</td></tr>
+    <tr><td>QLibrary</td><td>跨平台动态加载 DLL</td></tr>
+    <tr><td>reinterpret_cast / static_cast</td><td>显式类型转换，对接 C 接口</td></tr>
+    <tr><td>Lambda 与捕获</td><td>提取重复逻辑、跨线程传递行为</td></tr>
+    <tr><td>聚合初始化 <code>{a,b,c}</code></td><td>简洁地填充结构体字段</td></tr>
+    <tr><td>取静态成员函数地址 <code>&amp;Class::func</code></td><td>把成员函数当 C 函数指针用</td></tr>
+    <tr><td>thread_local 静态变量</td><td>C 回调路由到对应实例</td></tr>
+    <tr><td>匿名 namespace</td><td>限定文件作用域，避免污染</td></tr>
+    <tr><td>QMutex + QMutexLocker</td><td>互斥锁 + RAII 自动解锁</td></tr>
+    <tr><td>QWaitCondition</td><td>线程间同步原语，配合 while 防虚假唤醒</td></tr>
+    <tr><td>shared_ptr&lt;T&gt;</td><td>跨线程共享对象，谁后用完谁销毁</td></tr>
+    <tr><td>QPointer</td><td>QObject 弱引用，防野指针</td></tr>
+    <tr><td>QMetaObject::invokeMethod</td><td>跨线程任务投递</td></tr>
+    <tr><td>QThread::create + lambda</td><td>临时 worker 线程</td></tr>
+    <tr><td>connect(...&amp;deleteLater)</td><td>线程结束后自动回收</td></tr>
+  </tbody>
+</table>
+
+<p>掌握这些"<strong>工具与场景的对应关系</strong>"，对未来读 Qt / C++ 代码会非常有帮助。</p>
+
+<hr>
+<p class="meta">本文档与 <code>fw_flash_code_reading_guide.html</code> 配套。如有未讲清楚的细节（特定函数、特定 C++ 语法）告诉我，我再补充。</p>
+
+</main>
+</body>
+</html>

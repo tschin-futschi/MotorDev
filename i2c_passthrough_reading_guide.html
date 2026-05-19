@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>I2C 透传功能阅读指南 — 烧录链路逐层拆解</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #fafbfc;
+    --step-bg: #f6f8fa;
+    --good: #2da44e;
+    --warn: #d4a72c;
+    --danger: #cf222e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+                 sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  main {
+    max-width: 1040px;
+    margin: 40px auto;
+    padding: 0 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 18px;
+    margin-top: 26px;
+    color: var(--accent);
+  }
+  h4 {
+    font-size: 15px;
+    margin-top: 18px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li > ul, li > ol { margin-top: 4px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, "Cascadia Mono",
+                 "SF Mono", Menlo, monospace;
+    font-size: 0.92em;
+    color: #24292f;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--table-header-bg); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .toc {
+    background: var(--accent-soft);
+    border: 1px solid #b6e3ff;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 24px 0 40px;
+  }
+  .toc h3 { color: var(--accent); margin-top: 0; }
+  .toc ol { margin: 8px 0; }
+
+  .step {
+    background: var(--step-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin: 28px 0;
+  }
+  .step h3 {
+    margin-top: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .step .stepno {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .step .duration {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: normal;
+    margin-left: auto;
+  }
+
+  .callout {
+    background: #fff8c5;
+    border-left: 4px solid var(--warn);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .note {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .danger {
+    background: #ffebe9;
+    border-left: 4px solid var(--danger);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .ok {
+    background: #f0f7f0;
+    border-left: 4px solid var(--good);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .quiz {
+    background: #fdf4ff;
+    border-left: 4px solid #8250df;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .quiz h4 { color: #8250df; margin-top: 0; }
+
+  .file-tag {
+    display: inline-block;
+    background: #eef0f3;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 12px;
+    color: #24292f;
+  }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin: 12px 0 24px;
+  }
+  .legend > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend .swatch {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>I2C 透传功能阅读指南</h1>
+<p class="meta">
+  目标读者：MotorDev 项目的开发者 &nbsp;|&nbsp;
+  阅读对象：<code>aw_sdk_strategy.{h,cpp}</code> 及周边 4 个文件 &nbsp;|&nbsp;
+  预计耗时：60–90 分钟（含动手验证）
+</p>
+
+<div class="note">
+  <strong>阅读策略：由外向内、由调用链顺序、由抽象到具体。</strong>
+  本指南共 <strong>10 个 Step</strong>，每步给出"看什么、看完应该懂什么、易踩坑的地方"，最后一个 Step 是动手验证。请按顺序走，<strong>不要跳读</strong>——每步的理解都依赖前一步打下的基础。
+</div>
+
+<div class="legend">
+  <div><span class="swatch" style="background:var(--accent-soft)"></span>提示信息</div>
+  <div><span class="swatch" style="background:#fff8c5"></span>易混淆点</div>
+  <div><span class="swatch" style="background:#ffebe9"></span>陷阱 / 危险</div>
+  <div><span class="swatch" style="background:#f0f7f0"></span>读完可以验证</div>
+  <div><span class="swatch" style="background:#fdf4ff"></span>自检问题</div>
+</div>
+
+<div class="toc">
+  <h3>阅读路径总览</h3>
+  <ol>
+    <li><strong>Step 0</strong> — 准备环境与心理预期</li>
+    <li><strong>Step 1</strong> — 建立宏观图景（先不看代码）</li>
+    <li><strong>Step 2</strong> — 读最简单的接口契约：<code>FlashStrategy</code></li>
+    <li><strong>Step 3</strong> — 看 Service 怎么把策略跑起来：<code>FwFlashService::runPreflightAndFlash</code></li>
+    <li><strong>Step 4</strong> — 浏览 <code>AwSdkStrategy</code> 头文件，<strong>不读实现</strong>，先建立"骨架印象"</li>
+    <li><strong>Step 5</strong> — 顺着 <code>flash()</code> 的 5 步流程读编排逻辑</li>
+    <li><strong>Step 6</strong> — 理解 thunk 路由（<strong>难点 #1</strong>：为什么要 C-thunk + thread_local）</li>
+    <li><strong>Step 7</strong> — 实例转发层：取消传播与进度联动</li>
+    <li><strong>Step 8</strong> — 同步透传核心（<strong>难点 #2</strong>：跨线程同步等响应）</li>
+    <li><strong>Step 9</strong> — 协议编码与下游 dispatcher 接收端</li>
+    <li><strong>Step 10</strong> — 动手验证：加日志跑一次烧录</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 0</span> 准备环境与心理预期 <span class="duration">5 分钟</span></h3>
+
+  <h4>这一步要做什么</h4>
+  <ol>
+    <li>用 VSCode 打开项目根目录，准备好以下 <strong>5 个标签页</strong>，<strong>不要关</strong>，全程切换：
+      <ul>
+        <li><span class="file-tag">src/services/flashstrategy.h</span></li>
+        <li><span class="file-tag">src/services/fwflashservice.cpp</span></li>
+        <li><span class="file-tag">src/services/flashstrategies/aw_sdk_strategy.h</span></li>
+        <li><span class="file-tag">src/services/flashstrategies/aw_sdk_strategy.cpp</span></li>
+        <li><span class="file-tag">src/protocol/motor_protocol.cpp</span></li>
+      </ul>
+    </li>
+    <li>另外开 <strong>1 个 Markdown 草稿</strong>（不存盘也行），随手记录"我读到这里时的疑问"</li>
+    <li>把 <code>CommandDispatcher::submitCommand</code> 当成黑盒——本指南只到"它接收一条命令并保证响应回调被调一次"为止</li>
+  </ol>
+
+  <h4>心理预期</h4>
+  <ul>
+    <li>这部分代码<strong>跨 4 个抽象层 + 2 个线程</strong>，初次阅读不可能一遍懂。**建议读两遍**：第一遍走通流程，第二遍补细节。</li>
+    <li><strong>不要纠结 DLL 内部</strong>。把 Awinic DLL 当作一个会调你 3 个回调的"机器"，你只需要保证回调按预期返回。</li>
+  </ul>
+
+  <div class="callout">
+    <strong>易混淆点（提前打预防针）</strong>：本功能里的"线程"概念会反复出现，至少有 <strong>3 个线程</strong>登场——
+    <ul style="margin-bottom:0;">
+      <li>主线程（GUI、CommandDispatcher、SerialManager 的所有 QObject 都在这里或挂在这里）</li>
+      <li>烧录 worker 线程（<code>QThread::create</code> 创建，<code>flash()</code> 在它里面跑）</li>
+      <li>SerialManager 自己的线程（独立 QThread，与 worker 不同）</li>
+    </ul>
+    后面凡是看到 <code>QMetaObject::invokeMethod</code>，第一反应就要问："从哪个线程发到哪个线程？"
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 1</span> 建立宏观图景（先不看代码） <span class="duration">5 分钟</span></h3>
+
+  <h4>这一步要做什么</h4>
+  <p>仅看下面这张图。<strong>记住它，画一遍到草稿纸上</strong>。后续每一步都在补这张图的某一段。</p>
+
+  <pre><code>[Awinic DLL]
+       │  C-style 函数指针调用
+       ▼
+[C-thunk 静态函数]                   ← 通过 thread_local 取实例
+       │
+       ▼
+[实例方法 onReadI2c / onWriteI2c]    ← 检查取消、累计进度
+       │
+       ▼
+[syncI2cRead / syncI2cWrite]         ← 同步阻塞接口
+       │  encode 协议  → invokeMethod 跨线程
+       ▼
+[CommandDispatcher::submitCommand]   ← 主线程
+       │  优先级队列 + seq 匹配
+       ▼
+[串口 → STM32 → 真实 I2C 总线]
+       │  响应帧
+       ▼
+[CommandDispatcher 完成回调 → 唤醒 worker]</code></pre>
+
+  <h4>看完应该能回答</h4>
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>整条链路最上面是谁主动？最下面是谁主动？</li>
+      <li>哪一层负责"协议编码"？哪一层负责"线程切换"？</li>
+      <li>worker 线程在等什么？是谁来唤醒它？</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 2</span> 读最简单的接口契约：<code>FlashStrategy</code> <span class="duration">3 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">src/services/flashstrategy.h</span> ——一共 42 行，全文都要看。</p>
+
+  <h4>看完应该知道</h4>
+  <ul>
+    <li><code>flash()</code> 的 4 个参数各自是什么、由谁提供、谁消费</li>
+    <li><code>cancelFlag</code> 是 <strong>const 引用</strong>——子类只能<strong>读</strong>，不能写</li>
+    <li><code>progress</code> 回调是 <code>std::function</code>，可空（nullptr-safe）</li>
+    <li>错误信息走输出参数 <code>QString *errorMessage</code>，不抛异常</li>
+    <li>调用约定：<strong>同步阻塞、运行在 worker 线程</strong></li>
+  </ul>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>如果 <code>flash()</code> 内部要持续 30 分钟，会阻塞 UI 吗？为什么？</li>
+      <li>如果 <code>flash()</code> 抛异常会怎样？要不要 try/catch？</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 3</span> 看 Service 怎么把策略跑起来 <span class="duration">8 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">src/services/fwflashservice.cpp</span></p>
+  <ul>
+    <li>第 <strong>74–113 行</strong> <code>startFlash()</code>——查策略、设状态、调前置序列</li>
+    <li>第 <strong>131–223 行</strong> <code>runPreflightAndFlash()</code>——本步重点</li>
+  </ul>
+
+  <h4>重点看 3 件事</h4>
+  <ol>
+    <li><strong>worker 线程怎么起</strong>：<code>QThread::create([self, strategy, firmware, cancelFlag, total]() { ... })</code>
+      <ul>
+        <li><code>firmware</code> 用 QByteArray 隐式共享，<strong>不会真拷贝</strong></li>
+        <li><code>cancelFlag</code> 是 <code>shared_ptr</code>，引用计数 +1，worker 比 service 死得晚也安全</li>
+        <li><code>self</code> 是 <code>QPointer&lt;FwFlashService&gt;</code>，防御 service 提前析构</li>
+      </ul>
+    </li>
+    <li><strong>worker 里怎么 emit 信号回 UI</strong>：<code>emit self-&gt;progressUpdated(...)</code>——跨线程时 Qt 自动转 <code>QueuedConnection</code></li>
+    <li><strong>结果怎么回主线程改状态</strong>：<code>QMetaObject::invokeMethod(self.data(), [...]() { setState(Completed); }, Qt::QueuedConnection)</code></li>
+  </ol>
+
+  <div class="callout">
+    <strong>易混淆点</strong>：<code>setState()</code> 只允许在主线程调用——这就是 worker 完成后必须用 <code>invokeMethod</code> 把状态切换"打回主线程"的原因。<strong>不要</strong>在 worker 里直接调 <code>setState</code>。
+  </div>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>worker 线程结束后是谁负责删除 <code>QThread*</code>？查 <code>connect</code> 那两行。</li>
+      <li>如果用户在前置序列阶段就点了取消，会发生什么？看第 152–160 行。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 4</span> 浏览 <code>AwSdkStrategy</code> 头文件 <span class="duration">10 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">src/services/flashstrategies/aw_sdk_strategy.h</span> ——全文 137 行，<strong>不看实现，只看声明</strong>。</p>
+
+  <h4>分块读</h4>
+  <ol>
+    <li><strong>类注释（1–20 行）</strong>：把"核心职责" 6 条写到草稿，作为下面阅读的检查清单</li>
+    <li><strong>DLL 接口签名 typedef（55–75 行）</strong>：
+      <ul>
+        <li>3 个回调指针：<code>FnReadI2c / FnWriteI2c / FnOutputLog</code></li>
+        <li>5 个 DLL 函数指针：Init / DeInit / Bootcontrol / MoveBinDownload / ResetChip</li>
+        <li><code>DllExtFuncList</code> 把前 3 个回调打包成一个结构，作为 Init 的入参</li>
+      </ul>
+    </li>
+    <li><strong>5 步流程方法（81–86 行）</strong>：<code>doInit / doBootcontrol / doDownload / doResetChip / doDeInit</code>——记住名字，下一步要用</li>
+    <li><strong>thunk + 实例方法（91–101 行）</strong>：3 对静态 thunk 与对应实例方法。<strong>这里先不深究为什么要 thunk</strong>，留到 Step 6</li>
+    <li><strong>同步透传方法（104–107 行）</strong>：<code>syncI2cWrite / syncI2cRead</code>——Step 8 的主菜</li>
+    <li><strong>成员字段（115–136 行）</strong>：分两组——
+      <ul>
+        <li>"长生命周期"：<code>m_dispatcher / m_logSink / m_library / m_fnXxx</code></li>
+        <li>"flash() 期间临时态"：<code>m_cancelFlag / m_progress / m_sentBytes / m_inDownload / ...</code></li>
+        <li>"thread_local 实例指针"：<code>s_currentInstance</code>（Step 6 重点）</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h4>笔记建议</h4>
+  <ul>
+    <li>把"长生命周期 vs 临时态"两类成员各抄一遍</li>
+    <li>记下"DLL 函数有 5 个、回调有 3 个"——后面对照实现验证是否齐全</li>
+  </ul>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>为什么 <code>m_progress</code> 不放成员而是每次 flash() 进来时重新赋值？</li>
+      <li><code>m_initCalled</code> 和 <code>m_bootEntered</code> 这两个 bool 是为了解决什么问题？（提示：emergencyCleanup）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 5</span> 跟着 <code>flash()</code> 读 5 步流程 <span class="duration">12 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">aw_sdk_strategy.cpp</span></p>
+  <ul>
+    <li>第 <strong>53–110 行</strong> <code>flash()</code>——编排函数</li>
+    <li>第 <strong>178–256 行</strong> 5 个 <code>doXxx()</code> 方法</li>
+    <li>第 <strong>112–127 行</strong> <code>emergencyCleanup()</code>——失败 / 取消收尾</li>
+  </ul>
+
+  <h4>建议读法</h4>
+  <ol>
+    <li>先把 <code>flash()</code> 主体抄写一遍到草稿（约 30 行）</li>
+    <li>逐句翻译成中文：每行做什么</li>
+    <li>找到 <code>bail()</code> 和 <code>checkCancel()</code> 这两个 lambda，理解为什么它们是"统一退出口"</li>
+    <li>再去看 <code>doInit / doBootcontrol / ...</code> 5 个函数，注意哪些函数会修改"flag 字段"</li>
+  </ol>
+
+  <h4>关键观察</h4>
+  <table>
+    <thead>
+      <tr><th>步骤</th><th>关键动作</th><th>状态变化</th><th>失败如何处理</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0. ensureDllLoaded</td><td>QLibrary 加载 + 5 个符号 resolve</td><td>—</td><td>报错返回</td></tr>
+      <tr><td>1. doInit</td><td>把 3 个 thunk 装进 DllExtFuncList 传给 Init</td><td><code>m_initCalled = true</code></td><td>返回 false → bail → emergencyCleanup</td></tr>
+      <tr><td>2. doBootcontrol</td><td>让 IC 进入 boot 模式</td><td><code>m_bootEntered = true</code></td><td>同上 + ResetChip</td></tr>
+      <tr><td>3. doDownload</td><td><strong>真正发字节</strong>，DLL 内部循环调 onWriteI2c</td><td><code>m_inDownload = true → false</code></td><td>同上</td></tr>
+      <tr><td>4. doResetChip</td><td>退出 boot，回正常运行模式</td><td><code>m_bootEntered = false</code></td><td>记 warn，不阻断</td></tr>
+      <tr><td>5. doDeInit</td><td>释放 DLL 资源</td><td><code>m_initCalled = false</code></td><td>记 warn，不阻断</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ok">
+    <strong>读完应该能回答</strong>：为什么 <code>emergencyCleanup</code> 要先 ResetChip 再 DeInit？提示：顺序不能颠倒，否则 DLL 句柄都释放了还怎么调 ResetChip？
+  </div>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li><code>doDownload</code> 里 <strong>真正与 STM32 通信</strong> 的代码在哪一行？</li>
+      <li>如果 DLL 的 <code>AwMoveBinDownload</code> 返回 0 但其实 cancelFlag 已经被翻成 true，flash() 会怎么处理？看 222–225 行。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 6</span> 理解 thunk 路由（难点 #1） <span class="duration">10 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">aw_sdk_strategy.cpp</span> 第 <strong>262–279 行</strong> 三个 thunk + 第 <strong>34 行</strong> <code>thread_local s_currentInstance</code> + <code>flash()</code> 第 <strong>67、72、106、107 行</strong> 的赋值与清零。</p>
+
+  <h4>核心问题：为什么需要 thunk？</h4>
+  <ul>
+    <li>Awinic DLL 的 <code>AwOIS_ExtFuncInit</code> 接受一个 <code>DllExtFuncList</code> 结构，里面是 <strong>3 个 C 风格函数指针</strong></li>
+    <li>C 风格函数指针不能指向成员函数（成员函数有隐式 <code>this</code>）</li>
+    <li>所以必须用静态函数当跳板（thunk）。但静态函数怎么知道 <strong>"我属于哪个 strategy 实例"</strong>？</li>
+    <li>答案：<strong>用一个静态指针变量记住当前正在运行的实例</strong>——这就是 <code>s_currentInstance</code></li>
+  </ul>
+
+  <h4>为什么是 <code>thread_local</code>？</h4>
+  <ul>
+    <li>普通静态变量是<strong>全局共享</strong>的——如果将来有两个 worker 同时跑两个 strategy，会相互覆盖</li>
+    <li><code>thread_local</code> 让<strong>每个线程有一份独立副本</strong>，多线程也安全</li>
+    <li>当前架构虽然只有一个 worker，但 <code>thread_local</code> 是廉价的防御</li>
+  </ul>
+
+  <h4>赋值时机</h4>
+  <ol>
+    <li><code>flash()</code> 入口第 67 行：<code>s_currentInstance = this;</code></li>
+    <li>正常退出第 106 行：<code>s_currentInstance = nullptr;</code></li>
+    <li>失败退出 lambda <code>bail()</code> 第 71 行：同样清零</li>
+  </ol>
+
+  <div class="callout">
+    <strong>易混淆点</strong>：thunk 不是"发起调用"的人，而是"被 DLL 调用"的人。<strong>方向是 DLL → thunk → 实例方法</strong>，不是反过来。看清这一点，整个回调机制就通了。
+  </div>
+
+  <div class="danger">
+    <strong>陷阱</strong>：如果你将来重构，把 <code>s_currentInstance</code> 改成普通成员变量，那就<strong>彻底跑不通</strong>——因为 C 风格函数指针签名里没有任何地方携带 <code>this</code>。
+  </div>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>如果 <code>s_currentInstance</code> 在 thunk 调用时是 nullptr，会发生什么？看第 264–266 行。这种情况什么时候可能发生？</li>
+      <li>把 thunk 三件套画成时序图：DLL 调用 thunk → thunk 取实例 → 实例方法返回 → DLL 拿到结果。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 7</span> 实例转发层 <span class="duration">5 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">aw_sdk_strategy.cpp</span> 第 <strong>285–307 行</strong> <code>onReadI2c / onWriteI2c / onOutputLog</code>。</p>
+
+  <h4>每个方法看 2 件事</h4>
+  <ol>
+    <li><strong>取消优先</strong>：方法第一句就检查 <code>m_cancelFlag</code>，true 直接返回非零。这会让 DLL 主动中止整段下载。</li>
+    <li><strong>onWriteI2c 的进度联动</strong>：写成功 + <code>m_inDownload</code> 才累计。前面 init/boot 阶段的写不算进度——因为那些字节不是固件。</li>
+  </ol>
+
+  <h4>关于 addrSize 的特殊约定</h4>
+  <p>第 295–296 行注释非常重要——DLL 把"寄存器地址 + 数据"拼成单段交给我们，所以 <code>onWriteI2c</code> 转发到 <code>syncI2cWrite</code> 时 <strong>固定填 addrSize=0</strong>。STM32 端按"无地址前导，全部当作数据"模式直接发送。</p>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li><code>onReadI2c</code> 为什么不需要"取消时 DLL 自动中止"机制？提示：读操作通常是单次的，不在循环里。</li>
+      <li><code>onOutputLog</code> 直接把 DLL 字符串转 UTF-8 显示——如果 DLL 输出的是 GBK 怎么办？（潜在缺陷，记下来。）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 8</span> 同步透传核心（难点 #2） <span class="duration">15 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">aw_sdk_strategy.cpp</span> 第 <strong>313–322 行</strong> <code>I2cWaitState</code> 结构 + 第 <strong>326–422 行</strong> <code>syncI2cWrite / syncI2cRead</code>。</p>
+
+  <h4>建议读法（重要）</h4>
+  <ol>
+    <li><strong>先只读 <code>syncI2cWrite</code></strong>，不要碰 <code>syncI2cRead</code>。两者结构 95% 相同，搞懂一个另一个就通了。</li>
+    <li>把 326–368 行的 43 行代码<strong>分成 4 段</strong>逐段理解。</li>
+  </ol>
+
+  <h4>4 段拆解</h4>
+  <table>
+    <thead>
+      <tr><th>段</th><th>行号</th><th>做什么</th><th>关键设计</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>① 协议编码</td>
+        <td>333–334</td>
+        <td>调 <code>encodeI2cTransferWrite()</code> 把参数打包成命令字 0x30 的载荷</td>
+        <td>编码逻辑封装在 <code>motor_protocol</code>，本层不关心字节布局</td>
+      </tr>
+      <tr>
+        <td>② 等待状态</td>
+        <td>336–346</td>
+        <td>建一个 <code>shared_ptr&lt;I2cWaitState&gt;</code> 和回调 lambda</td>
+        <td><strong>shared_ptr 是关键</strong>：即使 worker 提前因取消返回，dispatcher 回调仍能安全写 state</td>
+      </tr>
+      <tr>
+        <td>③ 跨线程提交</td>
+        <td>348–353</td>
+        <td><code>invokeMethod + QueuedConnection</code> 把 <code>submitCommand</code> 投到 dispatcher 所在线程</td>
+        <td>worker 不能直接调 dispatcher（线程关系不允许）</td>
+      </tr>
+      <tr>
+        <td>④ 阻塞等待</td>
+        <td>355–367</td>
+        <td><code>QWaitCondition::wait(timeoutMs)</code> 在 worker 上挂起，被回调 <code>wakeOne()</code> 唤醒</td>
+        <td>循环 wait 是为了防虚假唤醒；唤醒后再次检查 cancelFlag 提前退出</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>这一步最难的概念：<code>QMutex + QWaitCondition</code></h4>
+  <p>如果你之前没用过条件变量，<strong>务必</strong>先理解这个模式：</p>
+  <pre><code>// 等待方（worker）
+QMutexLocker locker(&amp;mutex);
+while (!ready) {
+    cond.wait(&amp;mutex, timeoutMs);   // 释放锁 + 阻塞 + 被唤醒后重新拿锁
+}
+
+// 通知方（回调）
+QMutexLocker locker(&amp;mutex);
+ready = true;
+cond.wakeOne();                       // 唤醒一个等待者</code></pre>
+  <p>关键点：<code>cond.wait()</code> 内部会<strong>原子地"释放锁 + 进入阻塞"</strong>，醒来时<strong>原子地"重新获得锁"</strong>。这避免了"判断 ready 和 wait 之间被插入 wakeOne"的丢失唤醒问题。</p>
+
+  <div class="callout">
+    <strong>易混淆点</strong>：第 355 行的 <code>QMutexLocker locker(&amp;state-&gt;mutex)</code> 和回调里的 <code>QMutexLocker</code> 用的是<strong>同一把锁</strong>（同一个 state）。两个线程<strong>不会同时</strong>持有这把锁。
+  </div>
+
+  <div class="danger">
+    <strong>陷阱</strong>：如果把第 355 行删掉直接 <code>cond.wait(...)</code>，会立刻 crash——<code>QWaitCondition::wait</code> 要求传入<strong>已锁定</strong>的 mutex。
+  </div>
+
+  <h4>读 <code>syncI2cRead</code> 时只关注差异</h4>
+  <p>3 处不同：</p>
+  <ol>
+    <li>编码用 <code>encodeI2cTransferRead</code>（命令字 0x31）</li>
+    <li>回调里多一句 <code>state-&gt;data = respData;</code> 把响应数据存下来</li>
+    <li>等到响应后多两步：长度校验、<code>memcpy</code> 到 DLL 给的 <code>outBuf</code></li>
+  </ol>
+
+  <div class="ok">
+    <strong>读完应该能回答</strong>：为什么 <code>syncI2cWrite</code> 的回调没用 <code>respData</code>，而 <code>syncI2cRead</code> 用了？因为写不需要返回值，只需要"成功 / 失败"。
+  </div>
+
+  <div class="quiz">
+    <h4>自检问题</h4>
+    <ul>
+      <li>如果 STM32 永远不回响应，最坏情况 worker 会卡多久？看 <code>kI2cTimeoutMs</code> 常量。</li>
+      <li>如果用户在等响应中途点了取消，哪一行让 worker 提前退出？提示：第 361 / 407 行。</li>
+      <li>为什么 state 用 <code>shared_ptr</code> 而不是栈对象？答案：dispatcher 回调可能在 worker 已退出后才到达；如果 state 是栈对象就成野指针了。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 9</span> 协议编码与下游 dispatcher（一瞥即可） <span class="duration">5 分钟</span></h3>
+
+  <h4>看哪里</h4>
+  <p><span class="file-tag">src/protocol/motor_protocol.cpp</span> 第 <strong>80–110 行</strong>。</p>
+
+  <h4>看完应该知道</h4>
+  <ul>
+    <li>命令字 <code>0x30</code>（写）/ <code>0x31</code>（读）</li>
+    <li>载荷格式：
+      <ul>
+        <li>写：<code>[devId(7bit) | addrSize | addr...(addrSize 字节) | dataLen | data...(dataLen 字节)]</code></li>
+        <li>读：<code>[devId(7bit) | addrSize | addr...(addrSize 字节) | readLen]</code></li>
+      </ul>
+    </li>
+    <li><code>devId &amp; 0x7F</code> 强制清零最高位（防呆）</li>
+  </ul>
+
+  <h4>不需要深入的部分</h4>
+  <ul>
+    <li><code>CommandDispatcher::submitCommand</code> 内部的 seq 匹配、优先级队列、超时管理——把它当成"把命令送进去 → 保证回调被调一次"的黑盒即可</li>
+    <li>串口帧的封包/解包细节（FrameParser 那一层）</li>
+  </ul>
+
+  <div class="note">
+    <strong>提示</strong>：如果第二遍精读时想深入，再去看 <code>src/services/commanddispatcher.cpp</code>。第一遍跳过，避免被无关复杂度淹没。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 10</span> 动手验证 <span class="duration">15–25 分钟</span></h3>
+
+  <h4>这一步最重要——光读不练只能记住 30%</h4>
+
+  <h4>方案 A：加临时日志跑一次烧录</h4>
+  <ol>
+    <li>在以下 6 个点临时加 <code>qDebug() &lt;&lt; "[MARK]" &lt;&lt; QThread::currentThreadId() &lt;&lt; ...;</code>：
+      <ul>
+        <li><code>flash()</code> 入口</li>
+        <li><code>doInit / doBootcontrol / doDownload / doResetChip / doDeInit</code> 各一行</li>
+        <li><code>extWriteI2cThunk</code>、<code>onWriteI2c</code>、<code>syncI2cWrite</code> 入口各一行</li>
+        <li><code>syncI2cWrite</code> 第 349 行 <code>invokeMethod</code> 之前一行、回调 lambda 第一行</li>
+      </ul>
+    </li>
+    <li>用调试模拟器（或真硬件）触发一次烧录，观察日志</li>
+    <li>验证：
+      <ul>
+        <li>5 步流程是否按顺序出现</li>
+        <li>同一次写：thunk → onWriteI2c → syncI2cWrite 是否在<strong>同一个 thread id</strong></li>
+        <li>回调 lambda 是否在<strong>不同的 thread id</strong>（dispatcher 主线程）</li>
+      </ul>
+    </li>
+    <li><strong>验证完务必删掉这些临时日志</strong>，不要污染正式代码</li>
+  </ol>
+
+  <h4>方案 B：纸笔时序图</h4>
+  <p>对一次 <code>onWriteI2c</code> 调用，画出 5 个泳道（DLL / thunk / 实例方法 / syncI2cWrite worker 段 / dispatcher 主线程）的时序图，标出锁的获取/释放点和 wait/wake 时间点。</p>
+
+  <h4>方案 C：写一段伪代码</h4>
+  <p>用 100 行以内的伪代码（不用 Qt API）重新表达 <code>syncI2cWrite</code> 的逻辑。如果能写出来，说明你已经懂了。</p>
+
+  <div class="ok">
+    <strong>三个方案任选其一即可</strong>。推荐：第一遍读时做方案 B，第二遍精读时做方案 A。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<h2>附录 A — 阅读时随手记的"待回头确认"清单</h2>
+<p>如果在阅读中遇到下列问题，可以暂时先放下、不阻塞主流程，第二遍精读时再回来确认：</p>
+<ul>
+  <li><code>CommandDispatcher::submitCommand</code> 内部如何匹配响应到 callback（seq 字段）</li>
+  <li>FrameParser 如何把 0x30 / 0x31 封成串口帧</li>
+  <li>STM32 端如何按 addrSize=0 直接 <code>HAL_I2C_Master_Transmit</code></li>
+  <li>多 worker 并发时 <code>thread_local s_currentInstance</code> 的真实表现</li>
+  <li>为什么 <code>kI2cTimeoutMs = 5000ms</code> 而不是其它值（厂家约定？）</li>
+</ul>
+
+<h2>附录 B — 一句话总结每个文件</h2>
+<table>
+  <thead>
+    <tr><th>文件</th><th>一句话</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>flashstrategy.h</code></td><td>抽象基类，定义 <code>flash()</code> 契约</td></tr>
+    <tr><td><code>fwflashservice.cpp</code></td><td>状态机 + worker 线程调度，把策略的 <code>flash()</code> 跑起来</td></tr>
+    <tr><td><code>aw_sdk_strategy.h</code></td><td>把 Awinic DLL 接口、5 步流程、3 个回调、同步透传 4 件事的字段和方法摆开</td></tr>
+    <tr><td><code>aw_sdk_strategy.cpp</code></td><td>5 步编排 + 3 层回调路由 + 跨线程同步透传 = 整个 I2C 透传的全部秘密</td></tr>
+    <tr><td><code>motor_protocol.cpp</code></td><td>命令字 0x30 / 0x31 的载荷字节布局</td></tr>
+  </tbody>
+</table>
+
+<h2>附录 C — 阅读后的能力自检</h2>
+<p>读完整份指南后，你应该能不查代码回答：</p>
+<ol>
+  <li>从用户点"开始"到第一个 I2C 命令通过串口发出，会跨几个线程？</li>
+  <li>如果 DLL 的 <code>AwMoveBinDownload</code> 内部调了 1000 次 onWriteI2c，主线程会被阻塞吗？为什么？</li>
+  <li>取消按钮一旦按下，最坏情况要多久才能让 worker 真正退出？</li>
+  <li>如果想替换 Awinic DLL 为另一家 SDK，至少需要改哪几个文件？</li>
+  <li>如果想为 DW9786 也接入真实烧录算法，最小工作量是什么？</li>
+</ol>
+
+<div class="ok" style="margin-top:32px">
+  <strong>能流畅回答以上 5 个问题，说明你完全掌握了这部分代码。</strong>
+</div>
+
+</main>
+</body>
+</html>

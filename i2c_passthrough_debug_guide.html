@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>I2C 透传功能 — 单步调试指南（MinGW + GDB + VSCode）</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #fafbfc;
+    --step-bg: #f6f8fa;
+    --good: #2da44e;
+    --warn: #d4a72c;
+    --danger: #cf222e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+                 sans-serif;
+    font-size: 15px; line-height: 1.7;
+  }
+  main { max-width: 1040px; margin: 40px auto; padding: 0 24px 80px; }
+  h1 { font-size: 28px; margin: 0 0 8px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+  h2 { font-size: 22px; margin-top: 40px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; margin-top: 26px; color: var(--accent); }
+  h4 { font-size: 15px; margin-top: 18px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li > ul, li > ol { margin-top: 4px; }
+
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+    font-size: 0.92em; color: #24292f;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px; overflow-x: auto;
+    line-height: 1.5; font-size: 13px;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  table {
+    border-collapse: collapse; width: 100%;
+    margin: 16px 0; font-size: 14px;
+  }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--table-header-bg); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .toc {
+    background: var(--accent-soft); border: 1px solid #b6e3ff;
+    border-radius: 8px; padding: 16px 20px; margin: 24px 0 40px;
+  }
+  .toc h3 { color: var(--accent); margin-top: 0; }
+
+  .step {
+    background: var(--step-bg); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px; padding: 18px 22px; margin: 28px 0;
+  }
+  .step h3 { margin-top: 0; display: flex; align-items: baseline; gap: 10px; }
+  .step .stepno {
+    background: var(--accent); color: #fff;
+    border-radius: 999px; padding: 2px 12px;
+    font-size: 13px; font-weight: 600;
+  }
+  .step .duration {
+    color: var(--muted); font-size: 12px;
+    font-weight: normal; margin-left: auto;
+  }
+
+  .callout { background: #fff8c5; border-left: 4px solid var(--warn); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .note { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .danger { background: #ffebe9; border-left: 4px solid var(--danger); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .ok { background: #f0f7f0; border-left: 4px solid var(--good); padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+
+  .file-tag {
+    display: inline-block; background: #eef0f3;
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 12px; color: #24292f;
+  }
+  .kbd {
+    display: inline-block; background: #fff;
+    border: 1px solid var(--border); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 8px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 12px; color: #24292f;
+  }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>I2C 透传功能 — 单步调试指南</h1>
+<p class="meta">
+  工具链：<strong>Qt MinGW 13.1.0 64-bit</strong>（项目自带）&nbsp;|&nbsp;
+  调试器：<strong>GDB</strong>（MinGW 内置）&nbsp;|&nbsp;
+  推荐 IDE：<strong>VSCode + C/C++ 扩展（cppdbg）</strong>
+</p>
+
+<div class="note">
+  <strong>调试这部分代码的两大难点</strong>：
+  <ol style="margin-bottom:0;">
+    <li><strong>跨线程</strong>——一次 I2C 透传至少切换 3 个线程（worker → 主线程 → SerialManager 线程）；单步键按下去，线程焦点会跳。</li>
+    <li><strong>DLL 边界</strong>——Awinic DLL 没有源码，<code>AwMoveBinDownload</code> 内部 step into 会进汇编。需要"在边界打断点而不是 step 进去"。</li>
+  </ol>
+  本指南给一套<strong>可执行</strong>的方案：从构建、launch.json、断点策略、跨线程接力、到 wait/wake 这种"看起来卡住"的代码该怎么处理。
+</div>
+
+<div class="toc">
+  <h3>路径总览</h3>
+  <ol>
+    <li><strong>Step 1</strong> — 准备 Debug 构建（带调试符号）</li>
+    <li><strong>Step 2</strong> — 配置 VSCode launch.json（最关键）</li>
+    <li><strong>Step 3</strong> — 设置 Qt printers，让 QString 等可读</li>
+    <li><strong>Step 4</strong> — 选硬件还是模拟器（决定调试源）</li>
+    <li><strong>Step 5</strong> — 战略断点 9 个固定位置</li>
+    <li><strong>Step 6</strong> — VSCode 调试面板使用要点（线程切换、Watch、Conditional BP）</li>
+    <li><strong>Step 7</strong> — 跨线程"接力调试"模板</li>
+    <li><strong>Step 8</strong> — DLL 边界与 <code>QWaitCondition::wait</code> 的处理</li>
+    <li><strong>Step 9</strong> — 不打断的诊断手段（logpoints、qDebug、Qt 日志类别）</li>
+    <li><strong>Step 10</strong> — 常见症状速查表</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 1</span> 准备 Debug 构建（带调试符号） <span class="duration">5 分钟</span></h3>
+
+  <h4>问题</h4>
+  <p>当前 <code>build_make_qt/CMakeCache.txt</code> 里 <code>CMAKE_BUILD_TYPE</code> 是<strong>空</strong>——意味着用了默认配置，可能没有 <code>-g</code>，单步进去会"乱跳"或者完全看不到源码。</p>
+
+  <h4>方案 A（推荐）：单独建 Debug 构建目录</h4>
+  <p>不污染原 Release 目录，可以并存切换。</p>
+  <pre><code># 在项目根目录打开 PowerShell
+$env:PATH = "D:\Qt\Tools\mingw1310_64\bin;$env:PATH"
+
+# 新建 Debug 构建目录
+mkdir build_debug
+cd build_debug
+
+# 用 Qt Kit 生成（按你实际 Qt 版本改路径）
+&amp; "D:\Qt\Tools\CMake_64\bin\cmake.exe" `
+    -G "MinGW Makefiles" `
+    -DCMAKE_BUILD_TYPE=Debug `
+    -DCMAKE_PREFIX_PATH="D:\Qt\6.x.x\mingw_64" `
+    ..
+
+mingw32-make -j8</code></pre>
+
+  <h4>方案 B：原地切换</h4>
+  <pre><code>cd build_make_qt
+&amp; cmake.exe -DCMAKE_BUILD_TYPE=Debug .
+mingw32-make -j8</code></pre>
+
+  <h4>验证</h4>
+  <ul>
+    <li><code>file MotorDev.exe</code>（可用 Git Bash）应显示 <code>not stripped</code></li>
+    <li>或者 <code>objdump -h MotorDev.exe | grep debug</code> 能看到 <code>.debug_*</code> 段</li>
+    <li>体积明显比 Release 大（一般 5–10 倍）</li>
+  </ul>
+
+  <div class="danger">
+    <strong>陷阱</strong>：如果开了 <code>-O2</code>/<code>-O3</code>，即使有 <code>-g</code>，单步也会出现"行号乱跳、变量显示 &lt;optimized out&gt;"。Debug 构建必须是 <code>-O0 -g</code>（CMake 的 <code>Debug</code> 类型默认就是这个）。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 2</span> 配置 VSCode launch.json <span class="duration">10 分钟</span></h3>
+
+  <h4>装扩展</h4>
+  <ul>
+    <li><strong>C/C++</strong>（Microsoft）—— 提供 <code>cppdbg</code> 调试类型</li>
+    <li><strong>CMake Tools</strong>（可选）—— 一键 configure/build</li>
+  </ul>
+
+  <h4>新建 <code>.vscode/launch.json</code></h4>
+  <pre><code>{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug MotorDev (GDB)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build_debug/MotorDev.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build_debug",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "D:\\Qt\\Tools\\mingw1310_64\\bin;D:\\Qt\\6.x.x\\mingw_64\\bin;${env:PATH}"
+        },
+        {
+          "name": "QT_LOGGING_RULES",
+          "value": "motordev.*=true"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "D:\\Qt\\Tools\\mingw1310_64\\bin\\gdb.exe",
+      "setupCommands": [
+        { "description": "Pretty printing", "text": "-enable-pretty-printing", "ignoreFailures": true },
+        { "description": "Async mode", "text": "-gdb-set mi-async on", "ignoreFailures": true },
+        { "description": "Don't stop on SIGUSR1", "text": "handle SIGUSR1 nostop noprint pass", "ignoreFailures": true }
+      ]
+    }
+  ]
+}</code></pre>
+
+  <h4>关键字段说明</h4>
+  <table>
+    <thead><tr><th>字段</th><th>作用</th><th>注意</th></tr></thead>
+    <tbody>
+      <tr><td><code>program</code></td><td>调试目标 exe 路径</td><td>务必指向 Debug 构建</td></tr>
+      <tr><td><code>cwd</code></td><td>程序的工作目录</td><td>必须是包含 <code>AW86100.dll</code> 的那个 build 目录，否则 DLL 加载失败</td></tr>
+      <tr><td><code>environment.PATH</code></td><td>运行时 PATH</td><td><strong>必须</strong>把 Qt bin 和 MinGW bin 加进来，否则启动报"找不到 Qt6Core.dll"</td></tr>
+      <tr><td><code>QT_LOGGING_RULES</code></td><td>启用 motordev.* 日志类别</td><td>项目里 <code>Q_LOGGING_CATEGORY(lcFwFlash, ...)</code> 默认禁用，这行打开</td></tr>
+      <tr><td><code>miDebuggerPath</code></td><td>GDB 路径</td><td>Qt 自带的，不要用别处的 GDB（版本不匹配会乱）</td></tr>
+      <tr><td><code>mi-async on</code></td><td>启用异步模式</td><td>多线程调试更稳，避免线程切换时卡住</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>把示例里的 <code>D:\Qt\6.x.x\mingw_64</code> 改成你实际的 Qt 路径</strong>。可以在 <code>build_make_qt/CMakeCache.txt</code> 里搜 <code>Qt6_DIR</code> 找到。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 3</span> 让 QString / QByteArray 可读 <span class="duration">5 分钟</span></h3>
+
+  <h4>问题</h4>
+  <p>原生 GDB 看 <code>QString</code> 是一坨 <code>QArrayDataPointer&lt;ushort&gt;</code>，看不出实际字符串。Watch 面板里全是噪音。</p>
+
+  <h4>方案：启用 Qt 的 GDB pretty printers</h4>
+  <p>Qt 自带 Python 脚本，路径一般是：</p>
+  <pre><code>D:\Qt\6.x.x\mingw_64\share\qtcreator\debugger\qttypes.py
+（或在 Qt Creator 安装目录的 share\qtcreator\debugger\）</code></pre>
+
+  <h4>在 launch.json 的 setupCommands 增加</h4>
+  <pre><code>{
+  "description": "Load Qt printers",
+  "text": "python exec(open('D:/Qt/Tools/QtCreator/share/qtcreator/debugger/qttypes.py').read())",
+  "ignoreFailures": true
+}</code></pre>
+
+  <p>实在找不到这个文件也没关系，**最低限度**用 GDB 命令查看：</p>
+  <pre><code>(gdb) p qstring.toUtf8().constData()
+(gdb) p (char*)qbytearray.data()</code></pre>
+
+  <p>或在 VSCode Watch 面板写：</p>
+  <ul>
+    <li><code>icModel.toUtf8().constData()</code></li>
+    <li><code>(char*)payload.data(),payload.size()</code> ←&nbsp;<strong>带逗号长度，可显示二进制内容</strong></li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 4</span> 决定调试源：硬件 vs 模拟器 <span class="duration">3 分钟</span></h3>
+
+  <h4>选项对比</h4>
+  <table>
+    <thead><tr><th>方案</th><th>能调试到</th><th>限制</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>真硬件</strong>（STM32 + AW86006）</td>
+        <td>从 thunk 到 dispatcher 到串口的<strong>全链路</strong></td>
+        <td>需要硬件在手 + 串口连通</td>
+      </tr>
+      <tr>
+        <td><strong>调试模拟器</strong>（项目自带 SerialDebugTab）</td>
+        <td>thunk → onWriteI2c → syncI2cWrite → dispatcher 这段<strong>纯上位机部分</strong></td>
+        <td>模拟器对 0x30/0x31 透传命令的响应需要确认是否已实现；下载阶段如果模拟器不应答会触发 5 秒超时</td>
+      </tr>
+      <tr>
+        <td><strong>注入假 dispatcher</strong>（自己写一个）</td>
+        <td>策略层与协议层，不依赖任何真实串口</td>
+        <td>需要写一两百行 mock 代码</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="ok">
+    <strong>建议</strong>：第一次调试用<strong>调试模拟器</strong>把上位机部分走通；确认无问题后再接真硬件。
+  </div>
+
+  <h4>如果用模拟器</h4>
+  <ol>
+    <li>先看 <span class="file-tag">src/services/simulatorservice.cpp</span> 是否处理 <code>CmdI2cTransferWrite (0x30)</code> 和 <code>CmdI2cTransferRead (0x31)</code></li>
+    <li>如果没处理，烧录会卡在第一个 I2C 命令的 5 秒超时</li>
+    <li>需要补一段 mock 应答（"无脑成功"即可）才能让流程跑下去</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 5</span> 战略断点 9 个固定位置 <span class="duration">10 分钟</span></h3>
+
+  <h4>设置原则</h4>
+  <p>不要从入口一路 step——按调用链<strong>分层下断点，让程序自动停在你关心的边界</strong>，节省精力。</p>
+
+  <h4>必下的 9 个断点</h4>
+  <table>
+    <thead>
+      <tr><th>#</th><th>位置</th><th>作用</th><th>线程</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><span class="file-tag">fwflashtab.cpp</span> <code>onStartRequested()</code></td>
+        <td>烧录入口；确认 IC 名和数据传对了</td>
+        <td>主线程</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><span class="file-tag">fwflashservice.cpp</span> <code>runPreflightAndFlash</code> 的 <code>setState(State::Flashing)</code> 那行</td>
+        <td>worker 即将启动</td>
+        <td>主线程</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><span class="file-tag">aw_sdk_strategy.cpp</span> <code>flash()</code> 入口（第 53 行）</td>
+        <td>已切到 worker 线程</td>
+        <td><strong>worker</strong></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>doInit / doDownload</code> 各打一个</td>
+        <td>5 步流程边界</td>
+        <td>worker</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>extWriteI2cThunk</code> 第一行</td>
+        <td>DLL 第一次回调你</td>
+        <td>worker</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>onWriteI2c</code> 入口</td>
+        <td>thunk 路由到实例</td>
+        <td>worker</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>syncI2cWrite</code> 第 349 行 <code>QMetaObject::invokeMethod(...)</code></td>
+        <td>跨线程提交"前一刻"</td>
+        <td>worker</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>syncI2cWrite</code> 回调 lambda 内 <code>state-&gt;received = true</code> 那行（约 339 行）</td>
+        <td>响应到达，唤醒 worker</td>
+        <td><strong>主线程</strong>（dispatcher 所在）</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><code>syncI2cWrite</code> 第 363 行 <code>if (state-&gt;isError)</code></td>
+        <td>worker 醒来，准备返回</td>
+        <td>worker</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>断点 5 是关键观察点</h4>
+  <p>看到断点 5 命中，确认两件事：</p>
+  <ol>
+    <li>当前 thread id 与断点 3 一致（同一个 worker）</li>
+    <li><code>s_currentInstance</code> 不为空，且指向当前 strategy 实例</li>
+  </ol>
+
+  <p>这两点验证了 <strong>thunk 路由机制工作正常</strong>。</p>
+
+  <h4>断点 8 验证跨线程</h4>
+  <p>断点 8 命中时，VSCode 的 <strong>Threads 面板</strong>会显示当前在主线程，而 worker 线程仍在断点 7（或它的下一行 <code>cond.wait</code>）等待。这是<strong>同一时刻两个线程的快照</strong>——直观体现"主线程负责完成，worker 负责等待"。</p>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 6</span> VSCode 调试面板使用要点 <span class="duration">8 分钟</span></h3>
+
+  <h4>必看的 4 个面板</h4>
+  <table>
+    <thead><tr><th>面板</th><th>用法</th><th>这功能里关注什么</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>VARIABLES</strong></td>
+        <td>展开自动观察当前作用域变量</td>
+        <td><code>m_cancelFlag</code>, <code>m_inDownload</code>, <code>m_sentBytes</code>, <code>state</code></td>
+      </tr>
+      <tr>
+        <td><strong>WATCH</strong></td>
+        <td>固定监视表达式</td>
+        <td><code>s_currentInstance</code>, <code>m_cancelFlag-&gt;load()</code>, <code>state-&gt;received</code></td>
+      </tr>
+      <tr>
+        <td><strong>CALL STACK</strong></td>
+        <td>当前栈帧；点击切换帧</td>
+        <td>看清"是谁调到这里"——尤其在 thunk 命中时</td>
+      </tr>
+      <tr>
+        <td><strong>THREADS</strong></td>
+        <td>所有线程列表；点击切换线程焦点</td>
+        <td>本功能<strong>最关键</strong>的面板</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>常用快捷键</h4>
+  <table>
+    <thead><tr><th>动作</th><th>快捷键</th><th>对本功能</th></tr></thead>
+    <tbody>
+      <tr><td>继续</td><td><span class="kbd">F5</span></td><td>主力</td></tr>
+      <tr><td>Step Over（不进入函数）</td><td><span class="kbd">F10</span></td><td>主力</td></tr>
+      <tr><td>Step Into（进入函数）</td><td><span class="kbd">F11</span></td><td><strong>慎用</strong>——别 step 进 DLL 或 wait()</td></tr>
+      <tr><td>Step Out（跳出当前函数）</td><td><span class="kbd">Shift+F11</span></td><td>误入 DLL/wait 后救命</td></tr>
+      <tr><td>切线程</td><td>点 Threads 面板对应行</td><td>跨线程接力时必用</td></tr>
+    </tbody>
+  </table>
+
+  <h4>条件断点（Conditional Breakpoint）</h4>
+  <p>右键断点 → <strong>Edit Breakpoint</strong> → 选 Expression。</p>
+
+  <p>本功能里几个有用的条件：</p>
+  <table>
+    <thead><tr><th>位置</th><th>条件</th><th>触发场景</th></tr></thead>
+    <tbody>
+      <tr><td><code>onWriteI2c</code> 入口</td><td><code>m_cancelFlag-&gt;load() == true</code></td><td>只在已请求取消时停下</td></tr>
+      <tr><td><code>onWriteI2c</code> 入口</td><td><code>m_inDownload &amp;&amp; wrSize &gt; 32</code></td><td>下载阶段大写入</td></tr>
+      <tr><td><code>syncI2cWrite</code> 入口</td><td><code>m_sentBytes &gt; 1024 * 8</code></td><td>跑过 8KB 后才停</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>提示</strong>：对于 <code>onWriteI2c</code> 这种"一次烧录可能调几百次"的回调，<strong>无条件断点会让你疯掉</strong>。一定要用条件断点或 logpoint。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 7</span> 跨线程"接力调试"模板 <span class="duration">10 分钟</span></h3>
+
+  <h4>典型场景：跟踪一次 syncI2cWrite 的全程</h4>
+
+  <h4>步骤</h4>
+  <ol>
+    <li><strong>预先下好</strong>断点 6、7、8、9（见 Step 5）</li>
+    <li>F5 启动，UI 操作触发烧录</li>
+    <li>断点 6 命中（worker 线程）—— Threads 面板里有 worker，焦点在 worker
+      <ul><li>看 VARIABLES：<code>devId / wrSize / wrData</code> 是 DLL 给的入参</li></ul>
+    </li>
+    <li>F5 继续 → 断点 7 命中（仍在 worker）
+      <ul><li>看 <code>payload</code>：<code>(char*)payload.data(),payload.size()</code> 在 Watch 里能看二进制</li></ul>
+    </li>
+    <li>F10 越过 <code>invokeMethod</code>，再 F10 越过 <code>QMutexLocker</code>，到 <code>cond.wait</code> 那一行
+      <ul>
+        <li><strong>不要 F11 进入 wait</strong>！wait 内部是平台原语，进去你会迷路且无法回来</li>
+        <li>在 <code>cond.wait</code> 那一行<strong>右键 → Run to Cursor</strong>更安全</li>
+      </ul>
+    </li>
+    <li>F5 继续 → 断点 8 命中（<strong>主线程</strong>）
+      <ul>
+        <li>Threads 面板里 worker 显示"运行中"或"等待"，主线程显示当前帧</li>
+        <li>Call Stack 显示从 <code>QMetaObject::invokeMethod</code> 经过事件循环路由过来</li>
+      </ul>
+    </li>
+    <li>F10 越过 <code>cond.wakeOne()</code>，让 worker 醒来</li>
+    <li>F5 继续 → 断点 9 命中（worker 线程）
+      <ul><li>切回 Threads 面板看到焦点回到 worker</li></ul>
+    </li>
+  </ol>
+
+  <h4>"接力"的视觉印象</h4>
+  <pre><code>worker:    ─bp6─bp7─[wait]──────────────────[wake]─bp9─→
+主线程:                         ─bp8─[wakeOne]─→</code></pre>
+  <p>每按一次 F5，焦点在两条泳道间跳一次。习惯后会觉得很顺。</p>
+
+  <div class="callout">
+    <strong>易混淆</strong>：在断点 8 命中时，worker 线程的状态<strong>不是"暂停"</strong>，而是"在 wait 里阻塞"——这是程序逻辑，不是调试器干的。F5 让主线程跑完 wakeOne 后，worker 才会真正开始执行下一行。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 8</span> DLL 边界与 QWaitCondition::wait <span class="duration">8 分钟</span></h3>
+
+  <h4>DLL 没源码，怎么办</h4>
+  <ul>
+    <li><strong>不要 F11 进入</strong> <code>m_fnInit / m_fnBootcontrol / m_fnMoveBinDownload / m_fnResetChip</code>——会跳到反汇编视图</li>
+    <li>正确做法：在<strong>调用前一行</strong>和<strong>调用后一行</strong>各下断点
+      <pre><code>// aw_sdk_strategy.cpp doDownload 内
+const int ret = m_fnMoveBinDownload(buf, len, ...);   ← BP A 调用前
+m_inDownload = false;                                  ← BP B 调用后</code></pre>
+    </li>
+    <li>BP A 和 BP B 之间，DLL 内部会反复调你的 <code>onWriteI2c</code>——你可以<strong>F5 跳到 onWriteI2c 的断点</strong>看每次写</li>
+  </ul>
+
+  <h4>如果不小心 step 进 DLL</h4>
+  <ol>
+    <li>立刻 <span class="kbd">Shift+F11</span> Step Out</li>
+    <li>如果还停在汇编，按多次 Shift+F11 直到回到你的源码</li>
+    <li>再不行就直接 F5，让它跑完到下一个断点</li>
+  </ol>
+
+  <h4>QWaitCondition::wait 同理</h4>
+  <ul>
+    <li>F11 进入会进到 Qt 内部、再到 Windows API（<code>WaitForSingleObject</code>），毫无价值</li>
+    <li>正确做法：在 <code>cond.wait</code> 那一行 F10 越过；在<strong>回调 lambda 里</strong>下断点观察唤醒</li>
+  </ul>
+
+  <div class="danger">
+    <strong>陷阱</strong>：进入 DLL 或 wait() 后，VSCode 可能切到反汇编视图（CALL STACK 显示 <code>??</code>）。**不要慌**，按 Shift+F11 回到你的代码即可。如果完全卡死，重启调试。
+  </div>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 9</span> 不打断的诊断手段 <span class="duration">8 分钟</span></h3>
+
+  <h4>1. Logpoint（不暂停的断点）</h4>
+  <p>右键行号 → <strong>Add Logpoint</strong>，输入消息（用 <code>{表达式}</code> 引用变量）：</p>
+  <pre><code>onWriteI2c: devId=0x{devId,X} size={wrSize} sent={m_sentBytes}</code></pre>
+  <p>命中时<strong>不停</strong>，只把消息打到 DEBUG CONSOLE。适合 <code>onWriteI2c</code> 这种高频回调。</p>
+
+  <h4>2. qDebug + 线程 ID</h4>
+  <p>临时往代码里塞：</p>
+  <pre><code>qDebug() &lt;&lt; "[I2C-W]"
+         &lt;&lt; "tid=" &lt;&lt; QThread::currentThreadId()
+         &lt;&lt; "size=" &lt;&lt; wrSize
+         &lt;&lt; "sent=" &lt;&lt; m_sentBytes;</code></pre>
+  <p>对验证"哪一段在哪个线程"非常有效。<strong>验证完务必删掉</strong>。</p>
+
+  <h4>3. 启用项目 Q_LOGGING_CATEGORY</h4>
+  <p>项目里 <code>fwflashservice.cpp:23</code> 已经定义了 <code>motordev.fwflash</code> 类别。launch.json 里那行 <code>QT_LOGGING_RULES=motordev.*=true</code> 就是为了启用它。运行时直接在控制台看：</p>
+  <pre><code>motordev.fwflash: 步骤 1/5：AwOIS_ExtFuncInit
+motordev.fwflash: 已加载 DLL：AW86100.dll
+...</code></pre>
+
+  <h4>4. GDB 命令行（高级）</h4>
+  <p>VSCode 的 DEBUG CONSOLE 支持直接打 GDB 命令，前缀 <code>-exec</code>：</p>
+  <pre><code>-exec info threads               # 查看所有线程
+-exec thread 3                   # 切到线程 3
+-exec bt                         # 打印当前栈
+-exec print s_currentInstance    # 看静态变量
+-exec watch m_sentBytes          # 数据断点：变化即停</code></pre>
+
+  <p><strong>watch 数据断点</strong>对调试"为什么 m_sentBytes 突然不增长了"这类问题特别有用——它的变化时机就是停下来的时机。</p>
+</div>
+
+<!-- ============================================================ -->
+
+<div class="step">
+  <h3><span class="stepno">Step 10</span> 常见症状速查表 <span class="duration">参考用</span></h3>
+
+  <table>
+    <thead>
+      <tr><th>症状</th><th>原因</th><th>对策</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>启动报"找不到 Qt6Core.dll"</td>
+        <td>launch.json 的 PATH 没把 Qt bin 加进来</td>
+        <td>检查 environment.PATH</td>
+      </tr>
+      <tr>
+        <td>启动后立即崩溃 / 报缺 AW86100.dll</td>
+        <td><code>cwd</code> 不对，DLL 不在工作目录</td>
+        <td>把 cwd 改成包含 DLL 的目录</td>
+      </tr>
+      <tr>
+        <td>断点显示 ⭕ 灰圆"Unverified"</td>
+        <td>构建不是 Debug，或者源文件路径不匹配</td>
+        <td>重建 Debug，确认 launch.json 的 program 指向新 exe</td>
+      </tr>
+      <tr>
+        <td>变量显示 <code>&lt;optimized out&gt;</code></td>
+        <td>带了 <code>-O2</code> 优化</td>
+        <td>确认 <code>CMAKE_BUILD_TYPE=Debug</code>，重建</td>
+      </tr>
+      <tr>
+        <td>F10 后行号乱跳</td>
+        <td>同上：优化导致行号映射错乱</td>
+        <td>同上</td>
+      </tr>
+      <tr>
+        <td>断点不命中，但代码确实跑了</td>
+        <td>路径区分大小写问题，或者改了源文件没重新编译</td>
+        <td>重新构建；或在 DEBUG CONSOLE <code>-exec info b</code> 检查 BP 实际地址</td>
+      </tr>
+      <tr>
+        <td>thunk 命中，但 <code>s_currentInstance</code> 是 0</td>
+        <td>thread_local 初始化时机问题，或不是同一个线程</td>
+        <td>在 flash() 入口确认 <code>s_currentInstance = this</code> 已执行；对比 thread id</td>
+      </tr>
+      <tr>
+        <td>cond.wait 后再也不醒</td>
+        <td>响应没回来（超时 5s 仍没动）</td>
+        <td>确认串口/模拟器是否回了响应；检查 dispatcher 的 seq 匹配</td>
+      </tr>
+      <tr>
+        <td>每次都卡在第一个 I2C 命令 5s 超时</td>
+        <td>用模拟器调试但模拟器没处理 0x30/0x31</td>
+        <td>给 SimulatorService 加 0x30/0x31 的 mock 应答</td>
+      </tr>
+      <tr>
+        <td>VARIABLES 里 QString 看不到内容</td>
+        <td>没启用 Qt pretty printers</td>
+        <td>Step 3 的 setupCommands；或用 <code>.toUtf8().constData()</code></td>
+      </tr>
+      <tr>
+        <td>调试中点取消按钮没反应</td>
+        <td>worker 在 cond.wait 等待中，要等到响应或超时才检查 cancelFlag</td>
+        <td>这是<strong>设计行为</strong>，不是 bug；最坏 5s 后会响应取消</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+
+<h2>附录 A — 一份"最小调试流程"清单</h2>
+<p>第一次按本指南走时，建议这样：</p>
+<ol>
+  <li>Step 1—2 准备好（10 分钟）</li>
+  <li>Step 5 下断点 1、3、5、6、7、8、9（不下 2 和 4，避免噪声）</li>
+  <li>用调试模拟器跑（Step 4 方案 B）</li>
+  <li>F5 启动，按 Step 7 的接力流程走一次完整的 syncI2cWrite</li>
+  <li>把 Step 10 当 FAQ 速查</li>
+</ol>
+
+<h2>附录 B — 命令速查卡</h2>
+<table>
+  <thead><tr><th>需求</th><th>命令 / 操作</th></tr></thead>
+  <tbody>
+    <tr><td>看所有线程</td><td>DEBUG CONSOLE: <code>-exec info threads</code></td></tr>
+    <tr><td>切到第 N 个线程</td><td>点 Threads 面板对应行 / <code>-exec thread N</code></td></tr>
+    <tr><td>看 QString 内容</td><td>Watch: <code>str.toUtf8().constData()</code></td></tr>
+    <tr><td>看 QByteArray 二进制</td><td>Watch: <code>(char*)ba.data(),ba.size()</code></td></tr>
+    <tr><td>条件断点</td><td>右键断点 → Edit Breakpoint → Expression</td></tr>
+    <tr><td>不停的日志点</td><td>右键行号 → Add Logpoint</td></tr>
+    <tr><td>变量被修改即停</td><td>DEBUG CONSOLE: <code>-exec watch m_sentBytes</code></td></tr>
+    <tr><td>跑到光标位置</td><td>右键代码 → Run to Cursor</td></tr>
+    <tr><td>从函数立刻返回</td><td><span class="kbd">Shift+F11</span></td></tr>
+  </tbody>
+</table>
+
+<div class="ok" style="margin-top:32px">
+  <strong>按本指南走一遍，你应当能</strong>：
+  <ul>
+    <li>独立跟踪一次 I2C 透传写从 DLL 回调到响应回来的全过程</li>
+    <li>在跨线程时看清焦点切换</li>
+    <li>不踩"step 进 DLL/wait()"的坑</li>
+    <li>用 logpoint 处理高频回调而不被淹没</li>
+  </ul>
+</div>
+
+</main>
+</body>
+</html>

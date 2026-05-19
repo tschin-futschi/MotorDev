@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>fwflashservice.h 逐行讲解</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --green: #1a7f37;
+    --green-soft: #dafbe1;
+    --purple: #8250df;
+    --purple-soft: #fbefff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.8;
+  }
+  main { max-width: 960px; margin: 40px auto; padding: 0 28px 80px; }
+  h1 { font-size: 28px; margin: 0 0 10px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+  h2 {
+    font-size: 22px; margin-top: 50px;
+    padding: 10px 16px;
+    background: linear-gradient(to right, var(--accent-soft), transparent);
+    border-left: 5px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  h3 { font-size: 17px; margin-top: 28px; color: var(--accent); }
+  h4 { font-size: 15px; margin-top: 18px; font-weight: 600; }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 22px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.9em; color: #24292f;
+  }
+  pre {
+    background: #0d1117; color: #e6edf3;
+    border: 1px solid #30363d; border-radius: 6px;
+    padding: 16px 18px; overflow-x: auto;
+    line-height: 1.6; font-size: 13.5px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+  pre .kw { color: #ff7b72; }
+  pre .ty { color: #ffa657; }
+  pre .fn { color: #d2a8ff; }
+  pre .str { color: #a5d6ff; }
+  pre .cmt { color: #8b949e; font-style: italic; }
+  pre .num { color: #79c0ff; }
+
+  .cpp-box {
+    background: var(--purple-soft);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 14px 0;
+  }
+  .cpp-box::before {
+    content: "📘 C++/Qt 概念";
+    display: block;
+    color: var(--purple);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .cpp-box strong { color: var(--purple); }
+
+  .why {
+    background: var(--green-soft);
+    border-left: 4px solid var(--green);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .why::before {
+    content: "💡 为什么这么写：";
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .pitfall {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .pitfall::before {
+    content: "⚠ 容易困惑：";
+    color: #845a00;
+    font-weight: 600;
+  }
+
+  .note {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  thead th { background: var(--code-bg); font-weight: 600; }
+
+  .toc {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 22px;
+    margin: 18px 0 28px;
+  }
+  .toc ol { margin: 6px 0; padding-left: 22px; }
+  .toc li { margin: 3px 0; }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1><code>fwflashservice.h</code> 逐行讲解</h1>
+<p class="meta">文件路径：<code>src/services/fwflashservice.h</code> &nbsp;|&nbsp; 共 115 行 &nbsp;|&nbsp; 拆为 14 个段</p>
+
+<div class="note">
+  <strong>本文档讲解结构：</strong>把整个 <code>fwflashservice.h</code> 按逻辑分成 14 个段，逐段说明语法、含义和设计意图。每个段后给"为什么这么写"和"容易困惑"提示。本文重点在 Qt 特有概念（Q_OBJECT / signals / slots / Q_ENUM / 对象树）—— 这些是前几份文档没专门讲过的。
+</div>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li>文件头注释（第 1–18 行）</li>
+    <li>防重复包含（第 19 行）</li>
+    <li>include 头文件（第 21–27 行）</li>
+    <li>前向声明（第 29–31 行）</li>
+    <li>类声明开始 + Q_OBJECT（第 33–34 行）</li>
+    <li>State 枚举（第 37–50 行）</li>
+    <li>LogLevel 枚举（第 52–59 行）</li>
+    <li>StopCallback 类型别名（第 61 行）</li>
+    <li>构造函数与析构函数（第 63–67 行）</li>
+    <li>4 个回调注入接口（第 69–73 行）</li>
+    <li>状态查询接口（第 75–79 行）</li>
+    <li><code>public slots</code>（第 81–89 行）</li>
+    <li><code>signals</code>（第 91–96 行）</li>
+    <li><code>private</code> 私有部分（第 98–114 行）</li>
+  </ol>
+</div>
+
+<h2>段 1（第 1–18 行）：文件头注释</h2>
+
+<pre><code><span class="cmt">// =============================================================================
+// @file    fwflashservice.h
+// @brief   固件烧录服务 — 协调前置序列、worker 线程、进度回调与状态机
+//
+// 职责：
+// - 接收 UI 的 startFlash / cancelFlash 请求
+// - 顺序触发前置停止序列（采样 → 发生器 → 循环写入 → PMIC），通过 4 个回调下发
+// - 在独立 worker 线程内调用 FlashStrategy::flash()
+// - 通过信号回 UI 上报状态、阶段文本、进度、日志、最终结果
+// - 取消通过 std::atomic&lt;bool&gt; cancelFlag 协作式实现
+//
+// 线程：
+// - 本类对象生存于主线程
+// - flash() 调用在 QThread::create 创建的 worker 上执行
+// - 所有信号 emit 跨线程时由 Qt 自动转 QueuedConnection
+// - m_state 仅在主线程修改（worker 通过 invokeMethod 回主线程切换状态）
+// =============================================================================</span></code></pre>
+
+<p><strong>Doxygen 风格的文档注释。</strong><code>@file</code>、<code>@brief</code> 是 Doxygen 标签。</p>
+
+<p>这种"<strong>头注释把整个类的职责讲清楚</strong>"是良好工程习惯——后人读 .h 不需要看实现就能知道这个类是干什么的。特别注意"<strong>线程</strong>"段——明确写出"哪些操作在哪个线程"，是多线程类的<strong>必备文档</strong>。</p>
+
+<h2>段 2（第 19 行）：防重复包含</h2>
+
+<pre><code><span class="kw">#pragma once</span></code></pre>
+
+<p>C++ 头文件标配。防止同一头文件被重复 include 导致"<strong>重复定义</strong>"错误。每个 <code>.h</code> 都该有这一行。</p>
+
+<h2>段 3（第 21–27 行）：include 头文件</h2>
+
+<pre><code><span class="kw">#include</span> <span class="str">&lt;QByteArray&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;QObject&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;QString&gt;</span>
+
+<span class="kw">#include</span> <span class="str">&lt;atomic&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;functional&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;memory&gt;</span></code></pre>
+
+<p>按惯例分两组（Qt 类、C++ 标准库），用空行隔开。</p>
+
+<table>
+  <thead><tr><th>头</th><th>引入的东西</th></tr></thead>
+  <tbody>
+    <tr><td><code>&lt;QByteArray&gt;</code></td><td><code>QByteArray</code> 类（固件字节流）</td></tr>
+    <tr><td><code>&lt;QObject&gt;</code></td><td><code>QObject</code> 基类（信号槽机制）</td></tr>
+    <tr><td><code>&lt;QString&gt;</code></td><td><code>QString</code> 类</td></tr>
+    <tr><td><code>&lt;atomic&gt;</code></td><td><code>std::atomic</code> 模板</td></tr>
+    <tr><td><code>&lt;functional&gt;</code></td><td><code>std::function</code> 模板</td></tr>
+    <tr><td><code>&lt;memory&gt;</code></td><td><code>std::shared_ptr</code> 等智能指针</td></tr>
+  </tbody>
+</table>
+
+<h2>段 4（第 29–31 行）：前向声明</h2>
+
+<pre><code><span class="kw">class</span> <span class="ty">FlashStrategy</span>;
+<span class="kw">class</span> <span class="ty">FlashStrategyRegistry</span>;
+<span class="kw">class</span> <span class="ty">QThread</span>;</code></pre>
+
+<p><strong>前向声明</strong>——告诉编译器"这是 3 个类的名字，详细定义另说"。</p>
+
+<div class="cpp-box">
+  当头文件里只用类的<strong>指针/引用</strong>时，前向声明就够了，不需要 <code>#include</code> 完整定义。这样减少编译耦合、加快编译速度。
+</div>
+
+<p>看后面的成员声明就明白：<code>FlashStrategy *strategy</code>（指针）、<code>FlashStrategyRegistry *m_registry</code>（指针）、<code>QThread *m_workerThread</code>（指针）—— 都是指针，所以前向声明足够。</p>
+
+<h2>段 5（第 33–34 行）：类声明开始 + Q_OBJECT</h2>
+
+<pre><code><span class="kw">class</span> <span class="ty">FwFlashService</span> : <span class="kw">public</span> <span class="ty">QObject</span> {
+    <span class="fn">Q_OBJECT</span></code></pre>
+
+<h3><code>class FwFlashService : public QObject</code></h3>
+
+<p>声明类 <code>FwFlashService</code>，<strong>公开继承自 <code>QObject</code></strong>。</p>
+
+<div class="cpp-box">
+  <strong>为什么继承 QObject？</strong>因为只有 QObject 子类才能用 Qt 的<strong>信号槽机制</strong>。本类要 emit 信号给 UI，必须继承 QObject。<br><br>
+  <code>QObject</code> 是 Qt 整个对象系统的根基类，提供：
+  <ul>
+    <li>信号槽（signals/slots）</li>
+    <li>父子对象树（parent-child）</li>
+    <li>元对象信息（QMetaObject）</li>
+    <li>跨线程调用（invokeMethod）</li>
+  </ul>
+</div>
+
+<h3><code>Q_OBJECT</code> 宏</h3>
+
+<div class="cpp-box">
+  所有用到信号槽的 QObject 子类<strong>必须</strong>在类内的<strong>第一行</strong>写 <code>Q_OBJECT</code> 宏。它展开后会插入一堆代码，让 Qt 的"<strong>元对象编译器</strong>"（moc）能识别本类。
+</div>
+
+<div class="pitfall">
+  如果忘了写 <code>Q_OBJECT</code>，编译时连接器会报错：
+  <pre style="margin:6px 0;"><code>undefined reference to vtable for FwFlashService</code></pre>
+  或类似的难懂报错。<strong>新手常踩这个坑。</strong><br><br>
+  另外注意 <code>Q_OBJECT</code> 后<strong>没有分号</strong>——它是宏，展开后是一大段代码（带分号），所以这里写宏的时候不需要再加分号。
+</div>
+
+<h2>段 6（第 37–50 行）：State 枚举</h2>
+
+<pre><code><span class="kw">public</span>:
+    <span class="cmt">/// @brief 烧录任务状态机</span>
+    <span class="kw">enum class</span> <span class="ty">State</span> {
+        Idle,
+        Preparing,
+        StoppingScope,
+        StoppingGenerator,
+        StoppingCyclic,
+        DisablingPmic,
+        Flashing,
+        Completed,
+        Failed,
+        Cancelled,
+    };
+    <span class="fn">Q_ENUM</span>(<span class="ty">State</span>)</code></pre>
+
+<h3>10 个状态</h3>
+
+<table>
+  <thead><tr><th>状态</th><th>含义</th></tr></thead>
+  <tbody>
+    <tr><td><code>Idle</code></td><td>空闲，未开始烧录</td></tr>
+    <tr><td><code>Preparing</code></td><td>准备中（参数校验后）</td></tr>
+    <tr><td><code>StoppingScope</code></td><td>正在停采样</td></tr>
+    <tr><td><code>StoppingGenerator</code></td><td>正在停信号发生器</td></tr>
+    <tr><td><code>StoppingCyclic</code></td><td>正在停循环写入</td></tr>
+    <tr><td><code>DisablingPmic</code></td><td>正在关 PMIC</td></tr>
+    <tr><td><code>Flashing</code></td><td>真正烧录中</td></tr>
+    <tr><td><code>Completed</code></td><td>已完成</td></tr>
+    <tr><td><code>Failed</code></td><td>失败</td></tr>
+    <tr><td><code>Cancelled</code></td><td>已取消</td></tr>
+  </tbody>
+</table>
+
+<h3><code>enum class</code> 与 <code>enum</code> 的区别</h3>
+
+<pre><code><span class="cmt">// 旧式 enum</span>
+<span class="kw">enum</span> <span class="ty">State</span> { Idle, Preparing };
+<span class="ty">State</span> s = Idle;          <span class="cmt">// 不需要前缀</span>
+
+<span class="cmt">// 新式 enum class(强类型枚举)</span>
+<span class="kw">enum class</span> <span class="ty">State</span> { Idle, Preparing };
+<span class="ty">State</span> s = <span class="ty">State</span>::Idle;   <span class="cmt">// 必须加 State:: 前缀</span></code></pre>
+
+<div class="cpp-box">
+  <strong>强类型枚举（enum class）的好处：</strong>
+  <ul>
+    <li><strong>不会被隐式转换为整数</strong>（避免不小心当 int 用）</li>
+    <li><strong>不污染外部命名空间</strong>（多个 enum 可以有同名枚举值）</li>
+  </ul>
+  C++11 起推荐<strong>总是用 <code>enum class</code></strong>，本项目遵循这个规范。
+</div>
+
+<h3><code>Q_ENUM(State)</code></h3>
+
+<div class="cpp-box">
+  <strong><code>Q_ENUM</code></strong> 把枚举注册到 Qt 元对象系统。注册后能：
+  <ul>
+    <li><code>qDebug() &lt;&lt; state;</code> 直接打印枚举名（输出 <code>"State::Flashing"</code> 而不是 <code>"6"</code>）</li>
+    <li>信号槽可以传递这个枚举类型</li>
+    <li>QML / Qt Quick 可以使用</li>
+  </ul>
+  简单说：<strong>让 Qt "知道"这个枚举的存在</strong>。
+</div>
+
+<h2>段 7（第 52–59 行）：LogLevel 枚举</h2>
+
+<pre><code>    <span class="cmt">/// @brief 日志级别（与 FwFlashLogPanel 的 4 类着色一致）</span>
+    <span class="kw">enum class</span> <span class="ty">LogLevel</span> {
+        Info,
+        Warn,
+        Error,
+        Ok,
+    };
+    <span class="fn">Q_ENUM</span>(<span class="ty">LogLevel</span>)</code></pre>
+
+<p><strong>4 级日志</strong>，对应 UI 日志面板的 4 种颜色：</p>
+
+<table>
+  <thead><tr><th>级别</th><th>用途</th><th>UI 颜色</th></tr></thead>
+  <tbody>
+    <tr><td><code>Info</code></td><td>一般信息</td><td>灰/黑</td></tr>
+    <tr><td><code>Warn</code></td><td>警告</td><td>黄</td></tr>
+    <tr><td><code>Error</code></td><td>错误</td><td>红</td></tr>
+    <tr><td><code>Ok</code></td><td>成功</td><td>绿</td></tr>
+  </tbody>
+</table>
+
+<p>注释明确写"<strong>与 FwFlashLogPanel 一致</strong>"——告诉读者这两边要保持同步。</p>
+
+<h2>段 8（第 61 行）：StopCallback 类型别名</h2>
+
+<pre><code>    <span class="kw">using</span> <span class="ty">StopCallback</span> = <span class="ty">std</span>::<span class="ty">function</span>&lt;<span class="ty">void</span>()&gt;;</code></pre>
+
+<p>定义类型别名 <code>StopCallback</code>，等于"<strong>无参数、无返回值的函数对象</strong>"。</p>
+
+<p>后面成员变量直接用这个短名字：</p>
+
+<pre><code><span class="ty">StopCallback</span> m_stopScope;     <span class="cmt">// 比 std::function&lt;void()&gt; m_stopScope 易读</span></code></pre>
+
+<p>这是<strong>"先起别名再用"</strong>的良好实践，特别是当类型出现多次时。</p>
+
+<h2>段 9（第 63–67 行）：构造函数与析构函数</h2>
+
+<pre><code>    <span class="cmt">/// @brief 构造服务
+    /// @param registry 策略注册中心；外部持有，service 不接管所有权
+    /// @param parent QObject parent</span>
+    <span class="kw">explicit</span> <span class="fn">FwFlashService</span>(<span class="ty">FlashStrategyRegistry</span> *registry, <span class="ty">QObject</span> *parent = <span class="kw">nullptr</span>);
+    <span class="fn">~FwFlashService</span>() <span class="kw">override</span>;</code></pre>
+
+<h3><code>explicit</code> 关键字</h3>
+
+<div class="cpp-box">
+  <strong><code>explicit</code></strong> = <strong>禁止隐式类型转换</strong>。
+</div>
+
+<p>不加 explicit 时，编译器允许这种写法：</p>
+
+<pre><code><span class="ty">FwFlashService</span> service = somePointer;   <span class="cmt">// ← 隐式从指针构造,容易出 bug</span></code></pre>
+
+<p>加了 explicit 后，只允许显式构造：</p>
+
+<pre><code><span class="ty">FwFlashService</span> <span class="fn">service</span>(somePointer);     <span class="cmt">// ✓ 显式</span>
+<span class="ty">FwFlashService</span> service = somePointer;    <span class="cmt">// ✗ 编译错误</span></code></pre>
+
+<div class="why">
+  <strong>良好习惯：</strong>所有"单参数"或"前几个参数有默认值"的构造函数都该加 <code>explicit</code>。
+</div>
+
+<h3>参数 <code>QObject *parent = nullptr</code> —— Qt 对象树机制</h3>
+
+<div class="cpp-box">
+  <strong>Qt 对象树：</strong>每个 <code>QObject</code> 可以指定一个 parent，子对象在 parent 销毁时<strong>自动销毁</strong>——无需手动 delete。<br><br>
+  <code>= nullptr</code> 是<strong>默认参数</strong>——不传时默认为 nullptr。
+</div>
+
+<p>实际项目里：</p>
+
+<pre><code><span class="cmt">// fwflashtab.cpp 第 101 行</span>
+m_service = <span class="kw">new</span> <span class="ty">FwFlashService</span>(m_registry.<span class="fn">get</span>(), <span class="kw">this</span>);
+<span class="cmt">//                                                ^^^^
+//                                                this 即 FwFlashTab,作为 parent</span></code></pre>
+
+<p><code>FwFlashTab</code> 销毁时，<code>m_service</code> 会被自动销毁——这就是 Qt 对象树的好处。</p>
+
+<h3><code>~FwFlashService() override</code></h3>
+
+<p><strong>析构函数</strong>。<code>override</code> 关键字表示"<strong>重写基类（QObject）的虚析构</strong>"。</p>
+
+<h2>段 10（第 69–73 行）：4 个回调注入接口</h2>
+
+<pre><code>    <span class="cmt">/// @brief 注入"立即停止"回调；nullptr-safe，未设置时跳过该步骤（仅写日志）</span>
+    <span class="ty">void</span> <span class="fn">setStopScopeCallback</span>(<span class="ty">StopCallback</span> cb);
+    <span class="ty">void</span> <span class="fn">setStopGeneratorCallback</span>(<span class="ty">StopCallback</span> cb);
+    <span class="ty">void</span> <span class="fn">setStopCyclicWriteCallback</span>(<span class="ty">StopCallback</span> cb);
+    <span class="ty">void</span> <span class="fn">setDisablePmicCallback</span>(<span class="ty">StopCallback</span> cb);</code></pre>
+
+<p>4 个 setter 函数，让外部注入"<strong>怎么停采样、怎么停发生器、怎么停循环写入、怎么关 PMIC</strong>"的回调。</p>
+
+<p>注释说"<strong>nullptr-safe</strong>"——意味着不调用 set 也没事，相应步骤会跳过。</p>
+
+<div class="why">
+  <strong>这是依赖反转（DI）模式：</strong>本类<strong>不</strong>知道有 ScopeService、GeneratorService 等存在，由外部（MainWindow）告诉它"<strong>停的时候调这个 lambda</strong>"。<br><br>
+  好处：本类的代码<strong>不依赖</strong> ScopeService 的头文件，编译解耦、测试方便。
+</div>
+
+<p>实际注入：</p>
+
+<pre><code><span class="cmt">// MainWindow 大致代码</span>
+fwFlashTab-&gt;<span class="fn">setStopScopeCallback</span>([scopeService]() {
+    scopeService-&gt;<span class="fn">requestStop</span>();
+});</code></pre>
+
+<h2>段 11（第 75–79 行）：状态查询接口</h2>
+
+<pre><code>    <span class="cmt">/// @brief 当前状态</span>
+    <span class="ty">State</span> <span class="fn">state</span>() <span class="kw">const</span> { <span class="kw">return</span> m_state; }
+
+    <span class="cmt">/// @brief 是否处于"忙碌"区间（Preparing 到 Flashing 之间任意状态）</span>
+    <span class="ty">bool</span> <span class="fn">isBusy</span>() <span class="kw">const</span>;</code></pre>
+
+<h3><code>State state() const { return m_state; }</code></h3>
+
+<div class="cpp-box">
+  <strong>inline 实现的成员函数：</strong>函数体直接写在 .h 里（一行），不需要 .cpp 里再实现一份。<br><br>
+  这种"<strong>极简一行函数</strong>"放在 .h 里更高效——编译器可能直接 inline 替换，省去函数调用开销。
+</div>
+
+<p>末尾的 <code>const</code> 表示"<strong>只读</strong>"——不修改对象状态。读取性函数都该加 const。</p>
+
+<h3><code>bool isBusy() const;</code></h3>
+
+<p>声明 + 函数体在 .cpp 里定义。也是 const 成员函数。</p>
+
+<p>为什么不像 <code>state()</code> 一样写在 .h？因为 <code>isBusy()</code> 内部有逻辑（判断 6 个状态），实现稍复杂，放 .cpp 更清晰。</p>
+
+<h2>段 12（第 81–89 行）：<code>public slots</code></h2>
+
+<pre><code><span class="kw">public slots</span>:
+    <span class="cmt">/// @brief 启动烧录任务</span>
+    <span class="ty">void</span> <span class="fn">startFlash</span>(<span class="kw">const</span> <span class="ty">QString</span> &amp;icModel, <span class="kw">const</span> <span class="ty">QByteArray</span> &amp;firmware, <span class="ty">qint64</span> totalBytes);
+
+    <span class="cmt">/// @brief 请求取消正在进行的烧录任务</span>
+    <span class="ty">void</span> <span class="fn">cancelFlash</span>();</code></pre>
+
+<div class="cpp-box">
+  <strong><code>public slots:</code></strong> = Qt 特殊的访问控制——<strong>槽函数</strong>。本质上是普通成员函数，但能被信号 connect。<br><br>
+  <code>public slots</code> 的访问权限和 <code>public</code> 一样——外部能直接调用。区别只是 Qt moc 工具会识别它们做特殊处理。
+</div>
+
+<p>使用示例：</p>
+
+<pre><code><span class="kw">connect</span>(button, &amp;<span class="ty">QPushButton</span>::clicked, service, &amp;<span class="ty">FwFlashService</span>::cancelFlash);
+<span class="cmt">//                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//                                              槽函数,响应按钮点击</span></code></pre>
+
+<p>UI 通过这两个槽函数与 service 交互：</p>
+
+<table>
+  <thead><tr><th>操作</th><th>调用</th></tr></thead>
+  <tbody>
+    <tr><td>用户点"开始"</td><td><code>service-&gt;startFlash(icModel, firmware, total)</code></td></tr>
+    <tr><td>用户点"取消"</td><td><code>service-&gt;cancelFlash()</code></td></tr>
+  </tbody>
+</table>
+
+<h2>段 13（第 91–96 行）：<code>signals</code></h2>
+
+<pre><code><span class="kw">signals</span>:
+    <span class="ty">void</span> <span class="fn">stateChanged</span>(<span class="ty">FwFlashService</span>::<span class="ty">State</span> newState);
+    <span class="ty">void</span> <span class="fn">stageMessage</span>(<span class="kw">const</span> <span class="ty">QString</span> &amp;message);
+    <span class="ty">void</span> <span class="fn">progressUpdated</span>(<span class="ty">qint64</span> sentBytes, <span class="ty">qint64</span> totalBytes);
+    <span class="ty">void</span> <span class="fn">logMessage</span>(<span class="ty">FwFlashService</span>::<span class="ty">LogLevel</span> level, <span class="kw">const</span> <span class="ty">QString</span> &amp;message);
+    <span class="ty">void</span> <span class="fn">finished</span>(<span class="ty">bool</span> success, <span class="kw">const</span> <span class="ty">QString</span> &amp;summary);</code></pre>
+
+<div class="cpp-box">
+  <strong><code>signals:</code></strong> = Qt 特殊的访问控制——<strong>信号声明</strong>。<br><br>
+  <strong>信号是"通知机制"</strong>，不是普通函数：
+  <ul>
+    <li>信号<strong>没有函数体</strong>（moc 自动生成）</li>
+    <li>用 <code>emit signalName(args)</code> 触发</li>
+    <li>调用方"connect"它的对象会被通知</li>
+  </ul>
+</div>
+
+<h3>5 个信号的含义</h3>
+
+<table>
+  <thead><tr><th>信号</th><th>含义</th><th>UI 怎么响应</th></tr></thead>
+  <tbody>
+    <tr><td><code>stateChanged</code></td><td>状态机切换</td><td>更新按钮使能</td></tr>
+    <tr><td><code>stageMessage</code></td><td>阶段文字（"烧录中..."）</td><td>更新阶段标签</td></tr>
+    <tr><td><code>progressUpdated</code></td><td>进度条更新</td><td>移动进度条</td></tr>
+    <tr><td><code>logMessage</code></td><td>日志新增一行</td><td>追加到日志面板</td></tr>
+    <tr><td><code>finished</code></td><td>整体完成</td><td>弹提示，恢复按钮</td></tr>
+  </tbody>
+</table>
+
+<p>UI 端 <code>FwFlashTab</code> 把这 5 个信号 connect 到自己的 5 个槽函数。</p>
+
+<div class="pitfall">
+  <strong>为什么参数里出现 <code>FwFlashService::State</code>？</strong>按理说在类内可以直接写 <code>State</code>。但<strong>信号会被 moc 处理生成代码</strong>，生成的代码里需要"<strong>完整名字</strong>"才能正确识别枚举类型。Qt 文档推荐<strong>信号参数里的枚举写完整资格名</strong>。
+</div>
+
+<h2>段 14（第 98–114 行）：<code>private</code> 私有部分</h2>
+
+<pre><code><span class="kw">private</span>:
+    <span class="ty">void</span> <span class="fn">setState</span>(<span class="ty">State</span> s);
+    <span class="ty">void</span> <span class="fn">emitLog</span>(<span class="ty">LogLevel</span> level, <span class="kw">const</span> <span class="ty">QString</span> &amp;message);
+    <span class="ty">void</span> <span class="fn">runPreflightAndFlash</span>(<span class="ty">FlashStrategy</span> *strategy, <span class="kw">const</span> <span class="ty">QByteArray</span> &amp;firmware);
+    <span class="ty">void</span> <span class="fn">shutdownWorker</span>();
+
+    <span class="ty">FlashStrategyRegistry</span> *m_registry = <span class="kw">nullptr</span>;
+    <span class="ty">StopCallback</span> m_stopScope;
+    <span class="ty">StopCallback</span> m_stopGenerator;
+    <span class="ty">StopCallback</span> m_stopCyclic;
+    <span class="ty">StopCallback</span> m_disablePmic;
+
+    <span class="ty">State</span> m_state = <span class="ty">State</span>::Idle;
+    <span class="ty">qint64</span> m_totalBytes = <span class="num">0</span>;
+
+    <span class="ty">std</span>::<span class="ty">shared_ptr</span>&lt;<span class="ty">std</span>::<span class="ty">atomic</span>&lt;<span class="ty">bool</span>&gt;&gt; m_cancelFlag;
+    <span class="ty">QThread</span> *m_workerThread = <span class="kw">nullptr</span>;
+};</code></pre>
+
+<h3>4 个内部辅助函数</h3>
+
+<table>
+  <thead><tr><th>函数</th><th>作用</th></tr></thead>
+  <tbody>
+    <tr><td><code>setState(s)</code></td><td>切换状态 + emit stateChanged 信号</td></tr>
+    <tr><td><code>emitLog(level, msg)</code></td><td>发出 logMessage 信号</td></tr>
+    <tr><td><code>runPreflightAndFlash</code></td><td>主流程：4 步停止 + 创建 worker 线程</td></tr>
+    <tr><td><code>shutdownWorker()</code></td><td>析构时清理 worker 线程</td></tr>
+  </tbody>
+</table>
+
+<p>这些是<strong>实现细节</strong>，外部不该知道。</p>
+
+<h3>10 个私有成员变量</h3>
+
+<div class="cpp-box">
+  <strong>默认初始化：</strong>成员声明时直接给初值（如 <code>= nullptr</code>、<code>= 0</code>、<code>= State::Idle</code>）。这是 C++11 的特性，比在构造函数初始化列表里写更简洁。
+</div>
+
+<table>
+  <thead><tr><th>成员</th><th>类型</th><th>含义</th></tr></thead>
+  <tbody>
+    <tr><td><code>m_registry</code></td><td>指针</td><td>策略注册中心（外部持有）</td></tr>
+    <tr><td><code>m_stopScope / m_stopGenerator / m_stopCyclic / m_disablePmic</code></td><td>StopCallback</td><td>4 个外部注入回调</td></tr>
+    <tr><td><code>m_state</code></td><td>State</td><td>当前状态机状态</td></tr>
+    <tr><td><code>m_totalBytes</code></td><td>qint64</td><td>进度条总字节数</td></tr>
+    <tr><td><code>m_cancelFlag</code></td><td>shared_ptr&lt;atomic&lt;bool&gt;&gt;</td><td>跨线程取消标志</td></tr>
+    <tr><td><code>m_workerThread</code></td><td>QThread*</td><td>worker 线程对象指针</td></tr>
+  </tbody>
+</table>
+
+<h2>整体回顾</h2>
+
+<pre><code><span class="kw">class</span> <span class="ty">FwFlashService</span> : <span class="kw">public</span> <span class="ty">QObject</span> {
+    <span class="fn">Q_OBJECT</span>
+
+<span class="kw">public</span>:
+    [枚举] State (<span class="num">10</span> 个状态)
+    [枚举] LogLevel (<span class="num">4</span> 级)
+    [别名] StopCallback
+    [构造/析构]
+    [setter] <span class="num">4</span> 个回调注入接口
+    [getter] <span class="fn">state</span>(), <span class="fn">isBusy</span>()
+
+<span class="kw">public slots</span>:
+    startFlash, cancelFlash       <span class="cmt">// ← UI 主动调用的入口</span>
+
+<span class="kw">signals</span>:
+    stateChanged, stageMessage,    <span class="cmt">// ← 通知 UI 的信号</span>
+    progressUpdated, logMessage,
+    finished
+
+<span class="kw">private</span>:
+    [实现] <span class="num">4</span> 个内部辅助函数
+    [成员] <span class="num">10</span> 个私有变量
+};</code></pre>
+
+<p>这是<strong>典型的 Qt 服务类结构</strong>：</p>
+
+<ul>
+  <li>继承 QObject 用信号槽</li>
+  <li>public 段是<strong>对外接口</strong></li>
+  <li>public slots 是<strong>主动入口</strong></li>
+  <li>signals 是<strong>被动通知</strong></li>
+  <li>private 是<strong>内部实现细节</strong></li>
+</ul>
+
+<h2>本文档涉及的 C++/Qt 概念汇总</h2>
+
+<table>
+  <thead><tr><th>概念</th><th>本类用法</th></tr></thead>
+  <tbody>
+    <tr><td><code>#pragma once</code></td><td>防重复包含</td></tr>
+    <tr><td>前向声明</td><td>解耦头文件依赖</td></tr>
+    <tr><td>继承 QObject</td><td>启用信号槽机制</td></tr>
+    <tr><td><code>Q_OBJECT</code> 宏</td><td>让 moc 识别本类</td></tr>
+    <tr><td><code>enum class</code></td><td>强类型枚举（State / LogLevel）</td></tr>
+    <tr><td><code>Q_ENUM</code></td><td>把枚举注册到 Qt 元对象</td></tr>
+    <tr><td><code>using</code> 别名</td><td>简化长类型名（StopCallback）</td></tr>
+    <tr><td><code>explicit</code></td><td>禁止隐式转换</td></tr>
+    <tr><td>默认参数 <code>= nullptr</code></td><td>调用时可省略</td></tr>
+    <tr><td>QObject parent 机制</td><td>对象树自动销毁</td></tr>
+    <tr><td><code>override</code></td><td>明确重写基类虚函数</td></tr>
+    <tr><td>inline 成员实现</td><td>极简函数直接写在 .h</td></tr>
+    <tr><td><code>const</code> 成员函数</td><td>标记只读</td></tr>
+    <tr><td><code>public slots:</code></td><td>Qt 槽声明</td></tr>
+    <tr><td><code>signals:</code></td><td>Qt 信号声明</td></tr>
+    <tr><td>类内成员默认初始化</td><td>声明处给初值</td></tr>
+  </tbody>
+</table>
+
+<h2>一句话总结</h2>
+
+<div class="note">
+  <strong><code>fwflashservice.h</code> 声明了一个继承 QObject 的服务类 <code>FwFlashService</code>：用 enum class 定义 10 状态机和 4 级日志，提供构造/析构/4 个回调注入接口/2 个查询函数；通过 public slots 接收 UI 请求，通过 signals 通知 UI 状态变化；私有部分是 4 个内部辅助函数和 10 个成员变量。整个文件是一份"<strong>类对外的合同书</strong>"——把"我能干什么、怎么找我、出事我怎么通知你"全部明确写下来。</strong>
+</div>
+
+<p>读完头文件后，再去读 .cpp 实现，会更有"<strong>地图感</strong>"——每个函数的实现都能对应到这份合同上的某一项。</p>
+
+<hr>
+<p class="meta">本文档与 <code>fw_flash_aw_sdk_cpp_walkthrough.html</code> 配套。两者覆盖固件烧录功能的两大核心文件：服务层（本文）+ 策略层（前者）。</p>
+
+</main>
+</body>
+</html>

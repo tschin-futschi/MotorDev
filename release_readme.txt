@@ -149,21 +149,43 @@ build_release\ 目录最少要有以下文件：
 
 
 ----------------------------------------------------------------
-6. !!! 必做 !!! 调整 USB-Serial Latency Timer 为 1 ms
+6. USB-Serial Latency Timer 处理
 ----------------------------------------------------------------
 
-新机器第一次烧录前必须改这个 Windows 驱动设置；不改的话烧录大概率
-会卡在 AwBootcontrol 阶段失败，日志面板报：
+【FT232 桥：默认情况下程序会自动处理，无需任何操作】
+
+MotorDev 在打开 COM 端口时会自动通过 FTDI D2XX API 把 FT232 芯片
+端的 Latency Timer 强制设为 1 ms，覆盖 Windows 默认的 16 ms。日志
+面板会看到一行：
+    FT232 Latency Timer set to 1 ms (serial=XXXX)
+
+设置写入 FT232 芯片寄存器，关 D2XX 后 VCP 模式仍生效，直到下次 USB
+拔插被 Windows 注册表配置（默认 16）覆盖——但只要程序下次启动再次
+打开端口，会重新设回 1 ms。
+
+【需要手动操作的场景（fallback）】
+
+仅在以下情况下，日志会出现：
+    FT232 Latency Timer auto-set skipped: <原因>
+此时单次 I2C 透传往返耗时会回到 15-17 ms，烧录大概率会卡在
+AwBootcontrol 阶段失败：
     [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER
     [DLL] Flash Hand Compare Check Failed!
     AwBootcontrol failed (return -23)
 
-根因：Windows 默认 USB-Serial Latency Timer = 16 ms，导致每次 I2C
-透传往返耗时 15-17 ms；OIS IC 在 boot 模式握手序列对命令间隔有窗口
-约束，间隔太大 IC 会自动 STOP_BOOTLOADER 退回正常模式，握手失败。
-改到 1 ms 后单次透传降到 1-2 ms，握手能在窗口内完成。
+可能的 skipped 原因与处理：
 
-操作步骤：
+  - "port ... is not an FTDI device (VID=0x...)"
+      → 桥不是 FTDI（如 CH340 / CP2102），D2XX 不适用，
+        必须按下面"手动操作步骤"在设备管理器里改 Latency Timer
+  - "ftd2xx.dll not available or missing symbols"
+      → Windows 上 FTDI CDM 驱动异常，重装最新 CDM 驱动
+        （https://ftdichip.com/drivers/d2xx-drivers/）
+  - "FT_OpenEx failed ..."
+      → 设备被其他进程占用（同时打开了串口调试助手 / 另一个
+        MotorDev 实例等），关闭占用进程后重连
+
+【手动操作步骤（仅 fallback 时需要）】
 
   1. 按 Win + X，打开 设备管理器
   2. 展开 "端口（COM 和 LPT）"
@@ -177,11 +199,13 @@ build_release\ 目录最少要有以下文件：
   9. 确定 → 退出所有对话框
   10. 拔出 USB 重新插入，让设置生效
 
-  快速验证：MotorDev 烧录页烧一次，日志面板里 [I2C-W TIMING] / [I2C-R
-  TIMING] 应该是 us 级（几百到几千 us），不应该是 15000+ us。
-  [FP-DIAG] 里的 execMs 应该是 0-2，不应该是 13-17。
-
-  注意：这个设置是按"该 USB-Serial 设备 + 当前 Windows 用户"持久化的，
+  注意：手动设置是按"该 USB-Serial 设备 + 当前 Windows 用户"持久化的，
   换 USB-Serial 设备 / 换电脑 / 换用户 都要重新改一次。
+
+【快速验证（不管自动还是手动）】
+
+MotorDev 烧录页烧一次，日志面板里 [I2C-W TIMING] / [I2C-R TIMING]
+应该是 us 级（几百到几千 us），不应该是 15000+ us。
+[FP-DIAG] 里的 execMs 应该是 0-2，不应该是 13-17。
 
 ================================================================

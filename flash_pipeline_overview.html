@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>固件烧录流程 — 空间与代码对应关系</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #fafbfc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+                 sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  main {
+    max-width: 980px;
+    margin: 40px auto;
+    padding: 0 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 17px;
+    margin-top: 28px;
+    color: var(--accent);
+  }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li > ul { margin-top: 4px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, "Cascadia Mono",
+                 "SF Mono", Menlo, monospace;
+    font-size: 0.92em;
+    color: #24292f;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-header-bg);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  .callout {
+    background: #fff8c5;
+    border-left: 4px solid #d4a72c;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .note {
+    background: #ddf4ff;
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>固件烧录流程 — 各空间与代码的对应关系</h1>
+<p class="meta">项目：MotorDev &nbsp;|&nbsp; 范围：<code>src/tabs/fwflashtab</code> · <code>src/services/fwflashservice</code> · <code>src/services/flashstrategy*</code> · <code>src/protocol/firmware_parser</code></p>
+
+<h2>一、整体数据流向</h2>
+<pre><code>[磁盘文件 .bin/.hex]
+        │
+        │  parseFile() —— 静态解析，主线程
+        ▼
+[FirmwareInfo（栈/临时对象）]
+   ├─ data: QByteArray         ← 合并后的连续二进制（烧录原料）
+   ├─ segments / addr 信息     ← 仅显示用
+   ├─ crc32 / effectiveBytes   ← 仅显示用
+   └─ valid / errorMessage     ← UI 三页切换依据
+        │
+        │  FwFlashTab 拷贝 data 到成员 m_currentFirmwareData
+        ▼
+[FwFlashTab::m_currentFirmwareData (主线程, QByteArray)]
+        │
+        │  startFlash(icModel, firmware, totalBytes) —— 信号槽
+        ▼
+[FwFlashService 内部状态机 (主线程)]
+   ├─ m_totalBytes
+   ├─ m_cancelFlag (shared_ptr&lt;atomic&lt;bool&gt;&gt;)
+   └─ runPreflightAndFlash()  ← 顺序触发 4 个停止回调
+        │
+        │  QThread::create lambda 拷贝 (firmware, cancelFlag, total, self)
+        ▼
+[Worker 线程栈]
+   ├─ firmware (QByteArray 隐式共享，零拷贝)
+   ├─ cancelFlag (shared_ptr 拷贝)
+   └─ strategy (裸指针，registry 持有所有权)
+        │
+        │  strategy-&gt;flash(firmware, progress, *cancelFlag, &amp;errorMsg)
+        ▼
+[具体 IC 策略实现：AW86006Strategy::flash() 等]
+   └─ 真实串口/I2C 烧录算法（当前是 stub：1KB/100ms 推进）
+        │
+        │  progress(sent) → emit progressUpdated（跨线程 → QueuedConnection）
+        │  invokeMethod 回主线程 setState(Completed/Failed/Cancelled)
+        ▼
+[UI 反馈：FwFlashControlPanel / FwFlashLogPanel / TopBar]</code></pre>
+
+<h2>二、各"空间"与代码对应</h2>
+
+<h3>1. 文件解析空间（主线程，瞬时）</h3>
+<ul>
+  <li>代码：<code>src/protocol/firmware_parser.{h,cpp}</code> → <code>FirmwareParser::parseFile()</code></li>
+  <li>输入：磁盘上的 <code>.bin</code> 或 Intel <code>.hex</code></li>
+  <li>输出：<code>FirmwareInfo</code>（栈对象）</li>
+  <li>关键字段拆分：
+    <ul>
+      <li><code>data</code>：<strong>烧录唯一原料</strong>。<code>.bin</code> 直读；<code>.hex</code> 按段合并、段间用 <code>0xFF</code> 填充成连续映像</li>
+      <li><code>segments / minAddress / maxAddress</code>：只给 <code>FwFileInfoPanel</code> 显示，<strong>烧录算法不依赖</strong></li>
+      <li><code>crc32 / effectiveBytes</code>：显示+完整性校验用</li>
+      <li><code>valid / errorMessage</code>：UI 状态切换依据（空 / 合法 / 错误三页）</li>
+    </ul>
+  </li>
+  <li>限制：<code>MaxFileBytes = 1024 KB</code>，超过即 <code>valid=false</code></li>
+</ul>
+
+<h3>2. UI 暂存空间（FwFlashTab，主线程）</h3>
+<ul>
+  <li>代码：<code>src/tabs/fwflashtab.{h,cpp}</code></li>
+  <li>成员变量职责：
+    <ul>
+      <li><code>m_currentFilePath</code> — 路径文本（行编辑显示）</li>
+      <li><code>m_currentFirmwareData</code> — 解析后的 <code>data</code> 拷贝；点击"开始"时传给 Service</li>
+      <li><code>m_currentFirmwareTotal</code> — 进度条总字节数</li>
+      <li><code>m_currentFileValid</code> — 控制开始按钮使能（与 IC 选择共同决定）</li>
+    </ul>
+  </li>
+  <li>分工：FwFlashTab <strong>不接触</strong>烧录算法，只做"路径 → 解析 → 暂存 → 启动 → 显示信号"</li>
+</ul>
+
+<h3>3. Service 状态空间（FwFlashService，主线程持有）</h3>
+<ul>
+  <li>代码：<code>src/services/fwflashservice.{h,cpp}</code></li>
+  <li>状态机：<code>Idle → Preparing → StoppingScope → StoppingGenerator → StoppingCyclic → DisablingPmic → Flashing → Completed/Failed/Cancelled → Idle</code></li>
+  <li>状态机切换<strong>只在主线程</strong>进行；Worker 通过 <code>QMetaObject::invokeMethod</code> 回到主线程才允许改 <code>m_state</code></li>
+  <li>关键内存对象：
+    <ul>
+      <li><code>m_cancelFlag: shared_ptr&lt;atomic&lt;bool&gt;&gt;</code> — <strong>跨线程共享</strong>的取消标志，UI 取消按钮在主线程置 true，worker 在循环里轮询</li>
+      <li><code>m_workerThread: QThread*</code> — 烧录线程句柄，<code>QThread::create</code> 创建，<code>finished</code> 后 <code>deleteLater</code> 自动回收</li>
+      <li>4 个 <code>StopCallback</code> — <code>MainWindow</code> 注入的"立即停止"回调（fire-and-forget，nullptr-safe）</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>4. 前置序列空间（主线程同步执行）</h3>
+<ul>
+  <li>代码：<code>FwFlashService::runPreflightAndFlash()</code> 上半段</li>
+  <li>顺序：停采样 → 停发生器 → 停循环写入 → 关 PMIC</li>
+  <li>协作约定：
+    <ul>
+      <li>4 个步骤都是 <code>invokeIfSet(cb)</code>，回调本身用 <code>QMetaObject::invokeMethod</code> 把动作发到对应 Service 所在线程</li>
+      <li>不等 ACK，不阻断；任一步抛异常仅记 warn</li>
+      <li>完成后再检查一次 <code>cancelFlag</code>，被取消则直接进 <code>Cancelled</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3>5. Worker 线程空间（烧录算法运行环境）</h3>
+<ul>
+  <li>代码：<code>FwFlashService::runPreflightAndFlash()</code> 下半段（<code>QThread::create</code> lambda）</li>
+  <li>线程栈上的拷贝/捕获：
+    <ul>
+      <li><code>firmware (QByteArray)</code> — Qt 隐式共享，<strong>零深拷贝</strong>，worker 只读</li>
+      <li><code>cancelFlag (shared_ptr)</code> — 引用计数 +1，保证 worker 比 service 析构晚也安全</li>
+      <li><code>total (qint64)</code> — 进度回调用</li>
+      <li><code>self (QPointer&lt;FwFlashService&gt;)</code> — 防御 service 提前析构</li>
+      <li><code>strategy (FlashStrategy*)</code> — 裸指针，注册中心负责生命周期</li>
+    </ul>
+  </li>
+  <li>进度回调 <code>progress(sent)</code>：内部调 <code>emit self-&gt;progressUpdated/stageMessage</code>，跨线程 → <code>QueuedConnection</code> → 主线程更新 UI</li>
+</ul>
+
+<h3>6. 策略实现空间（具体 IC 烧录算法）</h3>
+<ul>
+  <li>代码：<code>src/services/flashstrategies/{aw86006,aw86100,dw9786,dw9788}_strategy.{h,cpp}</code></li>
+  <li>接口：<code>FlashStrategy::flash(firmware, progress, cancelFlag, errorMessage)</code></li>
+  <li>当前所有 4 款都是 <strong>stub</strong>：1KB/100ms 推进 progress、检查 cancelFlag，<strong>不发任何真实串口数据</strong></li>
+  <li>这就是你后续要填入的"真实烧录算法"位置；填入时：
+    <ul>
+      <li>同步阻塞调用，直接在 worker 线程上跑</li>
+      <li>通过 progress 回调上报字节数，不必逐字节</li>
+      <li>cancelFlag 翻 true 时下一安全点退出并 <code>return false</code></li>
+      <li>失败必须填 <code>*errorMessage</code></li>
+    </ul>
+  </li>
+</ul>
+
+<h3>7. 注册中心空间（策略目录）</h3>
+<ul>
+  <li>代码：<code>src/services/flashstrategyregistry.{h,cpp}</code></li>
+  <li>由 <code>FwFlashTab</code> 在构造时 <code>make_unique</code> 创建，<strong>Tab 持有所有权</strong></li>
+  <li><code>FwFlashService</code> 只持裸指针引用</li>
+  <li>IC 下拉框由 <code>registry-&gt;all()</code> 枚举产生；新增 IC 只需在 <code>registerBuiltins()</code> 加一行 <code>add(...)</code></li>
+</ul>
+
+<h2>三、线程与所有权速查表</h2>
+<table>
+  <thead>
+    <tr>
+      <th>对象</th>
+      <th>创建/持有</th>
+      <th>运行线程</th>
+      <th>生命周期</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>FlashStrategyRegistry</code></td><td><code>FwFlashTab</code> (<code>unique_ptr</code>)</td><td>主线程</td><td>与 Tab 同</td></tr>
+    <tr><td><code>FlashStrategy*</code></td><td>Registry (<code>unique_ptr</code>)</td><td>主线程构造，Worker 调 flash</td><td>与 Registry 同</td></tr>
+    <tr><td><code>FwFlashService</code></td><td><code>FwFlashTab</code>（QObject parent）</td><td>主线程</td><td>与 Tab 同</td></tr>
+    <tr><td><code>FirmwareInfo</code></td><td>临时栈对象</td><td>主线程</td><td>单次解析作用域</td></tr>
+    <tr><td><code>m_currentFirmwareData</code></td><td><code>FwFlashTab</code> 成员</td><td>主线程</td><td>直到选下一文件/清除</td></tr>
+    <tr><td><code>m_cancelFlag</code></td><td><code>FwFlashService</code> (<code>shared_ptr</code>)</td><td>主线程置位 / Worker 读</td><td>每次 startFlash 重建</td></tr>
+    <tr><td><code>m_workerThread</code></td><td><code>FwFlashService</code> 创建</td><td>独立 QThread</td><td><code>finished → deleteLater</code></td></tr>
+    <tr><td>4 个 StopCallback</td><td><code>MainWindow</code> 注入</td><td>各自 Service 所在线程</td><td>与 Service 同</td></tr>
+  </tbody>
+</table>
+
+<h2>四、你后续填策略代码时只要关注这一块</h2>
+<p><code>flashstrategies/&lt;ic&gt;_strategy.cpp</code> 的 <code>flash()</code> 函数体，签名固定为：</p>
+<pre><code>bool flash(const QByteArray &amp;firmware,
+           std::function&lt;void(qint64 sentBytes)&gt; progress,
+           const std::atomic&lt;bool&gt; &amp;cancelFlag,
+           QString *errorMessage);</code></pre>
+
+<div class="callout">
+  只在 worker 线程运行，可直接同步调用 <code>SerialManager::sendRawFrame</code>
+  <strong>（注意 SerialManager 在独立线程，必须走 <code>QMetaObject::invokeMethod + QueuedConnection</code>）</strong>，
+  其余 UI / 状态机 / 前置序列 / 进度展示框架已经全部接好，无需改动。
+</div>
+
+</main>
+</body>
+</html>

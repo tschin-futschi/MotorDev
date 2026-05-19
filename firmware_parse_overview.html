@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>固件文件选择 — .bin 与 .hex 解析流程</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #fafbfc;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+                 sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  main {
+    max-width: 980px;
+    margin: 40px auto;
+    padding: 0 24px 80px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+  }
+  h2 {
+    font-size: 22px;
+    margin-top: 40px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 17px;
+    margin-top: 28px;
+    color: var(--accent);
+  }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 24px; }
+  li > ul, li > ol { margin-top: 4px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, "Cascadia Mono",
+                 "SF Mono", Menlo, monospace;
+    font-size: 0.92em;
+    color: #24292f;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--table-header-bg);
+    font-weight: 600;
+  }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  .callout {
+    background: #fff8c5;
+    border-left: 4px solid #d4a72c;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .note {
+    background: #ddf4ff;
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .summary-box {
+    background: #f0f7f0;
+    border-left: 4px solid #2da44e;
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 32px 0;
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>固件文件选择 — <code>.bin</code> 与 <code>.hex</code> 解析流程</h1>
+<p class="meta">项目：MotorDev &nbsp;|&nbsp; 范围：<code>src/protocol/firmware_parser.{h,cpp}</code> · <code>src/tabs/fwflashtab.cpp</code> 中的 <code>parseAndShowFile()</code></p>
+
+<div class="note">
+  用户点击的是<strong>「浏览…」</strong>按钮（项目里没有"上传"这个按钮，只有选择文件 + 后续点"开始"才真正烧录）。
+</div>
+
+<h2>一、流程入口与总链路</h2>
+<pre><code>onBrowseClicked() → QFileDialog 拿路径 → parseAndShowFile(path)
+                                              ↓
+                          FirmwareParser::parseFile(path)
+                                              ↓
+                  公共预检 → 按后缀分流 → parseBin / parseHex</code></pre>
+
+<h2>二、公共预检（两种格式都走）</h2>
+<p>位置：<code>firmware_parser.cpp:223-255</code> 的 <code>FirmwareParser::parseFile()</code></p>
+<ol>
+  <li><code>QFile::open(ReadOnly)</code> 打开文件，失败直接报错</li>
+  <li>取文件大小，若 <code>&lt;= 0</code> → "文件为空"</li>
+  <li>若 <code>size &gt; 1024 KB</code> → 超限报错</li>
+  <li><code>f.readAll()</code> 一次性读入 <code>QByteArray content</code></li>
+  <li>取 <code>fi.suffix().toLower()</code>：
+    <ul>
+      <li><code>"bin"</code> → <code>parseBin()</code></li>
+      <li><code>"hex"</code> → <code>parseHex()</code></li>
+      <li>其它 → "不支持的文件格式"</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>三、<code>.bin</code> 文件路径（极简）</h2>
+<p>位置：<code>firmware_parser.cpp:53-63</code> 的 <code>parseBin()</code></p>
+<pre><code>info.fileName       = fi.fileName();
+info.fileSizeBytes  = content.size();
+info.format         = FirmwareFormat::Bin;
+info.data           = content;                    // 直接赋值，零拷贝（隐式共享）
+info.effectiveBytes = content.size();
+info.crc32          = computeCrc32(content);
+info.valid          = true;</code></pre>
+
+<p><strong>就五件事：</strong></p>
+<ul>
+  <li>复制元信息（文件名、大小）</li>
+  <li><code>data</code> 字段<strong>直接挂上原始字节</strong>——<code>.bin</code> 本身就是连续映像，无需任何转换</li>
+  <li>算 CRC32（IEEE 802.3 标准，poly <code>0xEDB88320</code>）</li>
+  <li>标 <code>valid = true</code></li>
+  <li><code>segments / minAddress / maxAddress</code> <strong>保持默认</strong>（空 vector，0/0），UI 信息面板对 .bin 不会显示这些字段</li>
+</ul>
+<p>效率上非常便宜：除一次 CRC32 遍历外没有任何额外内存开销。</p>
+
+<h2>四、<code>.hex</code> 文件路径（重活全在这里）</h2>
+<p>位置：<code>firmware_parser.cpp:71-215</code> 的 <code>parseHex()</code>，是一套完整的 Intel HEX 解析器。</p>
+
+<h3>1. 行级解析（逐行扫描整个文本）</h3>
+<p>每一行格式：<code>:LL AAAA TT DD...DD CC</code></p>
+<ul>
+  <li><code>:</code> 起始符——缺则报错</li>
+  <li><code>LL</code>：1 字节数据长度（byteCount）</li>
+  <li><code>AAAA</code>：2 字节地址低位</li>
+  <li><code>TT</code>：1 字节记录类型</li>
+  <li><code>DD...DD</code>：byteCount 字节数据</li>
+  <li><code>CC</code>：1 字节校验和</li>
+</ul>
+<p>每行检查 4 项：</p>
+<ol>
+  <li>起始符 <code>:</code></li>
+  <li>长度合法性（最少 10 字符 + 偶数）</li>
+  <li>行长度必须等于 <code>10 + byteCount * 2</code></li>
+  <li><strong>校验和</strong>：<code>(-(LL + AA + AA + TT + Σdata)) &amp; 0xFF</code> 必须等于 <code>CC</code>，否则报错</li>
+</ol>
+
+<h3>2. 记录类型分支</h3>
+<table>
+  <thead>
+    <tr><th>类型</th><th>名称</th><th>处理</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>0x00</code></td><td>Data</td><td>把 <code>byteCount</code> 个字节<strong>按绝对地址</strong>写入 <code>QMap&lt;quint32, quint8&gt;</code>，地址 = <code>upperAddr | addr16</code></td></tr>
+    <tr><td><code>0x01</code></td><td>EOF</td><td>标记 <code>eofSeen = true</code></td></tr>
+    <tr><td><code>0x04</code></td><td>Extended Linear Address</td><td>更新 <code>upperAddr = (hb&lt;&lt;24) | (lb&lt;&lt;16)</code>，给后续 Data 行用作高位地址</td></tr>
+    <tr><td><code>0x05</code></td><td>Start Linear Address</td><td>忽略（启动入口地址不影响烧录内容）</td></tr>
+    <tr><td><code>0x02 / 0x03</code></td><td>Segment Addr 类</td><td><strong>直接报错</strong>（暂不支持）</td></tr>
+    <tr><td>其它</td><td>未知</td><td>报错</td></tr>
+  </tbody>
+</table>
+
+<h3>3. 收尾校验</h3>
+<ul>
+  <li>若没看到 <code>0x01</code> EOF 行 → 报错"缺少 EOF 记录"</li>
+  <li>若 <code>bytes</code> 为空 → 报错"文件不包含任何数据记录"</li>
+</ul>
+
+<h3>4. 段合并 + 0xFF 填充（最关键的"重活"）</h3>
+<p><code>QMap</code> 自动按 key 排序。遍历键序列：</p>
+<ul>
+  <li>若当前地址 == 上一地址 + 1 → 同一段延续</li>
+  <li>若有跳变 → 把上一段 <code>{segStart, length}</code> 推入 <code>info.segments</code>，开新段</li>
+</ul>
+<p>收完后还会：</p>
+<pre><code>info.minAddress = QMap 第一个 key
+info.maxAddress = QMap 最后一个 key
+const quint64 totalLen = maxAddress - minAddress + 1;</code></pre>
+
+<p>并再做一次大小检查：<code>totalLen &gt; 1024 KB</code> 也报错。</p>
+
+<p>接着真正干"合并"：</p>
+<pre><code>info.data = QByteArray(totalLen, '\xFF');                 // 整段填 0xFF
+for (auto kt = bytes.begin(); kt != bytes.end(); ++kt) {
+    info.data[kt.key() - minAddress] = kt.value();        // 把每个有数据的字节覆盖回去
+}
+info.crc32 = computeCrc32(info.data);
+info.valid = true;</code></pre>
+
+<h3>5. 最终结果对比</h3>
+<table>
+  <thead>
+    <tr><th>字段</th><th>.bin</th><th>.hex</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>format</code></td><td><code>Bin</code></td><td><code>Hex</code></td></tr>
+    <tr><td><code>data</code></td><td>原始字节</td><td>minAddress→maxAddress 连续映像，空隙填 <code>0xFF</code></td></tr>
+    <tr><td><code>effectiveBytes</code></td><td>= fileSizeBytes</td><td>实际有数据的字节数（QMap 大小）</td></tr>
+    <tr><td><code>crc32</code></td><td>data 的 CRC32</td><td>data 的 CRC32（含 0xFF 填充部分）</td></tr>
+    <tr><td><code>segments</code></td><td>空</td><td>段列表，每项 <code>{startAddress, length}</code></td></tr>
+    <tr><td><code>minAddress / maxAddress</code></td><td>0 / 0</td><td>真实首尾地址</td></tr>
+  </tbody>
+</table>
+
+<h2>五、解析完成后 UI 怎么用结果</h2>
+<p>回到 <code>FwFlashTab::parseAndShowFile()</code>（<code>fwflashtab.cpp:318-341</code>）：</p>
+<ol>
+  <li><code>m_infoPanel-&gt;setInfo(info)</code> —— 让 <code>FwFileInfoPanel</code> 切换到对应页面
+    <ul>
+      <li><code>valid == false</code> → 错误页（显示 errorMessage）</li>
+      <li><code>valid == true</code> → 合法页（显示文件名、大小、CRC32；若是 hex 还显示 segments 列表与地址范围）</li>
+    </ul>
+  </li>
+  <li><code>valid == true</code> 时 <code>m_currentFirmwareData = info.data</code> —— <strong>这就是后面要烧的字节</strong></li>
+  <li><code>m_logPanel-&gt;appendInfo(...)</code> —— 控制台输出 <code>已加载固件：xxx (N 字节，CRC32 0x........)</code></li>
+  <li><code>updateStartEnabled()</code> —— 满足"IC 已选 + 文件 valid + service 不忙"才点亮"开始"按钮</li>
+</ol>
+
+<div class="callout">
+  到这里只是<strong>解析 + 暂存</strong>，串口上<strong>还没发任何字节</strong>。真正烧录要等用户点"开始"，触发
+  <code>onStartRequested()</code> → <code>m_service-&gt;startFlash(icModel, m_currentFirmwareData, m_currentFirmwareTotal)</code>。
+</div>
+
+<h2>六、核心差异一句话总结</h2>
+<div class="summary-box">
+  <ul style="margin: 0;">
+    <li><strong>.bin</strong>：原样收下，算个 CRC32 就走人。</li>
+    <li><strong>.hex</strong>：解码 ASCII → 校验每行 → 收集每个绝对地址字节 → 用 <code>0xFF</code> 把空隙填成连续映像 → 再算 CRC32。</li>
+  </ul>
+</div>
+
+<p>对下游策略 <code>flash()</code> 来说<strong>两者完全等价</strong>：拿到的都是一段连续 <code>QByteArray</code>，无需关心来源。这就是为什么策略接口签名只接受 <code>firmware</code>，没有 <code>format</code> 参数。</p>
+
+</main>
+</body>
+</html>

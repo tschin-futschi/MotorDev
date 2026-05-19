@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>fwflashservice.cpp 逐段讲解</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --accent: #0969da;
+    --accent-soft: #ddf4ff;
+    --code-bg: #f6f8fa;
+    --border: #d0d7de;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    --green: #1a7f37;
+    --green-soft: #dafbe1;
+    --purple: #8250df;
+    --purple-soft: #fbefff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.8;
+  }
+  main { max-width: 960px; margin: 40px auto; padding: 0 28px 80px; }
+  h1 { font-size: 28px; margin: 0 0 10px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+  h2 {
+    font-size: 22px; margin-top: 50px;
+    padding: 10px 16px;
+    background: linear-gradient(to right, var(--accent-soft), transparent);
+    border-left: 5px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+  h3 { font-size: 17px; margin-top: 28px; color: var(--accent); }
+  h4 { font-size: 15px; margin-top: 18px; font-weight: 600; }
+  p, li { margin: 8px 0; }
+  ul, ol { padding-left: 22px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  code {
+    background: var(--code-bg); padding: 2px 6px; border-radius: 4px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.9em; color: #24292f;
+  }
+  pre {
+    background: #0d1117; color: #e6edf3;
+    border: 1px solid #30363d; border-radius: 6px;
+    padding: 16px 18px; overflow-x: auto;
+    line-height: 1.6; font-size: 13.5px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+  pre .kw { color: #ff7b72; }
+  pre .ty { color: #ffa657; }
+  pre .fn { color: #d2a8ff; }
+  pre .str { color: #a5d6ff; }
+  pre .cmt { color: #8b949e; font-style: italic; }
+  pre .num { color: #79c0ff; }
+
+  .cpp-box {
+    background: var(--purple-soft);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 14px 0;
+  }
+  .cpp-box::before {
+    content: "📘 C++/Qt 概念";
+    display: block;
+    color: var(--purple);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .cpp-box strong { color: var(--purple); }
+
+  .why {
+    background: var(--green-soft);
+    border-left: 4px solid var(--green);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .why::before {
+    content: "💡 为什么这么写：";
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .pitfall {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    padding: 10px 14px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .pitfall::before {
+    content: "⚠ 容易困惑：";
+    color: #845a00;
+    font-weight: 600;
+  }
+
+  .note {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+  thead th { background: var(--code-bg); font-weight: 600; }
+
+  .toc {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 22px;
+    margin: 18px 0 28px;
+  }
+  .toc ol { margin: 6px 0; padding-left: 22px; }
+  .toc li { margin: 3px 0; }
+
+  .ascii {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px; line-height: 1.5;
+    white-space: pre; overflow-x: auto;
+  }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1><code>fwflashservice.cpp</code> 逐段讲解</h1>
+<p class="meta">文件路径：<code>src/services/fwflashservice.cpp</code> &nbsp;|&nbsp; 共约 220 行 &nbsp;|&nbsp; 拆为 14 个段</p>
+
+<div class="note">
+  <strong>本文档定位：</strong>这份文档把 <code>fwflashservice.cpp</code> 按逻辑切成 14 段逐一讲解。整体重点在<strong>段 14</strong>（worker 线程的创建与执行）——那是整个文件的灵魂。前文已经讲过的概念（lambda、shared_ptr、QPointer、信号槽等）这里只简略回顾，重点放在本文件新出现的内容。
+</div>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li>文件头注释（第 1–11 行）</li>
+    <li>includes（第 12–20 行）</li>
+    <li><code>Q_LOGGING_CATEGORY</code>（第 21–24 行）</li>
+    <li>构造函数（第 26–29 行）</li>
+    <li>析构函数（第 31–33 行）</li>
+    <li><code>shutdownWorker()</code>（第 35–43 行）</li>
+    <li><code>isBusy()</code>（第 45–57 行）</li>
+    <li>4 个 setStop*Callback（第 59–62 行）</li>
+    <li><code>setState()</code>（第 64–68 行）</li>
+    <li><code>emitLog()</code>（第 70–72 行）</li>
+    <li><code>startFlash()</code> —— 入口校验（第 74–113 行）</li>
+    <li><code>cancelFlash()</code>（第 115–119 行）</li>
+    <li><code>invokeIfSet</code> 辅助函数（第 121–128 行）</li>
+    <li><code>runPreflightAndFlash()</code> —— 灵魂（第 130–222 行）</li>
+  </ol>
+</div>
+
+<h2>段 1（第 1–11 行）：文件头注释</h2>
+
+<pre><code><span class="cmt">// =============================================================================
+// @file    fwflashservice.cpp
+// @brief   固件烧录服务实现
+//
+// 状态切换约定：所有 setState 调用均发生在主线程
+//   - startFlash → Preparing → StoppingScope → ... → Flashing
+//   - worker 内部仅运行 flash()，结束后通过 invokeMethod 回主线程切换
+//
+// 前置序列均为 fire-and-forget：任一回调即便抛异常也只记 warn，绝不阻断烧录
+// =============================================================================</span></code></pre>
+
+<p>文件级 Doxygen 注释。注意它写明了<strong>两条铁律</strong>：</p>
+
+<ol>
+  <li><code>setState</code> 必须在主线程调用</li>
+  <li>前置序列是 fire-and-forget（不等 ACK）</li>
+</ol>
+
+<p>后人改这个文件时要遵守这两条，否则会引入难调试的 bug。</p>
+
+<h2>段 2（第 12–20 行）：include 头文件</h2>
+
+<pre><code><span class="kw">#include</span> <span class="str">"services/fwflashservice.h"</span>          <span class="cmt">// 自己的头文件</span>
+
+<span class="kw">#include</span> <span class="str">"services/flashstrategy.h"</span>           <span class="cmt">// 用到 FlashStrategy 类</span>
+<span class="kw">#include</span> <span class="str">"services/flashstrategyregistry.h"</span>   <span class="cmt">// 用到 Registry 类</span>
+
+<span class="kw">#include</span> <span class="str">&lt;QLoggingCategory&gt;</span>                    <span class="cmt">// 日志分类</span>
+<span class="kw">#include</span> <span class="str">&lt;QMetaObject&gt;</span>                         <span class="cmt">// QMetaObject::invokeMethod</span>
+<span class="kw">#include</span> <span class="str">&lt;QPointer&gt;</span>                            <span class="cmt">// 弱指针</span>
+<span class="kw">#include</span> <span class="str">&lt;QThread&gt;</span>                             <span class="cmt">// 线程</span></code></pre>
+
+<p>按惯例分三组：本类头、项目内其他头、Qt 头。</p>
+
+<div class="why">
+  注意 .cpp 里才<strong>真正 include</strong> <code>FlashStrategy</code> 和 <code>FlashStrategyRegistry</code>——头文件里只是前向声明。前向声明 + .cpp include 的组合是<strong>降低编译耦合</strong>的标准做法。
+</div>
+
+<h2>段 3（第 21–24 行）：日志分类</h2>
+
+<pre><code><span class="kw">namespace</span> {
+<span class="fn">Q_LOGGING_CATEGORY</span>(lcFwFlash, <span class="str">"motordev.fwflash"</span>)
+}</code></pre>
+
+<div class="cpp-box">
+  <strong><code>Q_LOGGING_CATEGORY(变量名, "分类标签")</code></strong> 定义一个"日志分类对象"。让你可以用：<br>
+  <pre style="margin:6px 0;"><code><span class="fn">qCDebug</span>(lcFwFlash) &lt;&lt; <span class="str">"状态切换到 Flashing"</span>;
+<span class="fn">qCWarning</span>(lcFwFlash) &lt;&lt; <span class="str">"停止采样回调未设置"</span>;</code></pre>
+  输出时会带上 <code>"motordev.fwflash"</code> 标签，方便过滤。
+</div>
+
+<h3>好处</h3>
+
+<p>可以在运行时<strong>按标签开关日志</strong>。比如设置环境变量：</p>
+
+<pre><code>QT_LOGGING_RULES=<span class="str">"motordev.fwflash.debug=true"</span></code></pre>
+
+<p>就只显示 fwflash 模块的 debug 日志，其他模块的日志被屏蔽。<strong>不需要重新编译</strong>。</p>
+
+<div class="pitfall">
+  本文件后续<strong>没真正用</strong> <code>lcFwFlash</code>——所有日志都通过 <code>emitLog()</code> 信号发给 UI。这一段是<strong>预留的</strong>，将来想加 qCDebug 时直接用就行。<br><br>
+  放在匿名 namespace 里是<strong>文件私有</strong>——其他文件看不到 <code>lcFwFlash</code>。
+</div>
+
+<h2>段 4（第 26–29 行）：构造函数</h2>
+
+<pre><code><span class="ty">FwFlashService</span>::<span class="fn">FwFlashService</span>(<span class="ty">FlashStrategyRegistry</span> *registry, <span class="ty">QObject</span> *parent)
+    : <span class="fn">QObject</span>(parent)
+    , <span class="fn">m_registry</span>(registry) {
+}</code></pre>
+
+<h3>与之前讨论的构造函数的区别</h3>
+
+<p><code>AwSdkStrategy</code> 构造函数初始化列表只初始化自己的成员。但<strong>这里多了一项 <code>QObject(parent)</code></strong>——这是给基类的初始化。</p>
+
+<div class="cpp-box">
+  <strong><code>: QObject(parent)</code></strong> = 基类构造函数的显式调用。因为 <code>FwFlashService : public QObject</code>，构造时<strong>必须先构造 QObject 这一部分</strong>。<br><br>
+  初始化列表里：
+  <pre style="margin:6px 0;"><code>: <span class="fn">QObject</span>(parent)      <span class="cmt">// ← 调基类构造，传入 parent 加入 Qt 对象树</span>
+, <span class="fn">m_registry</span>(registry)  <span class="cmt">// ← 初始化自己的成员</span></code></pre>
+</div>
+
+<div class="why">
+  如果不写 <code>: QObject(parent)</code>，编译器会<strong>自动调用基类的默认构造函数</strong>（不传 parent）——结果对象就<strong>没加入 Qt 对象树</strong>，parent 销毁时不会自动销毁本对象，可能造成<strong>内存泄漏</strong>。<br><br>
+  <strong>所有继承 QObject 的类，构造函数都该把 parent 传给基类。</strong>这是 Qt 编程的铁律。
+</div>
+
+<h2>段 5（第 31–33 行）：析构函数</h2>
+
+<pre><code><span class="ty">FwFlashService</span>::<span class="fn">~FwFlashService</span>() {
+    <span class="fn">shutdownWorker</span>();
+}</code></pre>
+
+<p>对象销毁时调一次 <code>shutdownWorker()</code>——确保 worker 线程被正确清理，不留尾巴。</p>
+
+<div class="why">
+  为什么不直接让 worker 线程"自生自灭"？因为：
+  <ul>
+    <li>worker 可能还在跑（用户切窗口或关闭程序时刚好在烧录）</li>
+    <li>如果不主动停掉，<code>QThread</code> 对象被析构时会触发警告"<strong>thread destroyed while still running</strong>"</li>
+  </ul>
+  主动停掉更稳妥。
+</div>
+
+<h2>段 6（第 35–43 行）：<code>shutdownWorker()</code></h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">shutdownWorker</span>() {
+    <span class="kw">if</span> (m_cancelFlag) m_cancelFlag-&gt;<span class="fn">store</span>(<span class="kw">true</span>);
+    <span class="kw">if</span> (m_workerThread) {
+        <span class="kw">if</span> (m_workerThread-&gt;<span class="fn">isRunning</span>()) {
+            m_workerThread-&gt;<span class="fn">quit</span>();
+            m_workerThread-&gt;<span class="fn">wait</span>();
+        }
+    }
+}</code></pre>
+
+<p>清理 worker 线程的逻辑，3 步：</p>
+
+<h3>第 1 步：<code>m_cancelFlag-&gt;store(true);</code></h3>
+
+<p>把取消标志置 true。worker 线程内部循环会检测到这个标志，主动退出。</p>
+
+<p><code>store(true)</code> 是 atomic 的方法——原子地写入 true。</p>
+
+<h3>第 2 步：<code>if (m_workerThread-&gt;isRunning())</code></h3>
+
+<p>检查线程是否还在跑。<code>isRunning()</code> 是 QThread 的方法，返回 bool。</p>
+
+<h3>第 3 步：<code>quit() + wait()</code></h3>
+
+<pre><code>m_workerThread-&gt;<span class="fn">quit</span>();    <span class="cmt">// 请求线程停止事件循环</span>
+m_workerThread-&gt;<span class="fn">wait</span>();    <span class="cmt">// 阻塞,等线程真的结束</span></code></pre>
+
+<div class="cpp-box">
+  <strong><code>quit()</code></strong> = 让线程的事件循环（exec()）退出。<br>
+  <strong><code>wait()</code></strong> = 阻塞调用者，直到线程真的结束。
+</div>
+
+<div class="pitfall">
+  worker 线程跑的是 lambda（不是 exec()），<code>quit()</code> 对它没直接效果。<strong>真正让 worker 退出的是 cancelFlag</strong>——worker 内部循环检测到 cancelFlag 后从 strategy-&gt;flash() 返回，lambda 结束，线程退出。<code>quit()</code> 是<strong>礼貌性调用</strong>，保险起见。
+</div>
+
+<h2>段 7（第 45–57 行）：<code>isBusy()</code></h2>
+
+<pre><code><span class="ty">bool</span> <span class="ty">FwFlashService</span>::<span class="fn">isBusy</span>() <span class="kw">const</span> {
+    <span class="kw">switch</span> (m_state) {
+    <span class="kw">case</span> <span class="ty">State</span>::Preparing:
+    <span class="kw">case</span> <span class="ty">State</span>::StoppingScope:
+    <span class="kw">case</span> <span class="ty">State</span>::StoppingGenerator:
+    <span class="kw">case</span> <span class="ty">State</span>::StoppingCyclic:
+    <span class="kw">case</span> <span class="ty">State</span>::DisablingPmic:
+    <span class="kw">case</span> <span class="ty">State</span>::Flashing:
+        <span class="kw">return</span> <span class="kw">true</span>;
+    <span class="kw">default</span>:
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }
+}</code></pre>
+
+<p>判断当前是否处于"忙碌"区间——10 个状态里只有 6 个算"忙碌"，4 个算"不忙"（Idle、Completed、Failed、Cancelled）。</p>
+
+<div class="cpp-box">
+  <strong>switch + 多个 case 共享同一动作（落穿）：</strong>
+  <pre style="margin:6px 0;"><code><span class="kw">case</span> A:
+<span class="kw">case</span> B:
+<span class="kw">case</span> C:
+    <span class="kw">return</span> <span class="kw">true</span>;     <span class="cmt">// A/B/C 三种都走这条</span></code></pre>
+  没有 <code>break</code> 的 case 会继续执行下一个 case 的代码。这里 6 个 case 都"<strong>落穿</strong>"到 <code>return true</code>。
+</div>
+
+<div class="why">
+  为什么不用一长串 <code>||</code>？switch <strong>更清晰</strong>——明确告诉读者"<strong>下面 6 种状态返回 true，其他全部返回 false</strong>"。而且性能上编译器可能优化成跳转表，比 <code>||</code> 链更快。
+</div>
+
+<h2>段 8（第 59–62 行）：4 个 setter</h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">setStopScopeCallback</span>(<span class="ty">StopCallback</span> cb) { m_stopScope = <span class="ty">std</span>::<span class="fn">move</span>(cb); }
+<span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">setStopGeneratorCallback</span>(<span class="ty">StopCallback</span> cb) { m_stopGenerator = <span class="ty">std</span>::<span class="fn">move</span>(cb); }
+<span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">setStopCyclicWriteCallback</span>(<span class="ty">StopCallback</span> cb) { m_stopCyclic = <span class="ty">std</span>::<span class="fn">move</span>(cb); }
+<span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">setDisablePmicCallback</span>(<span class="ty">StopCallback</span> cb) { m_disablePmic = <span class="ty">std</span>::<span class="fn">move</span>(cb); }</code></pre>
+
+<p>4 个外部注入回调的 setter。每个都是<strong>单行实现</strong>。</p>
+
+<p>参数 <code>cb</code> 是值传递，<code>std::move(cb)</code> 把它高效"搬"进成员变量——避免拷贝大的 lambda。</p>
+
+<h2>段 9（第 64–68 行）：<code>setState()</code></h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">setState</span>(<span class="ty">State</span> s) {
+    <span class="kw">if</span> (m_state == s) <span class="kw">return</span>;
+    m_state = s;
+    <span class="kw">emit</span> <span class="fn">stateChanged</span>(s);
+}</code></pre>
+
+<p>状态切换函数，做 3 件事：</p>
+
+<ol>
+  <li><strong>去重</strong>：如果新状态与当前状态相同，直接返回——避免无意义的信号发射</li>
+  <li><strong>更新</strong>：把新状态写入 <code>m_state</code></li>
+  <li><strong>通知</strong>：emit <code>stateChanged</code> 信号广播给所有订阅者（主要是 UI）</li>
+</ol>
+
+<div class="why">
+  虽然项目里没人会用同样的状态调 setState，但加一道防御<strong>没坏处</strong>——避免 UI 收到重复的 stateChanged 信号导致<strong>不必要的重绘</strong>。
+</div>
+
+<h2>段 10（第 70–72 行）：<code>emitLog()</code></h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">emitLog</span>(<span class="ty">LogLevel</span> level, <span class="kw">const</span> <span class="ty">QString</span> &amp;message) {
+    <span class="kw">emit</span> <span class="fn">logMessage</span>(level, message);
+}</code></pre>
+
+<p>简单封装：发射 <code>logMessage</code> 信号。</p>
+
+<div class="why">
+  封装的好处：
+  <ol>
+    <li><strong>未来扩展方便</strong>——比如要同时写到 qDebug，改一处所有地方都受益</li>
+    <li><strong>代码更短易读</strong>——<code>emitLog(Info, msg)</code> 比 <code>emit logMessage(LogLevel::Info, msg)</code> 短</li>
+  </ol>
+  这是<strong>"提前留好扩展接口"</strong>的设计模式。
+</div>
+
+<h2>段 11（第 74–113 行）：<code>startFlash()</code> —— 入口校验</h2>
+
+<p>UI 调用的入口。分 4 小段看。</p>
+
+<h3>11.1 防重复入口</h3>
+
+<pre><code><span class="kw">if</span> (<span class="fn">isBusy</span>()) {
+    <span class="fn">emitLog</span>(LogLevel::Warn, <span class="fn">QStringLiteral</span>(<span class="str">"已有烧录任务在执行，忽略本次请求"</span>));
+    <span class="kw">return</span>;
+}</code></pre>
+
+<p>如果当前已有烧录在跑，直接返回。这是<strong>防止用户连续点开始按钮</strong>的防御。</p>
+
+<h3>11.2 注册中心校验</h3>
+
+<pre><code><span class="kw">if</span> (m_registry == <span class="kw">nullptr</span>) {
+    <span class="fn">emitLog</span>(LogLevel::Error, ...);
+    <span class="kw">emit</span> <span class="fn">finished</span>(<span class="kw">false</span>, ...);
+    <span class="kw">return</span>;
+}</code></pre>
+
+<p>防御性：理论上 registry 在构造时就传进来了，不该是空。但万一是，立即报错并 emit finished 让 UI 收尾。</p>
+
+<h3>11.3 策略查找</h3>
+
+<pre><code><span class="ty">FlashStrategy</span> *strategy = m_registry-&gt;<span class="fn">find</span>(icModel);
+<span class="kw">if</span> (strategy == <span class="kw">nullptr</span>) {
+    <span class="fn">emitLog</span>(LogLevel::Error, <span class="fn">QStringLiteral</span>(<span class="str">"未找到 IC 型号：%1"</span>).<span class="fn">arg</span>(icModel));
+    <span class="kw">emit</span> <span class="fn">finished</span>(<span class="kw">false</span>, ...);
+    <span class="kw">return</span>;
+}</code></pre>
+
+<p>按 IC 型号字串查找策略对象。<code>m_registry-&gt;find(icModel)</code> 返回 <code>FlashStrategy *</code>，可能是 <code>AwSdkStrategy / DW9786Strategy</code> 等具体子类的实例——这就是<strong>多态</strong>。</p>
+
+<h3>11.4 固件 + 状态准备</h3>
+
+<pre><code><span class="kw">if</span> (firmware.<span class="fn">isEmpty</span>()) { ... }
+
+<span class="cmt">// 旧 worker 回收（防御性）</span>
+<span class="fn">shutdownWorker</span>();
+
+m_totalBytes = totalBytes &gt; <span class="num">0</span> ? totalBytes : firmware.<span class="fn">size</span>();
+m_cancelFlag = <span class="ty">std</span>::<span class="fn">make_shared</span>&lt;<span class="ty">std</span>::<span class="ty">atomic</span>&lt;<span class="ty">bool</span>&gt;&gt;(<span class="kw">false</span>);
+
+<span class="fn">setState</span>(<span class="ty">State</span>::Preparing);
+<span class="kw">emit</span> <span class="fn">stageMessage</span>(<span class="fn">QStringLiteral</span>(<span class="str">"准备中..."</span>));
+<span class="kw">emit</span> <span class="fn">progressUpdated</span>(<span class="num">0</span>, m_totalBytes);
+<span class="fn">emitLog</span>(LogLevel::Info, ...);
+
+<span class="fn">runPreflightAndFlash</span>(strategy, firmware);</code></pre>
+
+<div class="cpp-box">
+  <strong>三元运算符 <code>条件 ? a : b</code></strong> ——条件为真返回 a，否则返回 b。<br><br>
+  <code>totalBytes &gt; 0 ? totalBytes : firmware.size()</code> 意思是：如果调用方传了有效的 totalBytes 就用它；否则用 firmware 的实际大小。
+</div>
+
+<div class="why">
+  <code>m_cancelFlag = std::make_shared&lt;...&gt;(false);</code> —— <strong>每次烧录都重建 cancelFlag</strong>。因为<strong>上次的 cancelFlag 可能还被旧 worker 持有</strong>。重建保证状态干净。
+</div>
+
+<h2>段 12（第 115–119 行）：<code>cancelFlash()</code></h2>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">cancelFlash</span>() {
+    <span class="kw">if</span> (!<span class="fn">isBusy</span>()) <span class="kw">return</span>;
+    <span class="kw">if</span> (m_cancelFlag) m_cancelFlag-&gt;<span class="fn">store</span>(<span class="kw">true</span>);
+    <span class="fn">emitLog</span>(LogLevel::Warn, <span class="fn">QStringLiteral</span>(<span class="str">"正在取消烧录..."</span>));
+}</code></pre>
+
+<p>简单三句：</p>
+
+<ol>
+  <li>不忙就直接返回</li>
+  <li>把 cancelFlag 置 true</li>
+  <li>写日志"正在取消..."</li>
+</ol>
+
+<div class="why">
+  cancelFlash <strong>不</strong>等 worker 真的退出——只是设置标志位。worker 在自己合适的时机检测到标志后才会停下。这是<strong>协作式取消</strong>：取消方告诉被取消方"<strong>请你停下</strong>"，被取消方在安全时机响应。
+</div>
+
+<h2>段 13（第 121–128 行）：<code>invokeIfSet</code> 辅助函数</h2>
+
+<pre><code><span class="kw">namespace</span> {
+
+<span class="cmt">/// @brief 触发一个停止回调...</span>
+<span class="ty">void</span> <span class="fn">invokeIfSet</span>(<span class="kw">const</span> <span class="ty">FwFlashService</span>::<span class="ty">StopCallback</span> &amp;cb) {
+    <span class="kw">if</span> (cb) <span class="fn">cb</span>();
+}
+
+}  <span class="cmt">// namespace</span></code></pre>
+
+<p>第二个匿名 namespace。3 行实现：如果 <code>cb</code> 不为空就调用它。</p>
+
+<div class="why">
+  后面 <code>runPreflightAndFlash</code> 要调 4 个 StopCallback。每次都写 <code>if (m_xxx) m_xxx();</code> 太啰嗦，抽象成 <code>invokeIfSet(m_xxx)</code>。<br><br>
+  放匿名 namespace 因为<strong>不需要 <code>this</code></strong>（不访问任何成员变量），放成员函数没必要。
+</div>
+
+<h2>段 14（第 130–222 行）：<code>runPreflightAndFlash()</code> —— 灵魂</h2>
+
+<p>整个文件最长、最复杂的函数。分 5 小段看。</p>
+
+<h3>14.1 4 步前置停止序列</h3>
+
+<pre><code><span class="ty">void</span> <span class="ty">FwFlashService</span>::<span class="fn">runPreflightAndFlash</span>(<span class="ty">FlashStrategy</span> *strategy, <span class="kw">const</span> <span class="ty">QByteArray</span> &amp;firmware) {
+    <span class="fn">setState</span>(<span class="ty">State</span>::StoppingScope);
+    <span class="kw">emit</span> <span class="fn">stageMessage</span>(<span class="fn">QStringLiteral</span>(<span class="str">"停止采样..."</span>));
+    <span class="fn">emitLog</span>(LogLevel::Info, <span class="fn">QStringLiteral</span>(<span class="str">"停止采样"</span>));
+    <span class="fn">invokeIfSet</span>(m_stopScope);
+
+    <span class="fn">setState</span>(<span class="ty">State</span>::StoppingGenerator);
+    <span class="cmt">// 类似 3 行</span>
+    <span class="fn">invokeIfSet</span>(m_stopGenerator);
+
+    <span class="fn">setState</span>(<span class="ty">State</span>::StoppingCyclic);
+    <span class="cmt">// 类似 3 行</span>
+    <span class="fn">invokeIfSet</span>(m_stopCyclic);
+
+    <span class="fn">setState</span>(<span class="ty">State</span>::DisablingPmic);
+    <span class="cmt">// 类似 3 行</span>
+    <span class="fn">invokeIfSet</span>(m_disablePmic);</code></pre>
+
+<p><strong>4 步前置停止</strong>，模式高度一致：</p>
+
+<div class="ascii">切状态 → 发阶段文本信号 → 写日志 → 调回调</div>
+
+<p>每步告诉 UI："我现在在干什么"，然后<strong>调外部注入的 lambda</strong> 让对应外设停下来。</p>
+
+<div class="why">
+  <strong>Fire-and-forget：</strong>这 4 步都不等结果。因为：
+  <ul>
+    <li>4 个回调可能调到不同 service（在不同线程），等结果会让 startFlash 阻塞太久</li>
+    <li>后面要关 PMIC，PMIC 一关其他外设自然失效，没必要纠结某一步的成败</li>
+  </ul>
+  这是工程决策——<strong>用稍微宽松的语义换更简单的代码</strong>。
+</div>
+
+<h3>14.2 取消检查</h3>
+
+<pre><code><span class="cmt">// 前置期间用户已点取消则提前结束</span>
+<span class="kw">if</span> (m_cancelFlag-&gt;<span class="fn">load</span>()) {
+    <span class="fn">setState</span>(<span class="ty">State</span>::Cancelled);
+    <span class="kw">emit</span> <span class="fn">stageMessage</span>(<span class="fn">QStringLiteral</span>(<span class="str">"已取消"</span>));
+    <span class="fn">emitLog</span>(LogLevel::Info, <span class="fn">QStringLiteral</span>(<span class="str">"已取消"</span>));
+    <span class="kw">emit</span> <span class="fn">finished</span>(<span class="kw">false</span>, <span class="fn">QStringLiteral</span>(<span class="str">"已取消"</span>));
+    <span class="fn">setState</span>(<span class="ty">State</span>::Idle);
+    <span class="kw">return</span>;
+}</code></pre>
+
+<p>4 步前置完成后<strong>检查一次取消</strong>——用户可能在这 4 步期间点了取消按钮。</p>
+
+<p>如果取消了：切到 Cancelled → 发"已取消"消息 → emit finished(false) → 切回 Idle → 直接 return（不创建 worker 线程）。</p>
+
+<div class="why">
+  状态先到 Cancelled 再到 Idle——给 UI 一个"<strong>看到取消</strong>"的机会。
+</div>
+
+<h3>14.3 切到 Flashing + 准备 worker 入参</h3>
+
+<pre><code><span class="fn">setState</span>(<span class="ty">State</span>::Flashing);
+<span class="kw">emit</span> <span class="fn">stageMessage</span>(<span class="fn">QStringLiteral</span>(<span class="str">"烧录中..."</span>));
+<span class="fn">emitLog</span>(LogLevel::Info, ...);
+
+<span class="cmt">// worker 线程：仅跑 flash()，结果通过 invokeMethod 回主线程</span>
+<span class="kw">auto</span> cancelFlag = m_cancelFlag;       <span class="cmt">// shared_ptr 拷贝，引用计数 +1</span>
+<span class="kw">const</span> <span class="ty">qint64</span> total = m_totalBytes;
+<span class="ty">QPointer</span>&lt;<span class="ty">FwFlashService</span>&gt; <span class="fn">self</span>(<span class="kw">this</span>);  <span class="cmt">// 防御 service 在 worker 完成前被销毁</span></code></pre>
+
+<p>进入 Flashing 状态，准备 worker 线程的 3 个捕获参数：</p>
+
+<table>
+  <thead><tr><th>变量</th><th>类型</th><th>作用</th></tr></thead>
+  <tbody>
+    <tr><td><code>cancelFlag</code></td><td>shared_ptr 拷贝</td><td>引用计数+1，worker 安全使用</td></tr>
+    <tr><td><code>total</code></td><td>qint64 值</td><td>进度回调用</td></tr>
+    <tr><td><code>self</code></td><td>QPointer</td><td>service 被销毁时自动空</td></tr>
+  </tbody>
+</table>
+
+<div class="why">
+  为什么不直接用成员变量？因为 lambda 进入 worker 线程后，访问成员变量需要持有 <code>this</code> 指针。<code>this</code> 是<strong>裸指针</strong>，如果对象销毁就成野指针。<code>QPointer</code> 是 Qt 弱指针——被指对象销毁时自动变空，能 <code>isNull()</code> 检查。
+</div>
+
+<h3>14.4 创建 worker 线程</h3>
+
+<pre><code>m_workerThread = <span class="ty">QThread</span>::<span class="fn">create</span>([self, strategy, firmware, cancelFlag, total]() {
+    <span class="ty">QString</span> errorMsg;
+    <span class="kw">auto</span> progress = [self, total](<span class="ty">qint64</span> sent) {
+        <span class="kw">if</span> (self.<span class="fn">isNull</span>()) <span class="kw">return</span>;
+        <span class="kw">emit</span> self-&gt;<span class="fn">progressUpdated</span>(sent, total);
+        <span class="kw">const</span> <span class="ty">double</span> pct = total &gt; <span class="num">0</span> ? (sent * <span class="num">100.0</span> / total) : <span class="num">0.0</span>;
+        <span class="kw">emit</span> self-&gt;<span class="fn">stageMessage</span>(
+            <span class="fn">QStringLiteral</span>(<span class="str">"烧录中 %1 KB / %2 KB (%3%)"</span>)
+                .<span class="fn">arg</span>(...).<span class="fn">arg</span>(...).<span class="fn">arg</span>(...));
+    };
+    <span class="kw">const</span> <span class="ty">bool</span> ok = strategy-&gt;<span class="fn">flash</span>(firmware, progress, *cancelFlag, &amp;errorMsg);
+    <span class="kw">const</span> <span class="ty">bool</span> wasCancelled = cancelFlag-&gt;<span class="fn">load</span>();</code></pre>
+
+<p><code>QThread::create([...]() { ... })</code> 创建一个新线程，启动后跑 lambda。</p>
+
+<h4>Lambda 捕获</h4>
+
+<p><code>[self, strategy, firmware, cancelFlag, total]</code> 按值捕获 5 个变量：</p>
+
+<table>
+  <thead><tr><th>捕获</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><code>self</code></td><td>QPointer</td><td>引用计数 +1</td></tr>
+    <tr><td><code>strategy</code></td><td>裸指针</td><td>registry 持有，生命期肯定够长</td></tr>
+    <tr><td><code>firmware</code></td><td>QByteArray</td><td>隐式共享（零深拷贝）</td></tr>
+    <tr><td><code>cancelFlag</code></td><td>shared_ptr</td><td>引用计数 +1</td></tr>
+    <tr><td><code>total</code></td><td>qint64</td><td>一个整数</td></tr>
+  </tbody>
+</table>
+
+<h4>内嵌的 progress lambda</h4>
+
+<p>这是<strong>给 strategy-&gt;flash() 用的进度回调</strong>。每次 strategy 内部发完一段数据就调它。</p>
+
+<div class="cpp-box">
+  <strong>为什么跨线程 emit 信号能工作？</strong>
+  <ul>
+    <li>信号默认连接类型 <code>Qt::AutoConnection</code></li>
+    <li>跨线程时 Qt <strong>自动</strong>切换为 <code>Qt::QueuedConnection</code></li>
+    <li>把信号事件排到主线程的事件队列里执行</li>
+  </ul>
+  worker 线程 emit 信号 → 主线程异步处理 → UI 更新。<strong>完全自动</strong>。
+</div>
+
+<h4><code>cancelFlag-&gt;load()</code> —— 区分失败还是取消</h4>
+
+<p>flash() 返回后立即记录 cancelFlag 当前值。区分"<strong>flash() 返回 false 是因为失败还是取消</strong>"——两者都返回 false，但 cancelFlag 标志能区分。</p>
+
+<h3>14.5 结果回主线程</h3>
+
+<pre><code><span class="kw">if</span> (self.<span class="fn">isNull</span>()) <span class="kw">return</span>;
+<span class="ty">QMetaObject</span>::<span class="fn">invokeMethod</span>(
+    self.<span class="fn">data</span>(),
+    [self, ok, wasCancelled, errorMsg, total]() {
+        <span class="kw">if</span> (self.<span class="fn">isNull</span>()) <span class="kw">return</span>;
+        <span class="kw">if</span> (ok) {
+            <span class="kw">emit</span> self-&gt;<span class="fn">progressUpdated</span>(total, total);
+            self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Completed);
+            <span class="kw">emit</span> self-&gt;<span class="fn">stageMessage</span>(<span class="fn">QStringLiteral</span>(<span class="str">"烧录完成"</span>));
+            self-&gt;<span class="fn">emitLog</span>(LogLevel::Ok, <span class="fn">QStringLiteral</span>(<span class="str">"烧录完成"</span>));
+            <span class="kw">emit</span> self-&gt;<span class="fn">finished</span>(<span class="kw">true</span>, <span class="fn">QStringLiteral</span>(<span class="str">"成功"</span>));
+        } <span class="kw">else if</span> (wasCancelled) {
+            self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Cancelled);
+            <span class="cmt">// ... 4 行</span>
+        } <span class="kw">else</span> {
+            self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Failed);
+            <span class="cmt">// ... 4 行</span>
+        }
+        self-&gt;<span class="fn">setState</span>(<span class="ty">State</span>::Idle);
+    },
+    <span class="ty">Qt</span>::QueuedConnection);
+});</code></pre>
+
+<p>worker 把结果<strong>marshal 回主线程</strong>——因为 setState 必须在主线程调用。</p>
+
+<h4>3 个分支</h4>
+
+<table>
+  <thead><tr><th>分支</th><th>触发条件</th><th>状态切到</th></tr></thead>
+  <tbody>
+    <tr><td>成功</td><td><code>ok == true</code></td><td>Completed</td></tr>
+    <tr><td>取消</td><td><code>ok == false && wasCancelled == true</code></td><td>Cancelled</td></tr>
+    <tr><td>失败</td><td><code>ok == false && wasCancelled == false</code></td><td>Failed</td></tr>
+  </tbody>
+</table>
+
+<p>每个分支都做 4 件事：切状态 → emit stageMessage → emitLog → emit finished。</p>
+
+<p>最后无论哪个分支，都 <code>setState(State::Idle)</code> 回到空闲态。</p>
+
+<h3>14.6 线程结束后的自动清理</h3>
+
+<pre><code><span class="kw">connect</span>(m_workerThread, &amp;<span class="ty">QThread</span>::finished, m_workerThread, &amp;<span class="ty">QObject</span>::deleteLater);
+<span class="ty">QPointer</span>&lt;<span class="ty">QThread</span>&gt; <span class="fn">threadPtr</span>(m_workerThread);
+<span class="kw">connect</span>(m_workerThread, &amp;<span class="ty">QThread</span>::finished, <span class="kw">this</span>, [<span class="kw">this</span>, threadPtr]() {
+    <span class="kw">if</span> (m_workerThread == threadPtr.<span class="fn">data</span>()) m_workerThread = <span class="kw">nullptr</span>;
+});
+m_workerThread-&gt;<span class="fn">start</span>();</code></pre>
+
+<p>worker 线程结束时做 2 件事：</p>
+
+<h4>第 1 件：<code>deleteLater()</code> 自动销毁线程对象</h4>
+
+<p>当线程发出 <code>finished</code> 信号时，<strong>线程对象自己调 deleteLater</strong>——Qt 会在下次事件循环里销毁它。</p>
+
+<div class="cpp-box">
+  <strong><code>deleteLater()</code></strong> 是 QObject 的延迟销毁方法。<strong>比直接 <code>delete</code> 更安全</strong>，因为 finished 信号可能还在被处理时调，立刻 delete 会出问题。
+</div>
+
+<h4>第 2 件：清空 <code>m_workerThread</code> 指针</h4>
+
+<p>线程销毁后，<code>m_workerThread</code> 这个指针变成野指针。connect 一个清空操作：当线程 finished 时，把 <code>m_workerThread</code> 置为 nullptr。</p>
+
+<div class="why">
+  用 <code>threadPtr.data() == m_workerThread</code> 检查"<strong>是不是同一个线程对象</strong>"是防御性的：万一在线程结束前，外部已经创建了新的 worker，<code>m_workerThread</code> 已经指向新对象——这时清空它会把<strong>新对象的指针</strong>错误地清空。
+</div>
+
+<h4><code>m_workerThread-&gt;start();</code></h4>
+
+<p>启动线程。这是<strong>整个函数的最后一行</strong>——startFlash 返回后线程才真正开始跑。</p>
+
+<h2>整体流程图</h2>
+
+<div class="ascii">UI 调 startFlash()
+       │
+       ▼
+   段 11: 校验
+       │
+       ▼
+   段 14.1: 4 步前置停止 (主线程同步)
+       │
+       ▼
+   段 14.2: 检查取消
+       │
+       ▼
+   段 14.3-14.6: 创建 worker 线程
+       │
+       │ (worker 跑 strategy->flash())
+       │ ← 主线程继续刷新 UI
+       │
+       ▼
+   worker 完成,invokeMethod 回主线程
+       │
+       ▼
+   切状态到 Completed/Failed/Cancelled
+       │
+       ▼
+   切回 Idle,任务结束</div>
+
+<h2>本文件涉及的 C++/Qt 工具汇总</h2>
+
+<table>
+  <thead><tr><th>工具</th><th>在本文件的用途</th></tr></thead>
+  <tbody>
+    <tr><td>初始化列表 + 基类构造</td><td><code>: QObject(parent), m_registry(registry)</code></td></tr>
+    <tr><td><code>Q_LOGGING_CATEGORY</code></td><td>定义日志分类（预留）</td></tr>
+    <tr><td>匿名 namespace</td><td>文件私有辅助函数</td></tr>
+    <tr><td><code>switch</code> 落穿</td><td><code>isBusy</code> 多状态匹配</td></tr>
+    <tr><td>三元运算符</td><td><code>totalBytes</code> 默认值处理</td></tr>
+    <tr><td><code>make_shared&lt;atomic&lt;bool&gt;&gt;</code></td><td>创建跨线程取消标志</td></tr>
+    <tr><td>Lambda 捕获 5 个变量</td><td>worker 线程函数体</td></tr>
+    <tr><td>嵌套 lambda</td><td>worker 内创建 progress 回调</td></tr>
+    <tr><td><code>QPointer</code></td><td>弱引用防野指针</td></tr>
+    <tr><td><code>QThread::create</code></td><td>临时 worker 线程</td></tr>
+    <tr><td><code>QMetaObject::invokeMethod</code></td><td>跨线程结果回主线程</td></tr>
+    <tr><td><code>connect(... &amp;deleteLater)</code></td><td>线程结束自动销毁</td></tr>
+    <tr><td><code>emit signal(...)</code></td><td>通知 UI</td></tr>
+  </tbody>
+</table>
+
+<h2>一句话总结</h2>
+
+<div class="note">
+  <strong><code>fwflashservice.cpp</code> 实现一个跨线程的"<strong>烧录任务调度器</strong>"：在主线程做参数校验、前置停止、状态机切换；把真正的烧录算法放到 worker 线程跑（让 UI 不卡死）；用 <code>cancelFlag</code> 实现协作式取消；通过 <code>invokeMethod</code> 把 worker 的结果送回主线程更新状态。整个文件是"<strong>主线程+worker 线程协作</strong>"的<strong>教科书式范例</strong>——任何 Qt 多线程任务都可以参考这个结构。</strong>
+</div>
+
+<h2>读完后你应该能回答</h2>
+
+<ul>
+  <li>worker 线程是怎么创建、跑什么、怎么结束的？</li>
+  <li>取消按钮按下后，worker 是怎么"知道"该停下来的？</li>
+  <li>worker 完成后状态机是怎么回到 Idle 的？</li>
+  <li>为什么用 QPointer 和 shared_ptr？</li>
+  <li>为什么前置 4 步是 fire-and-forget？</li>
+</ul>
+
+<hr>
+<p class="meta">本文档与 <code>fw_flashservice_h_walkthrough.html</code> 配套——头文件讲"<strong>合同</strong>"，本文讲"<strong>实现</strong>"。两份合起来对 <code>FwFlashService</code> 类的认知就完整了。</p>
+
+</main>
+</body>
+</html>
