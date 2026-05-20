@@ -54,8 +54,8 @@ qt_add_executable(MotorDev
     src/services/flashstrategyregistry.h
     src/services/fwflashservice.cpp
     src/services/fwflashservice.h
-    src/services/flashstrategies/aw_sdk_strategy.cpp
-    src/services/flashstrategies/aw_sdk_strategy.h
+    src/services/flashstrategies/aw_local_isp_strategy.cpp
+    src/services/flashstrategies/aw_local_isp_strategy.h
     src/services/flashstrategies/aw86006_strategy.cpp
     src/services/flashstrategies/aw86006_strategy.h
     src/services/flashstrategies/aw86100_strategy.cpp
@@ -138,13 +138,6 @@ target_link_libraries(MotorDev PRIVATE
     Qt6::OpenGLWidgets
 )
 
-# 部署 Awinic SDK dummy DLL 到运行 exe 同级目录，让 AwSdkStrategy 的 QLibrary
-# 能在首次烧录时按相对路径加载到。内网替换真实 DLL 后无需改 CMake，只需替换该文件。
-if(WIN32)
-    add_custom_command(TARGET MotorDev POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_SOURCE_DIR}/ThirdParty/FlashLoad/AW86100/x64/AW86100.dll"
-            "$<TARGET_FILE_DIR:MotorDev>/AW86100.dll"
-        COMMENT "Deploying AW86100.dll (dummy) next to MotorDev.exe"
-        VERBATIM)
-endif()
+# （历史）AW86100.dll POST_BUILD 部署已于 2026-05-19 协议 v2.6 / v2.7 改版后移除：
+# 烧录改走 STM32 本地 ISP（协议 0x32~0x37），上位机不再依赖 PC 端 DLL。
+# 物理 DLL 文件保留在 ThirdParty/FlashLoad/AW86100/x64/，便于回滚时快速恢复。

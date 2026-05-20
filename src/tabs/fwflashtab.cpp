@@ -10,7 +10,7 @@
 #include "tabs/fwflashtab.h"
 
 #include "protocol/firmware_parser.h"
-#include "services/flashstrategies/aw_sdk_strategy.h"
+#include "services/flashstrategies/aw_local_isp_strategy.h"
 #include "services/flashstrategy.h"
 #include "services/flashstrategyregistry.h"
 #include "ui/repolish.h"
@@ -76,30 +76,28 @@ void enableCardHover(QWidget *widget, GroupHoverFilter *filter) {
 
 }  // namespace
 
-FwFlashTab::FwFlashTab(SerialManager *serialManager,
-                        AwSdkStrategy::AddrProvider awAddrProvider,
-                        QWidget *parent)
+FwFlashTab::FwFlashTab(SerialManager *serialManager, QWidget *parent)
     : QWidget(parent) {
     setupUi();
 
-    // FwFlashLogPanel 在 setupUi() 中创建；构造 logSink lambda 把 AwSdkStrategy 的
+    // FwFlashLogPanel 在 setupUi() 中创建；构造 logSink lambda 把 AwLocalIspStrategy 的
     // 4 级日志 marshal 到 GUI 线程并转发到面板的 4 个 append 槽。QPointer 防御面板
     // 先于 strategy 销毁。
     QPointer<FwFlashLogPanel> logPanelPtr(m_logPanel);
-    auto logSink = [logPanelPtr](AwSdkStrategy::LogLevel lv, const QString &msg) {
+    auto logSink = [logPanelPtr](AwLocalIspStrategy::LogLevel lv, const QString &msg) {
         if (logPanelPtr.isNull()) return;
         QMetaObject::invokeMethod(logPanelPtr.data(), [logPanelPtr, lv, msg]() {
             if (logPanelPtr.isNull()) return;
             switch (lv) {
-            case AwSdkStrategy::LogLevel::Info:  logPanelPtr->appendInfo(msg); break;
-            case AwSdkStrategy::LogLevel::Warn:  logPanelPtr->appendWarn(msg); break;
-            case AwSdkStrategy::LogLevel::Error: logPanelPtr->appendError(msg); break;
-            case AwSdkStrategy::LogLevel::Ok:    logPanelPtr->appendOk(msg); break;
+            case AwLocalIspStrategy::LogLevel::Info:  logPanelPtr->appendInfo(msg); break;
+            case AwLocalIspStrategy::LogLevel::Warn:  logPanelPtr->appendWarn(msg); break;
+            case AwLocalIspStrategy::LogLevel::Error: logPanelPtr->appendError(msg); break;
+            case AwLocalIspStrategy::LogLevel::Ok:    logPanelPtr->appendOk(msg); break;
             }
         }, Qt::QueuedConnection);
     };
 
-    m_registry = std::make_unique<FlashStrategyRegistry>(serialManager, logSink, std::move(awAddrProvider));
+    m_registry = std::make_unique<FlashStrategyRegistry>(serialManager, logSink);
     m_service = new FwFlashService(m_registry.get(), serialManager, this);
 
     connectSignals();
@@ -347,16 +345,41 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
         m_currentFirmwareData.clear();
         m_currentFirmwareTotal = 0;
         m_logPanel->appendError(tr("文件解析失败：%1").arg(info.errorMessage));
-    } else {
-        m_currentFileValid = true;
-        m_currentFirmwareData = info.data;
-        m_currentFirmwareTotal = info.data.size();
-        m_logPanel->appendInfo(
-            tr("已加载固件：%1（%2 字节，CRC32 0x%3）")
-                .arg(info.fileName)
-                .arg(info.data.size())
-                .arg(info.crc32, 8, 16, QLatin1Char('0')));
+        updateStartEnabled();
+        return;
     }
+
+    // AW 本地 ISP 上限校验（STM32 端 SRAM1 单缓冲 64 KB；协议规定固件 4 字节对齐）
+    constexpr qint64 kMaxIspBytes = 64LL * 1024LL;
+    if (info.data.size() > kMaxIspBytes) {
+        m_currentFileValid = false;
+        m_currentFirmwareData.clear();
+        m_currentFirmwareTotal = 0;
+        m_logPanel->appendError(
+            tr("固件 %1 字节超出 AW 本地 ISP 上限（64 KB），无法烧录")
+                .arg(info.data.size()));
+        updateStartEnabled();
+        return;
+    }
+    if ((info.data.size() % 4) != 0) {
+        m_currentFileValid = false;
+        m_currentFirmwareData.clear();
+        m_currentFirmwareTotal = 0;
+        m_logPanel->appendError(
+            tr("固件 %1 字节非 4 字节对齐，AW 本地 ISP 不支持")
+                .arg(info.data.size()));
+        updateStartEnabled();
+        return;
+    }
+
+    m_currentFileValid = true;
+    m_currentFirmwareData = info.data;
+    m_currentFirmwareTotal = info.data.size();
+    m_logPanel->appendInfo(
+        tr("已加载固件：%1（%2 字节，CRC32 0x%3）")
+            .arg(info.fileName)
+            .arg(info.data.size())
+            .arg(info.crc32, 8, 16, QLatin1Char('0')));
     updateStartEnabled();
 }
 

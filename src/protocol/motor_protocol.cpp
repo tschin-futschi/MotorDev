@@ -32,6 +32,12 @@ const char *commandName(uint8_t cmd) {
     case CmdBulkRead: return "BulkRead";
     case CmdI2cTransferWrite: return "I2cTransferWrite";
     case CmdI2cTransferRead: return "I2cTransferRead";
+    case CmdFlashBegin: return "FlashBegin";
+    case CmdFlashData: return "FlashData";
+    case CmdFlashExec: return "FlashExec";
+    case CmdFlashStatus: return "FlashStatus";
+    case CmdFlashCancel: return "FlashCancel";
+    case CmdFlashResetChip: return "FlashResetChip";
     case CmdStartSampling: return "StartSampling";
     case CmdStopSampling: return "StopSampling";
     case CmdSetSampleInterval: return "SetSampleInterval";
@@ -280,6 +286,91 @@ QByteArray encodeStartSawtoothGen(quint16 addr, qint16 min, qint16 max, qint16 s
     appendS16(max);
     appendS16(step);
     return payload;
+}
+
+// -----------------------------------------------------------------------------
+// AW 本地 ISP 烧录（0x32~0x37）— 注意所有多字节字段使用小端,与 STM32
+// `pFrame->data[0] | data[1]<<8 | ...` 解码方式严格对齐。
+// -----------------------------------------------------------------------------
+
+const char *awIspStatusName(uint8_t status) {
+    switch (status) {
+    case 0: return "ISP_OK";
+    case 1: return "ISP_ADDR_ERROR";
+    case 2: return "ISP_PBUF_ERROR";
+    case 3: return "ISP_HANK_ERROR";
+    case 4: return "ISP_JUMP_ERROR";
+    case 5: return "ISP_FLASH_ERROR";
+    case 6: return "ISP_SPACE_ERROR";
+    case 7: return "ISP_NOT_INITED";
+    default: return "ISP_UNKNOWN";
+    }
+}
+
+static void appendU32LE(QByteArray &out, quint32 value) {
+    out.append(static_cast<char>(value & 0xFF));
+    out.append(static_cast<char>((value >> 8) & 0xFF));
+    out.append(static_cast<char>((value >> 16) & 0xFF));
+    out.append(static_cast<char>((value >> 24) & 0xFF));
+}
+
+static void appendU16LE(QByteArray &out, quint16 value) {
+    out.append(static_cast<char>(value & 0xFF));
+    out.append(static_cast<char>((value >> 8) & 0xFF));
+}
+
+QByteArray encodeFlashBegin(quint32 addr, quint32 totalBytes) {
+    QByteArray payload;
+    payload.reserve(8);
+    appendU32LE(payload, addr);
+    appendU32LE(payload, totalBytes);
+    return payload;
+}
+
+QByteArray encodeFlashData(quint16 pktSeq, const QByteArray &chunk) {
+    QByteArray payload;
+    payload.reserve(2 + chunk.size());
+    appendU16LE(payload, pktSeq);
+    payload.append(chunk);
+    return payload;
+}
+
+bool decodeFlashDataResponse(const QByteArray &data, quint16 *nextSeqOut) {
+    if (data.size() < 2 || nextSeqOut == nullptr) {
+        return false;
+    }
+    const quint16 lo = static_cast<quint8>(data.at(0));
+    const quint16 hi = static_cast<quint8>(data.at(1));
+    *nextSeqOut = static_cast<quint16>(lo | (hi << 8));
+    return true;
+}
+
+bool decodeFlashExecResponse(const QByteArray &data, uint8_t *ispStatusOut) {
+    if (data.size() < 1 || ispStatusOut == nullptr) {
+        return false;
+    }
+    *ispStatusOut = static_cast<uint8_t>(data.at(0));
+    return true;
+}
+
+bool decodeFlashStatusResponse(const QByteArray &data,
+                               uint8_t *stateOut,
+                               quint32 *rxOffsetOut,
+                               quint32 *totalBytesOut) {
+    if (data.size() < 9 || stateOut == nullptr ||
+        rxOffsetOut == nullptr || totalBytesOut == nullptr) {
+        return false;
+    }
+    *stateOut = static_cast<uint8_t>(data.at(0));
+    auto u32LE = [&](int offset) -> quint32 {
+        return  static_cast<quint8>(data.at(offset))
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 1))) << 8)
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 2))) << 16)
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 3))) << 24);
+    };
+    *rxOffsetOut = u32LE(1);
+    *totalBytesOut = u32LE(5);
+    return true;
 }
 
 // -----------------------------------------------------------------------------

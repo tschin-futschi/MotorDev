@@ -31,8 +31,8 @@ echo Release build done: %BUILD_DIR%\MotorDev.exe
 echo Qt dependencies deployed by windeployqt.
 echo.
 echo Manual deployment still required (not auto-copied):
-echo   - Real AW86100.dll   (POST_BUILD copies the dummy version)
-echo   - libfftw3-3.dll     (required by real AW86100.dll)
+echo   - (Removed 2026-05-19) AW86100.dll / libfftw3-3.dll
+echo     Flashing moved to STM32 local ISP (protocol 0x32~0x37).
 echo   - MSVC/MFC runtime: mfc140u.dll / MSVCP140.dll /
 echo                       VCRUNTIME140.dll / VCRUNTIME140_1.dll
 echo ============================================================

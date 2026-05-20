@@ -46,6 +46,14 @@ inline constexpr uint8_t CmdBulkRead = 0x22;            ///< 批量读寄存器
 inline constexpr uint8_t CmdI2cTransferWrite = 0x30;    ///< I2C 透传写（任意 7-bit 从机 + 任意寄存器地址长度 + 任意数据长度）
 inline constexpr uint8_t CmdI2cTransferRead = 0x31;     ///< I2C 透传读
 
+// --- AW 本地 ISP 烧录（0x32~0x37，协议 v2.7）---
+inline constexpr uint8_t CmdFlashBegin = 0x32;      ///< 启动烧录 session（载荷: [addr LE 4B][totalBytes LE 4B]）
+inline constexpr uint8_t CmdFlashData = 0x33;       ///< 分包下发固件（载荷: [pktSeq LE 2B][chunk]；响应: [nextSeq LE 2B]）
+inline constexpr uint8_t CmdFlashExec = 0x34;       ///< 触发实际烧录（阻塞 5-10s；响应: [ispStatus 1B]）
+inline constexpr uint8_t CmdFlashStatus = 0x35;     ///< 查询 session 状态（响应: [state 1B][rxOffset LE 4B][totalBytes LE 4B]）
+inline constexpr uint8_t CmdFlashCancel = 0x36;     ///< 重置 session 到 IDLE
+inline constexpr uint8_t CmdFlashResetChip = 0x37;  ///< 单独调 aw_reset_chip()（响应: [ispStatus 1B]）
+
 // --- 示波器采样 ---
 inline constexpr uint8_t CmdStartSampling = 0x50;       ///< 启动采样
 inline constexpr uint8_t CmdStopSampling = 0x51;        ///< 停止采样
@@ -190,6 +198,60 @@ QByteArray encodeStopGenerator();
 /// @param step  步进值
 /// @return 8 字节载荷
 QByteArray encodeStartSawtoothGen(quint16 addr, qint16 min, qint16 max, qint16 step);
+
+// ---------------------------------------------------------------------------
+// AW 本地 ISP 烧录（0x32~0x37）
+// ---------------------------------------------------------------------------
+
+/// @brief ISP 状态码（与 STM32 `enum isp_status` 一一对应）
+enum class AwIspStatus : uint8_t {
+    Ok = 0,            ///< 全成功
+    AddrError = 1,     ///< 烧录起始地址不在 [0x01000000, 0x01020000)
+    PbufError = 2,     ///< 缓冲指针非法
+    HankError = 3,     ///< handshake 失败（IC 未供电 / I2C 无 ACK）
+    JumpError = 4,     ///< 跳转回主程序失败
+    FlashError = 5,    ///< Flash 写入 / 校验失败
+    SpaceError = 6,    ///< 目标地址 + len 超出 FLASH_TOP
+    NotInited = 7,     ///< ISP 驱动未注册回调
+};
+
+/// @brief 把 AwIspStatus 转为可读字符串（含数值,便于日志定位）
+const char *awIspStatusName(uint8_t status);
+
+/// @brief STATUS 命令响应中的 session 状态码
+enum class FlashSessionState : uint8_t {
+    Idle = 0,
+    Receiving = 1,
+    Ready = 2,
+    Executing = 3,  ///< EXEC 阻塞期间,实际几乎观察不到
+    Done = 4,
+    Error = 5,
+};
+
+/// @brief 编码 BEGIN 命令载荷（8 字节,小端,与 STM32 `pFrame->data[0..7]` 对齐）
+/// @param addr        目标 Flash 起始地址（必须 ∈ [0x01000000, 0x01020000)）
+/// @param totalBytes  固件总字节数（必须 4 字节对齐,≤ 64 KB）
+QByteArray encodeFlashBegin(quint32 addr, quint32 totalBytes);
+
+/// @brief 编码 DATA 命令载荷
+/// @param pktSeq  当前包序号（从 0 严格递增,小端 2 字节）
+/// @param chunk   本包数据（≤ 253 字节）
+QByteArray encodeFlashData(quint16 pktSeq, const QByteArray &chunk);
+
+/// @brief 解码 DATA 响应（2 字节小端,STM32 期望的下一个 pktSeq）
+/// @return true=解析成功;失败时 nextSeqOut 不变
+bool decodeFlashDataResponse(const QByteArray &data, quint16 *nextSeqOut);
+
+/// @brief 解码 EXEC / RESET_CHIP 响应（1 字节,值 = AwIspStatus）
+/// @return true=解析成功
+bool decodeFlashExecResponse(const QByteArray &data, uint8_t *ispStatusOut);
+
+/// @brief 解码 STATUS 响应（9 字节: state + rxOffset + totalBytes,均小端）
+/// @return true=解析成功;失败时 out 参数不变
+bool decodeFlashStatusResponse(const QByteArray &data,
+                               uint8_t *stateOut,
+                               quint32 *rxOffsetOut,
+                               quint32 *totalBytesOut);
 
 // ---------------------------------------------------------------------------
 // 响应载荷解码

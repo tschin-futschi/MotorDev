@@ -169,8 +169,17 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
         return;
     }
 
-    // 烧录任务投递到 SerialManager 工作线程同步执行（fast-path：strategy 内的
-    // syncI2c{Write,Read} 直接调 m_serialManager->sendAndWaitResponse，全程零跨线程）。
+    // 暂停心跳：协议 v2.7 §4.3.5 明确规定 EXEC 阻塞 5-10s 期间 STM32 主循环停摆，
+    // 不响应任何帧（包括 0x00 心跳）。fast-path 同步执行期间 SerialManager 工作线程
+    // event loop 也被卡住，心跳定时器无法触发。在投递烧录任务之前用 QueuedConnection
+    // 同序入队 stopHeartbeat，保证心跳定时器先停 → fast-path 再执行 → 完成后由主线程
+    // finished 回调里 startHeartbeat 恢复。
+    QMetaObject::invokeMethod(m_serialManager, [sm = m_serialManager]() {
+        sm->stopHeartbeat();
+    }, Qt::QueuedConnection);
+
+    // 烧录任务投递到 SerialManager 工作线程同步执行（fast-path：strategy 通过
+    // m_serialManager->sendAndWaitResponse 同步发协议 0x32~0x37 命令，全程零跨线程）。
     // QueuedConnection fire-and-forget；结果再通过 invokeMethod 回主线程触发 finished。
     auto cancelFlag = m_cancelFlag;
     const qint64 total = m_totalBytes;
@@ -185,9 +194,8 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
             if (self.isNull()) return;
             // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
             emit self->progressUpdated(sent, total);
-            // 累计 wrSize 包含 DLL 拼入的寄存器地址/pack 头开销，可能超出 firmware 字节数；
-            // 进度条 setProgress 自身已 qBound 到 100%，这里把"X KB / Y KB (Z%)"文本也 clamp，
-            // 避免显示 105% / 35.0 KB / 33.2 KB 这种用户视角不一致的数字。
+            // strategy 上报的是 firmware 已发字节(0x33 DATA 累计 offset)，
+            // 不超过 firmware 总长；qMin clamp 是历史防御性兜底，保留即可。
             const qint64 displaySent = qMin(sent, total);
             const double pct = total > 0 ? (displaySent * 100.0 / total) : 0.0;
             emit self->stageMessage(
@@ -223,6 +231,14 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
                     emit self->finished(false, errorMsg);
                 }
                 self->setState(State::Idle);
+
+                // 恢复心跳（与启动前的 stopHeartbeat 配对，无论成功/失败/取消都恢复）
+                if (self->m_serialManager != nullptr) {
+                    QMetaObject::invokeMethod(self->m_serialManager,
+                                              [sm = self->m_serialManager]() {
+                        sm->startHeartbeat();
+                    }, Qt::QueuedConnection);
+                }
             },
             Qt::QueuedConnection);
     }, Qt::QueuedConnection);

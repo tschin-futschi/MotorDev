@@ -18,7 +18,6 @@
 // =============================================================================
 #pragma once
 
-#include "services/flashstrategies/aw_sdk_strategy.h"  // AwSdkStrategy::AddrProvider
 #include "services/fwflashservice.h"
 
 #include <QWidget>
@@ -42,9 +41,7 @@ class FwFlashTab : public QWidget {
     Q_OBJECT
 
 public:
-    FwFlashTab(SerialManager *serialManager,
-               AwSdkStrategy::AddrProvider awAddrProvider,
-               QWidget *parent = nullptr);
+    explicit FwFlashTab(SerialManager *serialManager, QWidget *parent = nullptr);
     ~FwFlashTab() override;
 
     /// @brief 注入"立即停止"回调，由 MainWindow 绑定到对应 Service。

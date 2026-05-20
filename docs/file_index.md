@@ -62,22 +62,23 @@
 - `src/protocol/sampling_config` `[协议]` — 采样间隔/显示窗口的 UI 文本 ↔ 协议索引映射
 
 ### 固件烧录
-> 框架已完成：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；strategy 内 syncI2c 直接调 `SerialManager::sendAndWaitResponse`，全程零跨线程、零经过 dispatcher，目标消除 PC 端 Qt 跨线程 + 主线程拥堵带来的 10-20 ms/次 I2C 延迟）+ 协作式取消（`cancelFlag`）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 通过 `AwSdkStrategy` 调用厂家 SDK DLL 完成 5 步烧录序列（DLL 路径由基类用 `applicationDirPath()` 拼成绝对路径，加载失败时输出完整路径 + 文件存在性诊断）；DW9786 / DW9788 仍为 stub。
+> 2026-05-19 起改为 STM32 本地 ISP 烧录方案（协议 v2.7 §4.3.5，命令 0x32~0x37）。废除原 AW SDK DLL 链路。
+> 框架：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；strategy 直接调 `SerialManager::sendAndWaitResponse` 发协议 0x32~0x37 命令）+ 协作式取消（`cancelFlag`）+ **心跳暂停 / 恢复**（EXEC 阻塞 5-10s 期间 STM32 不响应任何帧，FwFlashService 在烧录任务前 stopHeartbeat、任务完成回主线程后 startHeartbeat）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 共用 `AwLocalIspStrategy` 基类（BEGIN → DATA 循环 → EXEC,失败时 RESET_CHIP + CANCEL 收尾）；DW9786 / DW9788 仍为 stub。UI 加载固件后即校验 ≤ 64 KB 且 4 字节对齐（STM32 端 SRAM1 单缓冲上限）。
 
-- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *` 与 `AwSdkStrategy::AddrProvider`（IC 7-bit 地址 lambda，从 `DeviceContext` 取），并构造 `LogSink` lambda 注入 registry，让 AW SDK strategy 的 OutputLog 转发到 `FwFlashLogPanel`
+- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *`，构造 `LogSink` lambda 注入 registry，让 strategy 日志转发到 `FwFlashLogPanel`；`parseAndShowFile` 加载固件后校验 ≤ 64 KB / 4 字节对齐
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
 - `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
-- `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 上限
-- `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + 通过 `invokeMethod(QueuedConnection)` 把烧录任务投递到 SerialManager 工作线程（fast-path，无独立 worker 线程）+ 进度/日志/状态信号
+- `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 通用上限（AW 本地 ISP 实际可用上限 64 KB 在 UI/strategy 层另行校验）
+- `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + 通过 `invokeMethod(QueuedConnection)` 把烧录任务投递到 SerialManager 工作线程（fast-path）+ 烧录前后 stopHeartbeat / startHeartbeat + 进度/日志/状态信号
 - `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
-- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `SerialManager *`、`AwSdkStrategy::LogSink` 与 `AwSdkStrategy::AddrProvider`，按 IC 型号枚举/查找）
-- `src/services/flashstrategies/aw_sdk_strategy` `[通信]` — Awinic SDK 烧录策略共用基类（QLibrary 动态加载 AW86100.dll + 5 步流程 + Init 后通过 `AwSet7bitI2CSlaveAddr` 将 `DeviceContext` 配置地址同步给 DLL + 3 ExtFunc 回调 + **直接调 `SerialManager::sendAndWaitResponse` 同步 I2C 透传，运行于 SerialManager 工作线程，全程零跨线程、零经过 dispatcher** + 字节累计驱动进度 + 取消传播 + 失败/取消强制收尾）
-- `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwSdkStrategy`，仅声明型号 / 描述 / DLL 文件名）
-- `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwSdkStrategy`，与 AW86006 共用同一份 AW86100.dll）
+- `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `SerialManager *` 与 `AwLocalIspStrategy::LogSink`，按 IC 型号枚举/查找）
+- `src/services/flashstrategies/aw_local_isp_strategy` `[通信]` — AW 本地 ISP 烧录策略共用基类：BEGIN(0x32) → DATA 循环(0x33,252 B/帧,严格递增 pktSeq,响应校验 nextSeq) → EXEC(0x34,15 s 超时) → 失败收尾(0x37 RESET_CHIP + 0x36 CANCEL)；fast-path 同步调用 `SerialManager::sendAndWaitResponse`,Q_ASSERT_X 同线程
+- `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwLocalIspStrategy`，仅声明型号 / 描述）
+- `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwLocalIspStrategy`，与 AW86006 共用 STM32 端 ISP 驱动）
 - `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）
 - `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 烧录策略（stub）
-- `src/protocol/motor_protocol` `[协议]` — I2C 透传协议码 `0x30`（写）/ `0x31`（读）编解码：任意 7-bit DevId + 任意寄存器地址字节数（含 0）+ 任意读写长度
+- `src/protocol/motor_protocol` `[协议]` — AW 本地 ISP 命令 `0x32`~`0x37` 编解码（小端载荷,与 STM32 端 `pFrame->data[i]` 解码方式对齐）+ `AwIspStatus` 枚举与名称表 + 保留通用 I2C 透传 `0x30`(写) / `0x31`(读) 编解码（业务侧已不再使用,作为通用 debug 工具保留）
 
 ### 串口调试模拟器
 - `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
@@ -121,7 +122,7 @@
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
-| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 已落地：通过 `AwSdkStrategy` 调用厂家 SDK DLL（QLibrary 动态加载 AW86100.dll + 5 步流程 + I2C 透传协议 0x30/0x31）；联调 dummy DLL 中，等内网替换真实 DLL。DW9786 / DW9788 仍为 stub。**待解疑（OPEN）**：协议 0x30/0x31 的 `AddrSize == 0` 在 STM32 端的 HAL 调法已按推测实现（HAL_I2C_Master_Transmit/Receive，跳过寄存器地址段），等供应商最终确认 |
+| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 已落地：`AwLocalIspStrategy` 走 STM32 本地 ISP 协议 0x32~0x37（BEGIN → DATA 循环 → EXEC，失败时 RESET_CHIP + CANCEL 收尾）；上位机不再依赖 PC 端 DLL。DW9786 / DW9788 仍为 stub |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
 
@@ -159,5 +160,5 @@
 - `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
 - `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、oscilloscoptab 三个 Tab 共用（fwflashtab 已不使用 Sidebar）
-- `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，3 个 Service 的实现签名变化会影响烧录前置序列。**烧录任务通过 invokeMethod 投递到 `SerialManager` 工作线程同步执行（fast-path）**，期间该线程的 event loop 被 strategy->flash() 同步占用，其他依赖 SerialManager 的 Service 在此期间提交命令会排队等候。PMIC 不在前置序列中关闭，烧录期间 IC 必须保持正常供电
-- `src/serialmanager` — 加 `sendAndWaitResponse` 同步 API 用于烧录链路 fast-path（仅可在自己的工作线程调用，会同步阻塞该线程直到收到响应或超时）；常规命令仍走 `sendCommand`+`emit frameReceived` 异步路径
+- `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，3 个 Service 的实现签名变化会影响烧录前置序列。**烧录任务通过 invokeMethod 投递到 `SerialManager` 工作线程同步执行（fast-path）**，期间该线程的 event loop 被 strategy->flash() 同步占用，其他依赖 SerialManager 的 Service 在此期间提交命令会排队等候。**心跳暂停 / 恢复**：在投递烧录任务前 stopHeartbeat（QueuedConnection 同序入队），任务完成回主线程后 startHeartbeat（无论成功/失败/取消都恢复）。PMIC 不在前置序列中关闭，烧录期间 IC 必须保持正常供电
+- `src/serialmanager` — `sendAndWaitResponse` 同步 API 用于烧录链路 fast-path（仅可在自己的工作线程调用，会同步阻塞该线程直到收到响应或超时）；常规命令仍走 `sendCommand`+`emit frameReceived` 异步路径；`startHeartbeat` / `stopHeartbeat` 供 FwFlashService 在烧录前后调用
