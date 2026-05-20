@@ -1,1089 +1,755 @@
-[11:10:20.988] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
-[11:10:20.988] [INFO ] 停止采样
-[11:10:20.989] [INFO ] 停止信号发生器
-[11:10:20.992] [INFO ] 停止循环写入
-[11:10:20.992] [INFO ] 调用 AW86006::flash() (33.2 KB)
-[11:10:21.026] [INFO ] 已加载 DLL：D:/qinfuqi/82_New_Tools/MD-20260519/MotorDev/build_release/AW86100.dll
-[11:10:21.026] [INFO ] 步骤 1/5：AwOIS_ExtFuncInit
-[11:10:21.026] [INFO ] 设置 DLL I2C 7-bit 从机地址：0x6f
-[11:10:21.026] [INFO ] 步骤 2/5：AwBootcontrol(20, 7)
-[11:10:21.027] [INFO ] [DLL] Enter boot control function. 
-[11:10:21.027] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 02
-[11:10:21.027] [INFO ] [I2C-W TIMING] total=19858us
-[11:10:21.027] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=true wrote=13 flush=ok btw_afterFlush=20 execMs=19 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.028] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=19875us
-[11:10:21.028] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 5A
-[11:10:21.043] [INFO ] [I2C-W TIMING] total=13997us
-[11:10:21.043] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.044] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14012us
-[11:10:21.044] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B7 00
-[11:10:21.063] [INFO ] [I2C-W TIMING] total=13938us
-[11:10:21.065] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.065] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13983us
-[11:10:21.080] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=10 data=FF F0 20 20 02 02 19 29 19 29
-[11:10:21.097] [INFO ] [I2C-W TIMING] total=17069us
-[11:10:21.097] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=20 flush=ok btw_afterFlush=20 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.097] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=17093us
-[11:10:21.098] [INFO ] [I2C-R ENTER] devId=0x6b addrSize=2 addr=FF F0 rdSize=1
-[11:10:21.113] [INFO ] [I2C-R TIMING] total=16290us
-[11:10:21.115] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=12 flush=ok btw_afterFlush=12 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.115] [INFO ] [I2C-R EXIT ] devId=0x6b rc=0 elapsed=16321us
-[11:10:21.115] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 00
-[11:10:21.132] [INFO ] [I2C-W TIMING] total=13622us
-[11:10:21.133] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.133] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=13651us
-[11:10:21.133] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF A3 00
-[11:10:21.134] [INFO ] [I2C-W TIMING] total=14090us
-[11:10:21.134] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=13 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.134] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14220us
-[11:10:21.156] [INFO ] [I2C-W ENTER] devId=0x6b wrSize=3 data=FF B4 01
-[11:10:21.157] [INFO ] [I2C-W TIMING] total=14642us
-[11:10:21.157] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.157] [INFO ] [I2C-W EXIT ] devId=0x6b rc=0 elapsed=14662us
-[11:10:21.157] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.177] [INFO ] [I2C-W TIMING] total=8061us
-[11:10:21.177] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=8 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.177] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=8096us
-[11:10:21.178] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.195] [INFO ] [I2C-W TIMING] total=16230us
-[11:10:21.195] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.197] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16275us
-[11:10:21.197] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.197] [INFO ] [I2C-W TIMING] total=15564us
-[11:10:21.197] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.198] [ERROR] I2C 透传写失败：STM32 error 0x03
-[11:10:21.198] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=15579us
-[11:10:21.199] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
-[11:10:21.199] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.219] [INFO ] [I2C-W TIMING] total=16314us
-[11:10:21.219] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.219] [ERROR] I2C 透传写失败：STM32 error 0x03
-[11:10:21.220] [INFO ] [I2C-W EXIT ] devId=0x6f rc=-1 elapsed=16332us
-[11:10:21.220] [INFO ] [DLL] BootControl fail with RET_BOOTCONTROL_STOP_BOOTLOADER 
-[11:10:21.220] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.239] [INFO ] [I2C-W TIMING] total=15718us
-[11:10:21.240] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.240] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15734us
-[11:10:21.240] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.259] [INFO ] [I2C-W TIMING] total=16238us
-[11:10:21.259] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.260] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16261us
-[11:10:21.260] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.285] [INFO ] [I2C-W TIMING] total=19347us
-[11:10:21.286] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=19 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.286] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=19383us
-[11:10:21.286] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.287] [INFO ] [I2C-W TIMING] total=15712us
-[11:10:21.287] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.288] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15730us
-[11:10:21.288] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.312] [INFO ] [I2C-W TIMING] total=12884us
-[11:10:21.312] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=12 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.312] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=12924us
-[11:10:21.313] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.313] [INFO ] [I2C-W TIMING] total=15602us
-[11:10:21.313] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.313] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15641us
-[11:10:21.313] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.335] [INFO ] [I2C-W TIMING] total=16419us
-[11:10:21.335] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.335] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16433us
-[11:10:21.336] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.355] [INFO ] [I2C-W TIMING] total=15762us
-[11:10:21.355] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.356] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15834us
-[11:10:21.356] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.358] [INFO ] [I2C-W TIMING] total=16284us
-[11:10:21.358] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.358] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16303us
-[11:10:21.358] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.377] [INFO ] [I2C-W TIMING] total=15391us
-[11:10:21.377] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.378] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15408us
-[11:10:21.378] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.398] [INFO ] [I2C-W TIMING] total=16402us
-[11:10:21.399] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.399] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16439us
-[11:10:21.399] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.421] [INFO ] [I2C-W TIMING] total=15769us
-[11:10:21.421] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.421] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15813us
-[11:10:21.422] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.422] [INFO ] [I2C-W TIMING] total=15833us
-[11:10:21.422] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.423] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15848us
-[11:10:21.423] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.442] [INFO ] [I2C-W TIMING] total=15828us
-[11:10:21.443] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.443] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15844us
-[11:10:21.443] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.463] [INFO ] [I2C-W TIMING] total=16001us
-[11:10:21.464] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.464] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16018us
-[11:10:21.464] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=3 data=AC AC AC
-[11:10:21.487] [INFO ] [I2C-W TIMING] total=16447us
-[11:10:21.487] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=13 flush=ok btw_afterFlush=13 execMs=16 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.488] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=16469us
-[11:10:21.488] [INFO ] [I2C-W ENTER] devId=0x6f wrSize=9 data=86 01 82 01 01 00 00 01 00
-[11:10:21.488] [INFO ] [I2C-W TIMING] total=15651us
-[11:10:21.488] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=19 flush=ok btw_afterFlush=19 execMs=15 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.488] [INFO ] [I2C-W EXIT ] devId=0x6f rc=0 elapsed=15669us
-[11:10:21.489] [INFO ] [I2C-R ENTER] devId=0x6f addrSize=0 addr=<empty> rdSize=14
-[11:10:21.510] [INFO ] [I2C-R TIMING] total=14184us
-[11:10:21.511] [INFO ] [FP-DIAG] exit=CompletedMatch sameThread=true open=true pendingCleared=false wrote=10 flush=ok btw_afterFlush=10 execMs=14 timerFired=false match=true bytesAvail=0 btw_final=0
-[11:10:21.511] [INFO ] [I2C-R EXIT ] devId=0x6f rc=0 elapsed=14206us
-[11:10:21.511] [INFO ] [DLL] Flash Hand Compare Check Failed! 
-[11:10:21.511] [ERROR] AwBootcontrol failed (return -23)
-[11:10:21.512] [INFO ] 收尾：调用 AW_OIS_ExtFuncDeInit()
-[11:10:21.512] [INFO ] 步骤 5/5：AW_OIS_ExtFuncDeInit
-[11:10:21.512] [WARN ] AW_OIS_ExtFuncDeInit 返回 1（忽略）
-[11:10:21.512] [ERROR] 烧录失败：AwBootcontrol failed (return -23)
---------------------------------------------------------------------------------------------------------------------------------
+-------------------------------aw_uboot_isp.h------------------------------------------------
+
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
+* Description: IIC header file, IIC related parameter definition file
+*/
+#ifndef __AW_UBOOT_REGISTER_H
+#define __AW_UBOOT_REGISTER_H
+
+#define FLASH_BASE		(0x01000000)
+#define FLASH_SIZE		(0x20000)
+#define FLASH_TOP		(FLASH_BASE + FLASH_SIZE)
+
+#include "aw_uboot_bufbuilt.h"
+#include "main.h"
+
+enum isp_status{
+	ISP_OK = 0,
+	ISP_ADDR_ERROR,
+	ISP_PBUF_ERROR,
+	ISP_HANK_ERROR,
+	ISP_JUMP_ERROR,
+	ISP_FLASH_ERROR,
+	ISP_SPACE_ERROR,
+};
+typedef enum isp_status ISP_STATUS_E;
+
+ISP_STATUS_E aw_boot_control();
+ISP_STATUS_E aw_reset_chip();
+ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len);
+ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len);
+ISP_STATUS_E aw_hank_connect_check(void);
+ISP_STATUS_E aw_flash_jump_check(AW_U32 addr);
+ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff);
+ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen);
+
+void delay_ms(AW_U32 xms);
+void aw_i2c_stop_uboot(void);
+void aw_i2c_write(AW_U8 *buff, AW_U8 len);
+void aw_i2c_read (AW_U8 *buff, AW_U8 len);
+
+#endif
+--------------------------------------aw_uboot_isp.c---------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
+* Description: spi correlation function
+*/
+#include "aw_uboot_isp.h"
+#include "string.h"
+
+void delay_ms(AW_U32 xms)
+{
+}
+
+//stay in UBOOT state (stop UBOOT)
+//It needs to be sent multiple times within 8ms when power on
+void aw_i2c_stop_uboot(void)
+{
+	AW_U8 tmp = 0xAC;
+	aw_i2c_write(&tmp, 1);
+}
+
+//The underlying interface
+void aw_i2c_write(AW_U8 *buff, AW_U8 len)
+{
+}
 
 
-[2026-05-19 11:03:58.617] [debug] [default] [startup] primaryScreen=X24q-10 logicalDPI=96 devicePixelRatio=1.25
-[2026-05-19 11:03:58.643] [debug] [default] Scan found 3 ports: COM1, COM2, COM3
-[2026-05-19 11:04:16.163] [debug] [default] Scan started
-[2026-05-19 11:04:16.184] [debug] [default] Scan found 4 ports: COM1, COM16, COM2, COM3
-[2026-05-19 11:04:18.159] [info] [motordev.config] Connect request port=COM16 baud=460800
-[2026-05-19 11:04:18.162] [info] [motordev.serial] Opening port COM16 at 460800 (8N1)...
-[2026-05-19 11:04:18.285] [warning] [motordev.serial] FT232 Latency Timer auto-set skipped: FT_OpenEx failed for serial=5&5B13FF8&0&12 (st=2)
-[2026-05-19 11:04:18.302] [info] [motordev.serial] Port COM16 opened successfully
-[2026-05-19 11:04:18.306] [info] [motordev.config] Serial connected
-[2026-05-19 11:04:18.309] [info] [motordev.serial] Heartbeat started
-[2026-05-19 11:04:18.859] [info] [motordev.config] SetPmicVoltage TX DRVDD=1.80V IOVDD=2.80V VCMVDD=3.20V payload=00 B4 01 18 01 40
-[2026-05-19 11:04:18.864] [debug] [motordev.serial] TX control frame: seq=0X00 cmd=0X09(SetPmicVoltage) len=6 payload=00 B4 01 18 01 40
-[2026-05-19 11:04:18.877] [debug] [motordev.serial] RX control frame: seq=0X00 cmd=0X09(SetPmicVoltage) len=0 payload=<empty>
-[2026-05-19 11:04:18.883] [info] [motordev.config] SetPmicVoltage RX ACK payload=<empty>
-[2026-05-19 11:04:18.888] [info] [motordev.config] PmicEnable TX payload=<empty>
-[2026-05-19 11:04:18.893] [debug] [motordev.serial] TX control frame: seq=0X01 cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 11:04:18.925] [debug] [motordev.serial] RX control frame: seq=0X01 cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 11:04:18.931] [info] [motordev.config] PmicEnable RX ACK payload=<empty>
-[2026-05-19 11:04:18.934] [debug] [default] PMIC configured successfully
-[2026-05-19 11:04:19.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:19.310] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:19.883] [info] [motordev.config] I2cBusScan TX bus=I2C2 payload=02
-[2026-05-19 11:04:19.887] [debug] [motordev.serial] TX control frame: seq=0X03 cmd=0X07(I2cBusScan) len=1 payload=02
-[2026-05-19 11:04:19.902] [debug] [motordev.serial] RX control frame: seq=0X03 cmd=0X07(I2cBusScan) len=5 payload=04 6A 6B 6F 7E
-[2026-05-19 11:04:19.906] [info] [motordev.config] I2cBusScan RX count=4 devices=0X6A, 0X6B, 0X6F, 0X7E payload=04 6A 6B 6F 7E
-[2026-05-19 11:04:20.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:20.318] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:21.164] [debug] [default] SLAVE ID SET TO 0X6F
-[2026-05-19 11:04:21.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:21.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:21.645] [info] [motordev.config] SETMOTORICADDR TX ADDR=0X6F PAYLOAD=6F
-[2026-05-19 11:04:21.650] [debug] [motordev.serial] TX control frame: seq=0X06 cmd=0X02(SetMotorIcAddr) len=1 payload=6F
-[2026-05-19 11:04:21.661] [debug] [motordev.serial] RX control frame: seq=0X06 cmd=0X02(SetMotorIcAddr) len=0 payload=<empty>
-[2026-05-19 11:04:21.666] [info] [motordev.config] SetMotorIcAddr RX ACK payload=<empty>
-[2026-05-19 11:04:21.670] [debug] [default] Motor IC address set to 0X6F
-[2026-05-19 11:04:22.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:22.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:23.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:23.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:24.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:24.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:25.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:25.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:26.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:26.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:26.445] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:04:26.449] [debug] [motordev.serial] TX control frame: seq=0X0C cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:04:26.461] [debug] [motordev.serial] RX control frame: seq=0X0C cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:04:26.466] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:04:26.471] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:04:26.612] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:04:26.617] [debug] [motordev.serial] TX control frame: seq=0X0D cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:04:26.637] [debug] [motordev.serial] RX control frame: seq=0X0D cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:04:26.642] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:04:26.647] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:04:26.787] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:04:26.792] [debug] [motordev.serial] TX control frame: seq=0X0E cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:04:26.813] [debug] [motordev.serial] RX control frame: seq=0X0E cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:04:26.820] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:04:26.824] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:04:26.971] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:04:26.975] [debug] [motordev.serial] TX control frame: seq=0X0F cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:04:26.989] [debug] [motordev.serial] RX control frame: seq=0X0F cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:04:26.994] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:04:26.999] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:04:27.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:27.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:28.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:28.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:29.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:29.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:30.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:30.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:31.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:31.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:32.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:32.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:33.318] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:33.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:34.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:34.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:35.317] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:35.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:36.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:36.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:37.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:37.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:38.317] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:38.333] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:39.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:39.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:39.613] [info] [motordev.generator] StopGenerator TX payload=<empty>
-[2026-05-19 11:04:39.617] [debug] [motordev.serial] TX control frame: seq=0X1D cmd=0X57(StopGenerator) len=0 payload=<empty>
-[2026-05-19 11:04:40.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:40.317] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:41.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:41.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:42.313] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:42.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:42.626] [warning] [motordev.generator] Generator ACK timeout, pendingOp= 4
-[2026-05-19 11:04:43.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:43.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:44.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:44.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:45.313] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:45.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:46.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:46.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:47.315] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:47.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:48.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:48.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:49.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:49.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:50.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:50.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:51.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:51.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:52.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:52.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:53.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:53.325] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:54.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:54.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:55.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:55.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:56.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:56.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:57.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:57.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:58.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:58.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:04:59.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:04:59.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:00.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:00.316] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:01.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:01.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:02.319] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:02.331] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:03.313] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:03.324] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:04.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:04.332] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:05.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:05.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:06.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:06.331] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:07.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:07.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:08.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:08.331] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:09.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:09.339] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:10.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:10.331] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:11.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:11.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:12.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:12.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:13.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:13.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:14.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:14.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:15.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:15.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:16.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:16.330] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:17.318] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:17.339] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:18.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:18.315] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:19.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:19.340] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:20.304] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:20.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:21.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:21.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:22.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:22.315] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:23.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:23.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:24.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:24.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:25.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:25.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:26.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:26.331] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:26.411] [info] [motordev.generator] StopGenerator TX payload=<empty>
-[2026-05-19 11:05:27.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:27.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:28.319] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:28.330] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:29.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:29.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:29.415] [warning] [motordev.generator] Generator ACK timeout, pendingOp= 4
-[2026-05-19 11:05:30.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:30.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:31.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:31.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:32.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:32.330] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:33.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:33.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:34.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:34.330] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:35.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:35.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:36.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:36.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:37.304] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:37.323] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:38.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:38.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:39.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:39.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:40.316] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:40.330] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:41.304] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:41.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:42.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:42.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:43.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:43.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:44.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:44.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:45.318] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:45.337] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:46.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:46.314] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:47.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:47.322] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:48.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:48.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:49.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:49.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:50.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:50.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:51.304] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:51.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:52.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:52.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:53.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:53.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:54.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:54.329] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:55.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:55.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:56.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:56.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:57.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:57.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:58.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:58.329] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:05:59.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:05:59.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:00.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:00.312] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:00.449] [info] [motordev.generator] StopGenerator TX payload=<empty>
-[2026-05-19 11:06:01.315] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:01.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:02.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:02.312] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:03.318] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:03.337] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:03.446] [warning] [motordev.generator] Generator ACK timeout, pendingOp= 4
-[2026-05-19 11:06:04.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:04.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:05.310] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:05.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:06.309] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:06.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:07.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:07.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:08.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:08.329] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:09.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:09.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:10.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:10.312] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:11.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:11.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:12.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:12.313] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:13.307] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:13.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:14.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:14.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:15.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:15.321] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:16.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:16.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:17.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:17.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:18.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:18.312] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:19.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:19.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:20.308] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:20.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:21.306] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:21.319] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:22.305] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:22.312] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:23.319] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:23.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:24.311] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:24.327] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:25.314] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:25.320] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:26.312] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:26.327] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:27.313] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:27.319] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:28.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:28.343] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:29.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:29.336] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:30.321] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:30.328] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:31.321] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:31.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:32.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:32.327] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:33.329] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:33.352] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:34.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:34.343] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:35.329] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:35.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:36.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:36.327] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:37.331] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:37.351] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:38.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:38.343] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:39.330] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:39.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:40.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:40.343] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:41.323] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:41.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:42.329] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:42.344] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:43.325] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:43.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:44.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:44.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:45.330] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:45.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:46.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:46.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:47.330] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:47.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:48.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:48.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:49.322] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:49.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:50.321] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:50.326] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:51.322] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:51.335] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:52.323] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:52.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:53.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:53.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:54.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:54.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:55.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:55.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:56.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:56.343] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:57.329] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:57.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:58.325] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:58.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:06:59.330] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:06:59.351] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:00.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:00.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:01.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:01.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:02.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:02.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:03.333] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:03.350] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:04.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:04.326] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:05.325] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:05.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:06.322] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:06.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:07.328] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:07.333] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:08.321] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:08.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:09.326] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:09.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:10.328] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:10.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:11.322] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:11.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:12.322] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:12.342] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:13.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:13.334] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:14.324] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:14.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:15.333] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:15.349] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:16.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:16.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:17.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:17.333] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:18.328] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:18.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:19.326] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:19.333] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:20.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:20.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:21.329] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:21.349] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:22.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:22.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:23.330] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:23.350] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:24.327] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:24.341] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:25.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:25.333] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:26.320] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:26.340] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:27.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:27.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:28.337] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:28.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:29.345] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:29.365] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:30.344] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:30.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:31.342] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:31.349] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:32.347] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:32.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:33.345] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:33.365] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:34.338] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:34.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:35.338] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:35.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:36.343] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:36.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:37.346] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:37.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:38.344] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:38.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:39.339] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:39.349] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:40.343] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:40.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:41.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:41.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:42.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:42.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:43.345] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:43.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:44.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:44.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:45.348] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:45.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:46.343] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:46.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:47.346] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:47.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:48.338] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:48.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:49.349] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:49.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:50.344] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:50.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:51.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:51.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:52.344] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:52.357] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:53.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:53.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:54.341] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:54.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:55.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:55.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:56.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:56.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:57.350] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:57.364] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:58.339] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:58.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:07:59.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:07:59.348] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:00.340] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:00.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:01.339] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:01.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:02.343] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:02.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:03.339] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:03.347] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:04.340] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:04.356] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:05.336] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:05.347] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:06.339] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:06.355] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:07.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:07.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:08.360] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:08.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:09.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:09.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:10.360] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:10.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:11.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:11.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:12.359] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:12.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:13.357] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:13.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:14.359] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:14.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:15.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:15.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:16.360] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:16.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:17.358] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:17.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:18.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:18.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:19.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:19.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:20.356] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:20.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:21.354] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:21.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:22.359] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:22.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:23.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:23.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:24.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:24.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:25.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:25.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:26.354] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:26.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:27.364] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:27.378] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:28.359] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:28.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:29.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:29.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:30.358] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:30.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:31.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:31.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:32.360] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:32.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:33.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:33.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:34.359] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:34.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:35.366] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:35.378] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:36.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:36.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:37.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:37.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:38.354] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:38.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:39.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:39.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:40.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:40.371] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:41.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:41.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:42.355] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:42.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:43.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:43.363] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:44.354] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:44.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:45.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:45.362] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:46.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:46.369] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:47.352] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:47.361] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:48.363] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:48.386] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:49.361] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:49.377] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:50.353] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:50.370] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:51.367] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:51.377] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:52.370] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:52.386] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:53.367] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:53.377] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:54.370] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:54.385] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:55.367] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:55.377] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:56.370] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:56.385] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:57.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:57.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:58.386] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:58.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:08:59.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:08:59.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:00.388] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:00.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:01.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:01.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:02.393] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:02.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:03.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:03.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:04.390] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:04.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:05.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:05.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:06.393] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:06.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:07.385] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:07.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:08.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:08.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:09.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:09.393] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:10.392] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:10.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:11.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:11.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:12.392] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:12.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:13.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:13.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:14.385] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:14.402] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:15.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:15.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:16.392] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:16.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:17.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:17.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:18.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:18.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:19.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:19.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:20.387] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:20.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:21.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:21.391] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:22.389] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:22.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:23.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:23.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:24.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:24.401] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:25.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:25.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:26.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:26.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:27.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:27.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:28.389] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:28.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:29.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:29.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:30.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:30.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:31.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:31.391] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:32.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:32.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:33.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:33.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:34.391] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:34.399] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:35.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:35.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:36.386] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:36.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:37.385] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:37.391] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:38.388] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:38.399] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:39.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:39.392] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:40.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:40.399] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:41.385] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:41.391] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:42.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:42.400] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:43.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:43.390] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:44.384] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:44.399] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:45.383] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:45.390] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:45.570] [info] [motordev.config] SetPmicVoltage TX DRVDD=1.80V IOVDD=2.80V VCMVDD=3.20V payload=00 B4 01 18 01 40
-[2026-05-19 11:09:46.392] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:46.399] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:46.766] [info] [motordev.config] Disconnect request
-[2026-05-19 11:09:46.883] [info] [motordev.serial] Port closed
-[2026-05-19 11:09:46.889] [warning] [motordev.generator] ERRORRESPONSE RX ERRORCODE=0XFF PAYLOAD=FF
-[2026-05-19 11:09:46.893] [warning] [motordev.generator] ERRORRESPONSE RX ERRORCODE=0XFF PAYLOAD=FF
-[2026-05-19 11:09:46.897] [warning] [motordev.generator] ERRORRESPONSE RX ERRORCODE=0XFF PAYLOAD=FF
-[2026-05-19 11:09:46.902] [warning] [motordev.config] ERRORRESPONSE RX ERRORCODE=0XFF (DISPATCHER TRANSPORT ERROR) PAYLOAD=FF
-[2026-05-19 11:09:46.908] [warning] [default] PMIC configuration failed: Dispatcher transport error
-[2026-05-19 11:09:46.912] [info] [motordev.config] Serial disconnected
-[2026-05-19 11:09:46.914] [info] [motordev.serial] Heartbeat stopped
-[2026-05-19 11:09:51.115] [info] [motordev.config] Connect request port=COM16 baud=460800
-[2026-05-19 11:09:51.125] [info] [motordev.serial] Opening port COM16 at 460800 (8N1)...
-[2026-05-19 11:09:51.246] [warning] [motordev.serial] FT232 Latency Timer auto-set skipped: FT_OpenEx failed for serial=5&5B13FF8&0&12 (st=2)
-[2026-05-19 11:09:51.263] [info] [motordev.serial] Port COM16 opened successfully
-[2026-05-19 11:09:51.270] [info] [motordev.config] Serial connected
-[2026-05-19 11:09:51.273] [info] [motordev.serial] Heartbeat started
-[2026-05-19 11:09:52.261] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:52.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:52.502] [info] [motordev.config] SetPmicVoltage TX DRVDD=1.80V IOVDD=2.80V VCMVDD=3.20V payload=00 B4 01 18 01 40
-[2026-05-19 11:09:52.509] [debug] [motordev.serial] TX control frame: seq=0XAC cmd=0X09(SetPmicVoltage) len=6 payload=00 B4 01 18 01 40
-[2026-05-19 11:09:52.526] [debug] [motordev.serial] RX control frame: seq=0XAC cmd=0X09(SetPmicVoltage) len=0 payload=<empty>
-[2026-05-19 11:09:52.537] [info] [motordev.config] SetPmicVoltage RX ACK payload=<empty>
-[2026-05-19 11:09:52.542] [info] [motordev.config] PmicEnable TX payload=<empty>
-[2026-05-19 11:09:52.546] [debug] [motordev.serial] TX control frame: seq=0XAD cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 11:09:52.573] [debug] [motordev.serial] RX control frame: seq=0XAD cmd=0X08(PmicEnable) len=0 payload=<empty>
-[2026-05-19 11:09:52.579] [info] [motordev.config] PmicEnable RX ACK payload=<empty>
-[2026-05-19 11:09:52.582] [debug] [default] PMIC configured successfully
-[2026-05-19 11:09:53.268] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:53.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:54.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:54.270] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:55.271] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:55.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:56.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:56.270] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:57.096] [info] [motordev.config] I2cBusScan TX bus=I2C2 payload=02
-[2026-05-19 11:09:57.100] [debug] [motordev.serial] TX control frame: seq=0XB2 cmd=0X07(I2cBusScan) len=1 payload=02
-[2026-05-19 11:09:57.118] [debug] [motordev.serial] RX control frame: seq=0XB2 cmd=0X07(I2cBusScan) len=5 payload=04 6A 6B 6F 7E
-[2026-05-19 11:09:57.123] [info] [motordev.config] I2cBusScan RX count=4 devices=0X6A, 0X6B, 0X6F, 0X7E payload=04 6A 6B 6F 7E
-[2026-05-19 11:09:57.258] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:57.278] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:58.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:58.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:09:58.295] [debug] [default] SLAVE ID SET TO 0X6F
-[2026-05-19 11:09:59.271] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:09:59.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:00.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:00.270] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:00.723] [info] [motordev.config] SETMOTORICADDR TX ADDR=0X6F PAYLOAD=6F
-[2026-05-19 11:10:00.728] [debug] [motordev.serial] TX control frame: seq=0XB7 cmd=0X02(SetMotorIcAddr) len=1 payload=6F
-[2026-05-19 11:10:00.749] [debug] [motordev.serial] RX control frame: seq=0XB7 cmd=0X02(SetMotorIcAddr) len=0 payload=<empty>
-[2026-05-19 11:10:00.757] [info] [motordev.config] SetMotorIcAddr RX ACK payload=<empty>
-[2026-05-19 11:10:00.761] [debug] [default] Motor IC address set to 0X6F
-[2026-05-19 11:10:01.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:01.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:02.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:02.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:03.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:03.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:04.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:04.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:05.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:05.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:06.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:06.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:07.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:07.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:08.258] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:08.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:09.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:09.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:10.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:10.285] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:11.261] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:11.278] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:12.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:12.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:13.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:13.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:14.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:14.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:15.257] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:15.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:16.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:16.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:17.265] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:17.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:17.412] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:10:17.417] [debug] [motordev.serial] TX control frame: seq=0XC9 cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:10:17.438] [debug] [motordev.serial] RX control frame: seq=0XC9 cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:10:17.446] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:10:17.451] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:10:17.597] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:10:17.602] [debug] [motordev.serial] TX control frame: seq=0XCA cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:10:17.612] [debug] [motordev.serial] RX control frame: seq=0XCA cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:10:17.629] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:10:17.633] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:10:17.785] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:10:17.789] [debug] [motordev.serial] TX control frame: seq=0XCB cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:10:17.804] [debug] [motordev.serial] RX control frame: seq=0XCB cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:10:17.813] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:10:17.818] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:10:17.959] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:10:17.965] [debug] [motordev.serial] TX control frame: seq=0XCC cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:10:17.980] [debug] [motordev.serial] RX control frame: seq=0XCC cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:10:17.996] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:10:18.001] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:10:18.129] [info] [motordev.register] READREGISTER TX ROW=0 ADDR=0XB002 PAYLOAD=B0 02
-[2026-05-19 11:10:18.134] [debug] [motordev.serial] TX control frame: seq=0XCD cmd=0X20(ReadRegister) len=2 payload=B0 02
-[2026-05-19 11:10:18.140] [debug] [motordev.serial] RX control frame: seq=0XCD cmd=0X20(ReadRegister) len=2 payload=02 67
-[2026-05-19 11:10:18.147] [info] [motordev.register] READREGISTER RX ACK ROW=0 VALUE=0X0267 PAYLOAD=02 67
-[2026-05-19 11:10:18.150] [debug] [motordev.register] Queue done (read)
-[2026-05-19 11:10:18.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:18.285] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:19.272] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:19.292] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:20.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:20.269] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:20.989] [info] [motordev.generator] StopGenerator TX payload=<empty>
-[2026-05-19 11:10:20.992] [debug] [motordev.serial] TX control frame: seq=0XD1 cmd=0X57(StopGenerator) len=0 payload=<empty>
-[2026-05-19 11:10:21.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:21.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:22.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:22.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:23.273] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:23.292] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:23.993] [warning] [motordev.generator] Generator ACK timeout, pendingOp= 4
-[2026-05-19 11:10:24.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:24.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:25.265] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:25.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:26.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:26.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:27.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:27.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:28.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:28.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:29.257] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:29.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:30.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:30.267] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:31.257] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:31.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:32.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:32.283] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:33.257] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:33.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:34.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:34.284] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:35.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:35.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:36.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:36.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:37.270] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:37.292] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:38.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:38.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:39.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:39.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:40.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:40.267] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:41.271] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:41.292] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:42.261] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:42.267] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:43.266] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:43.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:44.261] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:44.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:45.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:45.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:46.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:46.283] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:47.261] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:47.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:48.258] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:48.267] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:49.269] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:49.291] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:50.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:50.268] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:51.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:51.277] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:52.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:52.267] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:53.270] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:53.291] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:54.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:54.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:55.262] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:55.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:56.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:56.283] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:57.268] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:57.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:58.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:58.283] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:10:59.272] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:10:59.290] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:00.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:00.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:01.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:01.274] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:02.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:02.266] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:03.258] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:03.274] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:04.259] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:04.266] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:05.265] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:05.276] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:06.265] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:06.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:07.272] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:07.290] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:08.265] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:08.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:09.272] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:09.290] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:10.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:10.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:11.258] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:11.275] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:12.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:12.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:13.260] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:13.274] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:14.263] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:14.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:15.272] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:15.290] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:16.264] [debug] [motordev.serial] Heartbeat sent (missed: 1)
-[2026-05-19 11:11:16.282] [debug] [motordev.serial] Heartbeat response received
-[2026-05-19 11:11:17.271] [debug] [motordev.serial] Heartbeat sent (missed: 1)
+void aw_i2c_read(AW_U8 *buff, AW_U8 len)
+{
+}
+
+ISP_STATUS_E aw_reset_chip()
+{
+	// I2CSlaveAddr, Write, Data,
+	0x6b, w, 0xff, 0xa3, 0x02,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x5a,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x00,
+	// Delay 15 ms
+	delay_ms(15)
+	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
+	0x6b, r, 0xff, 0xf0 = 0x01,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xa3, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x01,
+	
+	delay_ms(15)
+}
+
+ISP_STATUS_E aw_boot_control()
+{
+	// I2CSlaveAddr, Write, Data,
+	0x6b, w, 0xff, 0xa3, 0x02,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x5a,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb7, 0x00,
+	// Delay 15 ms
+	delay_ms(15)
+	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
+	0x6b, r, 0xff, 0xf0 = 0x01,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xa3, 0x00,
+	// Delay 2 ms
+	delay_ms(2)
+	0x6b, w, 0xff, 0xb4, 0x01,
+	// Delay 7 ms
+	delay_ms(7)
+	// I2CSlaveAddr, Write, Data,
+	// 20 times
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+	0x6f, w, 0xac,
+}
+
+//len is the length of the word(4Byte)
+ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 space = 0;
+
+
+	//bin_buff pointer check
+	if (bin_buf == (void *)0) {
+		return ISP_PBUF_ERROR;
+	}
+
+	//isp download address check
+	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
+		return ISP_ADDR_ERROR;
+	}
+
+	//isp download space check
+	space = FLASH_TOP - addr;
+	if (space < len * 4) {
+		return ISP_SPACE_ERROR;
+	}
+
+//Send a handshake frame to confirm that the chip works properly
+	if (aw_hank_connect_check() != ISP_OK) {
+		return ISP_HANK_ERROR ;
+	}
+
+//Download the program to flash ISP
+	if (aw_flash_download_check(addr, bin_buf, len) != ISP_OK) {
+		return ISP_FLASH_ERROR ;
+	}
+
+//Jump to flash ISP
+	if (aw_flash_jump_check(addr) != ISP_OK) {
+		return ISP_JUMP_ERROR ;
+	}
+	return ret;
+}
+
+//len is the length of the word(4Byte)
+ISP_STATUS_E aw_i2c_isp_upload(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 space = 0;
+
+
+	//bin_buff pointer check
+	if (bin_buf == (void *)0) {
+		return ISP_PBUF_ERROR;
+	}
+
+	//isp download address check
+	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
+		return ISP_ADDR_ERROR;
+	}
+
+	//isp download space check
+	space = FLASH_TOP - addr;
+	if (space < len * 4) {
+		return ISP_SPACE_ERROR;
+	}
+
+//Send a handshake frame to confirm that the chip works properly
+	if (aw_hank_connect_check() != ISP_OK) {
+		return ISP_HANK_ERROR ;
+	}
+	
+	if(aw_flash_read(addr, len, bin_buf)){
+		return ISP_FLASH_ERROR ;
+	}
+}
+
+ISP_STATUS_E aw_flash_jump_check(AW_U32 addr)
+{
+	/*ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[4]  = {0};
+	AW_U8 w_buff[13] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i] = (AW_U8)(addr >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_END;
+	uboot_structure.uboot_event = END_FLASH_JUMP;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = 4;
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 13);
+
+	delay_ms(10);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = END_FLASH_JUMP_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_JUMP_ERROR;
+		return ret;
+	}
+	return ret;*/
+	return ISP_OK;
+}
+
+ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 l_buff[6] = { 0 };
+	AW_U8 w_buff[78] = { 0 };
+	AW_U8 r_buff[69] = { 0 };
+	AW_U8 d_buff[69] = { 0 };
+	AW_U32 i = 0;
+	AW_U8 tmp = -1;
+
+	for (i = 0; i < 2; i++) {
+		l_buff[i] = (AW_U8)((u32ReadLen * 4) >> (i * 8));
+	}
+	for (i = 0; i < 4; i++) {
+		l_buff[i + 2] = (AW_U8)((u32Addr + u32PackNum * 64) >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_struct;
+	uboot_struct.uboot_ways = UBOOT_I2C;
+	uboot_struct.uboot_module = UBOOT_FLASH;
+	uboot_struct.uboot_event = FLASH_READ;
+	uboot_struct.uboot_ack = UBOOT_CTL;
+	uboot_struct.uboot_data_len = 6;
+	uboot_struct.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_struct);
+
+	aw_i2c_write(w_buff, 15);
+
+	delay_ms(1);
+
+	aw_i2c_read(r_buff, u32ReadLen * 4 + 1 + 4 + 9);
+
+	if (r_buff[9] == 0) {
+		tmp = 0;
+	}
+
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	for (int i = 0; i < u32ReadLen * 4; i++) {
+		byDataBuff[u32PackNum * 64 + i] = r_buff[14 + i];
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U32 divisor = 0;
+	AW_U32 block_cnt = 0;
+	AW_U8 remaind = 0;
+	AW_U32 i = 0;
+
+	if (dataBuff == (void*)0) {
+		ret = ISP_PBUF_ERROR;
+		return ret;
+	}
+
+	divisor = len / 16;
+	remaind = len % 16;
+	block_cnt = len / 1024 + ((len % 1024) ? 1 : 0);
+
+	for (i = 0; i < divisor; i++) {
+		if (aw_flash_pack_read(addr, i, dataBuff, 16) != ISP_OK) {
+			ret = ISP_FLASH_ERROR;
+			return ret;
+		}
+	}
+	if (remaind != 0) {
+		if (aw_flash_pack_read(addr, i, dataBuff, remaind) != ISP_OK) {
+			ret = ISP_FLASH_ERROR;
+			return ret;
+		}
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[6]  = {0};
+	AW_U8 w_buff[15] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	l_buff[0] = (AW_U8)len;
+	l_buff[1] = 0x00;
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i + 2] = (AW_U8)(addr >> (i * 8));
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_FLASH;
+	uboot_structure.uboot_event = FLASH_ERASE_BLOCK;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = 6;
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 15);
+
+	delay_ms(25 * len);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = FLASH_ERASE_BLOCK_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 i = 0;
+	AW_U8 tmp = 0;
+	AW_U8 l_buff[68]  = {0};
+	AW_U8 w_buff[77] = {0};
+	AW_U8 d_buff[1]  = {0};
+	AW_U8 r_buff[10] = {0};
+
+	for (i = 0; i < 4; i++) {
+		l_buff[i] = (AW_U8)((addr + block_num * 64) >> (i * 8));
+	}
+	for (i = 0; i < (len * 4); i++) {
+		l_buff[i + 4] = (bin_buf + block_num * 64)[i];
+	}
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_module = UBOOT_FLASH;
+	uboot_structure.uboot_event = FLASH_WRITE;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_data_len = (AW_U8)(4 + 4 * len);
+	uboot_structure.p_uboot_data = l_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, (AW_U8)(13 + 4 * len));
+
+	delay_ms(1);
+
+	aw_i2c_read(r_buff, 10);
+
+	uboot_structure.uboot_event = FLASH_WRITE_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 1;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
+	if (tmp != 0) {
+		ret = ISP_FLASH_ERROR;
+		return ret;
+	}
+
+	return ret;
+}
+
+
+ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 remaind = 0;
+	AW_U32 block_cnt = 0;
+	AW_U32 i = 0;
+	AW_U32 divisor = 0;
+
+	divisor = len / 16;
+	remaind = len % 16;
+	block_cnt = len / 1024 + ((len % 1024)? 1 : 0);
+
+	//Erases sectors that need to be used
+	if (aw_flash_block_erase_check(addr, block_cnt) != ISP_OK) {
+		return ISP_FLASH_ERROR;
+	}
+
+	for (i = 0; i < divisor; i++) {
+		//Data is written to the FLASH sector and checked
+		if (aw_flash_block_write_ckeck(addr, i, bin_buf,16) != ISP_OK) {
+			return ISP_FLASH_ERROR;
+		}
+	}
+	if (remaind != 0) {
+		//Data is written to the FLASH sector and checked
+		if (aw_flash_block_write_ckeck(addr, i, bin_buf, remaind) != ISP_OK) {
+			return ISP_FLASH_ERROR;
+		}
+	}
+
+	return ret;
+}
+
+ISP_STATUS_E aw_hank_connect_check(void)
+{
+	ISP_STATUS_E ret = ISP_OK;
+	AW_U8 tmp = 0;
+	AW_U8 w_buff[255] = {0};
+	AW_U8 r_buff[255] = {0};
+	AW_U8 d_buff[5]   = {0x00, 0x01,0x00, 0x00, 0x00};
+
+	UBOOT_BUF_TYPE_S uboot_structure;
+	uboot_structure.uboot_ways = UBOOT_I2C;
+	uboot_structure.uboot_ack = UBOOT_CTL;
+	uboot_structure.uboot_module = UBOOT_HANK;
+	uboot_structure.uboot_event = HANK_CONNECT;
+	uboot_structure.uboot_data_len = 0;
+	uboot_structure.p_uboot_data =  0;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	aw_i2c_write(w_buff, 9);
+
+	delay_ms(2);
+
+	aw_i2c_read(r_buff, 14);
+
+	uboot_structure.uboot_event = HANK_CONNECT_ACK;
+	uboot_structure.uboot_ack = UBOOT_ACK;
+	uboot_structure.uboot_data_len = 5;
+	uboot_structure.p_uboot_data = d_buff;
+	aw_uboot_buff_built(w_buff, &uboot_structure);
+
+	tmp = (AW_U8)memcmp(w_buff, r_buff, 14);
+	if (tmp != 0) {
+		ret = ISP_HANK_ERROR;
+	}
+
+	return ret;
+}
+------------------------------------------------------------aw_uboot_bufbuilt.h----------------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
+* Description: IIC header file, IIC related parameter definition file
+*/
+#ifndef __AW_UBOOT_BUFBUILT_H
+#define __AW_UBOOT_BUFBUILT_H
+
+enum uboot_status{
+	UBOOT_OK = 0,
+	UBOOT_ERROR,
+};
+typedef enum uboot_status UBOOT_STATUS_E;
+
+enum uboot_way{
+	UBOOT_I2C = 0,
+	UBOOT_SPI,
+};
+typedef enum uboot_way UBOOT_WAY_E;
+
+enum uboot_ack{
+	UBOOT_CTL = 0,
+	UBOOT_ACK,
+};
+typedef enum uboot_ack UBOOT_ACK_E;
+
+
+enum uboot_module{
+	UBOOT_HANK  = 0x01,
+	UBOOT_SRAM   =0x02,
+	UBOOT_FLASH = 0x03,
+	UBOOT_END   = 0x04,
+};
+typedef enum uboot_module UBOOT_MODULE_E;
+
+enum hank_event{
+	HANK_CONNECT        = 0x01,
+	HANK_CONNECT_ACK    = 0x02,
+	HANK_PROTICOL       = 0x11,
+	HANK_PROTICOL_ACK   = 0x12,
+	HANK_VERSION        = 0x21,
+	HANK_VERSION_ACK    = 0x22,
+	HANK_ID             = 0x31,
+	HANK_ID_ACK         = 0x32,
+	HANK_DATE           = 0x33,
+	HANK_DATA_ACK       = 0x34,
+};
+typedef enum hank_event HANK_EVENT_E;
+
+enum sram_event{
+	SRAM_WRITE          = 0x01,
+	SRAM_WRITE_ACK      = 0x02,
+	SRAM_READ           = 0x11,
+	SRAM_READ_ACK       = 0x12,
+};
+typedef enum sram_event SRAM_EVENT_E;
+
+enum flash_event{
+	FLASH_WRITE           = 0x01,
+	FLASH_WRITE_ACK       = 0x02,
+	FLASH_READ            = 0x11,
+	FLASH_READ_ACK        = 0x12,
+	FLASH_ERASE_BLOCK     = 0x21,
+	FLASH_ERASE_BLOCK_ACK = 0x22,
+	FLASH_ERASE_CHIP      = 0x23,
+	FLASH_ERASE_CHIP_ACK  = 0x24,
+};
+typedef enum flash_event FLASH_EVENT_E;
+
+
+
+enum end_event{
+	END_SRAM_JUMP           = 0x01,
+	END_SRAM_JUMP_ACK       = 0x02,
+	END_FLASH_JUMP          = 0x11,
+	END_FLASH_JUMP_ACK      = 0x12,
+	END_ERASE_ROM_JUMP      = 0x21,
+	END_ERASE_ROM_JUMP_ACK  = 0x22,
+};
+typedef enum end_event END_EVENT_E;
+
+struct uboot_protocol{
+	unsigned char  checksum;
+	unsigned char  protocol_ver;
+	unsigned char  addr;
+	unsigned char  module;
+	unsigned char  event;
+	unsigned char  len[2];
+	unsigned char  ack;
+	unsigned char  sum;
+	unsigned char  reserved[3];
+};
+typedef struct uboot_protocol UBOOT_PROTOCOL_TYPE_S;
+
+struct uboot_buf{
+	unsigned char uboot_ways;		//UBOOT通信方式I2C或SPI
+	unsigned char uboot_module;		//UBOOT模块Module
+	unsigned char uboot_event;		//UBOOT事件Event
+	unsigned char uboot_ack;		//UBOOT发送还是应答帧
+	unsigned char uboot_data_len;	//数据层字节长度
+	unsigned char reserved[3];
+	unsigned char *p_uboot_data;	//数据层buff指针
+
+};
+typedef struct uboot_buf UBOOT_BUF_TYPE_S;
+
+
+#define IS_UBOOT_WAYS(WAYS)				((WAYS ==UBOOT_I2C) || (WAYS ==UBOOT_SPI))
+
+#define IS_UBOOT_ACK(ACK)				((ACK ==UBOOT_CTL) || (ACK == UBOOT_ACK))
+
+#define IS_HANK_MODULE(MODULE)			((MODULE ==UBOOT_HANK) || (MODULE ==UBOOT_SRAM) || \
+										 (MODULE ==UBOOT_FLASH) || (MODULE ==UBOOT_END))
+
+#define IS_HANK_EVENT(EVENT)			((EVENT ==HANK_CONNECT) || (EVENT ==HANK_PROTICOL) || \
+										 (EVENT ==HANK_VERSION) || (EVENT ==HANK_ID) || (EVENT ==HANK_DATE))
+
+#define IS_SRAM_EVENT(EVENT)			((EVENT ==SRAM_WRITE) || (EVENT ==SRAM_READ))
+
+#define IS_FLASH_EVENT(EVENT)			((EVENT ==FLASH_WRITE) || (EVENT ==FLASH_READ) || \
+										 (EVENT ==FLASH_ERASE_BLOCK) || (EVENT ==FLASH_ERASE_CHIP))
+
+#define IS_END_EVENT(EVENT)				((EVENT ==END_SRAM_JUMP) || (EVENT ==END_FLASH_JUMP) || \
+										 (EVENT ==END_ERASE_ROM_JUMP))
+
+UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct);
+unsigned char protocol_sum(void);
+unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct);
+
+#define assert_param(expr) ((void)0)
+
+#endif
+-----------------------------------aw_uboot_bufbuilt.c--------------------------------------------------
+/*
+* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
+* Description: spi correlation function
+*/
+#include "aw_uboot_bufbuilt.h"
+
+
+static UBOOT_PROTOCOL_TYPE_S protocol_struct = {0};
+
+UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct)
+{
+	unsigned char i = 0;
+	UBOOT_STATUS_E ret = UBOOT_ERROR;
+	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
+
+	if ((buf == (void *)0) || ((uboot_struct == (void *)0))) {
+		return ret;
+	}
+
+	assert_param(IS_UBOOT_WAYS(uboot_struct->uboot_ways));
+	assert_param(IS_UBOOT_ACK(uboot_struct->uboot_ack));
+	assert_param(IS_HANK_MODULE(uboot_struct->uboot_module));
+
+	switch(uboot_struct->uboot_module) {
+		case UBOOT_HANK:
+			assert_param(IS_HANK_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_SRAM:
+			assert_param(IS_SRAM_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_FLASH:
+			assert_param(IS_FLASH_EVENT(uboot_struct->uboot_event));
+			break;
+		case UBOOT_END:
+			assert_param(IS_END_EVENT(uboot_struct->uboot_event));
+			break;
+		default:
+			break;
+	}
+
+	if (uboot_struct->p_uboot_data == (void *)0) {
+		uboot_struct->uboot_data_len = 0;
+		protocol_struct.len[0] = 0;
+	}
+
+	protocol_struct.protocol_ver = 0x01;
+
+	if (uboot_struct->uboot_ack == UBOOT_CTL) {
+		protocol_struct.addr = 0x82;
+	} else {
+		protocol_struct.addr = 0x28;
+	}
+	protocol_struct.module = uboot_struct->uboot_module;
+	protocol_struct.event = uboot_struct->uboot_event;
+	protocol_struct.ack = 0x01;
+
+	protocol_struct.len[0] = uboot_struct->uboot_data_len;
+	protocol_struct.sum = data_sum(uboot_struct);
+	protocol_struct.checksum = protocol_sum();
+
+
+	if (uboot_struct->uboot_ways == UBOOT_I2C) {
+		for(i = 0; i < 9; i++) {
+			buf[i] = p_protocol[i];
+		}
+
+		for(i = 0; i < (protocol_struct.len[0]); i++) {
+			buf[i + 9] = uboot_struct->p_uboot_data[i];
+		}
+	} else {
+		buf[0] = 0x5A;
+		for(i = 0; i < 9; i++) {
+			buf[i + 1] = p_protocol[i];
+		}
+
+		for(i = 0; i < (protocol_struct.len[0]); i++) {
+			buf[i + 10] = uboot_struct->p_uboot_data[i];
+		}
+	}
+
+	ret = UBOOT_OK;
+	return ret;
+}
+
+
+unsigned char protocol_sum(void)
+{
+	unsigned char sum = 0;
+	unsigned char i = 0;
+	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
+	
+	for (i = 1; i < 9 ; i++) {
+		sum += p_protocol[i];
+	}
+	return sum;
+}
+
+unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct)
+{
+	unsigned char sum = 0;
+	unsigned char i = 0;
+
+	for (i = 0; i < uboot_struct->uboot_data_len; i++) {
+		sum += uboot_struct->p_uboot_data[i];
+	}
+	return sum;
+}
+---------------------------------------------------------------------------------------------------------
+
+以上内容我要拿出来方便我编入到程序中，将来给其他同事使用。
