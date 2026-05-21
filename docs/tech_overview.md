@@ -66,7 +66,6 @@ MotorDev/
 │   │   ├── scopeservice.cpp / .h      # 4 步采样启动序列 + 流帧批量 + 5s 看门狗
 │   │   ├── cyclicwriteservice.cpp / .h # 循环写入服务（轮询 + 连续错误自停）
 │   │   ├── generatorservice.cpp / .h  # 波形发生器（Linear/Cosine/Sawtooth + 3s ACK 超时）
-│   │   ├── ftdi_latency_helper.cpp / .h # FT232 D2XX Latency Timer 强设辅助（仅由 SerialManager::openPort 调用，best-effort）
 │   │   ├── simulatorservice.cpp / .h  # 调试模拟器命令分发与正弦波形生成（独立 std::thread）
 │   │   └── simulatorserial.cpp / .h   # 模拟器串口驱动（独立线程，供 SimulatorService 使用）
 │   ├── ui/
@@ -105,7 +104,6 @@ MotorDev/
 | UI Tab | 业务页面 | `tabs/{configtab,registerrwtab,fwflashtab,oscilloscoptab,serialdebugtab}` |
 | UI Widget | 复用控件 | `widgets/{registertable,scopeplotwidget,scopebottompanel,scopechannelstrip,scoperegisterpanel,scopegeneratorpanel,scopestylepanel,scopepreviewwidget,scopemarqueelabel}` |
 | 服务层 | 业务逻辑封装，UI/通信解耦 | `services/{commanddispatcher,configservice,registerservice,scopeservice,cyclicwriteservice,generatorservice,simulatorservice}` |
-| 通信辅助 | FT232 芯片端 Latency Timer 强设（D2XX） | `services/ftdi_latency_helper` |
 | 数据模型层 | 状态与缓冲 | `models/{scopechannelmodel,channelbuffer}`、`devicecontext` |
 | 协议层 | 指令编解码与采样参数映射 | `protocol/{motor_protocol,register_utils,sampling_config}` |
 | 通信层 | 串口管理 + 跨线程消息 | `serialmanager` |

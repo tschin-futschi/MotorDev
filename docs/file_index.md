@@ -103,7 +103,6 @@
 | `src/ui/scopeviewmode.h` | ScopeViewMode 枚举（Overlay/Stacked），供 ScopePlotWidget 和 OscilloscopTab 共用 |
 | `src/ui/repolish.h` | QSS repolish 工具函数（unpolish + polish + update），供 Widget 动态样式切换使用 |
 | `src/ui/style_constants.h` | 所有颜色、尺寸、间距常量，禁止在其他文件硬编码 |
-| `src/services/ftdi_latency_helper` `[通信辅助]` | FT232 D2XX 接入：在打开 VCP 前把 FTDI 芯片端 Latency Timer 强制设为 1 ms，消除默认 16 ms 对烧录链路 RTT 的拖累。best-effort：失败仅 warning。仅 `serialmanager.cpp::openPort` 调用 |
 | `CMakeLists.txt` | 项目构建定义，新增源文件必须在此注册 |
 
 ---
@@ -142,7 +141,6 @@
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel`, `src/widgets/fwfileinfopanel`, `src/widgets/fwflashcontrolpanel`, `src/widgets/fwflashlogpanel` |
 | 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
-| 通信辅助 | `src/services/ftdi_latency_helper`（FT232 D2XX Latency Timer 强设，仅由 SerialManager 调用） |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |
