@@ -167,11 +167,11 @@ void Sidebar::setupUi(const QString &title) {
     m_contentPlaceholder->setObjectName(QStringLiteral("contentPlaceholder"));
     bodyLayout->addWidget(m_contentPlaceholder);
 
-    // 折叠手柄按钮（18px 宽）
+    // 折叠手柄按钮
     m_toggleButton = new QPushButton(this);
     m_toggleButton->setObjectName(QStringLiteral("toggleButton"));
-    m_toggleButton->setMinimumSize(QSize(18, 0));
-    m_toggleButton->setMaximumSize(QSize(18, QWIDGETSIZE_MAX));
+    m_toggleButton->setMinimumSize(QSize(Style::Size::SidebarHandleWidth, 0));
+    m_toggleButton->setMaximumSize(QSize(Style::Size::SidebarHandleWidth, QWIDGETSIZE_MAX));
     m_toggleButton->setText(QStringLiteral("<"));
     rootLayout->addWidget(m_toggleButton);
 }

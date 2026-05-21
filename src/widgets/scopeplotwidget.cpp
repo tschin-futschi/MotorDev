@@ -1105,7 +1105,7 @@ void ScopePlotWidget::paintCrosshair(QPainter *painter, const QRect &plotRect,
 
     // 背景框
     painter->setPen(QPen(Style::Color::ScopeGridMajor, 1));
-    painter->setBrush(QColor(30, 30, 30, 220));
+    painter->setBrush(Style::Color::ScopeCrosshairBoxBackground);
     painter->drawRoundedRect(QRect(boxX, boxY, boxW, boxH), 4, 4);
 
     // 时间行（居中灰色）

@@ -4,10 +4,14 @@
 // =============================================================================
 #include "widgets/scopechannelstrip.h"
 
+#include "ui/style_constants.h"
+
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QSizePolicy>
 #include <QVBoxLayout>
+
+using namespace MotorDev;
 
 // =============================================================================
 // 构造 / 析构
@@ -57,7 +61,7 @@ bool ScopeChannelStrip::isChannelEnabled() const {
 /// @brief 创建垂直布局：CheckBox → 描述输入 → 地址输入。
 void ScopeChannelStrip::setupUi() {
     setObjectName(QStringLiteral("ScopeChannelStrip"));
-    setMinimumSize(QSize(104, 0));
+    setMinimumSize(QSize(Style::Size::ScopeChannelStripMinW, 0));
 
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setObjectName(QStringLiteral("rootLayout"));
@@ -73,16 +77,16 @@ void ScopeChannelStrip::setupUi() {
     // --- 通道描述输入框 ---
     m_descEdit = new QLineEdit(this);
     m_descEdit->setObjectName(QStringLiteral("descEdit"));
-    m_descEdit->setMinimumSize(QSize(0, 22));
-    m_descEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, 22));
+    m_descEdit->setMinimumSize(QSize(0, Style::Size::ScopeChannelStripRowH));
+    m_descEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeChannelStripRowH));
     m_descEdit->setPlaceholderText(tr("Description"));
     rootLayout->addWidget(m_descEdit);
 
     // --- 寄存器地址输入框 ---
     m_addrEdit = new QLineEdit(this);
     m_addrEdit->setObjectName(QStringLiteral("addrEdit"));
-    m_addrEdit->setMinimumSize(QSize(0, 22));
-    m_addrEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, 22));
+    m_addrEdit->setMinimumSize(QSize(0, Style::Size::ScopeChannelStripRowH));
+    m_addrEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeChannelStripRowH));
     m_addrEdit->setPlaceholderText(tr("0x0000"));
     rootLayout->addWidget(m_addrEdit);
 }

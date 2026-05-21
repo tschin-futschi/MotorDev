@@ -112,21 +112,22 @@ void TopBar::setCrosshairEnabled(bool enabled) {
 
 void TopBar::setupUi() {
     setObjectName(QStringLiteral("TopBar"));
-    resize(900, 36);
-    setMinimumSize(QSize(0, 36));
-    setMaximumSize(QSize(QWIDGETSIZE_MAX, 36));
+    resize(900, Style::Size::TopBarHeight);
+    setMinimumSize(QSize(0, Style::Size::TopBarHeight));
+    setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarHeight));
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     auto *topBarLayout = new QHBoxLayout(this);
     topBarLayout->setObjectName(QStringLiteral("topBarLayout"));
     topBarLayout->setSpacing(6);
-    topBarLayout->setContentsMargins(12, 0, 12, 0);
+    topBarLayout->setContentsMargins(Style::Size::HeaderHorizontalPadding, 0,
+                                     Style::Size::HeaderHorizontalPadding, 0);
 
     // Logo 图标
     m_logo = new QSvgWidget(this);
     m_logo->setObjectName(QStringLiteral("logo"));
-    m_logo->setMinimumSize(QSize(22, 22));
-    m_logo->setMaximumSize(QSize(22, 22));
+    m_logo->setMinimumSize(QSize(Style::Size::LogoSize, Style::Size::LogoSize));
+    m_logo->setMaximumSize(QSize(Style::Size::LogoSize, Style::Size::LogoSize));
     topBarLayout->addWidget(m_logo);
 
     // 应用标题
@@ -155,8 +156,8 @@ void TopBar::setupUi() {
 
     m_connectionIndicator = new QLabel(this);
     m_connectionIndicator->setObjectName(QStringLiteral("connectionIndicator"));
-    m_connectionIndicator->setMinimumSize(QSize(7, 7));
-    m_connectionIndicator->setMaximumSize(QSize(7, 7));
+    m_connectionIndicator->setMinimumSize(QSize(Style::Size::IndicatorSize, Style::Size::IndicatorSize));
+    m_connectionIndicator->setMaximumSize(QSize(Style::Size::IndicatorSize, Style::Size::IndicatorSize));
     m_connectionIndicator->setText(QString());
     m_connectionIndicator->setProperty("connected", false);
     topBarLayout->addWidget(m_connectionIndicator);
@@ -169,23 +170,23 @@ void TopBar::setupUi() {
     // 示波器控件：视图模式 + 样式面板开关
     m_viewModeButton = new QToolButton(this);
     m_viewModeButton->setObjectName(QStringLiteral("viewModeButton"));
-    m_viewModeButton->setMinimumSize(QSize(68, 22));
-    m_viewModeButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+    m_viewModeButton->setMinimumSize(QSize(Style::Size::TopBarViewModeButtonMinW, Style::Size::TopBarScopeButtonMinH));
+    m_viewModeButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarScopeButtonMaxH));
     m_viewModeButton->setText(QStringLiteral("Overlay"));
     topBarLayout->addWidget(m_viewModeButton);
 
     m_styleButton = new QToolButton(this);
     m_styleButton->setObjectName(QStringLiteral("styleButton"));
-    m_styleButton->setMinimumSize(QSize(52, 22));
-    m_styleButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+    m_styleButton->setMinimumSize(QSize(Style::Size::TopBarStyleButtonMinW, Style::Size::TopBarScopeButtonMinH));
+    m_styleButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarScopeButtonMaxH));
     m_styleButton->setCheckable(true);
     m_styleButton->setText(QStringLiteral("Style"));
     topBarLayout->addWidget(m_styleButton);
 
     m_crosshairButton = new QToolButton(this);
     m_crosshairButton->setObjectName(QStringLiteral("crosshairButton"));
-    m_crosshairButton->setMinimumSize(QSize(132, 22));
-    m_crosshairButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+    m_crosshairButton->setMinimumSize(QSize(Style::Size::TopBarCrosshairButtonMinW, Style::Size::TopBarScopeButtonMinH));
+    m_crosshairButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarScopeButtonMaxH));
     m_crosshairButton->setCheckable(true);
     m_crosshairButton->setText(tr("使用十字光标：关闭"));
     topBarLayout->addWidget(m_crosshairButton);
@@ -196,8 +197,8 @@ void TopBar::setupUi() {
     // 语言选择
     m_languageCombo = new QComboBox(this);
     m_languageCombo->setObjectName(QStringLiteral("languageCombo"));
-    m_languageCombo->setMinimumSize(QSize(96, 0));
-    m_languageCombo->setMaximumSize(QSize(96, QWIDGETSIZE_MAX));
+    m_languageCombo->setMinimumSize(QSize(Style::Size::LanguageComboWidth, 0));
+    m_languageCombo->setMaximumSize(QSize(Style::Size::LanguageComboWidth, QWIDGETSIZE_MAX));
     m_languageCombo->addItem(tr("中文"));
     m_languageCombo->addItem(QStringLiteral("English"));
     topBarLayout->addWidget(m_languageCombo);

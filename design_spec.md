@@ -159,13 +159,11 @@ Header:
   下半部分: 三个 GroupBox 水平排列，比例 5:3:3
 
 Sidebar 内容:
-  - "全部读取" 按钮（高32px，绿色系，连接后可用）
-  - "全部写入" 按钮（高32px，橙色系，连接后可用）
+  - "全部读取" 按钮（高32px，绿色系）
+  - "全部写入" 按钮（高32px，橙色系）
   - DEC / HEX 切换按钮组（互斥，切换值列显示模式，默认 HEX）
-  - 未连接时"全部读取"和"全部写入"均 disabled
 
-未连接时：整个 RegisterRwTab 内容区禁用（按钮 disabled，表格单元格不可编辑）
-已连接时：完全可用
+连接状态不影响 RegisterRwTab：所有控件始终可用（产品决策 2026-05-21，便于 UI 浏览与离线调试；按钮/单元格在串口未连接时点击操作会经 RegisterService → CommandDispatcher 自动落到本地错误回调，UI 显示 "--" / 写入失败）。
 ```
 
 #### RegisterTable 表格组件
@@ -313,13 +311,13 @@ Sidebar 内容:
 
 ```
 整体布局（水平，无 Sidebar）:
-[主内容区横向两栏]
+[主内容区横向 QSplitter 两栏]
 
-[左栏 固定 400px 逻辑像素：参数区]      | [右栏 stretch：执行 / 输出区]
+[左栏 stretch=1 (minWidth=280)：参数区]  | [右栏 stretch=1 (minWidth=280)：执行 / 输出区]
 
 左栏（垂直）:
-  ┌── GroupBox "目标 IC"  ─────┐
-  │  IC 下拉框 + IC 描述文字   │
+  ┌── 顶部紧凑 IC 选择行 ─────┐
+  │  [目标 IC：] [下拉框 200px] [IC 描述文字]
   └────────────────────────────┘
   ┌── GroupBox "固件文件" ─────┐
   │  路径行 [QLineEdit][浏览][清空] │
@@ -343,8 +341,8 @@ Sidebar 内容:
   └────────────────────────────────┘
 
 QSplitter 把手宽度: Style::Size::SplitterHandleWidth (8px)
-首次显示比例: 左 400px / 右占满；childrenCollapsible=false
-未连接串口时整个 FwFlashTab 内容区禁用（与其他 Tab 一致）
+QSplitter 方向: 水平；首次显示比例 1:1（用户可拖动手柄调整后比例保持）；childrenCollapsible=false；左右栏 minWidth=280
+连接状态不影响 FwFlashTab：所有控件始终可用（产品决策 2026-05-21）。"开始烧录"按钮的可用性由 IC 已选择 + 固件文件有效 + 当前不忙 共同决定，与串口连接状态解耦
 ```
 
 ### 卡片视觉
@@ -358,11 +356,18 @@ QSplitter 把手宽度: Style::Size::SplitterHandleWidth (8px)
 不同于其他 Tab，FwFlashTab 直接以左右两栏占满主内容区，不挂 `Sidebar` 容器。
 "操作步骤说明"功能由文件信息卡片下方的提示文字 + 阶段标签自然替代。
 
-### 卡片"目标 IC"
+### 顶部紧凑 IC 选择行（取消 GroupBox 卡片，节省垂直空间）
 
-单列布局：IC 下拉框（`Style::Size::FwFlashIcComboW = 200`）默认显示 `请选择目标 IC...`，下方显示选中策略的 `icDescription()`（`Style::Color::MutedText`，11px）。
+单行横向布局，不带 GroupBox：
 
-下拉框列表按 `FlashStrategyRegistry` 注册顺序：`AW86006` / `AW86100` / `DW9786` / `DW9788`。
+```
+[ 目标 IC： ] [QComboBox 200px] [描述文字（MutedText 11px，stretch=1）]
+```
+
+- 标签 "目标 IC：" 11px 常规字体
+- IC 下拉框宽度 `Style::Size::FwFlashIcComboW = 200`，默认显示 `请选择目标 IC...`
+- 后续显示选中策略的 `icDescription()`（`Style::Color::MutedText`，11px），吃掉行内剩余空间
+- 下拉框列表按 `FlashStrategyRegistry` 注册顺序：`AW86006` / `AW86100` / `DW9786` / `DW9788`
 
 ### 卡片"固件文件"
 

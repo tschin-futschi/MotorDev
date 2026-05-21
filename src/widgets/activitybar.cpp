@@ -5,12 +5,15 @@
 #include "widgets/activitybar.h"
 
 #include "ui/repolish.h"
+#include "ui/style_constants.h"
 
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QSpacerItem>
 #include <QVBoxLayout>
+
+using namespace MotorDev;
 
 // =============================================================================
 // 构造 / 析构
@@ -104,9 +107,9 @@ void ActivityBar::setActivePage(int index) {
 
 void ActivityBar::setupUi() {
     setObjectName(QStringLiteral("ActivityBar"));
-    resize(44, 640);
-    setMinimumSize(QSize(44, 0));
-    setMaximumSize(QSize(44, QWIDGETSIZE_MAX));
+    resize(Style::Size::ActivityBarWidth, 640);
+    setMinimumSize(QSize(Style::Size::ActivityBarWidth, 0));
+    setMaximumSize(QSize(Style::Size::ActivityBarWidth, QWIDGETSIZE_MAX));
 
     auto *verticalLayout = new QVBoxLayout(this);
     verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
@@ -133,8 +136,8 @@ void ActivityBar::setupUi() {
         wrapper->addStretch();
         *spec.button = new QPushButton(this);
         (*spec.button)->setObjectName(QString::fromLatin1(spec.objectName));
-        (*spec.button)->setMinimumSize(QSize(34, 34));
-        (*spec.button)->setMaximumSize(QSize(34, 34));
+        (*spec.button)->setMinimumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
+        (*spec.button)->setMaximumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
         (*spec.button)->setText(tr(spec.text));
         (*spec.button)->setProperty("active", false);
         wrapper->addWidget(*spec.button);
@@ -151,8 +154,8 @@ void ActivityBar::setupUi() {
     settingsWrapper->addStretch();
     m_settingsButton = new QPushButton(this);
     m_settingsButton->setObjectName(QStringLiteral("settingsButton"));
-    m_settingsButton->setMinimumSize(QSize(34, 34));
-    m_settingsButton->setMaximumSize(QSize(34, 34));
+    m_settingsButton->setMinimumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
+    m_settingsButton->setMaximumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
     m_settingsButton->setText(tr("设置"));
     m_settingsButton->setProperty("active", false);
     settingsWrapper->addWidget(m_settingsButton);

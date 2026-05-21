@@ -200,7 +200,7 @@ void SimulatorService::onSimulatorDisconnected() {
 /// @brief 将接收到的命令生成人类可读的描述文本。
 QString SimulatorService::describeIncoming(uint8_t cmd, const QByteArray &data) {
     switch (cmd) {
-    case 0x00: return QStringLiteral("HEARTBEAT");
+    case MotorProtocol::CmdHeartbeat: return QStringLiteral("HEARTBEAT");
     case MotorProtocol::CmdI2cBusScan: return QStringLiteral("I2C_SCAN");
     case MotorProtocol::CmdSetMotorIcAddr: return !data.isEmpty() ? QStringLiteral("SET_IC_ADDR addr=%1").arg(formatByte(static_cast<uint8_t>(data.at(0)))) : QStringLiteral("SET_IC_ADDR");
     case MotorProtocol::CmdSetPmicVoltage: {
@@ -258,7 +258,7 @@ void SimulatorService::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArra
 /// 若 m_responseDelayMs > 0，使用 QTimer::singleShot 模拟网络延迟。
 void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteArray &data) {
     // 心跳包立即响应，不走延迟
-    if (cmd == 0x00) { handleHeartbeat(seq); return; }
+    if (cmd == MotorProtocol::CmdHeartbeat) { handleHeartbeat(seq); return; }
 
     const auto dispatch = [this, cmd, seq, data]() {
         switch (cmd) {
@@ -294,8 +294,8 @@ void SimulatorService::dispatchWithDelay(uint8_t cmd, uint8_t seq, const QByteAr
 
 /// @brief 心跳回显。
 void SimulatorService::handleHeartbeat(uint8_t seq) {
-    sendResponseFrame(seq, 0x00, {});
-    emit logEntry(QStringLiteral("TX"), 0x00, seq, {}, QStringLiteral("HEARTBEAT echo"));
+    sendResponseFrame(seq, MotorProtocol::CmdHeartbeat, {});
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdHeartbeat, seq, {}, QStringLiteral("HEARTBEAT echo"));
 }
 
 /// @brief I2C 扫描：解析 m_scanAddressText 中的地址列表，构造响应。
@@ -337,7 +337,7 @@ void SimulatorService::handleSetIcAddr(uint8_t seq, const QByteArray &data) {
         emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdSetMotorIcAddr, seq, {}, QStringLiteral("SET_IC_ADDR → 成功"));
         return;
     }
-    sendErrorFrame(seq, 0x03);
+    sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed);
 }
 
 /// @brief 设备复位：始终返回 ACK。
@@ -378,7 +378,7 @@ void SimulatorService::handlePmicDisable(uint8_t seq) {
 
 /// @brief PMIC 电压设置：校验 6 字节 payload 和电压范围 [0.60V, 3.77V]。
 void SimulatorService::handleSetPmicVoltage(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 6) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 6) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
 
     // 解析三路电压（大端序，单位 V×100）
     const quint16 drvvdd = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1)));
@@ -387,7 +387,7 @@ void SimulatorService::handleSetPmicVoltage(uint8_t seq, const QByteArray &data)
 
     // 范围校验
     if (drvvdd < 60 || drvvdd > 377 || iovdd < 60 || iovdd > 377 || vcmvdd < 60 || vcmvdd > 377) {
-        sendErrorFrame(seq, 0x03);
+        sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed);
         return;
     }
 
@@ -409,7 +409,7 @@ void SimulatorService::handleSetPmicVoltage(uint8_t seq, const QByteArray &data)
 
 /// @brief 寄存器读取：返回预设的 m_regReadValue。
 void SimulatorService::handleReadRegister(uint8_t seq, const QByteArray &data) {
-    if (data.size() < 2) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() < 2) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     const quint16 addr = static_cast<quint16>((static_cast<quint8>(data.at(0)) << 8) | static_cast<quint8>(data.at(1)));
     Q_UNUSED(addr);
     const qint16 value = registerReadValue();
@@ -421,13 +421,13 @@ void SimulatorService::handleReadRegister(uint8_t seq, const QByteArray &data) {
 
 /// @brief 寄存器写入：根据 m_writeSuccess 返回 ACK 或错误。
 void SimulatorService::handleWriteRegister(uint8_t seq, const QByteArray &data) {
-    if (data.size() < 4) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() < 4) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     bool writeSuccess = false;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         writeSuccess = m_writeSuccess;
     }
-    if (!writeSuccess) { sendErrorFrame(seq, 0x03); return; }
+    if (!writeSuccess) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     sendResponseFrame(seq, MotorProtocol::CmdWriteRegister, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdWriteRegister, seq, {}, QStringLiteral("WRITE → ACK"));
     Q_UNUSED(data);
@@ -456,7 +456,7 @@ void SimulatorService::handleStartSampling(uint8_t seq) {
         }
     }
     if (!hasValidMapping) {
-        sendErrorFrame(seq, 0x03);
+        sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed);
         sendDebugInfo(QStringLiteral("Start sampling failed: no valid channel mapping"));
         return;
     }
@@ -499,9 +499,9 @@ void SimulatorService::handleStopSampling(uint8_t seq) {
 
 /// @brief 设置采样间隔：模拟器始终使用固定间隔（忽略客户端指定值）。
 void SimulatorService::handleSetSampleInterval(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 1) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 1) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     const uint8_t index = static_cast<uint8_t>(data.at(0));
-    if (!MotorProtocol::isValidSampleIntervalIndex(index)) { sendErrorFrame(seq, 0x03); return; }
+    if (!MotorProtocol::isValidSampleIntervalIndex(index)) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_sampleIntervalIndex = kFixedSampleIntervalIndex;  // 强制使用固定值
@@ -514,9 +514,9 @@ void SimulatorService::handleSetSampleInterval(uint8_t seq, const QByteArray &da
 
 /// @brief 设置采样通道掩码。
 void SimulatorService::handleSetSampleChannels(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 1) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 1) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     const uint8_t mask = static_cast<uint8_t>(data.at(0));
-    if (!MotorProtocol::isValidSampleChannelMask(mask)) { sendErrorFrame(seq, 0x03); return; }
+    if (!MotorProtocol::isValidSampleChannelMask(mask)) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_channelMask = mask;
@@ -528,7 +528,7 @@ void SimulatorService::handleSetSampleChannels(uint8_t seq, const QByteArray &da
 
 /// @brief 设置通道→寄存器映射表（16 字节 = 8 × uint16 大端序）。
 void SimulatorService::handleSetChannelRegisterMap(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 16) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 16) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         for (int index = 0; index < 8; ++index) {
@@ -547,21 +547,21 @@ void SimulatorService::handleSetChannelRegisterMap(uint8_t seq, const QByteArray
 
 /// @brief 线性扫描启动：校验 10 字节 payload，返回 ACK。
 void SimulatorService::handleStartLinearGen(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 10) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 10) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     sendResponseFrame(seq, MotorProtocol::CmdStartLinearGen, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartLinearGen, seq, {}, QStringLiteral("GEN_LINEAR → ACK"));
 }
 
 /// @brief 余弦波启动：校验最小 11 字节 payload，返回 ACK。
 void SimulatorService::handleStartCosineGen(uint8_t seq, const QByteArray &data) {
-    if (data.size() < 11) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() < 11) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     sendResponseFrame(seq, MotorProtocol::CmdStartCosineGen, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartCosineGen, seq, {}, QStringLiteral("GEN_COSINE → ACK"));
 }
 
 /// @brief 锯齿波测试启动：校验 8 字节 payload，返回 ACK。
 void SimulatorService::handleStartSawtoothGen(uint8_t seq, const QByteArray &data) {
-    if (data.size() != 8) { sendErrorFrame(seq, 0x03); return; }
+    if (data.size() != 8) { sendErrorFrame(seq, MotorProtocol::ErrorCode::ExecutionFailed); return; }
     sendResponseFrame(seq, MotorProtocol::CmdStartSawtoothGen, {});
     emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdStartSawtoothGen, seq, {}, QStringLiteral("GEN_SAWTOOTH → ACK"));
 }
@@ -574,7 +574,7 @@ void SimulatorService::handleStopGenerator(uint8_t seq) {
 
 /// @brief 未知命令：返回错误码 0x02。
 void SimulatorService::handleUnknownCommand(uint8_t cmd, uint8_t seq) {
-    sendErrorFrame(seq, 0x02);
+    sendErrorFrame(seq, MotorProtocol::ErrorCode::UnknownCmd);
     emit logEntry(QStringLiteral("TX"), cmd, seq, {}, tr("未知命令"));
 }
 
@@ -599,8 +599,8 @@ void SimulatorService::sendErrorFrame(uint8_t seq, uint8_t errorCode) {
 /// @brief 发送调试信息帧（cmd=0x06，seq=0xFF）。
 void SimulatorService::sendDebugInfo(const QString &message) {
     const QByteArray data = message.toUtf8().left(255);
-    sendResponseFrame(0xFF, 0x06, data);
-    emit logEntry(QStringLiteral("TX"), 0x06, 0xFF, data, QStringLiteral("DEBUG_INFO"));
+    sendResponseFrame(0xFF, MotorProtocol::CmdDebugInfo, data);
+    emit logEntry(QStringLiteral("TX"), MotorProtocol::CmdDebugInfo, 0xFF, data, QStringLiteral("DEBUG_INFO"));
 }
 
 // =============================================================================

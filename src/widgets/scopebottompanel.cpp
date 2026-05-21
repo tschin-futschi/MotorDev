@@ -472,14 +472,14 @@ void ScopeBottomPanel::setupUi() {
 
     m_intervalCombo = new QComboBox(m_channelFrame);
     m_intervalCombo->setObjectName(QStringLiteral("intervalCombo"));
-    m_intervalCombo->setMinimumSize(QSize(110, 0));
+    m_intervalCombo->setMinimumSize(QSize(Style::Size::ScopeIntervalComboMinW, 0));
     m_intervalCombo->addItems(SamplingConfig::intervalLabels());
     channelHeaderLayout->addWidget(m_intervalCombo);
 
     // Y 轴模式按钮（弹出菜单）
     m_yAxisButton = new QToolButton(m_channelFrame);
     m_yAxisButton->setObjectName(QStringLiteral("yAxisButton"));
-    m_yAxisButton->setMinimumSize(QSize(132, 0));
+    m_yAxisButton->setMinimumSize(QSize(Style::Size::ScopeYAxisButtonMinW, 0));
     m_yAxisButton->setPopupMode(QToolButton::InstantPopup);
     m_yAxisButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_yAxisButton->setText(QStringLiteral("Y Axis: Auto"));

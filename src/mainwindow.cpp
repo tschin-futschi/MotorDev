@@ -77,7 +77,10 @@ MainWindow::MainWindow(QWidget *parent)
     setupUi();
     connectSignals();
 
-    // 临时：解除所有页面的串口未连接锁定，便于 UI 浏览/调试
+    // 产品决策（2026-05-21）：连接状态不再门控页面可用性，所有 Tab 默认全部启用，
+    // 便于 UI 浏览、离线调试和 stub 功能开发。具体业务命令在串口未连接时由
+    // CommandDispatcher 自动落到本地错误回调（参见 CommandDispatcher::onSerialError）。
+    // design_spec.md 已同步修订对应条目。
     m_registerTab->setConnected(false);
     m_registerTab->setEnabled(true);
     m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
@@ -289,7 +292,7 @@ void MainWindow::connectSignals() {
         m_scopeTab->setEnabled(true);
     });
 
-    // --- 串口断开：临时解除所有页面锁定 ---
+    // --- 串口断开：保持所有页面启用（产品决策：连接状态不门控页面可用性）---
     connect(m_configTab, &ConfigTab::serialDisconnected, this, [this]() {
         m_registerTab->setConnected(false);
         m_registerTab->setEnabled(true);

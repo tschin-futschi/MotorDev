@@ -545,11 +545,11 @@ void ConfigService::onSerialDisconnected() {
 /// @return 错误名称字符串
 QString ConfigService::errorNameForCode(uint8_t errorCode) {
     switch (errorCode) {
-    case 0x01:
+    case MotorProtocol::ErrorCode::CrcFailed:
         return QStringLiteral("CRC check failed");
-    case 0x02:
+    case MotorProtocol::ErrorCode::UnknownCmd:
         return QStringLiteral("Unknown command");
-    case 0x03:
+    case MotorProtocol::ErrorCode::ExecutionFailed:
         return QStringLiteral("Execution failed");
     case CommandDispatcher::LocalErrorCode:
         return QStringLiteral("Dispatcher transport error");

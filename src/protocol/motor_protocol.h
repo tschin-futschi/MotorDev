@@ -68,6 +68,16 @@ inline constexpr uint8_t CmdStopGenerator = 0x57;       ///< 停止发生器
 inline constexpr uint8_t CmdStartSawtoothGen = 0x58;    ///< 启动锯齿波测试发生器
 
 // ---------------------------------------------------------------------------
+// 错误码（protocol.md §4.5）
+// ---------------------------------------------------------------------------
+
+namespace ErrorCode {
+inline constexpr uint8_t CrcFailed = 0x01;        ///< 收到的控制帧 CRC 校验不通过
+inline constexpr uint8_t UnknownCmd = 0x02;       ///< 命令码未定义或不支持
+inline constexpr uint8_t ExecutionFailed = 0x03;  ///< 命令执行过程中发生错误（如 I2C 通讯失败）
+} // namespace ErrorCode
+
+// ---------------------------------------------------------------------------
 // 命令名称查询
 // ---------------------------------------------------------------------------
 

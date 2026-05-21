@@ -15,6 +15,8 @@
 // =============================================================================
 #include "widgets/scopestylepanel.h"
 
+#include "ui/style_constants.h"
+
 #include <QColorDialog>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -24,6 +26,8 @@
 #include <QSpinBox>
 #include <QSpacerItem>
 #include <QVBoxLayout>
+
+using namespace MotorDev;
 
 namespace {
 /// @brief 将 Qt::PenStyle 映射为 ComboBox 索引。
@@ -207,15 +211,15 @@ void ScopeStylePanel::setupUi() {
         auto *label = new QLabel(this);
         label->setObjectName(QStringLiteral("ch%1Label").arg(index));
         label->setMinimumSize(QSize(30, 0));
-        label->setMaximumSize(QSize(30, QWIDGETSIZE_MAX));
+        label->setMaximumSize(QSize(Style::Size::ScopeStyleChannelLabelWidth, QWIDGETSIZE_MAX));
         label->setText(QStringLiteral("CH%1").arg(index + 1));
         rowLayout->addWidget(label);
 
         // 颜色选择按钮（20×20 小方块）
         m_rows[index].colorButton = new QPushButton(this);
         m_rows[index].colorButton->setObjectName(QStringLiteral("colorButton%1").arg(index));
-        m_rows[index].colorButton->setMinimumSize(QSize(20, 20));
-        m_rows[index].colorButton->setMaximumSize(QSize(20, 20));
+        m_rows[index].colorButton->setMinimumSize(QSize(Style::Size::ScopeStyleColorButtonSize, Style::Size::ScopeStyleColorButtonSize));
+        m_rows[index].colorButton->setMaximumSize(QSize(Style::Size::ScopeStyleColorButtonSize, Style::Size::ScopeStyleColorButtonSize));
         m_rows[index].colorButton->setProperty("buttonRole", QStringLiteral("color"));
         m_rows[index].colorButton->setText(QString());
         rowLayout->addWidget(m_rows[index].colorButton);
@@ -223,8 +227,8 @@ void ScopeStylePanel::setupUi() {
         // 线宽 SpinBox（1~8 px）
         m_rows[index].widthSpin = new QSpinBox(this);
         m_rows[index].widthSpin->setObjectName(QStringLiteral("widthSpin%1").arg(index));
-        m_rows[index].widthSpin->setMinimumSize(QSize(92, 24));
-        m_rows[index].widthSpin->setMaximumSize(QSize(92, 24));
+        m_rows[index].widthSpin->setMinimumSize(QSize(Style::Size::ScopeStyleWidthSpinWidth, Style::Size::ScopeStyleInputMinHeight));
+        m_rows[index].widthSpin->setMaximumSize(QSize(Style::Size::ScopeStyleWidthSpinWidth, Style::Size::ScopeStyleInputMinHeight));
         m_rows[index].widthSpin->setRange(1, 8);
         m_rows[index].widthSpin->setValue(4);
         m_rows[index].widthSpin->setSuffix(QStringLiteral("px"));
