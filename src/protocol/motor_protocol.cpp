@@ -27,6 +27,7 @@ const char *commandName(uint8_t cmd) {
     case CmdPmicEnable: return "PmicEnable";
     case CmdSetPmicVoltage: return "SetPmicVoltage";
     case CmdPmicDisable: return "PmicDisable";
+    case CmdBootStatus: return "BootStatus";
     case CmdReadRegister: return "ReadRegister";
     case CmdWriteRegister: return "WriteRegister";
     case CmdBulkRead: return "BulkRead";
@@ -414,6 +415,49 @@ uint8_t decodeErrorCode(const QByteArray &data) {
     }
 
     return static_cast<uint8_t>(data.at(0));
+}
+
+// -----------------------------------------------------------------------------
+// 0x0B BOOT_STATUS
+// -----------------------------------------------------------------------------
+
+const char *bootStatusName(uint8_t status) {
+    switch (status) {
+    case static_cast<uint8_t>(BootStatusCode::Ok):            return "BOOT_OK";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c1):  return "INIT_FAIL_I2C1";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c2):  return "INIT_FAIL_I2C2";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c3):  return "INIT_FAIL_I2C3";
+    case static_cast<uint8_t>(BootStatusCode::InitFailPmic):  return "INIT_FAIL_PMIC";
+    case static_cast<uint8_t>(BootStatusCode::InitFailAwIsp): return "INIT_FAIL_AWISP";
+    default:                                                  return "RESERVED";
+    }
+}
+
+const char *bootStatusDescription(uint8_t status) {
+    switch (status) {
+    case static_cast<uint8_t>(BootStatusCode::Ok):
+        return "STM32 就绪：全部模块初始化完成";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c1):
+        return "I2C1（INA 电流测量）初始化失败：请检查 PB6/PB7 上拉";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c2):
+        return "I2C2（电机 IC 总线）初始化失败：请检查 PB10/PB11";
+    case static_cast<uint8_t>(BootStatusCode::InitFailI2c3):
+        return "I2C3（PMIC 总线）初始化失败：请检查 PA8/PC9";
+    case static_cast<uint8_t>(BootStatusCode::InitFailPmic):
+        return "PMIC RT5112WSC 初始化失败：请检查电源";
+    case static_cast<uint8_t>(BootStatusCode::InitFailAwIsp):
+        return "AW ISP 回调注册失败：固件 bug，请联系开发";
+    default:
+        return "未知启动状态码（保留段）";
+    }
+}
+
+bool decodeBootStatusResponse(const QByteArray &data, uint8_t *statusOut) {
+    if (data.size() < 1 || statusOut == nullptr) {
+        return false;
+    }
+    *statusOut = static_cast<uint8_t>(data.at(0));
+    return true;
 }
 
 } // namespace MotorProtocol

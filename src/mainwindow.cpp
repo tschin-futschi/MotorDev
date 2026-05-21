@@ -259,13 +259,35 @@ void MainWindow::connectSignals() {
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
 
-    // --- 设备主动上报的调试信息 ---
+    // --- 设备主动上报的非配对帧（0x06 调试信息 / 0x0B 启动状态报告）---
+    // SEQ 固定 0xFF，由 STM32 主动发送，PC 无需响应。
     connect(m_dispatcher, &CommandDispatcher::unsolicitedFrameReceived, this,
             [](uint8_t cmd, uint8_t seq, const QByteArray &data) {
                 Q_UNUSED(seq);
                 if (cmd == MotorProtocol::CmdDebugInfo) {
                     qCWarning(lcMainWindow).noquote()
                         << QStringLiteral("Device: %1").arg(QString::fromUtf8(data));
+                    return;
+                }
+                if (cmd == MotorProtocol::CmdBootStatus) {
+                    uint8_t status = 0xFF;
+                    if (!MotorProtocol::decodeBootStatusResponse(data, &status)) {
+                        qCWarning(lcMainWindow).noquote()
+                            << QStringLiteral("BOOT_STATUS frame payload truncated (size=%1)").arg(data.size());
+                        return;
+                    }
+                    const QString line = QStringLiteral("BOOT_STATUS %1 (0x%2): %3")
+                        .arg(QString::fromLatin1(MotorProtocol::bootStatusName(status)))
+                        .arg(status, 2, 16, QLatin1Char('0'))
+                        .arg(QString::fromUtf8(MotorProtocol::bootStatusDescription(status)));
+                    if (status == static_cast<uint8_t>(MotorProtocol::BootStatusCode::Ok)) {
+                        qCInfo(lcMainWindow).noquote() << line;
+                    } else {
+                        // INIT_FAIL_* / 保留段都视为致命错误：STM32 此后会陷入 LED 快闪死循环，
+                        // 不再响应任何控制帧，PC 端应停止下发业务命令并提示用户处理硬件
+                        qCCritical(lcMainWindow).noquote() << line;
+                    }
+                    return;
                 }
             });
 
