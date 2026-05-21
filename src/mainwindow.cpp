@@ -32,6 +32,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLoggingCategory>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QScreen>
 #include <QStackedWidget>
@@ -262,7 +263,7 @@ void MainWindow::connectSignals() {
     // --- 设备主动上报的非配对帧（0x06 调试信息 / 0x0B 启动状态报告）---
     // SEQ 固定 0xFF，由 STM32 主动发送，PC 无需响应。
     connect(m_dispatcher, &CommandDispatcher::unsolicitedFrameReceived, this,
-            [](uint8_t cmd, uint8_t seq, const QByteArray &data) {
+            [this](uint8_t cmd, uint8_t seq, const QByteArray &data) {
                 Q_UNUSED(seq);
                 if (cmd == MotorProtocol::CmdDebugInfo) {
                     qCWarning(lcMainWindow).noquote()
@@ -276,16 +277,35 @@ void MainWindow::connectSignals() {
                             << QStringLiteral("BOOT_STATUS frame payload truncated (size=%1)").arg(data.size());
                         return;
                     }
+                    const QString description = QString::fromUtf8(MotorProtocol::bootStatusDescription(status));
                     const QString line = QStringLiteral("BOOT_STATUS %1 (0x%2): %3")
                         .arg(QString::fromLatin1(MotorProtocol::bootStatusName(status)))
                         .arg(status, 2, 16, QLatin1Char('0'))
-                        .arg(QString::fromUtf8(MotorProtocol::bootStatusDescription(status)));
+                        .arg(description);
+
+                    // 1. TopBar 徽章更新
+                    if (m_topBar != nullptr) {
+                        m_topBar->setMcuBootState(status, description);
+                    }
+
                     if (status == static_cast<uint8_t>(MotorProtocol::BootStatusCode::Ok)) {
                         qCInfo(lcMainWindow).noquote() << line;
-                    } else {
-                        // INIT_FAIL_* / 保留段都视为致命错误：STM32 此后会陷入 LED 快闪死循环，
-                        // 不再响应任何控制帧，PC 端应停止下发业务命令并提示用户处理硬件
-                        qCCritical(lcMainWindow).noquote() << line;
+                        m_mcuFailureNotified = false;
+                        return;
+                    }
+
+                    // INIT_FAIL_* / 保留段都视为致命错误：STM32 此后会陷入 LED 快闪死循环，
+                    // 不再响应任何控制帧，PC 端应停止下发业务命令并提示用户处理硬件
+                    qCCritical(lcMainWindow).noquote() << line;
+
+                    // 2. 同一会话仅弹一次警告框，避免重复打扰
+                    if (!m_mcuFailureNotified) {
+                        m_mcuFailureNotified = true;
+                        QMessageBox::warning(
+                            this,
+                            tr("STM32 启动失败"),
+                            tr("%1\n\nSTM32 已进入 LED 快闪死循环，不再响应任何命令。\n请处理硬件问题后重启 MCU。")
+                                .arg(description));
                     }
                     return;
                 }
@@ -323,6 +343,13 @@ void MainWindow::connectSignals() {
         m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
+
+        // 断开后 MCU 启动状态回到"未知"灰态，并清除已弹警告标志，
+        // 让重连后若再次收到 INIT_FAIL_* 能再弹一次
+        if (m_topBar != nullptr) {
+            m_topBar->resetMcuState();
+        }
+        m_mcuFailureNotified = false;
     });
 
     // --- 日志面板展开/收起 ---

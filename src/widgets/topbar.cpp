@@ -4,6 +4,7 @@
 // =============================================================================
 #include "widgets/topbar.h"
 
+#include "protocol/motor_protocol.h"
 #include "ui/repolish.h"
 #include "ui/style_constants.h"
 
@@ -31,6 +32,7 @@ TopBar::TopBar(QWidget *parent)
     setScopeControlsVisible(false);
     setViewMode(0);
     setCrosshairEnabled(false);
+    resetMcuState();
 }
 
 TopBar::~TopBar() = default;
@@ -79,6 +81,36 @@ void TopBar::onSerialDisconnected() {
     m_connectionLabel->setText(tr("未连接"));
     m_connectionIndicator->setProperty("connected", false);
     UiUtil::repolish(m_connectionIndicator);
+}
+
+// =============================================================================
+// 公共槽 — MCU 启动状态
+// =============================================================================
+
+void TopBar::setMcuBootState(int statusCode, const QString &description) {
+    if (m_mcuIndicator == nullptr || m_mcuLabel == nullptr) {
+        return;
+    }
+
+    const bool isOk = (statusCode == static_cast<int>(MotorProtocol::BootStatusCode::Ok));
+    m_mcuIndicator->setProperty("mcuState", isOk ? QStringLiteral("ok") : QStringLiteral("fail"));
+    UiUtil::repolish(m_mcuIndicator);
+
+    m_mcuLabel->setText(isOk ? tr("MCU: 已就绪") : tr("MCU: 初始化失败"));
+    const QString tip = description.isEmpty() ? QString() : description;
+    m_mcuIndicator->setToolTip(tip);
+    m_mcuLabel->setToolTip(tip);
+}
+
+void TopBar::resetMcuState() {
+    if (m_mcuIndicator == nullptr || m_mcuLabel == nullptr) {
+        return;
+    }
+    m_mcuIndicator->setProperty("mcuState", QStringLiteral("unknown"));
+    UiUtil::repolish(m_mcuIndicator);
+    m_mcuLabel->setText(tr("MCU: 未知"));
+    m_mcuIndicator->setToolTip(QString());
+    m_mcuLabel->setToolTip(QString());
 }
 
 // =============================================================================
@@ -166,6 +198,20 @@ void TopBar::setupUi() {
     m_connectionLabel->setObjectName(QStringLiteral("connectionLabel"));
     m_connectionLabel->setText(tr("未连接"));
     topBarLayout->addWidget(m_connectionLabel);
+
+    // MCU 启动状态徽章：圆点 + 文字（三态：unknown/ok/fail，QSS 着色）
+    m_mcuIndicator = new QLabel(this);
+    m_mcuIndicator->setObjectName(QStringLiteral("mcuIndicator"));
+    m_mcuIndicator->setMinimumSize(QSize(Style::Size::IndicatorSize, Style::Size::IndicatorSize));
+    m_mcuIndicator->setMaximumSize(QSize(Style::Size::IndicatorSize, Style::Size::IndicatorSize));
+    m_mcuIndicator->setText(QString());
+    m_mcuIndicator->setProperty("mcuState", QStringLiteral("unknown"));
+    topBarLayout->addWidget(m_mcuIndicator);
+
+    m_mcuLabel = new QLabel(this);
+    m_mcuLabel->setObjectName(QStringLiteral("mcuLabel"));
+    m_mcuLabel->setText(tr("MCU: 未知"));
+    topBarLayout->addWidget(m_mcuLabel);
 
     // 示波器控件：视图模式 + 样式面板开关
     m_viewModeButton = new QToolButton(this);

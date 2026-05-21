@@ -118,10 +118,21 @@
 内边距: 0 12px
 
 从左到右:
-[Logo 22×22] [间距8px] [MotorDev 13px/500] [分隔线] 
-[串口 label] [串口值] [指示灯7px] [连接状态文字]
+[Logo 22×22] [间距8px] [MotorDev 13px/500] [分隔线]
+[串口 label] [串口值] [连接指示灯7px] [连接状态文字]
+[MCU 指示灯7px] [MCU 状态文字]
 [语言下拉框 → 右对齐]
 ```
+
+**MCU 启动状态徽章**（响应协议 `0x0B BOOT_STATUS` 帧）：
+
+| 状态 | 触发 | 指示灯色 | 文字 | tooltip |
+|------|------|--------|------|--------|
+| 未知 | 启动默认 / 串口断开后 | `#888888`（MutedText） | `MCU: 未知` | （空） |
+| 已就绪 | 收到 `0x0B 0x00` (BOOT_OK) | `#639922`（ConnectedIndicator） | `MCU: 已就绪` | `STM32 就绪：全部模块初始化完成` |
+| 初始化失败 | 收到 `0x0B 0x01~0x05` 或保留段 | `#E24B4A`（DisconnectedIndicator） | `MCU: 初始化失败` | 对应 `bootStatusDescription`（如"I2C2（电机 IC 总线）初始化失败：请检查 PB10/PB11"） |
+
+收到 `INIT_FAIL_*` 时除徽章变红外，**同一会话弹一次 `QMessageBox::warning`** 提示用户处理硬件；标志位在串口断开时重置，使重连后若再次失败可再次弹窗。
 
 ### 侧边栏（Sidebar）
 

@@ -210,7 +210,8 @@ TopBar #portLabel {
 }
 
 TopBar #portValueLabel,
-TopBar #connectionLabel {
+TopBar #connectionLabel,
+TopBar #mcuLabel {
     color: #555555;
     font-size: 13px;
 }
@@ -222,6 +223,21 @@ TopBar #connectionIndicator[connected="false"] {
 
 TopBar #connectionIndicator[connected="true"] {
     background: #639922;
+    border-radius: 4px;
+}
+
+TopBar #mcuIndicator[mcuState="unknown"] {
+    background: #888888;
+    border-radius: 4px;
+}
+
+TopBar #mcuIndicator[mcuState="ok"] {
+    background: #639922;
+    border-radius: 4px;
+}
+
+TopBar #mcuIndicator[mcuState="fail"] {
+    background: #E24B4A;
     border-radius: 4px;
 }
 

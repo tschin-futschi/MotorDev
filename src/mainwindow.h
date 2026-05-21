@@ -70,4 +70,7 @@ private:
     FwFlashTab *m_fwFlashTab = nullptr;              ///< 固件烧录 Tab
     OscilloscopTab *m_scopeTab = nullptr;            ///< 示波器 Tab
     SerialDebugTab *m_debugTab = nullptr;            ///< 串口调试模拟器（浮动窗口）
+
+    /// @brief 是否已对当前会话中的 INIT_FAIL_* 弹过提示框（防重弹；串口断开重置）
+    bool m_mcuFailureNotified = false;
 };
