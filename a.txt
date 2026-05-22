@@ -1,755 +1,2663 @@
--------------------------------aw_uboot_isp.h------------------------------------------------
-
-/*
-* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
-* Description: IIC header file, IIC related parameter definition file
-*/
-#ifndef __AW_UBOOT_REGISTER_H
-#define __AW_UBOOT_REGISTER_H
-
-#define FLASH_BASE		(0x01000000)
-#define FLASH_SIZE		(0x20000)
-#define FLASH_TOP		(FLASH_BASE + FLASH_SIZE)
-
-#include "aw_uboot_bufbuilt.h"
-#include "main.h"
-
-enum isp_status{
-	ISP_OK = 0,
-	ISP_ADDR_ERROR,
-	ISP_PBUF_ERROR,
-	ISP_HANK_ERROR,
-	ISP_JUMP_ERROR,
-	ISP_FLASH_ERROR,
-	ISP_SPACE_ERROR,
-};
-typedef enum isp_status ISP_STATUS_E;
-
-ISP_STATUS_E aw_boot_control();
-ISP_STATUS_E aw_reset_chip();
-ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
-ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len);
-ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len);
-ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len);
-ISP_STATUS_E aw_hank_connect_check(void);
-ISP_STATUS_E aw_flash_jump_check(AW_U32 addr);
-ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff);
-ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen);
-
-void delay_ms(AW_U32 xms);
-void aw_i2c_stop_uboot(void);
-void aw_i2c_write(AW_U8 *buff, AW_U8 len);
-void aw_i2c_read (AW_U8 *buff, AW_U8 len);
-
-#endif
---------------------------------------aw_uboot_isp.c---------------------------------------------
-/*
-* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
-* Description: spi correlation function
-*/
-#include "aw_uboot_isp.h"
-#include "string.h"
-
-void delay_ms(AW_U32 xms)
-{
-}
-
-//stay in UBOOT state (stop UBOOT)
-//It needs to be sent multiple times within 8ms when power on
-void aw_i2c_stop_uboot(void)
-{
-	AW_U8 tmp = 0xAC;
-	aw_i2c_write(&tmp, 1);
-}
-
-//The underlying interface
-void aw_i2c_write(AW_U8 *buff, AW_U8 len)
-{
-}
-
-
-void aw_i2c_read(AW_U8 *buff, AW_U8 len)
-{
-}
-
-ISP_STATUS_E aw_reset_chip()
-{
-	// I2CSlaveAddr, Write, Data,
-	0x6b, w, 0xff, 0xa3, 0x02,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb7, 0x5a,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb7, 0x00,
-	// Delay 15 ms
-	delay_ms(15)
-	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
-	0x6b, r, 0xff, 0xf0 = 0x01,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb4, 0x00,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xa3, 0x00,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb4, 0x01,
-	
-	delay_ms(15)
-}
-
-ISP_STATUS_E aw_boot_control()
-{
-	// I2CSlaveAddr, Write, Data,
-	0x6b, w, 0xff, 0xa3, 0x02,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb7, 0x5a,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb7, 0x00,
-	// Delay 15 ms
-	delay_ms(15)
-	0x6b, w, 0xff, 0xf0, 0x20, 0x20, 0x02, 0x02, 0x19, 0x29, 0x19, 0x29,
-	0x6b, r, 0xff, 0xf0 = 0x01,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb4, 0x00,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xa3, 0x00,
-	// Delay 2 ms
-	delay_ms(2)
-	0x6b, w, 0xff, 0xb4, 0x01,
-	// Delay 7 ms
-	delay_ms(7)
-	// I2CSlaveAddr, Write, Data,
-	// 20 times
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-	0x6f, w, 0xac,
-}
-
-//len is the length of the word(4Byte)
-ISP_STATUS_E aw_i2c_isp_download(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U32 space = 0;
-
-
-	//bin_buff pointer check
-	if (bin_buf == (void *)0) {
-		return ISP_PBUF_ERROR;
-	}
-
-	//isp download address check
-	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
-		return ISP_ADDR_ERROR;
-	}
-
-	//isp download space check
-	space = FLASH_TOP - addr;
-	if (space < len * 4) {
-		return ISP_SPACE_ERROR;
-	}
-
-//Send a handshake frame to confirm that the chip works properly
-	if (aw_hank_connect_check() != ISP_OK) {
-		return ISP_HANK_ERROR ;
-	}
-
-//Download the program to flash ISP
-	if (aw_flash_download_check(addr, bin_buf, len) != ISP_OK) {
-		return ISP_FLASH_ERROR ;
-	}
-
-//Jump to flash ISP
-	if (aw_flash_jump_check(addr) != ISP_OK) {
-		return ISP_JUMP_ERROR ;
-	}
-	return ret;
-}
-
-//len is the length of the word(4Byte)
-ISP_STATUS_E aw_i2c_isp_upload(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U32 space = 0;
-
-
-	//bin_buff pointer check
-	if (bin_buf == (void *)0) {
-		return ISP_PBUF_ERROR;
-	}
-
-	//isp download address check
-	if ((addr < FLASH_BASE) || (addr >= FLASH_TOP)) {
-		return ISP_ADDR_ERROR;
-	}
-
-	//isp download space check
-	space = FLASH_TOP - addr;
-	if (space < len * 4) {
-		return ISP_SPACE_ERROR;
-	}
-
-//Send a handshake frame to confirm that the chip works properly
-	if (aw_hank_connect_check() != ISP_OK) {
-		return ISP_HANK_ERROR ;
-	}
-	
-	if(aw_flash_read(addr, len, bin_buf)){
-		return ISP_FLASH_ERROR ;
-	}
-}
-
-ISP_STATUS_E aw_flash_jump_check(AW_U32 addr)
-{
-	/*ISP_STATUS_E ret = ISP_OK;
-	AW_U8 i = 0;
-	AW_U8 tmp = 0;
-	AW_U8 l_buff[4]  = {0};
-	AW_U8 w_buff[13] = {0};
-	AW_U8 d_buff[1]  = {0};
-	AW_U8 r_buff[10] = {0};
-
-	for (i = 0; i < 4; i++) {
-		l_buff[i] = (AW_U8)(addr >> (i * 8));
-	}
-
-	UBOOT_BUF_TYPE_S uboot_structure;
-	uboot_structure.uboot_ways = UBOOT_I2C;
-	uboot_structure.uboot_module = UBOOT_END;
-	uboot_structure.uboot_event = END_FLASH_JUMP;
-	uboot_structure.uboot_ack = UBOOT_CTL;
-	uboot_structure.uboot_data_len = 4;
-	uboot_structure.p_uboot_data = l_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	aw_i2c_write(w_buff, 13);
-
-	delay_ms(10);
-
-	aw_i2c_read(r_buff, 10);
-
-	uboot_structure.uboot_event = END_FLASH_JUMP_ACK;
-	uboot_structure.uboot_ack = UBOOT_ACK;
-	uboot_structure.uboot_data_len = 1;
-	uboot_structure.p_uboot_data = d_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
-	if (tmp != 0) {
-		ret = ISP_JUMP_ERROR;
-		return ret;
-	}
-	return ret;*/
-	return ISP_OK;
-}
-
-ISP_STATUS_E aw_flash_pack_read(AW_U32 u32Addr, AW_U32 u32PackNum, AW_U8* byDataBuff, AW_U32 u32ReadLen)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U8 l_buff[6] = { 0 };
-	AW_U8 w_buff[78] = { 0 };
-	AW_U8 r_buff[69] = { 0 };
-	AW_U8 d_buff[69] = { 0 };
-	AW_U32 i = 0;
-	AW_U8 tmp = -1;
-
-	for (i = 0; i < 2; i++) {
-		l_buff[i] = (AW_U8)((u32ReadLen * 4) >> (i * 8));
-	}
-	for (i = 0; i < 4; i++) {
-		l_buff[i + 2] = (AW_U8)((u32Addr + u32PackNum * 64) >> (i * 8));
-	}
-
-	UBOOT_BUF_TYPE_S uboot_struct;
-	uboot_struct.uboot_ways = UBOOT_I2C;
-	uboot_struct.uboot_module = UBOOT_FLASH;
-	uboot_struct.uboot_event = FLASH_READ;
-	uboot_struct.uboot_ack = UBOOT_CTL;
-	uboot_struct.uboot_data_len = 6;
-	uboot_struct.p_uboot_data = l_buff;
-	aw_uboot_buff_built(w_buff, &uboot_struct);
-
-	aw_i2c_write(w_buff, 15);
-
-	delay_ms(1);
-
-	aw_i2c_read(r_buff, u32ReadLen * 4 + 1 + 4 + 9);
-
-	if (r_buff[9] == 0) {
-		tmp = 0;
-	}
-
-	if (tmp != 0) {
-		ret = ISP_FLASH_ERROR;
-		return ret;
-	}
-
-	for (int i = 0; i < u32ReadLen * 4; i++) {
-		byDataBuff[u32PackNum * 64 + i] = r_buff[14 + i];
-	}
-
-	return ret;
-}
-
-ISP_STATUS_E aw_flash_read(AW_U32 addr, AW_U32 len, AW_U8* dataBuff)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U32 divisor = 0;
-	AW_U32 block_cnt = 0;
-	AW_U8 remaind = 0;
-	AW_U32 i = 0;
-
-	if (dataBuff == (void*)0) {
-		ret = ISP_PBUF_ERROR;
-		return ret;
-	}
-
-	divisor = len / 16;
-	remaind = len % 16;
-	block_cnt = len / 1024 + ((len % 1024) ? 1 : 0);
-
-	for (i = 0; i < divisor; i++) {
-		if (aw_flash_pack_read(addr, i, dataBuff, 16) != ISP_OK) {
-			ret = ISP_FLASH_ERROR;
-			return ret;
-		}
-	}
-	if (remaind != 0) {
-		if (aw_flash_pack_read(addr, i, dataBuff, remaind) != ISP_OK) {
-			ret = ISP_FLASH_ERROR;
-			return ret;
-		}
-	}
-
-	return ret;
-}
-
-ISP_STATUS_E aw_flash_block_erase_check(AW_U32 addr, AW_U32 len)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U8 i = 0;
-	AW_U8 tmp = 0;
-	AW_U8 l_buff[6]  = {0};
-	AW_U8 w_buff[15] = {0};
-	AW_U8 d_buff[1]  = {0};
-	AW_U8 r_buff[10] = {0};
-
-	l_buff[0] = (AW_U8)len;
-	l_buff[1] = 0x00;
-
-	for (i = 0; i < 4; i++) {
-		l_buff[i + 2] = (AW_U8)(addr >> (i * 8));
-	}
-
-	UBOOT_BUF_TYPE_S uboot_structure;
-	uboot_structure.uboot_ways = UBOOT_I2C;
-	uboot_structure.uboot_module = UBOOT_FLASH;
-	uboot_structure.uboot_event = FLASH_ERASE_BLOCK;
-	uboot_structure.uboot_ack = UBOOT_CTL;
-	uboot_structure.uboot_data_len = 6;
-	uboot_structure.p_uboot_data = l_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	aw_i2c_write(w_buff, 15);
-
-	delay_ms(25 * len);
-
-	aw_i2c_read(r_buff, 10);
-
-	uboot_structure.uboot_event = FLASH_ERASE_BLOCK_ACK;
-	uboot_structure.uboot_ack = UBOOT_ACK;
-	uboot_structure.uboot_data_len = 1;
-	uboot_structure.p_uboot_data = d_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
-	if (tmp != 0) {
-		ret = ISP_FLASH_ERROR;
-		return ret;
-	}
-
-	return ret;
-}
-
-ISP_STATUS_E aw_flash_block_write_ckeck(AW_U32 addr, AW_U32 block_num, AW_U8 *bin_buf, AW_U32 len)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U8 i = 0;
-	AW_U8 tmp = 0;
-	AW_U8 l_buff[68]  = {0};
-	AW_U8 w_buff[77] = {0};
-	AW_U8 d_buff[1]  = {0};
-	AW_U8 r_buff[10] = {0};
-
-	for (i = 0; i < 4; i++) {
-		l_buff[i] = (AW_U8)((addr + block_num * 64) >> (i * 8));
-	}
-	for (i = 0; i < (len * 4); i++) {
-		l_buff[i + 4] = (bin_buf + block_num * 64)[i];
-	}
-
-	UBOOT_BUF_TYPE_S uboot_structure;
-	uboot_structure.uboot_ways = UBOOT_I2C;
-	uboot_structure.uboot_module = UBOOT_FLASH;
-	uboot_structure.uboot_event = FLASH_WRITE;
-	uboot_structure.uboot_ack = UBOOT_CTL;
-	uboot_structure.uboot_data_len = (AW_U8)(4 + 4 * len);
-	uboot_structure.p_uboot_data = l_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	aw_i2c_write(w_buff, (AW_U8)(13 + 4 * len));
-
-	delay_ms(1);
-
-	aw_i2c_read(r_buff, 10);
-
-	uboot_structure.uboot_event = FLASH_WRITE_ACK;
-	uboot_structure.uboot_ack = UBOOT_ACK;
-	uboot_structure.uboot_data_len = 1;
-	uboot_structure.p_uboot_data = d_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	tmp = (AW_U8)memcmp(w_buff, r_buff, 10);
-	if (tmp != 0) {
-		ret = ISP_FLASH_ERROR;
-		return ret;
-	}
-
-	return ret;
-}
-
-
-ISP_STATUS_E aw_flash_download_check(AW_U32 addr, AW_U8 *bin_buf, AW_U32 len)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U8 remaind = 0;
-	AW_U32 block_cnt = 0;
-	AW_U32 i = 0;
-	AW_U32 divisor = 0;
-
-	divisor = len / 16;
-	remaind = len % 16;
-	block_cnt = len / 1024 + ((len % 1024)? 1 : 0);
-
-	//Erases sectors that need to be used
-	if (aw_flash_block_erase_check(addr, block_cnt) != ISP_OK) {
-		return ISP_FLASH_ERROR;
-	}
-
-	for (i = 0; i < divisor; i++) {
-		//Data is written to the FLASH sector and checked
-		if (aw_flash_block_write_ckeck(addr, i, bin_buf,16) != ISP_OK) {
-			return ISP_FLASH_ERROR;
-		}
-	}
-	if (remaind != 0) {
-		//Data is written to the FLASH sector and checked
-		if (aw_flash_block_write_ckeck(addr, i, bin_buf, remaind) != ISP_OK) {
-			return ISP_FLASH_ERROR;
-		}
-	}
-
-	return ret;
-}
-
-ISP_STATUS_E aw_hank_connect_check(void)
-{
-	ISP_STATUS_E ret = ISP_OK;
-	AW_U8 tmp = 0;
-	AW_U8 w_buff[255] = {0};
-	AW_U8 r_buff[255] = {0};
-	AW_U8 d_buff[5]   = {0x00, 0x01,0x00, 0x00, 0x00};
-
-	UBOOT_BUF_TYPE_S uboot_structure;
-	uboot_structure.uboot_ways = UBOOT_I2C;
-	uboot_structure.uboot_ack = UBOOT_CTL;
-	uboot_structure.uboot_module = UBOOT_HANK;
-	uboot_structure.uboot_event = HANK_CONNECT;
-	uboot_structure.uboot_data_len = 0;
-	uboot_structure.p_uboot_data =  0;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	aw_i2c_write(w_buff, 9);
-
-	delay_ms(2);
-
-	aw_i2c_read(r_buff, 14);
-
-	uboot_structure.uboot_event = HANK_CONNECT_ACK;
-	uboot_structure.uboot_ack = UBOOT_ACK;
-	uboot_structure.uboot_data_len = 5;
-	uboot_structure.p_uboot_data = d_buff;
-	aw_uboot_buff_built(w_buff, &uboot_structure);
-
-	tmp = (AW_U8)memcmp(w_buff, r_buff, 14);
-	if (tmp != 0) {
-		ret = ISP_HANK_ERROR;
-	}
-
-	return ret;
-}
-------------------------------------------------------------aw_uboot_bufbuilt.h----------------------------------------------------
-/*
-* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2020 . All rights reserved.
-* Description: IIC header file, IIC related parameter definition file
-*/
-#ifndef __AW_UBOOT_BUFBUILT_H
-#define __AW_UBOOT_BUFBUILT_H
-
-enum uboot_status{
-	UBOOT_OK = 0,
-	UBOOT_ERROR,
-};
-typedef enum uboot_status UBOOT_STATUS_E;
-
-enum uboot_way{
-	UBOOT_I2C = 0,
-	UBOOT_SPI,
-};
-typedef enum uboot_way UBOOT_WAY_E;
-
-enum uboot_ack{
-	UBOOT_CTL = 0,
-	UBOOT_ACK,
-};
-typedef enum uboot_ack UBOOT_ACK_E;
-
-
-enum uboot_module{
-	UBOOT_HANK  = 0x01,
-	UBOOT_SRAM   =0x02,
-	UBOOT_FLASH = 0x03,
-	UBOOT_END   = 0x04,
-};
-typedef enum uboot_module UBOOT_MODULE_E;
-
-enum hank_event{
-	HANK_CONNECT        = 0x01,
-	HANK_CONNECT_ACK    = 0x02,
-	HANK_PROTICOL       = 0x11,
-	HANK_PROTICOL_ACK   = 0x12,
-	HANK_VERSION        = 0x21,
-	HANK_VERSION_ACK    = 0x22,
-	HANK_ID             = 0x31,
-	HANK_ID_ACK         = 0x32,
-	HANK_DATE           = 0x33,
-	HANK_DATA_ACK       = 0x34,
-};
-typedef enum hank_event HANK_EVENT_E;
-
-enum sram_event{
-	SRAM_WRITE          = 0x01,
-	SRAM_WRITE_ACK      = 0x02,
-	SRAM_READ           = 0x11,
-	SRAM_READ_ACK       = 0x12,
-};
-typedef enum sram_event SRAM_EVENT_E;
-
-enum flash_event{
-	FLASH_WRITE           = 0x01,
-	FLASH_WRITE_ACK       = 0x02,
-	FLASH_READ            = 0x11,
-	FLASH_READ_ACK        = 0x12,
-	FLASH_ERASE_BLOCK     = 0x21,
-	FLASH_ERASE_BLOCK_ACK = 0x22,
-	FLASH_ERASE_CHIP      = 0x23,
-	FLASH_ERASE_CHIP_ACK  = 0x24,
-};
-typedef enum flash_event FLASH_EVENT_E;
-
-
-
-enum end_event{
-	END_SRAM_JUMP           = 0x01,
-	END_SRAM_JUMP_ACK       = 0x02,
-	END_FLASH_JUMP          = 0x11,
-	END_FLASH_JUMP_ACK      = 0x12,
-	END_ERASE_ROM_JUMP      = 0x21,
-	END_ERASE_ROM_JUMP_ACK  = 0x22,
-};
-typedef enum end_event END_EVENT_E;
-
-struct uboot_protocol{
-	unsigned char  checksum;
-	unsigned char  protocol_ver;
-	unsigned char  addr;
-	unsigned char  module;
-	unsigned char  event;
-	unsigned char  len[2];
-	unsigned char  ack;
-	unsigned char  sum;
-	unsigned char  reserved[3];
-};
-typedef struct uboot_protocol UBOOT_PROTOCOL_TYPE_S;
-
-struct uboot_buf{
-	unsigned char uboot_ways;		//UBOOT通信方式I2C或SPI
-	unsigned char uboot_module;		//UBOOT模块Module
-	unsigned char uboot_event;		//UBOOT事件Event
-	unsigned char uboot_ack;		//UBOOT发送还是应答帧
-	unsigned char uboot_data_len;	//数据层字节长度
-	unsigned char reserved[3];
-	unsigned char *p_uboot_data;	//数据层buff指针
-
-};
-typedef struct uboot_buf UBOOT_BUF_TYPE_S;
-
-
-#define IS_UBOOT_WAYS(WAYS)				((WAYS ==UBOOT_I2C) || (WAYS ==UBOOT_SPI))
-
-#define IS_UBOOT_ACK(ACK)				((ACK ==UBOOT_CTL) || (ACK == UBOOT_ACK))
-
-#define IS_HANK_MODULE(MODULE)			((MODULE ==UBOOT_HANK) || (MODULE ==UBOOT_SRAM) || \
-										 (MODULE ==UBOOT_FLASH) || (MODULE ==UBOOT_END))
-
-#define IS_HANK_EVENT(EVENT)			((EVENT ==HANK_CONNECT) || (EVENT ==HANK_PROTICOL) || \
-										 (EVENT ==HANK_VERSION) || (EVENT ==HANK_ID) || (EVENT ==HANK_DATE))
-
-#define IS_SRAM_EVENT(EVENT)			((EVENT ==SRAM_WRITE) || (EVENT ==SRAM_READ))
-
-#define IS_FLASH_EVENT(EVENT)			((EVENT ==FLASH_WRITE) || (EVENT ==FLASH_READ) || \
-										 (EVENT ==FLASH_ERASE_BLOCK) || (EVENT ==FLASH_ERASE_CHIP))
-
-#define IS_END_EVENT(EVENT)				((EVENT ==END_SRAM_JUMP) || (EVENT ==END_FLASH_JUMP) || \
-										 (EVENT ==END_ERASE_ROM_JUMP))
-
-UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct);
-unsigned char protocol_sum(void);
-unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct);
-
-#define assert_param(expr) ((void)0)
-
-#endif
------------------------------------aw_uboot_bufbuilt.c--------------------------------------------------
-/*
-* Copyright © Shanghai Awinic Technology Co., Ltd. 2019 2019 . All rights reserved.
-* Description: spi correlation function
-*/
-#include "aw_uboot_bufbuilt.h"
-
-
-static UBOOT_PROTOCOL_TYPE_S protocol_struct = {0};
-
-UBOOT_STATUS_E aw_uboot_buff_built(unsigned char* buf, UBOOT_BUF_TYPE_S *uboot_struct)
-{
-	unsigned char i = 0;
-	UBOOT_STATUS_E ret = UBOOT_ERROR;
-	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
-
-	if ((buf == (void *)0) || ((uboot_struct == (void *)0))) {
-		return ret;
-	}
-
-	assert_param(IS_UBOOT_WAYS(uboot_struct->uboot_ways));
-	assert_param(IS_UBOOT_ACK(uboot_struct->uboot_ack));
-	assert_param(IS_HANK_MODULE(uboot_struct->uboot_module));
-
-	switch(uboot_struct->uboot_module) {
-		case UBOOT_HANK:
-			assert_param(IS_HANK_EVENT(uboot_struct->uboot_event));
-			break;
-		case UBOOT_SRAM:
-			assert_param(IS_SRAM_EVENT(uboot_struct->uboot_event));
-			break;
-		case UBOOT_FLASH:
-			assert_param(IS_FLASH_EVENT(uboot_struct->uboot_event));
-			break;
-		case UBOOT_END:
-			assert_param(IS_END_EVENT(uboot_struct->uboot_event));
-			break;
-		default:
-			break;
-	}
-
-	if (uboot_struct->p_uboot_data == (void *)0) {
-		uboot_struct->uboot_data_len = 0;
-		protocol_struct.len[0] = 0;
-	}
-
-	protocol_struct.protocol_ver = 0x01;
-
-	if (uboot_struct->uboot_ack == UBOOT_CTL) {
-		protocol_struct.addr = 0x82;
-	} else {
-		protocol_struct.addr = 0x28;
-	}
-	protocol_struct.module = uboot_struct->uboot_module;
-	protocol_struct.event = uboot_struct->uboot_event;
-	protocol_struct.ack = 0x01;
-
-	protocol_struct.len[0] = uboot_struct->uboot_data_len;
-	protocol_struct.sum = data_sum(uboot_struct);
-	protocol_struct.checksum = protocol_sum();
-
-
-	if (uboot_struct->uboot_ways == UBOOT_I2C) {
-		for(i = 0; i < 9; i++) {
-			buf[i] = p_protocol[i];
-		}
-
-		for(i = 0; i < (protocol_struct.len[0]); i++) {
-			buf[i + 9] = uboot_struct->p_uboot_data[i];
-		}
-	} else {
-		buf[0] = 0x5A;
-		for(i = 0; i < 9; i++) {
-			buf[i + 1] = p_protocol[i];
-		}
-
-		for(i = 0; i < (protocol_struct.len[0]); i++) {
-			buf[i + 10] = uboot_struct->p_uboot_data[i];
-		}
-	}
-
-	ret = UBOOT_OK;
-	return ret;
-}
-
-
-unsigned char protocol_sum(void)
-{
-	unsigned char sum = 0;
-	unsigned char i = 0;
-	unsigned char *p_protocol = (unsigned char*)&protocol_struct;
-	
-	for (i = 1; i < 9 ; i++) {
-		sum += p_protocol[i];
-	}
-	return sum;
-}
-
-unsigned char data_sum(UBOOT_BUF_TYPE_S *uboot_struct)
-{
-	unsigned char sum = 0;
-	unsigned char i = 0;
-
-	for (i = 0; i < uboot_struct->uboot_data_len; i++) {
-		sum += uboot_struct->p_uboot_data[i];
-	}
-	return sum;
-}
----------------------------------------------------------------------------------------------------------
-
-以上内容我要拿出来方便我编入到程序中，将来给其他同事使用。
+Id,Time[ns],0:I²C: Address/Data
+1,67108480.00,Start
+2,67109860.00,Address write: D6
+3,67117820.00,Write
+4,67118980.00,ACK
+5,67120380.00,Data write: FF
+6,67129440.00,ACK
+7,67130780.00,Data write: A3
+8,67139860.00,ACK
+9,67141200.00,Data write: 02
+10,67150300.00,ACK
+11,67152240.00,Stop
+12,68677280.00,Start
+13,68678540.00,Address write: D6
+14,68686440.00,Write
+15,68687600.00,ACK
+16,68688960.00,Data write: FF
+17,68698020.00,ACK
+18,68699360.00,Data write: B7
+19,68708440.00,ACK
+20,68709780.00,Data write: 5A
+21,68718860.00,ACK
+22,68720720.00,Stop
+23,70677260.00,Start
+24,70678520.00,Address write: D6
+25,70686440.00,Write
+26,70687600.00,ACK
+27,70688960.00,Data write: FF
+28,70698020.00,ACK
+29,70699360.00,Data write: B7
+30,70708420.00,ACK
+31,70709780.00,Data write: 00
+32,70718860.00,ACK
+33,70720720.00,Stop
+34,85676920.00,Start
+35,85678180.00,Address write: D6
+36,85686080.00,Write
+37,85687240.00,ACK
+38,85688600.00,Data write: FF
+39,85697660.00,ACK
+40,85699000.00,Data write: F0
+41,85708080.00,ACK
+42,85709440.00,Data write: 20
+43,85718520.00,ACK
+44,85719880.00,Data write: 20
+45,85728960.00,ACK
+46,85730320.00,Data write: 02
+47,85739400.00,ACK
+48,85740760.00,Data write: 02
+49,85749840.00,ACK
+50,85751180.00,Data write: 19
+51,85760260.00,ACK
+52,85761620.00,Data write: 29
+53,85770700.00,ACK
+54,85772040.00,Data write: 19
+55,85781120.00,ACK
+56,85782480.00,Data write: 29
+57,85791540.00,ACK
+58,85793400.00,Stop
+59,85795260.00,Start
+60,85796520.00,Address write: D6
+61,85804440.00,Write
+62,85805600.00,ACK
+63,85806960.00,Data write: FF
+64,85816020.00,ACK
+65,85817360.00,Data write: F0
+66,85826440.00,ACK
+67,85828520.00,Start repeat
+68,85829780.00,Address read: D7
+69,85837680.00,Read
+70,85838840.00,ACK
+71,85840240.00,Data read: 01
+72,85849220.00,NACK
+73,85850980.00,Stop
+74,87677020.00,Start
+75,87678340.00,Address write: D6
+76,87686240.00,Write
+77,87687400.00,ACK
+78,87688780.00,Data write: FF
+79,87697840.00,ACK
+80,87699180.00,Data write: B4
+81,87708260.00,ACK
+82,87709620.00,Data write: 00
+83,87718720.00,ACK
+84,87720600.00,Stop
+85,89676780.00,Start
+86,89678040.00,Address write: D6
+87,89685940.00,Write
+88,89687120.00,ACK
+89,89688480.00,Data write: FF
+90,89697520.00,ACK
+91,89698880.00,Data write: A3
+92,89707940.00,ACK
+93,89709300.00,Data write: 00
+94,89718400.00,ACK
+95,89720260.00,Stop
+96,91676720.00,Start
+97,91678000.00,Address write: D6
+98,91685900.00,Write
+99,91687060.00,ACK
+100,91688420.00,Data write: FF
+101,91697480.00,ACK
+102,91698820.00,Data write: B4
+103,91707900.00,ACK
+104,91709240.00,Data write: 01
+105,91718340.00,ACK
+106,91720200.00,Stop
+107,98676580.00,Start
+108,98677840.00,Address write: DE
+109,98685740.00,Write
+110,98686900.00,ACK
+111,98688260.00,Data write: AC
+112,98697340.00,ACK
+113,98699200.00,Stop
+114,99676600.00,Start
+115,99677860.00,Address write: DE
+116,99685760.00,Write
+117,99686920.00,ACK
+118,99688280.00,Data write: AC
+119,99697360.00,ACK
+120,99699220.00,Stop
+121,100676520.00,Start
+122,100677800.00,Address write: DE
+123,100685700.00,Write
+124,100686860.00,ACK
+125,100688220.00,Data write: AC
+126,100697300.00,ACK
+127,100699160.00,Stop
+128,101676560.00,Start
+129,101677820.00,Address write: DE
+130,101685720.00,Write
+131,101686880.00,ACK
+132,101688240.00,Data write: AC
+133,101697320.00,ACK
+134,101699180.00,Stop
+135,102676480.00,Start
+136,102677760.00,Address write: DE
+137,102685660.00,Write
+138,102686820.00,ACK
+139,102688180.00,Data write: AC
+140,102697260.00,ACK
+141,102699120.00,Stop
+142,103676500.00,Start
+143,103677780.00,Address write: DE
+144,103685680.00,Write
+145,103686840.00,ACK
+146,103688200.00,Data write: AC
+147,103697280.00,ACK
+148,103699140.00,Stop
+149,104676440.00,Start
+150,104677700.00,Address write: DE
+151,104685600.00,Write
+152,104686760.00,ACK
+153,104688120.00,Data write: AC
+154,104697200.00,ACK
+155,104699060.00,Stop
+156,105676460.00,Start
+157,105677720.00,Address write: DE
+158,105685640.00,Write
+159,105686780.00,ACK
+160,105688140.00,Data write: AC
+161,105697220.00,ACK
+162,105699100.00,Stop
+163,106676400.00,Start
+164,106677660.00,Address write: DE
+165,106685560.00,Write
+166,106686720.00,ACK
+167,106688080.00,Data write: AC
+168,106697160.00,ACK
+169,106699020.00,Stop
+170,107676420.00,Start
+171,107677680.00,Address write: DE
+172,107685580.00,Write
+173,107686740.00,ACK
+174,107688100.00,Data write: AC
+175,107697180.00,ACK
+176,107699040.00,Stop
+177,108676340.00,Start
+178,108677620.00,Address write: DE
+179,108685520.00,Write
+180,108686680.00,ACK
+181,108688040.00,Data write: AC
+182,108697120.00,ACK
+183,108698980.00,Stop
+184,109676360.00,Start
+185,109677640.00,Address write: DE
+186,109685540.00,Write
+187,109686700.00,ACK
+188,109688060.00,Data write: AC
+189,109697140.00,ACK
+190,109699000.00,Stop
+191,110676300.00,Start
+192,110677580.00,Address write: DE
+193,110685480.00,Write
+194,110686640.00,ACK
+195,110688000.00,Data write: AC
+196,110697080.00,ACK
+197,110698940.00,Stop
+198,111676320.00,Start
+199,111677600.00,Address write: DE
+200,111685500.00,Write
+201,111686660.00,ACK
+202,111688020.00,Data write: AC
+203,111697100.00,ACK
+204,111698960.00,Stop
+205,112676260.00,Start
+206,112677520.00,Address write: DE
+207,112685420.00,Write
+208,112686580.00,ACK
+209,112687940.00,Data write: AC
+210,112697020.00,ACK
+211,112698880.00,Stop
+212,113676280.00,Start
+213,113677540.00,Address write: DE
+214,113685440.00,Write
+215,113686600.00,ACK
+216,113687960.00,Data write: AC
+217,113697040.00,ACK
+218,113698900.00,Stop
+219,114676200.00,Start
+220,114677480.00,Address write: DE
+221,114685380.00,Write
+222,114686540.00,ACK
+223,114687900.00,Data write: AC
+224,114696980.00,ACK
+225,114698840.00,Stop
+226,115676240.00,Start
+227,115677500.00,Address write: DE
+228,115685400.00,Write
+229,115686560.00,ACK
+230,115687920.00,Data write: AC
+231,115697000.00,ACK
+232,115698860.00,Stop
+233,116676160.00,Start
+234,116677440.00,Address write: DE
+235,116685340.00,Write
+236,116686500.00,ACK
+237,116687860.00,Data write: AC
+238,116696940.00,ACK
+239,116698800.00,Stop
+240,117676180.00,Start
+241,117677460.00,Address write: DE
+242,117685360.00,Write
+243,117686520.00,ACK
+244,117687880.00,Data write: AC
+245,117696960.00,ACK
+246,117698820.00,Stop
+247,118680780.00,Start
+248,118682160.00,Address write: DE
+249,118690120.00,Write
+250,118691280.00,ACK
+251,118692660.00,Data write: 86
+252,118701740.00,ACK
+253,118703100.00,Data write: 01
+254,118712180.00,ACK
+255,118713540.00,Data write: 82
+256,118722620.00,ACK
+257,118723980.00,Data write: 01
+258,118733060.00,ACK
+259,118734400.00,Data write: 01
+260,118743500.00,ACK
+261,118744840.00,Data write: 00
+262,118753940.00,ACK
+263,118755300.00,Data write: 00
+264,118764380.00,ACK
+265,118765740.00,Data write: 01
+266,118774820.00,ACK
+267,118776180.00,Data write: 00
+268,118785260.00,ACK
+269,118787220.00,Stop
+270,120676220.00,Start
+271,120677500.00,Address read: DF
+272,120685400.00,Read
+273,120686560.00,ACK
+274,120687940.00,Data read: 33
+275,120696920.00,ACK
+276,120698060.00,Data read: 01
+277,120707020.00,ACK
+278,120708160.00,Data read: 28
+279,120717100.00,ACK
+280,120718240.00,Data read: 01
+281,120727200.00,ACK
+282,120728340.00,Data read: 02
+283,120737280.00,ACK
+284,120738420.00,Data read: 05
+285,120747360.00,ACK
+286,120748500.00,Data read: 00
+287,120757460.00,ACK
+288,120758600.00,Data read: 01
+289,120767540.00,ACK
+290,120768680.00,Data read: 01
+291,120777640.00,ACK
+292,120778780.00,Data read: 00
+293,120787720.00,ACK
+294,120788860.00,Data read: 01
+295,120797820.00,ACK
+296,120798960.00,Data read: 00
+297,120807900.00,ACK
+298,120809040.00,Data read: 00
+299,120817980.00,ACK
+300,120819120.00,Data read: 00
+301,120828080.00,NACK
+302,120829820.00,Stop
+303,120836020.00,Start
+304,120837380.00,Address write: DE
+305,120845340.00,Write
+306,120846500.00,ACK
+307,120847880.00,Data write: B8
+308,120856960.00,ACK
+309,120858320.00,Data write: 01
+310,120867400.00,ACK
+311,120868740.00,Data write: 82
+312,120877840.00,ACK
+313,120879180.00,Data write: 03
+314,120888280.00,ACK
+315,120889620.00,Data write: 21
+316,120898700.00,ACK
+317,120900060.00,Data write: 06
+318,120909140.00,ACK
+319,120910480.00,Data write: 00
+320,120919580.00,ACK
+321,120920940.00,Data write: 01
+322,120930020.00,ACK
+323,120931380.00,Data write: 0A
+324,120940460.00,ACK
+325,120941800.00,Data write: 09
+326,120950880.00,ACK
+327,120952240.00,Data write: 00
+328,120961340.00,ACK
+329,120962680.00,Data write: 00
+330,120971780.00,ACK
+331,120973120.00,Data write: 00
+332,120982220.00,ACK
+333,120983580.00,Data write: 00
+334,120992660.00,ACK
+335,120994020.00,Data write: 01
+336,121003100.00,ACK
+337,121005020.00,Stop
+338,345671020.00,Start
+339,345672320.00,Address read: DF
+340,345680220.00,Read
+341,345681380.00,ACK
+342,345682760.00,Data read: 50
+343,345691740.00,ACK
+344,345692880.00,Data read: 01
+345,345701820.00,ACK
+346,345702960.00,Data read: 28
+347,345711920.00,ACK
+348,345713060.00,Data read: 03
+349,345722000.00,ACK
+350,345723140.00,Data read: 22
+351,345732100.00,ACK
+352,345733240.00,Data read: 01
+353,345742180.00,ACK
+354,345743320.00,Data read: 00
+355,345752280.00,ACK
+356,345753420.00,Data read: 01
+357,345762360.00,ACK
+358,345763500.00,Data read: 00
+359,345772460.00,ACK
+360,345773580.00,Data read: 00
+361,345782520.00,NACK
+362,345784280.00,Stop
+363,345801320.00,Start
+364,345802680.00,Address write: DE
+365,345810640.00,Write
+366,345811800.00,ACK
+367,345813180.00,Data write: C4
+368,345822260.00,ACK
+369,345823620.00,Data write: 01
+370,345832700.00,ACK
+371,345834060.00,Data write: 82
+372,345843140.00,ACK
+373,345844480.00,Data write: 03
+374,345853580.00,ACK
+375,345854920.00,Data write: 01
+376,345864020.00,ACK
+377,345865360.00,Data write: 44
+378,345874440.00,ACK
+379,345875800.00,Data write: 00
+380,345884880.00,ACK
+381,345886240.00,Data write: 01
+382,345895320.00,ACK
+383,345896680.00,Data write: F8
+384,345905740.00,ACK
+385,345907100.00,Data write: 00
+386,345916180.00,ACK
+387,345917540.00,Data write: 00
+388,345926640.00,ACK
+389,345927980.00,Data write: 00
+390,345937080.00,ACK
+391,345938420.00,Data write: 01
+392,345947520.00,ACK
+393,345948860.00,Data write: 00
+394,345957960.00,ACK
+395,345959300.00,Data write: 40
+396,345968400.00,ACK
+397,345969740.00,Data write: 00
+398,345978840.00,ACK
+399,345980200.00,Data write: 20
+400,345989280.00,ACK
+401,345990620.00,Data write: CD
+402,345999700.00,ACK
+403,346001040.00,Data write: 82
+404,346010120.00,ACK
+405,346011480.00,Data write: FF
+406,346020540.00,ACK
+407,346021880.00,Data write: 1F
+408,346030940.00,ACK
+409,346032300.00,Data write: C3
+410,346041380.00,ACK
+411,346042720.00,Data write: 1B
+412,346051800.00,ACK
+413,346053140.00,Data write: FF
+414,346062180.00,ACK
+415,346063540.00,Data write: 1F
+416,346072600.00,ACK
+417,346073960.00,Data write: C3
+418,346083040.00,ACK
+419,346084380.00,Data write: 1B
+420,346093460.00,ACK
+421,346094800.00,Data write: FF
+422,346103860.00,ACK
+423,346105200.00,Data write: 1F
+424,346114260.00,ACK
+425,346115620.00,Data write: C3
+426,346124700.00,ACK
+427,346126040.00,Data write: 1B
+428,346135120.00,ACK
+429,346136460.00,Data write: FF
+430,346145520.00,ACK
+431,346146860.00,Data write: 1F
+432,346155920.00,ACK
+433,346157280.00,Data write: C3
+434,346166360.00,ACK
+435,346167700.00,Data write: 1B
+436,346176780.00,ACK
+437,346178120.00,Data write: FF
+438,346187180.00,ACK
+439,346188520.00,Data write: 1F
+440,346197580.00,ACK
+441,346198940.00,Data write: C3
+442,346208000.00,ACK
+443,346209360.00,Data write: 1B
+444,346218440.00,ACK
+445,346219780.00,Data write: FF
+446,346228840.00,ACK
+447,346230180.00,Data write: 1F
+448,346239240.00,ACK
+449,346240600.00,Data write: C3
+450,346249660.00,ACK
+451,346251020.00,Data write: 1B
+452,346260100.00,ACK
+453,346261440.00,Data write: FF
+454,346270500.00,ACK
+455,346271840.00,Data write: 1F
+456,346280900.00,ACK
+457,346282260.00,Data write: 00
+458,346291360.00,ACK
+459,346292700.00,Data write: 00
+460,346301800.00,ACK
+461,346303140.00,Data write: 00
+462,346312240.00,ACK
+463,346313580.00,Data write: 00
+464,346322680.00,ACK
+465,346324040.00,Data write: 00
+466,346333140.00,ACK
+467,346334480.00,Data write: 00
+468,346343580.00,ACK
+469,346344920.00,Data write: 00
+470,346354020.00,ACK
+471,346355360.00,Data write: 00
+472,346364460.00,ACK
+473,346365820.00,Data write: 00
+474,346374900.00,ACK
+475,346376260.00,Data write: 00
+476,346385360.00,ACK
+477,346386700.00,Data write: 00
+478,346395800.00,ACK
+479,346397140.00,Data write: 00
+480,346406240.00,ACK
+481,346407580.00,Data write: C3
+482,346416660.00,ACK
+483,346418000.00,Data write: 1B
+484,346427080.00,ACK
+485,346428420.00,Data write: FF
+486,346437480.00,ACK
+487,346438840.00,Data write: 1F
+488,346447900.00,ACK
+489,346449240.00,Data write: C3
+490,346458320.00,ACK
+491,346459680.00,Data write: 1B
+492,346468740.00,ACK
+493,346470080.00,Data write: FF
+494,346479140.00,ACK
+495,346480500.00,Data write: 1F
+496,346489560.00,ACK
+497,346490900.00,Data write: 00
+498,346500000.00,ACK
+499,346501360.00,Data write: 00
+500,346510440.00,ACK
+501,346511800.00,Data write: 00
+502,346520900.00,ACK
+503,346522240.00,Data write: 00
+504,346531340.00,ACK
+505,346532680.00,Data write: C3
+506,346541760.00,ACK
+507,346543100.00,Data write: 1B
+508,346552180.00,ACK
+509,346553520.00,Data write: FF
+510,346562580.00,ACK
+511,346563940.00,Data write: 1F
+512,346573000.00,ACK
+513,346574340.00,Data write: AD
+514,346583420.00,ACK
+515,346584760.00,Data write: 83
+516,346593840.00,ACK
+517,346595180.00,Data write: FF
+518,346604240.00,ACK
+519,346605600.00,Data write: 1F
+520,346614660.00,ACK
+521,346616580.00,Stop
+522,346671100.00,Start
+523,346672380.00,Address read: DF
+524,346680280.00,Read
+525,346681440.00,ACK
+526,346682820.00,Data read: 00
+527,346691800.00,ACK
+528,346692940.00,Data read: 00
+529,346701900.00,ACK
+530,346703040.00,Data read: 00
+531,346711980.00,ACK
+532,346713120.00,Data read: 00
+533,346722080.00,ACK
+534,346723220.00,Data read: 00
+535,346732160.00,ACK
+536,346733300.00,Data read: 00
+537,346742260.00,ACK
+538,346743400.00,Data read: 00
+539,346752340.00,ACK
+540,346753480.00,Data read: 00
+541,346762420.00,ACK
+542,346763560.00,Data read: 00
+543,346772520.00,ACK
+544,346773660.00,Data read: 00
+545,346782600.00,NACK
+546,346784340.00,Stop
+547,354715660.00,Start
+548,354717060.00,Address write: D6
+549,354725020.00,Write
+550,354726180.00,ACK
+551,354727580.00,Data write: FF
+552,354736640.00,ACK
+553,354737980.00,Data write: A3
+554,354747060.00,ACK
+555,354748400.00,Data write: 02
+556,354757500.00,ACK
+557,354759440.00,Stop
+558,356670700.00,Start
+559,356671960.00,Address write: D6
+560,356679880.00,Write
+561,356681040.00,ACK
+562,356682400.00,Data write: FF
+563,356691460.00,ACK
+564,356692800.00,Data write: B7
+565,356701860.00,ACK
+566,356703220.00,Data write: 5A
+567,356712280.00,ACK
+568,356714140.00,Stop
+569,358670700.00,Start
+570,358671960.00,Address write: D6
+571,358679860.00,Write
+572,358681020.00,ACK
+573,358682380.00,Data write: FF
+574,358691440.00,ACK
+575,358692780.00,Data write: B7
+576,358701860.00,ACK
+577,358703200.00,Data write: 00
+578,358712300.00,ACK
+579,358714160.00,Stop
+580,373670340.00,Start
+581,373671620.00,Address write: D6
+582,373679520.00,Write
+583,373680680.00,ACK
+584,373682040.00,Data write: FF
+585,373691100.00,ACK
+586,373692440.00,Data write: F0
+587,373701520.00,ACK
+588,373702860.00,Data write: 20
+589,373711960.00,ACK
+590,373713300.00,Data write: 20
+591,373722400.00,ACK
+592,373723740.00,Data write: 02
+593,373732840.00,ACK
+594,373734180.00,Data write: 02
+595,373743280.00,ACK
+596,373744620.00,Data write: 19
+597,373753700.00,ACK
+598,373755060.00,Data write: 29
+599,373764120.00,ACK
+600,373765480.00,Data write: 19
+601,373774560.00,ACK
+602,373775900.00,Data write: 29
+603,373784980.00,ACK
+604,373786840.00,Stop
+605,373788700.00,Start
+606,373789960.00,Address write: D6
+607,373797860.00,Write
+608,373799020.00,ACK
+609,373800400.00,Data write: FF
+610,373809460.00,ACK
+611,373810800.00,Data write: F0
+612,373819880.00,ACK
+613,373821940.00,Start repeat
+614,373823220.00,Address read: D7
+615,373831120.00,Read
+616,373832280.00,ACK
+617,373833680.00,Data read: 01
+618,373842660.00,NACK
+619,373844400.00,Stop
+620,375670460.00,Start
+621,375671760.00,Address write: D6
+622,375679660.00,Write
+623,375680820.00,ACK
+624,375682220.00,Data write: FF
+625,375691280.00,ACK
+626,375692620.00,Data write: B4
+627,375701700.00,ACK
+628,375703060.00,Data write: 00
+629,375712140.00,ACK
+630,375714020.00,Stop
+631,377670200.00,Start
+632,377671480.00,Address write: D6
+633,377679380.00,Write
+634,377680540.00,ACK
+635,377681900.00,Data write: FF
+636,377690960.00,ACK
+637,377692300.00,Data write: A3
+638,377701380.00,ACK
+639,377702740.00,Data write: 00
+640,377711820.00,ACK
+641,377713680.00,Stop
+642,379670160.00,Start
+643,379671420.00,Address write: D6
+644,379679320.00,Write
+645,379680480.00,ACK
+646,379681840.00,Data write: FF
+647,379690900.00,ACK
+648,379692240.00,Data write: B4
+649,379701340.00,ACK
+650,379702680.00,Data write: 01
+651,379711760.00,ACK
+652,379713620.00,Stop
+653,5090926220.00,Start
+654,5090927620.00,Address write: D6
+655,5090935560.00,Write
+656,5090936740.00,ACK
+657,5090938120.00,Data write: FF
+658,5090947180.00,ACK
+659,5090948520.00,Data write: A3
+660,5090957600.00,ACK
+661,5090958940.00,Data write: 02
+662,5090968040.00,ACK
+663,5090970000.00,Stop
+664,5092562680.00,Start
+665,5092563940.00,Address write: D6
+666,5092571860.00,Write
+667,5092573020.00,ACK
+668,5092574380.00,Data write: FF
+669,5092583440.00,ACK
+670,5092584780.00,Data write: B7
+671,5092593840.00,ACK
+672,5092595200.00,Data write: 5A
+673,5092604260.00,ACK
+674,5092606120.00,Stop
+675,5094562660.00,Start
+676,5094563940.00,Address write: D6
+677,5094571840.00,Write
+678,5094573000.00,ACK
+679,5094574360.00,Data write: FF
+680,5094583420.00,ACK
+681,5094584760.00,Data write: B7
+682,5094593840.00,ACK
+683,5094595180.00,Data write: 00
+684,5094604280.00,ACK
+685,5094606140.00,Stop
+686,5109562320.00,Start
+687,5109563600.00,Address write: D6
+688,5109571500.00,Write
+689,5109572660.00,ACK
+690,5109574020.00,Data write: FF
+691,5109583080.00,ACK
+692,5109584420.00,Data write: F0
+693,5109593500.00,ACK
+694,5109594840.00,Data write: 20
+695,5109603940.00,ACK
+696,5109605280.00,Data write: 20
+697,5109614380.00,ACK
+698,5109615720.00,Data write: 02
+699,5109624820.00,ACK
+700,5109626160.00,Data write: 02
+701,5109635260.00,ACK
+702,5109636600.00,Data write: 19
+703,5109645680.00,ACK
+704,5109647020.00,Data write: 29
+705,5109656100.00,ACK
+706,5109657460.00,Data write: 19
+707,5109666540.00,ACK
+708,5109667880.00,Data write: 29
+709,5109676960.00,ACK
+710,5109678820.00,Stop
+711,5109680680.00,Start
+712,5109681940.00,Address write: D6
+713,5109689840.00,Write
+714,5109691000.00,ACK
+715,5109692380.00,Data write: FF
+716,5109701440.00,ACK
+717,5109702780.00,Data write: F0
+718,5109711860.00,ACK
+719,5109713920.00,Start repeat
+720,5109715200.00,Address read: D7
+721,5109723100.00,Read
+722,5109724260.00,ACK
+723,5109725660.00,Data read: 01
+724,5109734640.00,NACK
+725,5109736380.00,Stop
+726,5111562440.00,Start
+727,5111563740.00,Address write: D6
+728,5111571660.00,Write
+729,5111572820.00,ACK
+730,5111574200.00,Data write: FF
+731,5111583260.00,ACK
+732,5111584600.00,Data write: B4
+733,5111593680.00,ACK
+734,5111595020.00,Data write: 00
+735,5111604120.00,ACK
+736,5111606000.00,Stop
+737,5113562180.00,Start
+738,5113563460.00,Address write: D6
+739,5113571360.00,Write
+740,5113572520.00,ACK
+741,5113573880.00,Data write: FF
+742,5113582940.00,ACK
+743,5113584280.00,Data write: A3
+744,5113593360.00,ACK
+745,5113594700.00,Data write: 00
+746,5113603800.00,ACK
+747,5113605660.00,Stop
+748,5115562140.00,Start
+749,5115563400.00,Address write: D6
+750,5115571300.00,Write
+751,5115572460.00,ACK
+752,5115573820.00,Data write: FF
+753,5115582880.00,ACK
+754,5115584220.00,Data write: B4
+755,5115593300.00,ACK
+756,5115594660.00,Data write: 01
+757,5115603740.00,ACK
+758,5115605600.00,Stop
+759,5122561980.00,Start
+760,5122563260.00,Address write: DE
+761,5122571160.00,Write
+762,5122572320.00,ACK
+763,5122573680.00,Data write: AC
+764,5122582760.00,ACK
+765,5122584620.00,Stop
+766,5123562000.00,Start
+767,5123563280.00,Address write: DE
+768,5123571180.00,Write
+769,5123572340.00,ACK
+770,5123573700.00,Data write: AC
+771,5123582780.00,ACK
+772,5123584640.00,Stop
+773,5124561940.00,Start
+774,5124563200.00,Address write: DE
+775,5124571120.00,Write
+776,5124572280.00,ACK
+777,5124573640.00,Data write: AC
+778,5124582700.00,ACK
+779,5124584560.00,Stop
+780,5125561960.00,Start
+781,5125563240.00,Address write: DE
+782,5125571140.00,Write
+783,5125572300.00,ACK
+784,5125573660.00,Data write: AC
+785,5125582740.00,ACK
+786,5125584600.00,Stop
+787,5126561900.00,Start
+788,5126563160.00,Address write: DE
+789,5126571060.00,Write
+790,5126572220.00,ACK
+791,5126573580.00,Data write: AC
+792,5126582660.00,ACK
+793,5126584520.00,Stop
+794,5127561920.00,Start
+795,5127563180.00,Address write: DE
+796,5127571080.00,Write
+797,5127572240.00,ACK
+798,5127573600.00,Data write: AC
+799,5127582680.00,ACK
+800,5127584540.00,Stop
+801,5128561840.00,Start
+802,5128563120.00,Address write: DE
+803,5128571020.00,Write
+804,5128572180.00,ACK
+805,5128573540.00,Data write: AC
+806,5128582620.00,ACK
+807,5128584480.00,Stop
+808,5129561880.00,Start
+809,5129563140.00,Address write: DE
+810,5129571040.00,Write
+811,5129572200.00,ACK
+812,5129573560.00,Data write: AC
+813,5129582640.00,ACK
+814,5129584500.00,Stop
+815,5130561800.00,Start
+816,5130563080.00,Address write: DE
+817,5130570980.00,Write
+818,5130572140.00,ACK
+819,5130573500.00,Data write: AC
+820,5130582560.00,ACK
+821,5130584420.00,Stop
+822,5131561820.00,Start
+823,5131563100.00,Address write: DE
+824,5131571000.00,Write
+825,5131572160.00,ACK
+826,5131573520.00,Data write: AC
+827,5131582600.00,ACK
+828,5131584460.00,Stop
+829,5132561760.00,Start
+830,5132563020.00,Address write: DE
+831,5132570920.00,Write
+832,5132572080.00,ACK
+833,5132573460.00,Data write: AC
+834,5132582520.00,ACK
+835,5132584380.00,Stop
+836,5133561780.00,Start
+837,5133563040.00,Address write: DE
+838,5133570940.00,Write
+839,5133572100.00,ACK
+840,5133573480.00,Data write: AC
+841,5133582540.00,ACK
+842,5133584400.00,Stop
+843,5134561720.00,Start
+844,5134562980.00,Address write: DE
+845,5134570880.00,Write
+846,5134572040.00,ACK
+847,5134573400.00,Data write: AC
+848,5134582480.00,ACK
+849,5134584340.00,Stop
+850,5135561740.00,Start
+851,5135563000.00,Address write: DE
+852,5135570900.00,Write
+853,5135572060.00,ACK
+854,5135573420.00,Data write: AC
+855,5135582500.00,ACK
+856,5135584360.00,Stop
+857,5136561660.00,Start
+858,5136562940.00,Address write: DE
+859,5136570840.00,Write
+860,5136572000.00,ACK
+861,5136573360.00,Data write: AC
+862,5136582440.00,ACK
+863,5136584300.00,Stop
+864,5137561680.00,Start
+865,5137562960.00,Address write: DE
+866,5137570860.00,Write
+867,5137572020.00,ACK
+868,5137573380.00,Data write: AC
+869,5137582460.00,ACK
+870,5137584320.00,Stop
+871,5138561620.00,Start
+872,5138562880.00,Address write: DE
+873,5138570800.00,Write
+874,5138571960.00,ACK
+875,5138573320.00,Data write: AC
+876,5138582380.00,ACK
+877,5138584240.00,Stop
+878,5139561640.00,Start
+879,5139562920.00,Address write: DE
+880,5139570820.00,Write
+881,5139571980.00,ACK
+882,5139573340.00,Data write: AC
+883,5139582420.00,ACK
+884,5139584280.00,Stop
+885,5140561580.00,Start
+886,5140562840.00,Address write: DE
+887,5140570740.00,Write
+888,5140571900.00,ACK
+889,5140573260.00,Data write: AC
+890,5140582340.00,ACK
+891,5140584200.00,Stop
+892,5141561600.00,Start
+893,5141562860.00,Address write: DE
+894,5141570760.00,Write
+895,5141571920.00,ACK
+896,5141573280.00,Data write: AC
+897,5141582360.00,ACK
+898,5141584220.00,Stop
+899,5142566180.00,Start
+900,5142567560.00,Address write: DE
+901,5142575520.00,Write
+902,5142576680.00,ACK
+903,5142578080.00,Data write: 86
+904,5142587160.00,ACK
+905,5142588520.00,Data write: 01
+906,5142597600.00,ACK
+907,5142598940.00,Data write: 82
+908,5142608040.00,ACK
+909,5142609380.00,Data write: 01
+910,5142618480.00,ACK
+911,5142619820.00,Data write: 01
+912,5142628900.00,ACK
+913,5142630260.00,Data write: 00
+914,5142639360.00,ACK
+915,5142640700.00,Data write: 00
+916,5142649800.00,ACK
+917,5142651140.00,Data write: 01
+918,5142660240.00,ACK
+919,5142661580.00,Data write: 00
+920,5142670680.00,ACK
+921,5142672640.00,Stop
+922,5144561620.00,Start
+923,5144562920.00,Address read: DF
+924,5144570800.00,Read
+925,5144571960.00,ACK
+926,5144573340.00,Data read: 33
+927,5144582340.00,ACK
+928,5144583480.00,Data read: 01
+929,5144592420.00,ACK
+930,5144593560.00,Data read: 28
+931,5144602520.00,ACK
+932,5144603660.00,Data read: 01
+933,5144612600.00,ACK
+934,5144613740.00,Data read: 02
+935,5144622700.00,ACK
+936,5144623840.00,Data read: 05
+937,5144632780.00,ACK
+938,5144633920.00,Data read: 00
+939,5144642860.00,ACK
+940,5144644000.00,Data read: 01
+941,5144652960.00,ACK
+942,5144654100.00,Data read: 01
+943,5144663040.00,ACK
+944,5144664180.00,Data read: 00
+945,5144673140.00,ACK
+946,5144674280.00,Data read: 01
+947,5144683220.00,ACK
+948,5144684360.00,Data read: 00
+949,5144693320.00,ACK
+950,5144694460.00,Data read: 00
+951,5144703400.00,ACK
+952,5144704540.00,Data read: 00
+953,5144713480.00,NACK
+954,5144715220.00,Stop
+955,5144721440.00,Start
+956,5144722800.00,Address write: DE
+957,5144730740.00,Write
+958,5144731900.00,ACK
+959,5144733300.00,Data write: B8
+960,5144742380.00,ACK
+961,5144743720.00,Data write: 01
+962,5144752820.00,ACK
+963,5144754160.00,Data write: 82
+964,5144763240.00,ACK
+965,5144764600.00,Data write: 03
+966,5144773680.00,ACK
+967,5144775040.00,Data write: 21
+968,5144784120.00,ACK
+969,5144785460.00,Data write: 06
+970,5144794540.00,ACK
+971,5144795900.00,Data write: 00
+972,5144805000.00,ACK
+973,5144806340.00,Data write: 01
+974,5144815440.00,ACK
+975,5144816780.00,Data write: 0A
+976,5144825860.00,ACK
+977,5144827220.00,Data write: 09
+978,5144836300.00,ACK
+979,5144837640.00,Data write: 00
+980,5144846740.00,ACK
+981,5144848100.00,Data write: 00
+982,5144857180.00,ACK
+983,5144858540.00,Data write: 00
+984,5144867620.00,ACK
+985,5144868980.00,Data write: 00
+986,5144878080.00,ACK
+987,5144879420.00,Data write: 01
+988,5144888520.00,ACK
+989,5144890420.00,Stop
+990,5369556440.00,Start
+991,5369557720.00,Address read: DF
+992,5369565620.00,Read
+993,5369566780.00,ACK
+994,5369568160.00,Data read: 50
+995,5369577140.00,ACK
+996,5369578280.00,Data read: 01
+997,5369587240.00,ACK
+998,5369588380.00,Data read: 28
+999,5369597320.00,ACK
+1000,5369598460.00,Data read: 03
+1001,5369607420.00,ACK
+1002,5369608560.00,Data read: 22
+1003,5369617500.00,ACK
+1004,5369618640.00,Data read: 01
+1005,5369627600.00,ACK
+1006,5369628740.00,Data read: 00
+1007,5369637680.00,ACK
+1008,5369638820.00,Data read: 01
+1009,5369647760.00,ACK
+1010,5369648900.00,Data read: 00
+1011,5369657860.00,ACK
+1012,5369659000.00,Data read: 00
+1013,5369667940.00,NACK
+1014,5369669680.00,Stop
+1015,5369686740.00,Start
+1016,5369688080.00,Address write: DE
+1017,5369696040.00,Write
+1018,5369697200.00,ACK
+1019,5369698600.00,Data write: C4
+1020,5369707680.00,ACK
+1021,5369709020.00,Data write: 01
+1022,5369718120.00,ACK
+1023,5369719460.00,Data write: 82
+1024,5369728540.00,ACK
+1025,5369729900.00,Data write: 03
+1026,5369738980.00,ACK
+1027,5369740340.00,Data write: 01
+1028,5369749420.00,ACK
+1029,5369750780.00,Data write: 44
+1030,5369759860.00,ACK
+1031,5369761200.00,Data write: 00
+1032,5369770300.00,ACK
+1033,5369771640.00,Data write: 01
+1034,5369780740.00,ACK
+1035,5369782080.00,Data write: F8
+1036,5369791160.00,ACK
+1037,5369792500.00,Data write: 00
+1038,5369801600.00,ACK
+1039,5369802960.00,Data write: 00
+1040,5369812040.00,ACK
+1041,5369813400.00,Data write: 00
+1042,5369822480.00,ACK
+1043,5369823840.00,Data write: 01
+1044,5369832920.00,ACK
+1045,5369834280.00,Data write: 00
+1046,5369843380.00,ACK
+1047,5369844720.00,Data write: 40
+1048,5369853800.00,ACK
+1049,5369855160.00,Data write: 00
+1050,5369864260.00,ACK
+1051,5369865600.00,Data write: 20
+1052,5369874700.00,ACK
+1053,5369876040.00,Data write: CD
+1054,5369885100.00,ACK
+1055,5369886460.00,Data write: 82
+1056,5369895540.00,ACK
+1057,5369896880.00,Data write: FF
+1058,5369905940.00,ACK
+1059,5369907300.00,Data write: 1F
+1060,5369916360.00,ACK
+1061,5369917700.00,Data write: C3
+1062,5369926780.00,ACK
+1063,5369928120.00,Data write: 1B
+1064,5369937200.00,ACK
+1065,5369938540.00,Data write: FF
+1066,5369947600.00,ACK
+1067,5369948960.00,Data write: 1F
+1068,5369958020.00,ACK
+1069,5369959360.00,Data write: C3
+1070,5369968440.00,ACK
+1071,5369969800.00,Data write: 1B
+1072,5369978860.00,ACK
+1073,5369980200.00,Data write: FF
+1074,5369989260.00,ACK
+1075,5369990620.00,Data write: 1F
+1076,5369999680.00,ACK
+1077,5370001020.00,Data write: C3
+1078,5370010100.00,ACK
+1079,5370011460.00,Data write: 1B
+1080,5370020520.00,ACK
+1081,5370021860.00,Data write: FF
+1082,5370030920.00,ACK
+1083,5370032280.00,Data write: 1F
+1084,5370041340.00,ACK
+1085,5370042680.00,Data write: C3
+1086,5370051760.00,ACK
+1087,5370053100.00,Data write: 1B
+1088,5370062180.00,ACK
+1089,5370063520.00,Data write: FF
+1090,5370072580.00,ACK
+1091,5370073940.00,Data write: 1F
+1092,5370083000.00,ACK
+1093,5370084340.00,Data write: C3
+1094,5370093420.00,ACK
+1095,5370094760.00,Data write: 1B
+1096,5370103840.00,ACK
+1097,5370105180.00,Data write: FF
+1098,5370114240.00,ACK
+1099,5370115600.00,Data write: 1F
+1100,5370124660.00,ACK
+1101,5370126000.00,Data write: C3
+1102,5370135080.00,ACK
+1103,5370136420.00,Data write: 1B
+1104,5370145500.00,ACK
+1105,5370146840.00,Data write: FF
+1106,5370155900.00,ACK
+1107,5370157260.00,Data write: 1F
+1108,5370166320.00,ACK
+1109,5370167660.00,Data write: 00
+1110,5370176760.00,ACK
+1111,5370178120.00,Data write: 00
+1112,5370187200.00,ACK
+1113,5370188560.00,Data write: 00
+1114,5370197660.00,ACK
+1115,5370199000.00,Data write: 00
+1116,5370208100.00,ACK
+1117,5370209440.00,Data write: 00
+1118,5370218540.00,ACK
+1119,5370219900.00,Data write: 00
+1120,5370228980.00,ACK
+1121,5370230340.00,Data write: 00
+1122,5370239420.00,ACK
+1123,5370240780.00,Data write: 00
+1124,5370249880.00,ACK
+1125,5370251220.00,Data write: 00
+1126,5370260320.00,ACK
+1127,5370261660.00,Data write: 00
+1128,5370270760.00,ACK
+1129,5370272120.00,Data write: 00
+1130,5370281200.00,ACK
+1131,5370282560.00,Data write: 00
+1132,5370291640.00,ACK
+1133,5370293000.00,Data write: C3
+1134,5370302060.00,ACK
+1135,5370303420.00,Data write: 1B
+1136,5370312500.00,ACK
+1137,5370313840.00,Data write: FF
+1138,5370322900.00,ACK
+1139,5370324240.00,Data write: 1F
+1140,5370333300.00,ACK
+1141,5370334660.00,Data write: C3
+1142,5370343740.00,ACK
+1143,5370345080.00,Data write: 1B
+1144,5370354140.00,ACK
+1145,5370355500.00,Data write: FF
+1146,5370364560.00,ACK
+1147,5370365900.00,Data write: 1F
+1148,5370374980.00,ACK
+1149,5370376320.00,Data write: 00
+1150,5370385420.00,ACK
+1151,5370386760.00,Data write: 00
+1152,5370395860.00,ACK
+1153,5370397200.00,Data write: 00
+1154,5370406300.00,ACK
+1155,5370407660.00,Data write: 00
+1156,5370416740.00,ACK
+1157,5370418100.00,Data write: C3
+1158,5370427160.00,ACK
+1159,5370428520.00,Data write: 1B
+1160,5370437580.00,ACK
+1161,5370438940.00,Data write: FF
+1162,5370447980.00,ACK
+1163,5370449340.00,Data write: 1F
+1164,5370458400.00,ACK
+1165,5370459760.00,Data write: AD
+1166,5370468820.00,ACK
+1167,5370470160.00,Data write: 83
+1168,5370479240.00,ACK
+1169,5370480600.00,Data write: FF
+1170,5370489660.00,ACK
+1171,5370491000.00,Data write: 1F
+1172,5370500060.00,ACK
+1173,5370501980.00,Stop
+1174,5370556500.00,Start
+1175,5370557800.00,Address read: DF
+1176,5370565700.00,Read
+1177,5370566860.00,ACK
+1178,5370568240.00,Data read: 00
+1179,5370577220.00,ACK
+1180,5370578360.00,Data read: 00
+1181,5370587300.00,ACK
+1182,5370588440.00,Data read: 00
+1183,5370597400.00,ACK
+1184,5370598540.00,Data read: 00
+1185,5370607480.00,ACK
+1186,5370608620.00,Data read: 00
+1187,5370617580.00,ACK
+1188,5370618720.00,Data read: 00
+1189,5370627660.00,ACK
+1190,5370628800.00,Data read: 00
+1191,5370637760.00,ACK
+1192,5370638900.00,Data read: 00
+1193,5370647840.00,ACK
+1194,5370648980.00,Data read: 00
+1195,5370657920.00,ACK
+1196,5370659060.00,Data read: 00
+1197,5370668020.00,NACK
+1198,5370669760.00,Stop
+1199,5378191540.00,Start
+1200,5378192940.00,Address write: D6
+1201,5378200900.00,Write
+1202,5378202060.00,ACK
+1203,5378203440.00,Data write: FF
+1204,5378212500.00,ACK
+1205,5378213840.00,Data write: A3
+1206,5378222920.00,ACK
+1207,5378224280.00,Data write: 02
+1208,5378233360.00,ACK
+1209,5378235320.00,Stop
+1210,5379556160.00,Start
+1211,5379557440.00,Address write: D6
+1212,5379565340.00,Write
+1213,5379566500.00,ACK
+1214,5379567860.00,Data write: FF
+1215,5379576920.00,ACK
+1216,5379578260.00,Data write: B7
+1217,5379587320.00,ACK
+1218,5379588680.00,Data write: 5A
+1219,5379597740.00,ACK
+1220,5379599600.00,Stop
+1221,5381556160.00,Start
+1222,5381557420.00,Address write: D6
+1223,5381565340.00,Write
+1224,5381566500.00,ACK
+1225,5381567860.00,Data write: FF
+1226,5381576900.00,ACK
+1227,5381578260.00,Data write: B7
+1228,5381587320.00,ACK
+1229,5381588660.00,Data write: 00
+1230,5381597760.00,ACK
+1231,5381599620.00,Stop
+1232,5396555780.00,Start
+1233,5396557040.00,Address write: D6
+1234,5396564960.00,Write
+1235,5396566120.00,ACK
+1236,5396567480.00,Data write: FF
+1237,5396576520.00,ACK
+1238,5396577880.00,Data write: F0
+1239,5396586940.00,ACK
+1240,5396588300.00,Data write: 20
+1241,5396597380.00,ACK
+1242,5396598740.00,Data write: 20
+1243,5396607820.00,ACK
+1244,5396609180.00,Data write: 02
+1245,5396618260.00,ACK
+1246,5396619620.00,Data write: 02
+1247,5396628700.00,ACK
+1248,5396630060.00,Data write: 19
+1249,5396639140.00,ACK
+1250,5396640480.00,Data write: 29
+1251,5396649560.00,ACK
+1252,5396650900.00,Data write: 19
+1253,5396659980.00,ACK
+1254,5396661340.00,Data write: 29
+1255,5396670420.00,ACK
+1256,5396672280.00,Stop
+1257,5396674120.00,Start
+1258,5396675380.00,Address write: D6
+1259,5396683300.00,Write
+1260,5396684460.00,ACK
+1261,5396685820.00,Data write: FF
+1262,5396694880.00,ACK
+1263,5396696240.00,Data write: F0
+1264,5396705300.00,ACK
+1265,5396707380.00,Start repeat
+1266,5396708640.00,Address read: D7
+1267,5396716560.00,Read
+1268,5396717720.00,ACK
+1269,5396719120.00,Data read: 01
+1270,5396728100.00,NACK
+1271,5396729840.00,Stop
+1272,5398555880.00,Start
+1273,5398557200.00,Address write: D6
+1274,5398565100.00,Write
+1275,5398566260.00,ACK
+1276,5398567660.00,Data write: FF
+1277,5398576700.00,ACK
+1278,5398578060.00,Data write: B4
+1279,5398587140.00,ACK
+1280,5398588480.00,Data write: 00
+1281,5398597580.00,ACK
+1282,5398599460.00,Stop
+1283,5400555640.00,Start
+1284,5400556900.00,Address write: D6
+1285,5400564820.00,Write
+1286,5400565980.00,ACK
+1287,5400567340.00,Data write: FF
+1288,5400576400.00,ACK
+1289,5400577740.00,Data write: A3
+1290,5400586820.00,ACK
+1291,5400588160.00,Data write: 00
+1292,5400597260.00,ACK
+1293,5400599120.00,Stop
+1294,5402555580.00,Start
+1295,5402556860.00,Address write: D6
+1296,5402564760.00,Write
+1297,5402565920.00,ACK
+1298,5402567280.00,Data write: FF
+1299,5402576340.00,ACK
+1300,5402577680.00,Data write: B4
+1301,5402586760.00,ACK
+1302,5402588120.00,Data write: 01
+1303,5402597200.00,ACK
+1304,5402599060.00,Stop
+1305,10898972720.00,Start
+1306,10898974100.00,Address write: D6
+1307,10898982060.00,Write
+1308,10898983240.00,ACK
+1309,10898984620.00,Data write: FF
+1310,10898993680.00,ACK
+1311,10898995020.00,Data write: A3
+1312,10899004100.00,ACK
+1313,10899005440.00,Data write: 02
+1314,10899014540.00,ACK
+1315,10899016500.00,Stop
+1316,10900430220.00,Start
+1317,10900431500.00,Address write: D6
+1318,10900439400.00,Write
+1319,10900440560.00,ACK
+1320,10900441920.00,Data write: FF
+1321,10900450980.00,ACK
+1322,10900452320.00,Data write: B7
+1323,10900461400.00,ACK
+1324,10900462740.00,Data write: 5A
+1325,10900471820.00,ACK
+1326,10900473680.00,Stop
+1327,10902430220.00,Start
+1328,10902431480.00,Address write: D6
+1329,10902439400.00,Write
+1330,10902440560.00,ACK
+1331,10902441920.00,Data write: FF
+1332,10902450980.00,ACK
+1333,10902452320.00,Data write: B7
+1334,10902461380.00,ACK
+1335,10902462740.00,Data write: 00
+1336,10902471820.00,ACK
+1337,10902473680.00,Stop
+1338,10917429840.00,Start
+1339,10917431100.00,Address write: D6
+1340,10917439020.00,Write
+1341,10917440180.00,ACK
+1342,10917441540.00,Data write: FF
+1343,10917450580.00,ACK
+1344,10917451940.00,Data write: F0
+1345,10917461020.00,ACK
+1346,10917462360.00,Data write: 20
+1347,10917471440.00,ACK
+1348,10917472800.00,Data write: 20
+1349,10917481880.00,ACK
+1350,10917483240.00,Data write: 02
+1351,10917492320.00,ACK
+1352,10917493680.00,Data write: 02
+1353,10917502760.00,ACK
+1354,10917504120.00,Data write: 19
+1355,10917513200.00,ACK
+1356,10917514540.00,Data write: 29
+1357,10917523620.00,ACK
+1358,10917524980.00,Data write: 19
+1359,10917534040.00,ACK
+1360,10917535400.00,Data write: 29
+1361,10917544480.00,ACK
+1362,10917546340.00,Stop
+1363,10917548180.00,Start
+1364,10917549440.00,Address write: D6
+1365,10917557360.00,Write
+1366,10917558520.00,ACK
+1367,10917559900.00,Data write: FF
+1368,10917568940.00,ACK
+1369,10917570300.00,Data write: F0
+1370,10917579360.00,ACK
+1371,10917581440.00,Start repeat
+1372,10917582700.00,Address read: D7
+1373,10917590620.00,Read
+1374,10917591780.00,ACK
+1375,10917593180.00,Data read: 01
+1376,10917602160.00,NACK
+1377,10917603900.00,Stop
+1378,10919429940.00,Start
+1379,10919431240.00,Address write: D6
+1380,10919439160.00,Write
+1381,10919440320.00,ACK
+1382,10919441700.00,Data write: FF
+1383,10919450760.00,ACK
+1384,10919452100.00,Data write: B4
+1385,10919461180.00,ACK
+1386,10919462540.00,Data write: 00
+1387,10919471620.00,ACK
+1388,10919473500.00,Stop
+1389,10921429740.00,Start
+1390,10921431020.00,Address write: D6
+1391,10921438920.00,Write
+1392,10921440080.00,ACK
+1393,10921441440.00,Data write: FF
+1394,10921450500.00,ACK
+1395,10921451840.00,Data write: A3
+1396,10921460920.00,ACK
+1397,10921462260.00,Data write: 00
+1398,10921471360.00,ACK
+1399,10921473220.00,Stop
+1400,10923429660.00,Start
+1401,10923430920.00,Address write: D6
+1402,10923438820.00,Write
+1403,10923439980.00,ACK
+1404,10923441340.00,Data write: FF
+1405,10923450400.00,ACK
+1406,10923451740.00,Data write: B4
+1407,10923460820.00,ACK
+1408,10923462180.00,Data write: 01
+1409,10923471260.00,ACK
+1410,10923473120.00,Stop
+1411,10930429520.00,Start
+1412,10930430780.00,Address write: DE
+1413,10930438680.00,Write
+1414,10930439840.00,ACK
+1415,10930441200.00,Data write: AC
+1416,10930450280.00,ACK
+1417,10930452140.00,Stop
+1418,10931429540.00,Start
+1419,10931430800.00,Address write: DE
+1420,10931438700.00,Write
+1421,10931439860.00,ACK
+1422,10931441220.00,Data write: AC
+1423,10931450300.00,ACK
+1424,10931452160.00,Stop
+1425,10932429460.00,Start
+1426,10932430740.00,Address write: DE
+1427,10932438640.00,Write
+1428,10932439800.00,ACK
+1429,10932441160.00,Data write: AC
+1430,10932450240.00,ACK
+1431,10932452100.00,Stop
+1432,10933429480.00,Start
+1433,10933430760.00,Address write: DE
+1434,10933438660.00,Write
+1435,10933439820.00,ACK
+1436,10933441180.00,Data write: AC
+1437,10933450260.00,ACK
+1438,10933452120.00,Stop
+1439,10934429420.00,Start
+1440,10934430680.00,Address write: DE
+1441,10934438600.00,Write
+1442,10934439760.00,ACK
+1443,10934441120.00,Data write: AC
+1444,10934450200.00,ACK
+1445,10934452060.00,Stop
+1446,10935429440.00,Start
+1447,10935430720.00,Address write: DE
+1448,10935438620.00,Write
+1449,10935439780.00,ACK
+1450,10935441140.00,Data write: AC
+1451,10935450220.00,ACK
+1452,10935452080.00,Stop
+1453,10936429380.00,Start
+1454,10936430640.00,Address write: DE
+1455,10936438540.00,Write
+1456,10936439700.00,ACK
+1457,10936441060.00,Data write: AC
+1458,10936450140.00,ACK
+1459,10936452000.00,Stop
+1460,10937429400.00,Start
+1461,10937430660.00,Address write: DE
+1462,10937438560.00,Write
+1463,10937439720.00,ACK
+1464,10937441080.00,Data write: AC
+1465,10937450160.00,ACK
+1466,10937452020.00,Stop
+1467,10938429340.00,Start
+1468,10938430600.00,Address write: DE
+1469,10938438500.00,Write
+1470,10938439660.00,ACK
+1471,10938441020.00,Data write: AC
+1472,10938450100.00,ACK
+1473,10938451960.00,Stop
+1474,10939429360.00,Start
+1475,10939430620.00,Address write: DE
+1476,10939438520.00,Write
+1477,10939439680.00,ACK
+1478,10939441040.00,Data write: AC
+1479,10939450120.00,ACK
+1480,10939451980.00,Stop
+1481,10940429280.00,Start
+1482,10940430560.00,Address write: DE
+1483,10940438460.00,Write
+1484,10940439620.00,ACK
+1485,10940440980.00,Data write: AC
+1486,10940450060.00,ACK
+1487,10940451920.00,Stop
+1488,10941429300.00,Start
+1489,10941430580.00,Address write: DE
+1490,10941438480.00,Write
+1491,10941439640.00,ACK
+1492,10941441000.00,Data write: AC
+1493,10941450080.00,ACK
+1494,10941451940.00,Stop
+1495,10942429240.00,Start
+1496,10942430500.00,Address write: DE
+1497,10942438400.00,Write
+1498,10942439560.00,ACK
+1499,10942440920.00,Data write: AC
+1500,10942450000.00,ACK
+1501,10942451860.00,Stop
+1502,10943429260.00,Start
+1503,10943430520.00,Address write: DE
+1504,10943438420.00,Write
+1505,10943439600.00,ACK
+1506,10943440960.00,Data write: AC
+1507,10943450020.00,ACK
+1508,10943451880.00,Stop
+1509,10944429200.00,Start
+1510,10944430460.00,Address write: DE
+1511,10944438360.00,Write
+1512,10944439520.00,ACK
+1513,10944440880.00,Data write: AC
+1514,10944449960.00,ACK
+1515,10944451820.00,Stop
+1516,10945429220.00,Start
+1517,10945430480.00,Address write: DE
+1518,10945438380.00,Write
+1519,10945439540.00,ACK
+1520,10945440900.00,Data write: AC
+1521,10945449980.00,ACK
+1522,10945451840.00,Stop
+1523,10946429140.00,Start
+1524,10946430420.00,Address write: DE
+1525,10946438320.00,Write
+1526,10946439480.00,ACK
+1527,10946440840.00,Data write: AC
+1528,10946449920.00,ACK
+1529,10946451780.00,Stop
+1530,10947429160.00,Start
+1531,10947430440.00,Address write: DE
+1532,10947438340.00,Write
+1533,10947439500.00,ACK
+1534,10947440860.00,Data write: AC
+1535,10947449940.00,ACK
+1536,10947451800.00,Stop
+1537,10948429100.00,Start
+1538,10948430360.00,Address write: DE
+1539,10948438280.00,Write
+1540,10948439440.00,ACK
+1541,10948440800.00,Data write: AC
+1542,10948449880.00,ACK
+1543,10948451740.00,Stop
+1544,10949429120.00,Start
+1545,10949430400.00,Address write: DE
+1546,10949438300.00,Write
+1547,10949439460.00,ACK
+1548,10949440820.00,Data write: AC
+1549,10949449900.00,ACK
+1550,10949451760.00,Stop
+1551,10950433700.00,Start
+1552,10950435100.00,Address write: DE
+1553,10950443040.00,Write
+1554,10950444220.00,ACK
+1555,10950445600.00,Data write: 86
+1556,10950454680.00,ACK
+1557,10950456040.00,Data write: 01
+1558,10950465120.00,ACK
+1559,10950466460.00,Data write: 82
+1560,10950475560.00,ACK
+1561,10950476900.00,Data write: 01
+1562,10950486000.00,ACK
+1563,10950487340.00,Data write: 01
+1564,10950496440.00,ACK
+1565,10950497780.00,Data write: 00
+1566,10950506880.00,ACK
+1567,10950508220.00,Data write: 00
+1568,10950517320.00,ACK
+1569,10950518680.00,Data write: 01
+1570,10950527760.00,ACK
+1571,10950529120.00,Data write: 00
+1572,10950538200.00,ACK
+1573,10950540160.00,Stop
+1574,10952429140.00,Start
+1575,10952430440.00,Address read: DF
+1576,10952438340.00,Read
+1577,10952439500.00,ACK
+1578,10952440880.00,Data read: 33
+1579,10952449860.00,ACK
+1580,10952451000.00,Data read: 01
+1581,10952459960.00,ACK
+1582,10952461080.00,Data read: 28
+1583,10952470040.00,ACK
+1584,10952471180.00,Data read: 01
+1585,10952480120.00,ACK
+1586,10952481260.00,Data read: 02
+1587,10952490220.00,ACK
+1588,10952491360.00,Data read: 05
+1589,10952500300.00,ACK
+1590,10952501440.00,Data read: 00
+1591,10952510400.00,ACK
+1592,10952511540.00,Data read: 01
+1593,10952520480.00,ACK
+1594,10952521620.00,Data read: 01
+1595,10952530580.00,ACK
+1596,10952531720.00,Data read: 00
+1597,10952540660.00,ACK
+1598,10952541800.00,Data read: 01
+1599,10952550740.00,ACK
+1600,10952551880.00,Data read: 00
+1601,10952560840.00,ACK
+1602,10952561980.00,Data read: 00
+1603,10952570920.00,ACK
+1604,10952572060.00,Data read: 00
+1605,10952581000.00,NACK
+1606,10952582760.00,Stop
+1607,10952588960.00,Start
+1608,10952590320.00,Address write: DE
+1609,10952598280.00,Write
+1610,10952599440.00,ACK
+1611,10952600820.00,Data write: B8
+1612,10952609900.00,ACK
+1613,10952611260.00,Data write: 01
+1614,10952620340.00,ACK
+1615,10952621680.00,Data write: 82
+1616,10952630780.00,ACK
+1617,10952632120.00,Data write: 03
+1618,10952641200.00,ACK
+1619,10952642560.00,Data write: 21
+1620,10952651640.00,ACK
+1621,10952653000.00,Data write: 06
+1622,10952662080.00,ACK
+1623,10952663420.00,Data write: 00
+1624,10952672520.00,ACK
+1625,10952673880.00,Data write: 01
+1626,10952682960.00,ACK
+1627,10952684300.00,Data write: 0A
+1628,10952693380.00,ACK
+1629,10952694740.00,Data write: 09
+1630,10952703820.00,ACK
+1631,10952705180.00,Data write: 00
+1632,10952714260.00,ACK
+1633,10952715620.00,Data write: 00
+1634,10952724720.00,ACK
+1635,10952726060.00,Data write: 00
+1636,10952735160.00,ACK
+1637,10952736500.00,Data write: 00
+1638,10952745600.00,ACK
+1639,10952746960.00,Data write: 01
+1640,10952756040.00,ACK
+1641,10952757940.00,Stop
+1642,11177423960.00,Start
+1643,11177425260.00,Address read: DF
+1644,11177433140.00,Read
+1645,11177434300.00,ACK
+1646,11177435680.00,Data read: 50
+1647,11177444680.00,ACK
+1648,11177445820.00,Data read: 01
+1649,11177454760.00,ACK
+1650,11177455900.00,Data read: 28
+1651,11177464860.00,ACK
+1652,11177466000.00,Data read: 03
+1653,11177474940.00,ACK
+1654,11177476080.00,Data read: 22
+1655,11177485040.00,ACK
+1656,11177486180.00,Data read: 01
+1657,11177495120.00,ACK
+1658,11177496260.00,Data read: 00
+1659,11177505200.00,ACK
+1660,11177506340.00,Data read: 01
+1661,11177515300.00,ACK
+1662,11177516440.00,Data read: 00
+1663,11177525380.00,ACK
+1664,11177526520.00,Data read: 00
+1665,11177535460.00,NACK
+1666,11177537220.00,Stop
+1667,11177554260.00,Start
+1668,11177555620.00,Address write: DE
+1669,11177563560.00,Write
+1670,11177564740.00,ACK
+1671,11177566120.00,Data write: C4
+1672,11177575200.00,ACK
+1673,11177576560.00,Data write: 01
+1674,11177585640.00,ACK
+1675,11177586980.00,Data write: 82
+1676,11177596080.00,ACK
+1677,11177597440.00,Data write: 03
+1678,11177606520.00,ACK
+1679,11177607860.00,Data write: 01
+1680,11177616940.00,ACK
+1681,11177618300.00,Data write: 44
+1682,11177627380.00,ACK
+1683,11177628740.00,Data write: 00
+1684,11177637820.00,ACK
+1685,11177639180.00,Data write: 01
+1686,11177648260.00,ACK
+1687,11177649620.00,Data write: F8
+1688,11177658680.00,ACK
+1689,11177660040.00,Data write: 00
+1690,11177669120.00,ACK
+1691,11177670480.00,Data write: 00
+1692,11177679580.00,ACK
+1693,11177680920.00,Data write: 00
+1694,11177690020.00,ACK
+1695,11177691360.00,Data write: 01
+1696,11177700460.00,ACK
+1697,11177701800.00,Data write: 00
+1698,11177710900.00,ACK
+1699,11177712240.00,Data write: 40
+1700,11177721340.00,ACK
+1701,11177722680.00,Data write: 00
+1702,11177731780.00,ACK
+1703,11177733140.00,Data write: 20
+1704,11177742220.00,ACK
+1705,11177743560.00,Data write: CD
+1706,11177752640.00,ACK
+1707,11177753980.00,Data write: 82
+1708,11177763060.00,ACK
+1709,11177764420.00,Data write: FF
+1710,11177773460.00,ACK
+1711,11177774820.00,Data write: 1F
+1712,11177783880.00,ACK
+1713,11177785220.00,Data write: C3
+1714,11177794300.00,ACK
+1715,11177795660.00,Data write: 1B
+1716,11177804720.00,ACK
+1717,11177806080.00,Data write: FF
+1718,11177815120.00,ACK
+1719,11177816480.00,Data write: 1F
+1720,11177825540.00,ACK
+1721,11177826880.00,Data write: C3
+1722,11177835960.00,ACK
+1723,11177837320.00,Data write: 1B
+1724,11177846380.00,ACK
+1725,11177847740.00,Data write: FF
+1726,11177856780.00,ACK
+1727,11177858140.00,Data write: 1F
+1728,11177867200.00,ACK
+1729,11177868540.00,Data write: C3
+1730,11177877620.00,ACK
+1731,11177878980.00,Data write: 1B
+1732,11177888040.00,ACK
+1733,11177889400.00,Data write: FF
+1734,11177898440.00,ACK
+1735,11177899800.00,Data write: 1F
+1736,11177908860.00,ACK
+1737,11177910200.00,Data write: C3
+1738,11177919280.00,ACK
+1739,11177920640.00,Data write: 1B
+1740,11177929700.00,ACK
+1741,11177931060.00,Data write: FF
+1742,11177940100.00,ACK
+1743,11177941460.00,Data write: 1F
+1744,11177950520.00,ACK
+1745,11177951860.00,Data write: C3
+1746,11177960940.00,ACK
+1747,11177962300.00,Data write: 1B
+1748,11177971360.00,ACK
+1749,11177972720.00,Data write: FF
+1750,11177981760.00,ACK
+1751,11177983120.00,Data write: 1F
+1752,11177992180.00,ACK
+1753,11177993520.00,Data write: C3
+1754,11178002600.00,ACK
+1755,11178003960.00,Data write: 1B
+1756,11178013020.00,ACK
+1757,11178014380.00,Data write: FF
+1758,11178023420.00,ACK
+1759,11178024780.00,Data write: 1F
+1760,11178033840.00,ACK
+1761,11178035200.00,Data write: 00
+1762,11178044280.00,ACK
+1763,11178045640.00,Data write: 00
+1764,11178054740.00,ACK
+1765,11178056080.00,Data write: 00
+1766,11178065180.00,ACK
+1767,11178066520.00,Data write: 00
+1768,11178075620.00,ACK
+1769,11178076980.00,Data write: 00
+1770,11178086060.00,ACK
+1771,11178087420.00,Data write: 00
+1772,11178096500.00,ACK
+1773,11178097860.00,Data write: 00
+1774,11178106960.00,ACK
+1775,11178108300.00,Data write: 00
+1776,11178117400.00,ACK
+1777,11178118760.00,Data write: 00
+1778,11178127840.00,ACK
+1779,11178129200.00,Data write: 00
+1780,11178138280.00,ACK
+1781,11178139640.00,Data write: 00
+1782,11178148740.00,ACK
+1783,11178150080.00,Data write: 00
+1784,11178159180.00,ACK
+1785,11178160520.00,Data write: C3
+1786,11178169600.00,ACK
+1787,11178170940.00,Data write: 1B
+1788,11178180020.00,ACK
+1789,11178181360.00,Data write: FF
+1790,11178190420.00,ACK
+1791,11178191780.00,Data write: 1F
+1792,11178200840.00,ACK
+1793,11178202180.00,Data write: C3
+1794,11178211260.00,ACK
+1795,11178212600.00,Data write: 1B
+1796,11178221680.00,ACK
+1797,11178223020.00,Data write: FF
+1798,11178232080.00,ACK
+1799,11178233440.00,Data write: 1F
+1800,11178242500.00,ACK
+1801,11178243840.00,Data write: 00
+1802,11178252940.00,ACK
+1803,11178254300.00,Data write: 00
+1804,11178263380.00,ACK
+1805,11178264740.00,Data write: 00
+1806,11178273820.00,ACK
+1807,11178275180.00,Data write: 00
+1808,11178284280.00,ACK
+1809,11178285620.00,Data write: C3
+1810,11178294700.00,ACK
+1811,11178296040.00,Data write: 1B
+1812,11178305120.00,ACK
+1813,11178306460.00,Data write: FF
+1814,11178315520.00,ACK
+1815,11178316860.00,Data write: 1F
+1816,11178325940.00,ACK
+1817,11178327280.00,Data write: AD
+1818,11178336360.00,ACK
+1819,11178337700.00,Data write: 83
+1820,11178346780.00,ACK
+1821,11178348120.00,Data write: FF
+1822,11178357180.00,ACK
+1823,11178358520.00,Data write: 1F
+1824,11178367600.00,ACK
+1825,11178369520.00,Stop
+1826,11178424040.00,Start
+1827,11178425320.00,Address read: DF
+1828,11178433220.00,Read
+1829,11178434380.00,ACK
+1830,11178435760.00,Data read: 00
+1831,11178444740.00,ACK
+1832,11178445880.00,Data read: 00
+1833,11178454840.00,ACK
+1834,11178455980.00,Data read: 00
+1835,11178464920.00,ACK
+1836,11178466060.00,Data read: 00
+1837,11178475020.00,ACK
+1838,11178476160.00,Data read: 00
+1839,11178485100.00,ACK
+1840,11178486240.00,Data read: 00
+1841,11178495200.00,ACK
+1842,11178496320.00,Data read: 00
+1843,11178505280.00,ACK
+1844,11178506420.00,Data read: 00
+1845,11178515360.00,ACK
+1846,11178516500.00,Data read: 00
+1847,11178525460.00,ACK
+1848,11178526600.00,Data read: 00
+1849,11178535540.00,NACK
+1850,11178537280.00,Stop
+1851,11186060700.00,Start
+1852,11186062100.00,Address write: D6
+1853,11186070060.00,Write
+1854,11186071220.00,ACK
+1855,11186072620.00,Data write: FF
+1856,11186081660.00,ACK
+1857,11186083020.00,Data write: A3
+1858,11186092080.00,ACK
+1859,11186093440.00,Data write: 02
+1860,11186102520.00,ACK
+1861,11186104480.00,Stop
+1862,11187423660.00,Start
+1863,11187424940.00,Address write: D6
+1864,11187432840.00,Write
+1865,11187434000.00,ACK
+1866,11187435360.00,Data write: FF
+1867,11187444420.00,ACK
+1868,11187445760.00,Data write: B7
+1869,11187454820.00,ACK
+1870,11187456180.00,Data write: 5A
+1871,11187465240.00,ACK
+1872,11187467100.00,Stop
+1873,11189423640.00,Start
+1874,11189424920.00,Address write: D6
+1875,11189432820.00,Write
+1876,11189433980.00,ACK
+1877,11189435340.00,Data write: FF
+1878,11189444400.00,ACK
+1879,11189445740.00,Data write: B7
+1880,11189454820.00,ACK
+1881,11189456160.00,Data write: 00
+1882,11189465260.00,ACK
+1883,11189467120.00,Stop
+1884,11204423300.00,Start
+1885,11204424560.00,Address write: D6
+1886,11204432480.00,Write
+1887,11204433640.00,ACK
+1888,11204435000.00,Data write: FF
+1889,11204444060.00,ACK
+1890,11204445400.00,Data write: F0
+1891,11204454480.00,ACK
+1892,11204455820.00,Data write: 20
+1893,11204464920.00,ACK
+1894,11204466260.00,Data write: 20
+1895,11204475360.00,ACK
+1896,11204476700.00,Data write: 02
+1897,11204485800.00,ACK
+1898,11204487140.00,Data write: 02
+1899,11204496240.00,ACK
+1900,11204497580.00,Data write: 19
+1901,11204506660.00,ACK
+1902,11204508000.00,Data write: 29
+1903,11204517080.00,ACK
+1904,11204518440.00,Data write: 19
+1905,11204527520.00,ACK
+1906,11204528860.00,Data write: 29
+1907,11204537940.00,ACK
+1908,11204539800.00,Stop
+1909,11204541660.00,Start
+1910,11204542920.00,Address write: D6
+1911,11204550820.00,Write
+1912,11204551980.00,ACK
+1913,11204553360.00,Data write: FF
+1914,11204562420.00,ACK
+1915,11204563760.00,Data write: F0
+1916,11204572840.00,ACK
+1917,11204574900.00,Start repeat
+1918,11204576180.00,Address read: D7
+1919,11204584080.00,Read
+1920,11204585240.00,ACK
+1921,11204586640.00,Data read: 01
+1922,11204595620.00,NACK
+1923,11204597360.00,Stop
+1924,11206423420.00,Start
+1925,11206424720.00,Address write: D6
+1926,11206432640.00,Write
+1927,11206433800.00,ACK
+1928,11206435180.00,Data write: FF
+1929,11206444240.00,ACK
+1930,11206445580.00,Data write: B4
+1931,11206454660.00,ACK
+1932,11206456000.00,Data write: 00
+1933,11206465100.00,ACK
+1934,11206466980.00,Stop
+1935,11208423160.00,Start
+1936,11208424440.00,Address write: D6
+1937,11208432340.00,Write
+1938,11208433500.00,ACK
+1939,11208434860.00,Data write: FF
+1940,11208443920.00,ACK
+1941,11208445260.00,Data write: A3
+1942,11208454340.00,ACK
+1943,11208455680.00,Data write: 00
+1944,11208464780.00,ACK
+1945,11208466640.00,Stop
+1946,11210423120.00,Start
+1947,11210424380.00,Address write: D6
+1948,11210432300.00,Write
+1949,11210433460.00,ACK
+1950,11210434820.00,Data write: FF
+1951,11210443860.00,ACK
+1952,11210445220.00,Data write: B4
+1953,11210454280.00,ACK
+1954,11210455640.00,Data write: 01
+1955,11210464720.00,ACK
+1956,11210466580.00,Stop
+1957,16082658680.00,Start
+1958,16082660080.00,Address write: D6
+1959,16082668040.00,Write
+1960,16082669200.00,ACK
+1961,16082670600.00,Data write: FF
+1962,16082679660.00,ACK
+1963,16082681000.00,Data write: A3
+1964,16082690080.00,ACK
+1965,16082691420.00,Data write: 02
+1966,16082700520.00,ACK
+1967,16082702460.00,Stop
+1968,16084311980.00,Start
+1969,16084313240.00,Address write: D6
+1970,16084321160.00,Write
+1971,16084322320.00,ACK
+1972,16084323680.00,Data write: FF
+1973,16084332740.00,ACK
+1974,16084334080.00,Data write: B7
+1975,16084343140.00,ACK
+1976,16084344500.00,Data write: 5A
+1977,16084353560.00,ACK
+1978,16084355420.00,Stop
+1979,16086311960.00,Start
+1980,16086313240.00,Address write: D6
+1981,16086321140.00,Write
+1982,16086322300.00,ACK
+1983,16086323660.00,Data write: FF
+1984,16086332720.00,ACK
+1985,16086334060.00,Data write: B7
+1986,16086343120.00,ACK
+1987,16086344480.00,Data write: 00
+1988,16086353580.00,ACK
+1989,16086355440.00,Stop
+1990,16101311620.00,Start
+1991,16101312880.00,Address write: D6
+1992,16101320800.00,Write
+1993,16101321960.00,ACK
+1994,16101323320.00,Data write: FF
+1995,16101332360.00,ACK
+1996,16101333720.00,Data write: F0
+1997,16101342800.00,ACK
+1998,16101344140.00,Data write: 20
+1999,16101353240.00,ACK
+2000,16101354580.00,Data write: 20
+2001,16101363660.00,ACK
+2002,16101365020.00,Data write: 02
+2003,16101374100.00,ACK
+2004,16101375460.00,Data write: 02
+2005,16101384540.00,ACK
+2006,16101385900.00,Data write: 19
+2007,16101394980.00,ACK
+2008,16101396320.00,Data write: 29
+2009,16101405400.00,ACK
+2010,16101406760.00,Data write: 19
+2011,16101415840.00,ACK
+2012,16101417180.00,Data write: 29
+2013,16101426260.00,ACK
+2014,16101428120.00,Stop
+2015,16101429960.00,Start
+2016,16101431220.00,Address write: D6
+2017,16101439140.00,Write
+2018,16101440300.00,ACK
+2019,16101441680.00,Data write: FF
+2020,16101450720.00,ACK
+2021,16101452080.00,Data write: F0
+2022,16101461160.00,ACK
+2023,16101463220.00,Start repeat
+2024,16101464500.00,Address read: D7
+2025,16101472400.00,Read
+2026,16101473560.00,ACK
+2027,16101474960.00,Data read: 01
+2028,16101483940.00,NACK
+2029,16101485680.00,Stop
+2030,16103311720.00,Start
+2031,16103313040.00,Address write: D6
+2032,16103320940.00,Write
+2033,16103322100.00,ACK
+2034,16103323500.00,Data write: FF
+2035,16103332560.00,ACK
+2036,16103333900.00,Data write: B4
+2037,16103342980.00,ACK
+2038,16103344320.00,Data write: 00
+2039,16103353420.00,ACK
+2040,16103355300.00,Stop
+2041,16105311480.00,Start
+2042,16105312760.00,Address write: D6
+2043,16105320660.00,Write
+2044,16105321820.00,ACK
+2045,16105323180.00,Data write: FF
+2046,16105332240.00,ACK
+2047,16105333580.00,Data write: A3
+2048,16105342660.00,ACK
+2049,16105344000.00,Data write: 00
+2050,16105353100.00,ACK
+2051,16105354960.00,Stop
+2052,16107311440.00,Start
+2053,16107312700.00,Address write: D6
+2054,16107320600.00,Write
+2055,16107321760.00,ACK
+2056,16107323120.00,Data write: FF
+2057,16107332180.00,ACK
+2058,16107333520.00,Data write: B4
+2059,16107342600.00,ACK
+2060,16107343960.00,Data write: 01
+2061,16107353040.00,ACK
+2062,16107354900.00,Stop
+2063,16114311280.00,Start
+2064,16114312560.00,Address write: DE
+2065,16114320460.00,Write
+2066,16114321620.00,ACK
+2067,16114322980.00,Data write: AC
+2068,16114332040.00,ACK
+2069,16114333920.00,Stop
+2070,16115311300.00,Start
+2071,16115312580.00,Address write: DE
+2072,16115320480.00,Write
+2073,16115321640.00,ACK
+2074,16115323000.00,Data write: AC
+2075,16115332080.00,ACK
+2076,16115333940.00,Stop
+2077,16116311240.00,Start
+2078,16116312500.00,Address write: DE
+2079,16116320400.00,Write
+2080,16116321560.00,ACK
+2081,16116322920.00,Data write: AC
+2082,16116332000.00,ACK
+2083,16116333860.00,Stop
+2084,16117311260.00,Start
+2085,16117312520.00,Address write: DE
+2086,16117320420.00,Write
+2087,16117321580.00,ACK
+2088,16117322960.00,Data write: AC
+2089,16117332020.00,ACK
+2090,16117333880.00,Stop
+2091,16118311200.00,Start
+2092,16118312460.00,Address write: DE
+2093,16118320360.00,Write
+2094,16118321520.00,ACK
+2095,16118322880.00,Data write: AC
+2096,16118331960.00,ACK
+2097,16118333820.00,Stop
+2098,16119311220.00,Start
+2099,16119312480.00,Address write: DE
+2100,16119320380.00,Write
+2101,16119321540.00,ACK
+2102,16119322900.00,Data write: AC
+2103,16119331980.00,ACK
+2104,16119333840.00,Stop
+2105,16120311140.00,Start
+2106,16120312420.00,Address write: DE
+2107,16120320320.00,Write
+2108,16120321480.00,ACK
+2109,16120322840.00,Data write: AC
+2110,16120331920.00,ACK
+2111,16120333780.00,Stop
+2112,16121311160.00,Start
+2113,16121312440.00,Address write: DE
+2114,16121320340.00,Write
+2115,16121321500.00,ACK
+2116,16121322860.00,Data write: AC
+2117,16121331940.00,ACK
+2118,16121333800.00,Stop
+2119,16122311100.00,Start
+2120,16122312360.00,Address write: DE
+2121,16122320260.00,Write
+2122,16122321440.00,ACK
+2123,16122322800.00,Data write: AC
+2124,16122331860.00,ACK
+2125,16122333720.00,Stop
+2126,16123311120.00,Start
+2127,16123312400.00,Address write: DE
+2128,16123320300.00,Write
+2129,16123321460.00,ACK
+2130,16123322820.00,Data write: AC
+2131,16123331880.00,ACK
+2132,16123333760.00,Stop
+2133,16124311060.00,Start
+2134,16124312320.00,Address write: DE
+2135,16124320220.00,Write
+2136,16124321380.00,ACK
+2137,16124322740.00,Data write: AC
+2138,16124331820.00,ACK
+2139,16124333680.00,Stop
+2140,16125311080.00,Start
+2141,16125312340.00,Address write: DE
+2142,16125320240.00,Write
+2143,16125321400.00,ACK
+2144,16125322760.00,Data write: AC
+2145,16125331840.00,ACK
+2146,16125333700.00,Stop
+2147,16126311020.00,Start
+2148,16126312280.00,Address write: DE
+2149,16126320180.00,Write
+2150,16126321340.00,ACK
+2151,16126322700.00,Data write: AC
+2152,16126331780.00,ACK
+2153,16126333640.00,Stop
+2154,16127311040.00,Start
+2155,16127312300.00,Address write: DE
+2156,16127320200.00,Write
+2157,16127321360.00,ACK
+2158,16127322720.00,Data write: AC
+2159,16127331800.00,ACK
+2160,16127333660.00,Stop
+2161,16128310960.00,Start
+2162,16128312240.00,Address write: DE
+2163,16128320140.00,Write
+2164,16128321300.00,ACK
+2165,16128322660.00,Data write: AC
+2166,16128331740.00,ACK
+2167,16128333600.00,Stop
+2168,16129310980.00,Start
+2169,16129312260.00,Address write: DE
+2170,16129320160.00,Write
+2171,16129321320.00,ACK
+2172,16129322680.00,Data write: AC
+2173,16129331760.00,ACK
+2174,16129333620.00,Stop
+2175,16130310920.00,Start
+2176,16130312180.00,Address write: DE
+2177,16130320080.00,Write
+2178,16130321240.00,ACK
+2179,16130322600.00,Data write: AC
+2180,16130331680.00,ACK
+2181,16130333540.00,Stop
+2182,16131310940.00,Start
+2183,16131312200.00,Address write: DE
+2184,16131320120.00,Write
+2185,16131321280.00,ACK
+2186,16131322640.00,Data write: AC
+2187,16131331720.00,ACK
+2188,16131333580.00,Stop
+2189,16132310880.00,Start
+2190,16132312140.00,Address write: DE
+2191,16132320040.00,Write
+2192,16132321200.00,ACK
+2193,16132322560.00,Data write: AC
+2194,16132331640.00,ACK
+2195,16132333500.00,Stop
+2196,16133310900.00,Start
+2197,16133312160.00,Address write: DE
+2198,16133320060.00,Write
+2199,16133321220.00,ACK
+2200,16133322580.00,Data write: AC
+2201,16133331660.00,ACK
+2202,16133333520.00,Stop
+2203,16134315480.00,Start
+2204,16134316860.00,Address write: DE
+2205,16134324820.00,Write
+2206,16134325980.00,ACK
+2207,16134327380.00,Data write: 86
+2208,16134336460.00,ACK
+2209,16134337800.00,Data write: 01
+2210,16134346900.00,ACK
+2211,16134348240.00,Data write: 82
+2212,16134357320.00,ACK
+2213,16134358680.00,Data write: 01
+2214,16134367760.00,ACK
+2215,16134369120.00,Data write: 01
+2216,16134378200.00,ACK
+2217,16134379560.00,Data write: 00
+2218,16134388660.00,ACK
+2219,16134390000.00,Data write: 00
+2220,16134399100.00,ACK
+2221,16134400440.00,Data write: 01
+2222,16134409540.00,ACK
+2223,16134410880.00,Data write: 00
+2224,16134419980.00,ACK
+2225,16134421940.00,Stop
+2226,16136310920.00,Start
+2227,16136312220.00,Address read: DF
+2228,16136320100.00,Read
+2229,16136321260.00,ACK
+2230,16136322640.00,Data read: 33
+2231,16136331620.00,ACK
+2232,16136332780.00,Data read: 01
+2233,16136341720.00,ACK
+2234,16136342860.00,Data read: 28
+2235,16136351820.00,ACK
+2236,16136352960.00,Data read: 01
+2237,16136361900.00,ACK
+2238,16136363040.00,Data read: 02
+2239,16136372000.00,ACK
+2240,16136373120.00,Data read: 05
+2241,16136382080.00,ACK
+2242,16136383220.00,Data read: 00
+2243,16136392160.00,ACK
+2244,16136393300.00,Data read: 01
+2245,16136402260.00,ACK
+2246,16136403400.00,Data read: 01
+2247,16136412340.00,ACK
+2248,16136413480.00,Data read: 00
+2249,16136422440.00,ACK
+2250,16136423580.00,Data read: 01
+2251,16136432520.00,ACK
+2252,16136433660.00,Data read: 00
+2253,16136442600.00,ACK
+2254,16136443740.00,Data read: 00
+2255,16136452700.00,ACK
+2256,16136453840.00,Data read: 00
+2257,16136462780.00,NACK
+2258,16136464520.00,Stop
+2259,16136470740.00,Start
+2260,16136472080.00,Address write: DE
+2261,16136480040.00,Write
+2262,16136481200.00,ACK
+2263,16136482600.00,Data write: B8
+2264,16136491680.00,ACK
+2265,16136493020.00,Data write: 01
+2266,16136502120.00,ACK
+2267,16136503460.00,Data write: 82
+2268,16136512540.00,ACK
+2269,16136513900.00,Data write: 03
+2270,16136522980.00,ACK
+2271,16136524320.00,Data write: 21
+2272,16136533420.00,ACK
+2273,16136534760.00,Data write: 06
+2274,16136543840.00,ACK
+2275,16136545200.00,Data write: 00
+2276,16136554300.00,ACK
+2277,16136555640.00,Data write: 01
+2278,16136564720.00,ACK
+2279,16136566080.00,Data write: 0A
+2280,16136575160.00,ACK
+2281,16136576520.00,Data write: 09
+2282,16136585600.00,ACK
+2283,16136586940.00,Data write: 00
+2284,16136596040.00,ACK
+2285,16136597380.00,Data write: 00
+2286,16136606480.00,ACK
+2287,16136607840.00,Data write: 00
+2288,16136616920.00,ACK
+2289,16136618280.00,Data write: 00
+2290,16136627380.00,ACK
+2291,16136628720.00,Data write: 01
+2292,16136637820.00,ACK
+2293,16136639720.00,Stop
+2294,16361305740.00,Start
+2295,16361307020.00,Address read: DF
+2296,16361314920.00,Read
+2297,16361316080.00,ACK
+2298,16361317460.00,Data read: 50
+2299,16361326440.00,ACK
+2300,16361327580.00,Data read: 01
+2301,16361336540.00,ACK
+2302,16361337680.00,Data read: 28
+2303,16361346620.00,ACK
+2304,16361347760.00,Data read: 03
+2305,16361356720.00,ACK
+2306,16361357860.00,Data read: 22
+2307,16361366800.00,ACK
+2308,16361367940.00,Data read: 01
+2309,16361376900.00,ACK
+2310,16361378020.00,Data read: 00
+2311,16361386980.00,ACK
+2312,16361388120.00,Data read: 01
+2313,16361397060.00,ACK
+2314,16361398200.00,Data read: 00
+2315,16361407160.00,ACK
+2316,16361408300.00,Data read: 00
+2317,16361417240.00,NACK
+2318,16361418980.00,Stop
+2319,16361436040.00,Start
+2320,16361437380.00,Address write: DE
+2321,16361445340.00,Write
+2322,16361446500.00,ACK
+2323,16361447900.00,Data write: C4
+2324,16361456980.00,ACK
+2325,16361458320.00,Data write: 01
+2326,16361467420.00,ACK
+2327,16361468760.00,Data write: 82
+2328,16361477840.00,ACK
+2329,16361479200.00,Data write: 03
+2330,16361488280.00,ACK
+2331,16361489640.00,Data write: 01
+2332,16361498720.00,ACK
+2333,16361500080.00,Data write: 44
+2334,16361509160.00,ACK
+2335,16361510500.00,Data write: 00
+2336,16361519600.00,ACK
+2337,16361520940.00,Data write: 01
+2338,16361530040.00,ACK
+2339,16361531380.00,Data write: F8
+2340,16361540460.00,ACK
+2341,16361541800.00,Data write: 00
+2342,16361550900.00,ACK
+2343,16361552240.00,Data write: 00
+2344,16361561340.00,ACK
+2345,16361562700.00,Data write: 00
+2346,16361571780.00,ACK
+2347,16361573140.00,Data write: 01
+2348,16361582220.00,ACK
+2349,16361583580.00,Data write: 00
+2350,16361592680.00,ACK
+2351,16361594020.00,Data write: 40
+2352,16361603100.00,ACK
+2353,16361604460.00,Data write: 00
+2354,16361613560.00,ACK
+2355,16361614900.00,Data write: 20
+2356,16361624000.00,ACK
+2357,16361625340.00,Data write: CD
+2358,16361634400.00,ACK
+2359,16361635760.00,Data write: 82
+2360,16361644840.00,ACK
+2361,16361646180.00,Data write: FF
+2362,16361655240.00,ACK
+2363,16361656580.00,Data write: 1F
+2364,16361665660.00,ACK
+2365,16361667000.00,Data write: C3
+2366,16361676080.00,ACK
+2367,16361677420.00,Data write: 1B
+2368,16361686500.00,ACK
+2369,16361687840.00,Data write: FF
+2370,16361696900.00,ACK
+2371,16361698260.00,Data write: 1F
+2372,16361707320.00,ACK
+2373,16361708660.00,Data write: C3
+2374,16361717740.00,ACK
+2375,16361719080.00,Data write: 1B
+2376,16361728160.00,ACK
+2377,16361729500.00,Data write: FF
+2378,16361738560.00,ACK
+2379,16361739920.00,Data write: 1F
+2380,16361748980.00,ACK
+2381,16361750320.00,Data write: C3
+2382,16361759400.00,ACK
+2383,16361760740.00,Data write: 1B
+2384,16361769820.00,ACK
+2385,16361771160.00,Data write: FF
+2386,16361780220.00,ACK
+2387,16361781580.00,Data write: 1F
+2388,16361790640.00,ACK
+2389,16361791980.00,Data write: C3
+2390,16361801060.00,ACK
+2391,16361802420.00,Data write: 1B
+2392,16361811480.00,ACK
+2393,16361812820.00,Data write: FF
+2394,16361821880.00,ACK
+2395,16361823220.00,Data write: 1F
+2396,16361832300.00,ACK
+2397,16361833640.00,Data write: C3
+2398,16361842720.00,ACK
+2399,16361844060.00,Data write: 1B
+2400,16361853140.00,ACK
+2401,16361854480.00,Data write: FF
+2402,16361863540.00,ACK
+2403,16361864900.00,Data write: 1F
+2404,16361873960.00,ACK
+2405,16361875300.00,Data write: C3
+2406,16361884380.00,ACK
+2407,16361885720.00,Data write: 1B
+2408,16361894800.00,ACK
+2409,16361896140.00,Data write: FF
+2410,16361905200.00,ACK
+2411,16361906540.00,Data write: 1F
+2412,16361915620.00,ACK
+2413,16361916960.00,Data write: 00
+2414,16361926060.00,ACK
+2415,16361927420.00,Data write: 00
+2416,16361936500.00,ACK
+2417,16361937860.00,Data write: 00
+2418,16361946960.00,ACK
+2419,16361948300.00,Data write: 00
+2420,16361957400.00,ACK
+2421,16361958740.00,Data write: 00
+2422,16361967840.00,ACK
+2423,16361969180.00,Data write: 00
+2424,16361978280.00,ACK
+2425,16361979640.00,Data write: 00
+2426,16361988720.00,ACK
+2427,16361990080.00,Data write: 00
+2428,16361999180.00,ACK
+2429,16362000520.00,Data write: 00
+2430,16362009620.00,ACK
+2431,16362010960.00,Data write: 00
+2432,16362020060.00,ACK
+2433,16362021400.00,Data write: 00
+2434,16362030500.00,ACK
+2435,16362031860.00,Data write: 00
+2436,16362040940.00,ACK
+2437,16362042300.00,Data write: C3
+2438,16362051360.00,ACK
+2439,16362052720.00,Data write: 1B
+2440,16362061800.00,ACK
+2441,16362063140.00,Data write: FF
+2442,16362072200.00,ACK
+2443,16362073540.00,Data write: 1F
+2444,16362082600.00,ACK
+2445,16362083940.00,Data write: C3
+2446,16362093020.00,ACK
+2447,16362094380.00,Data write: 1B
+2448,16362103460.00,ACK
+2449,16362104800.00,Data write: FF
+2450,16362113860.00,ACK
+2451,16362115200.00,Data write: 1F
+2452,16362124260.00,ACK
+2453,16362125620.00,Data write: 00
+2454,16362134720.00,ACK
+2455,16362136060.00,Data write: 00
+2456,16362145160.00,ACK
+2457,16362146500.00,Data write: 00
+2458,16362155600.00,ACK
+2459,16362156960.00,Data write: 00
+2460,16362166040.00,ACK
+2461,16362167380.00,Data write: C3
+2462,16362176460.00,ACK
+2463,16362177820.00,Data write: 1B
+2464,16362186880.00,ACK
+2465,16362188220.00,Data write: FF
+2466,16362197280.00,ACK
+2467,16362198640.00,Data write: 1F
+2468,16362207700.00,ACK
+2469,16362209060.00,Data write: AD
+2470,16362218120.00,ACK
+2471,16362219460.00,Data write: 83
+2472,16362228540.00,ACK
+2473,16362229900.00,Data write: FF
+2474,16362238940.00,ACK
+2475,16362240300.00,Data write: 1F
+2476,16362249360.00,ACK
+2477,16362251280.00,Stop
+2478,16362305800.00,Start
+2479,16362307100.00,Address read: DF
+2480,16362315000.00,Read
+2481,16362316160.00,ACK
+2482,16362317540.00,Data read: 00
+2483,16362326520.00,ACK
+2484,16362327660.00,Data read: 00
+2485,16362336600.00,ACK
+2486,16362337740.00,Data read: 00
+2487,16362346700.00,ACK
+2488,16362347840.00,Data read: 00
+2489,16362356780.00,ACK
+2490,16362357920.00,Data read: 00
+2491,16362366880.00,ACK
+2492,16362368020.00,Data read: 00
+2493,16362376960.00,ACK
+2494,16362378100.00,Data read: 00
+2495,16362387060.00,ACK
+2496,16362388180.00,Data read: 00
+2497,16362397140.00,ACK
+2498,16362398280.00,Data read: 00
+2499,16362407220.00,ACK
+2500,16362408360.00,Data read: 00
+2501,16362417320.00,NACK
+2502,16362419060.00,Stop
+2503,16369699520.00,Start
+2504,16369700900.00,Address write: D6
+2505,16369708860.00,Write
+2506,16369710020.00,ACK
+2507,16369711420.00,Data write: FF
+2508,16369720480.00,ACK
+2509,16369721820.00,Data write: A3
+2510,16369730900.00,ACK
+2511,16369732240.00,Data write: 02
+2512,16369741340.00,ACK
+2513,16369743280.00,Stop
+2514,16371305440.00,Start
+2515,16371306700.00,Address write: D6
+2516,16371314600.00,Write
+2517,16371315760.00,ACK
+2518,16371317120.00,Data write: FF
+2519,16371326180.00,ACK
+2520,16371327520.00,Data write: B7
+2521,16371336600.00,ACK
+2522,16371337940.00,Data write: 5A
+2523,16371347020.00,ACK
+2524,16371348880.00,Stop
+2525,16373305420.00,Start
+2526,16373306680.00,Address write: D6
+2527,16373314600.00,Write
+2528,16373315760.00,ACK
+2529,16373317120.00,Data write: FF
+2530,16373326180.00,ACK
+2531,16373327520.00,Data write: B7
+2532,16373336580.00,ACK
+2533,16373337940.00,Data write: 00
+2534,16373347020.00,ACK
+2535,16373348880.00,Stop
+2536,16388305080.00,Start
+2537,16388306340.00,Address write: D6
+2538,16388314240.00,Write
+2539,16388315400.00,ACK
+2540,16388316760.00,Data write: FF
+2541,16388325820.00,ACK
+2542,16388327180.00,Data write: F0
+2543,16388336240.00,ACK
+2544,16388337600.00,Data write: 20
+2545,16388346680.00,ACK
+2546,16388348040.00,Data write: 20
+2547,16388357120.00,ACK
+2548,16388358480.00,Data write: 02
+2549,16388367560.00,ACK
+2550,16388368920.00,Data write: 02
+2551,16388378000.00,ACK
+2552,16388379360.00,Data write: 19
+2553,16388388440.00,ACK
+2554,16388389780.00,Data write: 29
+2555,16388398860.00,ACK
+2556,16388400200.00,Data write: 19
+2557,16388409280.00,ACK
+2558,16388410640.00,Data write: 29
+2559,16388419720.00,ACK
+2560,16388421580.00,Stop
+2561,16388423420.00,Start
+2562,16388424680.00,Address write: D6
+2563,16388432600.00,Write
+2564,16388433760.00,ACK
+2565,16388435120.00,Data write: FF
+2566,16388444180.00,ACK
+2567,16388445520.00,Data write: F0
+2568,16388454600.00,ACK
+2569,16388456680.00,Start repeat
+2570,16388457940.00,Address read: D7
+2571,16388465840.00,Read
+2572,16388467020.00,ACK
+2573,16388468420.00,Data read: 01
+2574,16388477380.00,NACK
+2575,16388479140.00,Stop
+2576,16390305180.00,Start
+2577,16390306500.00,Address write: D6
+2578,16390314400.00,Write
+2579,16390315560.00,ACK
+2580,16390316960.00,Data write: FF
+2581,16390326000.00,ACK
+2582,16390327360.00,Data write: B4
+2583,16390336440.00,ACK
+2584,16390337780.00,Data write: 00
+2585,16390346880.00,ACK
+2586,16390348760.00,Stop
+2587,16392304940.00,Start
+2588,16392306200.00,Address write: D6
+2589,16392314120.00,Write
+2590,16392315280.00,ACK
+2591,16392316640.00,Data write: FF
+2592,16392325700.00,ACK
+2593,16392327040.00,Data write: A3
+2594,16392336120.00,ACK
+2595,16392337460.00,Data write: 00
+2596,16392346560.00,ACK
+2597,16392348420.00,Stop
+2598,16394304880.00,Start
+2599,16394306160.00,Address write: D6
+2600,16394314060.00,Write
+2601,16394315220.00,ACK
+2602,16394316580.00,Data write: FF
+2603,16394325640.00,ACK
+2604,16394326980.00,Data write: B4
+2605,16394336060.00,ACK
+2606,16394337420.00,Data write: 01
+2607,16394346500.00,ACK
+2608,16394348360.00,Stop
+------------------------------------
+[17:59:47.691] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[17:59:47.691] [INFO ] 停止采样
+[17:59:47.691] [INFO ] 停止信号发生器
+[17:59:47.695] [INFO ] 停止循环写入
+[17:59:47.695] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[17:59:47.717] [INFO ] 开始烧录:addr=0x01000000, totalBytes=34024 (33.2 KB)
+[17:59:47.717] [INFO ] BEGIN: addr=0x01000000 totalBytes=34024
+[17:59:49.889] [INFO ] DATA 阶段完成:136 包,共 34024 字节,耗时 2176 ms
+[17:59:49.889] [INFO ] 阶段:烧录执行中... (5-10 秒,无中间进度)
+[17:59:50.166] [INFO ] EXEC 返回:ISP_FLASH_ERROR (status=5)
+[17:59:50.166] [ERROR] ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[17:59:50.166] [WARN ] 收尾:发 RESET_CHIP + CANCEL
+[17:59:50.230] [ERROR] 烧录失败：ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[17:59:52.714] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[17:59:52.714] [INFO ] 停止采样
+[17:59:52.714] [INFO ] 停止信号发生器
+[17:59:52.718] [INFO ] 停止循环写入
+[17:59:52.718] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[17:59:52.743] [INFO ] 开始烧录:addr=0x01000000, totalBytes=34024 (33.2 KB)
+[17:59:52.743] [INFO ] BEGIN: addr=0x01000000 totalBytes=34024
+[17:59:54.906] [INFO ] DATA 阶段完成:136 包,共 34024 字节,耗时 2175 ms
+[17:59:54.907] [INFO ] 阶段:烧录执行中... (5-10 秒,无中间进度)
+[17:59:55.190] [INFO ] EXEC 返回:ISP_FLASH_ERROR (status=5)
+[17:59:55.190] [ERROR] ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[17:59:55.190] [WARN ] 收尾:发 RESET_CHIP + CANCEL
+[17:59:55.254] [ERROR] 烧录失败：ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[17:59:58.522] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[17:59:58.522] [INFO ] 停止采样
+[17:59:58.522] [INFO ] 停止信号发生器
+[17:59:58.528] [INFO ] 停止循环写入
+[17:59:58.528] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[17:59:58.551] [INFO ] 开始烧录:addr=0x01000000, totalBytes=34024 (33.2 KB)
+[17:59:58.552] [INFO ] BEGIN: addr=0x01000000 totalBytes=34024
+[18:00:00.723] [INFO ] DATA 阶段完成:136 包,共 34024 字节,耗时 2176 ms
+[18:00:00.724] [INFO ] 阶段:烧录执行中... (5-10 秒,无中间进度)
+[18:00:00.997] [INFO ] EXEC 返回:ISP_FLASH_ERROR (status=5)
+[18:00:00.998] [ERROR] ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[18:00:00.998] [WARN ] 收尾:发 RESET_CHIP + CANCEL
+[18:00:01.063] [ERROR] 烧录失败：ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[18:00:03.704] [INFO ] 开始烧录序列 (AW86006, 33.2 KB)
+[18:00:03.705] [INFO ] 停止采样
+[18:00:03.705] [INFO ] 停止信号发生器
+[18:00:03.710] [INFO ] 停止循环写入
+[18:00:03.711] [INFO ] 调用 AW86006::flash() (33.2 KB)
+[18:00:03.735] [INFO ] 开始烧录:addr=0x01000000, totalBytes=34024 (33.2 KB)
+[18:00:03.735] [INFO ] BEGIN: addr=0x01000000 totalBytes=34024
+[18:00:05.906] [INFO ] DATA 阶段完成:136 包,共 34024 字节,耗时 2176 ms
+[18:00:05.907] [INFO ] 阶段:烧录执行中... (5-10 秒,无中间进度)
+[18:00:06.181] [INFO ] EXEC 返回:ISP_FLASH_ERROR (status=5)
+[18:00:06.181] [ERROR] ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+[18:00:06.182] [WARN ] 收尾:发 RESET_CHIP + CANCEL
+[18:00:06.247] [ERROR] 烧录失败：ISP 烧录失败:ISP_FLASH_ERROR (status=5)
+-------------------------------
