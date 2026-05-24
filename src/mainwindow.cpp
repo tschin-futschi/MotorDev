@@ -13,6 +13,7 @@
 #include "serialmanager.h"
 #include "services/commanddispatcher.h"
 #include "services/cyclicwriteservice.h"
+#include "services/fwflashservice.h"
 #include "services/generatorservice.h"
 #include "services/scopeservice.h"
 #include "tabs/configtab.h"
@@ -260,7 +261,7 @@ void MainWindow::connectSignals() {
     connect(m_configTab, &ConfigTab::serialConnected, m_topBar, &TopBar::onSerialConnected);
     connect(m_configTab, &ConfigTab::serialDisconnected, m_topBar, &TopBar::onSerialDisconnected);
 
-    // --- 设备主动上报的非配对帧（0x06 调试信息 / 0x0B 启动状态报告）---
+    // --- 设备主动上报的非配对帧（0x06 调试信息 / 0x0B 启动状态报告 / 0x38 EXEC 进度）---
     // SEQ 固定 0xFF，由 STM32 主动发送，PC 无需响应。
     connect(m_dispatcher, &CommandDispatcher::unsolicitedFrameReceived, this,
             [this](uint8_t cmd, uint8_t seq, const QByteArray &data) {
@@ -268,6 +269,29 @@ void MainWindow::connectSignals() {
                 if (cmd == MotorProtocol::CmdDebugInfo) {
                     qCWarning(lcMainWindow).noquote()
                         << QStringLiteral("Device: %1").arg(QString::fromUtf8(data));
+                    return;
+                }
+                if (cmd == MotorProtocol::CmdFlashExecProgress) {
+                    // 0x38 EXEC 进度事件帧：STM32 在 EXEC 期间于 ISP 写入循环中主动上报。
+                    // FwFlashService 为 FwFlashTab 的子对象（QObject parent），与既有
+                    // ScopeService 等的查找模式一致：findChild 拿到后通过 QueuedConnection
+                    // 入队调 onFlashExecProgress slot。
+                    uint8_t phase = 0xFF;
+                    quint32 done = 0;
+                    quint32 total = 0;
+                    if (!MotorProtocol::decodeFlashExecProgress(data, &phase, &done, &total)) {
+                        qCWarning(lcMainWindow).noquote()
+                            << QStringLiteral("FLASH_EXEC_PROGRESS payload truncated (size=%1)").arg(data.size());
+                        return;
+                    }
+                    if (auto *svc = m_fwFlashTab ? m_fwFlashTab->findChild<FwFlashService *>() : nullptr) {
+                        QMetaObject::invokeMethod(svc,
+                                                   "onFlashExecProgress",
+                                                   Qt::QueuedConnection,
+                                                   Q_ARG(quint8, phase),
+                                                   Q_ARG(quint32, done),
+                                                   Q_ARG(quint32, total));
+                    }
                     return;
                 }
                 if (cmd == MotorProtocol::CmdBootStatus) {

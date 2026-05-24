@@ -506,7 +506,9 @@ void SerialManager::handleControlFrame(const ControlFrame &frame) {
 
     // 烧录链路 fast-path：sendAndWaitResponse 正在嵌套 event loop 中等响应。
     // 错误响应 seq=0xFF（CRC 失败）无条件归属当前调用；其他响应按 seq 匹配。
-    // 不匹配的控制帧直接丢弃（烧录期间无其他业务命令在飞）。
+    // 不匹配的帧转发出去走 unsolicited 路径：协议 v2.9 起 EXEC 期间会有
+    // 0x38 FLASH_EXEC_PROGRESS 主动上报帧（SEQ=0xFF），mainwindow 在
+    // unsolicitedFrameReceived 中解码并驱动进度条；类似地 0x06 / 0x0B 也走此路。
     if (m_fastPath.active) {
         const bool match = (frame.cmd == MotorProtocol::CmdErrorResponse) ||
                            (frame.seq == m_fastPath.expectedSeq);
@@ -518,7 +520,13 @@ void SerialManager::handleControlFrame(const ControlFrame &frame) {
             if (m_fastPath.loop != nullptr) {
                 m_fastPath.loop->quit();
             }
+            return;
         }
+        // 非匹配帧（典型为 STM32 主动上报：0x38 EXEC 进度 / 0x06 调试 / 0x0B 启动状态）：
+        // 转发到 frameReceived，由 dispatcher 走 unsolicited 路径。fast-path 期间
+        // dispatcher 的 m_waitingResponse 应为 false（前置序列已停掉其他业务 Service），
+        // 帧会直接落到 unsolicitedFrameReceived → mainwindow 路由。
+        emit frameReceived(frame.cmd, frame.seq, frame.data);
         return;
     }
 

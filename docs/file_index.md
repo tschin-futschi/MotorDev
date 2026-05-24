@@ -63,6 +63,7 @@
 
 ### 固件烧录
 > 2026-05-19 起改为 STM32 本地 ISP 烧录方案（协议 v2.7 §4.3.5，命令 0x32~0x37）。废除原 AW SDK DLL 链路。
+> 2026-05-24 新增协议级真实进度：协议 v2.9 §4.3.5 加 `0x38 FLASH_EXEC_PROGRESS` 事件帧（STM32→PC 主动上报，SEQ=0xFF，载荷 `[phase(1)][done(4 LE)][total(4 LE)]`，phase 0=ERASE / 1=WRITE）。STM32 在 EXEC 期间于 `aw_flash_download_check` 内 erase 前/后 + write 循环每次后主动上报，上位机据此驱动 EXEC 阶段进度条真实推进。4 阶段权重映射 DATA 20% / ERASE 5% / WRITE 70% / TAIL 5%，常量集中在 `FwFlashProgress` 命名空间。
 > 框架：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；strategy 直接调 `SerialManager::sendAndWaitResponse` 发协议 0x32~0x37 命令）+ 协作式取消（`cancelFlag`）+ **心跳暂停 / 恢复**（EXEC 阻塞 5-10s 期间 STM32 不响应任何帧，FwFlashService 在烧录任务前 stopHeartbeat、任务完成回主线程后 startHeartbeat）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 共用 `AwLocalIspStrategy` 基类（BEGIN → DATA 循环 → EXEC,失败时 RESET_CHIP + CANCEL 收尾）；DW9786 / DW9788 仍为 stub。UI 加载固件后即校验 ≤ 64 KB 且 4 字节对齐（STM32 端 SRAM1 单缓冲上限）。
 
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *`，构造 `LogSink` lambda 注入 registry，让 strategy 日志转发到 `FwFlashLogPanel`；`parseAndShowFile` 加载固件后校验 ≤ 64 KB / 4 字节对齐
@@ -70,15 +71,16 @@
 - `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
 - `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 通用上限（AW 本地 ISP 实际可用上限 64 KB 在 UI/strategy 层另行校验）
-- `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + 通过 `invokeMethod(QueuedConnection)` 把烧录任务投递到 SerialManager 工作线程（fast-path）+ 烧录前后 stopHeartbeat / startHeartbeat + 进度/日志/状态信号
+- `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + 通过 `invokeMethod(QueuedConnection)` 把烧录任务投递到 SerialManager 工作线程（fast-path）+ 烧录前后 stopHeartbeat / startHeartbeat + 进度/日志/状态信号 + `onFlashExecProgress` slot 消费 STM32 端 0x38 进度帧（按 DATA/ERASE/WRITE/TAIL 权重折算总进度 + emitProgressPct helper 统一上报）
 - `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
 - `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `SerialManager *` 与 `AwLocalIspStrategy::LogSink`，按 IC 型号枚举/查找）
-- `src/services/flashstrategies/aw_local_isp_strategy` `[通信]` — AW 本地 ISP 烧录策略共用基类：BEGIN(0x32) → DATA 循环(0x33,252 B/帧,严格递增 pktSeq,响应校验 nextSeq) → EXEC(0x34,15 s 超时) → 失败收尾(0x37 RESET_CHIP + 0x36 CANCEL)；fast-path 同步调用 `SerialManager::sendAndWaitResponse`,Q_ASSERT_X 同线程
+- `src/services/flashstrategies/aw_local_isp_strategy` `[通信]` — AW 本地 ISP 烧录策略共用基类：BEGIN(0x32) → DATA 循环(0x33,252 B/帧,严格递增 pktSeq,响应校验 nextSeq) → EXEC(0x34,15 s 超时) → 失败收尾(0x37 RESET_CHIP + 0x36 CANCEL)；fast-path 同步调用 `SerialManager::sendAndWaitResponse`,Q_ASSERT_X 同线程；DATA 末尾无条件强推 100% 跳过节流，确保 UI 精确收口
 - `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwLocalIspStrategy`，仅声明型号 / 描述）
 - `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwLocalIspStrategy`，与 AW86006 共用 STM32 端 ISP 驱动）
 - `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）
 - `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 烧录策略（stub）
-- `src/protocol/motor_protocol` `[协议]` — AW 本地 ISP 命令 `0x32`~`0x37` 编解码（小端载荷,与 STM32 端 `pFrame->data[i]` 解码方式对齐）+ `AwIspStatus` 枚举与名称表 + 保留通用 I2C 透传 `0x30`(写) / `0x31`(读) 编解码（业务侧已不再使用,作为通用 debug 工具保留）
+- `src/protocol/motor_protocol` `[协议]` — AW 本地 ISP 命令 `0x32`~`0x37` 编解码（小端载荷,与 STM32 端 `pFrame->data[i]` 解码方式对齐）+ `AwIspStatus` 枚举与名称表 + `0x38 FLASH_EXEC_PROGRESS` 事件帧 `decodeFlashExecProgress` + `FlashExecPhase` 枚举 + 保留通用 I2C 透传 `0x30`(写) / `0x31`(读) 编解码（业务侧已不再使用,作为通用 debug 工具保留）
+- `src/mainwindow.cpp` 路由：`unsolicitedFrameReceived` 分支识别 0x38 进度帧，通过 `findChild<FwFlashService>` + `QMetaObject::invokeMethod(QueuedConnection)` 转发给 service slot
 
 ### 串口调试模拟器
 - `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面

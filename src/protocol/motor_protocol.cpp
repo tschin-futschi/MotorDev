@@ -39,6 +39,7 @@ const char *commandName(uint8_t cmd) {
     case CmdFlashStatus: return "FlashStatus";
     case CmdFlashCancel: return "FlashCancel";
     case CmdFlashResetChip: return "FlashResetChip";
+    case CmdFlashExecProgress: return "FlashExecProgress";
     case CmdStartSampling: return "StartSampling";
     case CmdStopSampling: return "StopSampling";
     case CmdSetSampleInterval: return "SetSampleInterval";
@@ -371,6 +372,26 @@ bool decodeFlashStatusResponse(const QByteArray &data,
     };
     *rxOffsetOut = u32LE(1);
     *totalBytesOut = u32LE(5);
+    return true;
+}
+
+bool decodeFlashExecProgress(const QByteArray &data,
+                             uint8_t *phaseOut,
+                             quint32 *doneOut,
+                             quint32 *totalOut) {
+    if (data.size() < 9 || phaseOut == nullptr ||
+        doneOut == nullptr || totalOut == nullptr) {
+        return false;
+    }
+    *phaseOut = static_cast<uint8_t>(data.at(0));
+    auto u32LE = [&](int offset) -> quint32 {
+        return  static_cast<quint8>(data.at(offset))
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 1))) << 8)
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 2))) << 16)
+             | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 3))) << 24);
+    };
+    *doneOut = u32LE(1);
+    *totalOut = u32LE(5);
     return true;
 }
 

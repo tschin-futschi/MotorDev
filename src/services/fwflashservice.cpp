@@ -11,6 +11,7 @@
 // =============================================================================
 #include "services/fwflashservice.h"
 
+#include "protocol/motor_protocol.h"
 #include "serialmanager.h"
 #include "services/flashstrategy.h"
 #include "services/flashstrategyregistry.h"
@@ -69,6 +70,14 @@ void FwFlashService::emitLog(LogLevel level, const QString &message) {
     emit logMessage(level, message);
 }
 
+void FwFlashService::emitProgressPct(int pct) {
+    const int clamped = qBound(0, pct, 100);
+    const qint64 equiv = (m_totalBytes > 0)
+                            ? (m_totalBytes * static_cast<qint64>(clamped) / 100)
+                            : 0;
+    emit progressUpdated(equiv, m_totalBytes);
+}
+
 void FwFlashService::startFlash(const QString &icModel,
                                 const QByteArray &firmware,
                                 qint64 totalBytes) {
@@ -114,6 +123,49 @@ void FwFlashService::cancelFlash() {
     if (!isBusy()) return;
     if (m_cancelFlag) m_cancelFlag->store(true);
     emitLog(LogLevel::Warn, QStringLiteral("正在取消烧录..."));
+}
+
+void FwFlashService::onFlashExecProgress(quint8 phase, quint32 done, quint32 total) {
+    // 仅在 Flashing 状态接受进度帧。其他状态收到属于乱序帧（STM32 上次烧录结束太迟
+    // 才到的尾帧 / 协议不同步），写一条 warn 日志并丢弃。
+    if (m_state != State::Flashing) {
+        qCWarning(lcFwFlash) << "ignore stray 0x38 progress: state="
+                              << static_cast<int>(m_state)
+                              << " phase=" << phase << " done=" << done << " total=" << total;
+        return;
+    }
+    if (total == 0U) {
+        // 协议要求 total ≥ 1，这里防御性兜底，避免除零
+        return;
+    }
+    if (done > total) {
+        done = total;
+    }
+
+    // ERASE 阶段折算：DATA 之后的 5% 区间，即 [kPctData, kPctData + kPctErase]
+    // WRITE 阶段折算：ERASE 之后的 70% 区间，即 [kPctData + kPctErase, kPctData + kPctErase + kPctWrite]
+    using namespace FwFlashProgress;
+    int pct = 0;
+    QString stageText;
+    switch (phase) {
+    case static_cast<quint8>(MotorProtocol::FlashExecPhase::Erase):
+        pct = kPctData +
+              static_cast<int>(static_cast<qint64>(kPctErase) * done / total);
+        stageText = (done < total)
+                        ? QStringLiteral("擦除 Flash...")
+                        : QStringLiteral("擦除完成");
+        break;
+    case static_cast<quint8>(MotorProtocol::FlashExecPhase::Write):
+        pct = kPctData + kPctErase +
+              static_cast<int>(static_cast<qint64>(kPctWrite) * done / total);
+        stageText = QStringLiteral("写入 Flash %1 / %2 块").arg(done).arg(total);
+        break;
+    default:
+        qCWarning(lcFwFlash) << "unknown phase in 0x38 progress:" << phase;
+        return;
+    }
+    emitProgressPct(pct);
+    emit stageMessage(stageText);
 }
 
 namespace {
@@ -192,17 +244,23 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
         QString errorMsg;
         auto progress = [self, total](qint64 sent) {
             if (self.isNull()) return;
-            // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
-            emit self->progressUpdated(sent, total);
             // strategy 上报的是 firmware 已发字节(0x33 DATA 累计 offset)，
             // 不超过 firmware 总长；qMin clamp 是历史防御性兜底，保留即可。
             const qint64 displaySent = qMin(sent, total);
-            const double pct = total > 0 ? (displaySent * 100.0 / total) : 0.0;
+            // DATA 阶段总进度区间：0 → kPctData(20%)。
+            // 后续 ERASE / WRITE / TAIL 由 STM32 端 0x38 进度帧通过 onFlashExecProgress 推进。
+            const int dataPct = (total > 0)
+                                   ? static_cast<int>(displaySent * FwFlashProgress::kPctData / total)
+                                   : 0;
+            // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
+            QMetaObject::invokeMethod(self.data(), [self, dataPct]() {
+                if (self.isNull()) return;
+                self->emitProgressPct(dataPct);
+            }, Qt::QueuedConnection);
             emit self->stageMessage(
-                QStringLiteral("烧录中 %1 KB / %2 KB (%3%)")
+                QStringLiteral("传输中 %1 KB / %2 KB")
                     .arg(QString::number(displaySent / 1024.0, 'f', 1))
-                    .arg(QString::number(total / 1024.0, 'f', 1))
-                    .arg(QString::number(pct, 'f', 1)));
+                    .arg(QString::number(total / 1024.0, 'f', 1)));
         };
         const bool ok = strategy->flash(firmware, progress, *cancelFlag, &errorMsg);
         const bool wasCancelled = cancelFlag->load();
@@ -214,7 +272,7 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
                 if (self.isNull()) return;
                 self->m_flashInFlight = false;
                 if (ok) {
-                    emit self->progressUpdated(total, total);
+                    self->emitProgressPct(100);
                     self->setState(State::Completed);
                     emit self->stageMessage(QStringLiteral("烧录完成"));
                     self->emitLog(LogLevel::Ok, QStringLiteral("烧录完成"));

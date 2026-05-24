@@ -221,6 +221,13 @@ bool AwLocalIspStrategy::doData(const QByteArray &firmware,
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     log(LogLevel::Info, QStringLiteral("DATA 阶段完成:%1 包,共 %2 字节,耗时 %3 ms")
                             .arg(pktSeq).arg(total).arg(elapsedMs));
+    // DATA 末尾无条件推一次 total,绕过 notifyProgress 的节流(16ms / 1024B 双阈值)。
+    // 小固件最后一包可能不满阈值导致漏推,UI 端会卡在 99.x% 直到 EXEC 完成;
+    // 在两阶段进度模型下这表现为 DATA 段(0~20%)末尾不抵达 20%。强制推一次精确收口。
+    if (m_progress) {
+        m_progress(static_cast<qint64>(total));
+        m_lastReportedBytes = static_cast<qint64>(total);
+    }
     return true;
 }
 

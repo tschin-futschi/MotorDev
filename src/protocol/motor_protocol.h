@@ -47,13 +47,14 @@ inline constexpr uint8_t CmdBulkRead = 0x22;            ///< 批量读寄存器
 inline constexpr uint8_t CmdI2cTransferWrite = 0x30;    ///< I2C 透传写（任意 7-bit 从机 + 任意寄存器地址长度 + 任意数据长度）
 inline constexpr uint8_t CmdI2cTransferRead = 0x31;     ///< I2C 透传读
 
-// --- AW 本地 ISP 烧录（0x32~0x37，协议 v2.7）---
-inline constexpr uint8_t CmdFlashBegin = 0x32;      ///< 启动烧录 session（载荷: [addr LE 4B][totalBytes LE 4B]）
-inline constexpr uint8_t CmdFlashData = 0x33;       ///< 分包下发固件（载荷: [pktSeq LE 2B][chunk]；响应: [nextSeq LE 2B]）
-inline constexpr uint8_t CmdFlashExec = 0x34;       ///< 触发实际烧录（阻塞 5-10s；响应: [ispStatus 1B]）
-inline constexpr uint8_t CmdFlashStatus = 0x35;     ///< 查询 session 状态（响应: [state 1B][rxOffset LE 4B][totalBytes LE 4B]）
-inline constexpr uint8_t CmdFlashCancel = 0x36;     ///< 重置 session 到 IDLE
-inline constexpr uint8_t CmdFlashResetChip = 0x37;  ///< 单独调 aw_reset_chip()（响应: [ispStatus 1B]）
+// --- AW 本地 ISP 烧录（0x32~0x38，协议 v2.9）---
+inline constexpr uint8_t CmdFlashBegin = 0x32;          ///< 启动烧录 session（载荷: [addr LE 4B][totalBytes LE 4B]）
+inline constexpr uint8_t CmdFlashData = 0x33;           ///< 分包下发固件（载荷: [pktSeq LE 2B][chunk]；响应: [nextSeq LE 2B]）
+inline constexpr uint8_t CmdFlashExec = 0x34;           ///< 触发实际烧录（阻塞 5-10s；响应: [ispStatus 1B]）
+inline constexpr uint8_t CmdFlashStatus = 0x35;         ///< 查询 session 状态（响应: [state 1B][rxOffset LE 4B][totalBytes LE 4B]）
+inline constexpr uint8_t CmdFlashCancel = 0x36;         ///< 重置 session 到 IDLE
+inline constexpr uint8_t CmdFlashResetChip = 0x37;      ///< 单独调 aw_reset_chip()（响应: [ispStatus 1B]）
+inline constexpr uint8_t CmdFlashExecProgress = 0x38;   ///< STM32 主动上报 EXEC 进度（SEQ=0xFF，载荷: [phase 1B][done LE 4B][total LE 4B]）
 
 // --- 示波器采样 ---
 inline constexpr uint8_t CmdStartSampling = 0x50;       ///< 启动采样
@@ -287,6 +288,19 @@ bool decodeFlashStatusResponse(const QByteArray &data,
                                uint8_t *stateOut,
                                quint32 *rxOffsetOut,
                                quint32 *totalBytesOut);
+
+/// @brief EXEC 进度事件帧的阶段标识（与 STM32 端 AW_ISP_PROGRESS_PHASE_* 一致）
+enum class FlashExecPhase : uint8_t {
+    Erase = 0,  ///< 擦除阶段（aw_flash_block_erase_check 前/后各一次）
+    Write = 1,  ///< 写入阶段（write 块循环每次成功后一次）
+};
+
+/// @brief 解码 0x38 FLASH_EXEC_PROGRESS 事件帧（9 字节: phase + done + total,均小端）
+/// @return true=解析成功;失败时 out 参数不变
+bool decodeFlashExecProgress(const QByteArray &data,
+                             uint8_t *phaseOut,
+                             quint32 *doneOut,
+                             quint32 *totalOut);
 
 // ---------------------------------------------------------------------------
 // 响应载荷解码

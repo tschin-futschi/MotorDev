@@ -349,7 +349,9 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
         return;
     }
 
-    // AW 本地 ISP 上限校验（STM32 端 SRAM1 单缓冲 64 KB；协议规定固件 4 字节对齐）
+    // AW 本地 ISP 上限校验（STM32 端 SRAM1 单缓冲 64 KB）
+    // 注意：64 KB = 65536 本身已 4 字节对齐，下面的补零最多 +3 字节，
+    // 原文件 ≤ 65536 时补零后仍 ≤ 65536，不会因补零导致越界。
     constexpr qint64 kMaxIspBytes = 64LL * 1024LL;
     if (info.data.size() > kMaxIspBytes) {
         m_currentFileValid = false;
@@ -361,25 +363,33 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
         updateStartEnabled();
         return;
     }
-    if ((info.data.size() % 4) != 0) {
-        m_currentFileValid = false;
-        m_currentFirmwareData.clear();
-        m_currentFirmwareTotal = 0;
-        m_logPanel->appendError(
-            tr("固件 %1 字节非 4 字节对齐，AW 本地 ISP 不支持")
-                .arg(info.data.size()));
-        updateStartEnabled();
-        return;
+
+    // 4 字节对齐处理：若原始数据非对齐，末尾补 0xFF 至 4 字节边界。
+    // 选 0xFF 与 Flash 擦除态一致，写入等价于不写；HEX 解析器段间填充也用 0xFF。
+    // 信息面板继续显示原始字节数与 CRC32（用作固件版本标识）；
+    // 实际写入 STM32 / 进度条 total 基于补零后的字节数；
+    // strategy 入口的对齐校验保留作为防御性兜底，正常路径下永不触发。
+    QByteArray firmwareData = info.data;
+    const int padBytes = static_cast<int>((4 - firmwareData.size() % 4) % 4);
+    if (padBytes > 0) {
+        firmwareData.append(padBytes, static_cast<char>(0xFF));
     }
 
     m_currentFileValid = true;
-    m_currentFirmwareData = info.data;
-    m_currentFirmwareTotal = info.data.size();
+    m_currentFirmwareData = firmwareData;
+    m_currentFirmwareTotal = firmwareData.size();
     m_logPanel->appendInfo(
         tr("已加载固件：%1（%2 字节，CRC32 0x%3）")
             .arg(info.fileName)
             .arg(info.data.size())
             .arg(info.crc32, 8, 16, QLatin1Char('0')));
+    if (padBytes > 0) {
+        m_logPanel->appendWarn(
+            tr("固件 %1 字节非 4 字节对齐，已自动末尾补 %2 字节 0xFF → %3 字节后写入")
+                .arg(info.data.size())
+                .arg(padBytes)
+                .arg(firmwareData.size()));
+    }
     updateStartEnabled();
 }
 

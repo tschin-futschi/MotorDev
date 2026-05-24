@@ -89,6 +89,14 @@ public slots:
     /// @brief 请求取消正在进行的烧录任务
     void cancelFlash();
 
+    /// @brief 接收 STM32 端 0x38 FLASH_EXEC_PROGRESS 事件帧。
+    /// 由 MainWindow 在 unsolicitedFrameReceived 分支解码后通过 invokeMethod 入队调用。
+    /// 仅在 m_state == Flashing 时生效；非 Flashing 状态收到也只是 warn 日志，不改进度。
+    /// @param phase 0=ERASE / 1=WRITE（其他值忽略）
+    /// @param done  当前阶段已完成单元数
+    /// @param total 当前阶段总单元数
+    void onFlashExecProgress(quint8 phase, quint32 done, quint32 total);
+
 signals:
     void stateChanged(FwFlashService::State newState);
     void stageMessage(const QString &message);
@@ -101,6 +109,10 @@ private:
     void emitLog(LogLevel level, const QString &message);
     void runPreflightAndFlash(FlashStrategy *strategy, const QByteArray &firmware);
     void shutdownWorker();
+    /// @brief 按总进度百分比（0~100）emit progressUpdated。
+    /// 将 pct 折算为等效字节数（pct * m_totalBytes / 100），交给 UI 的 progress bar。
+    /// 所有阶段（DATA/ERASE/WRITE/TAIL）的进度上报都通过此函数，权重见 FwFlashProgress 命名空间。
+    void emitProgressPct(int pct);
 
     FlashStrategyRegistry *m_registry = nullptr;
     SerialManager *m_serialManager = nullptr;
@@ -114,3 +126,21 @@ private:
 
     std::shared_ptr<std::atomic<bool>> m_cancelFlag;
 };
+
+// -----------------------------------------------------------------------------
+// 总进度条权重映射（4 阶段，合计 100%）
+//   DATA  : PC→STM32 SRAM 传输阶段（真实字节进度）
+//   ERASE : STM32 调 aw_flash_block_erase_check（一次性 ~800 ms）
+//   WRITE : STM32 写 Flash block 循环（占 EXEC 主体 ~6 s）
+//   TAIL  : EXEC 响应到达 + reset_chip（~100 ms）
+// 实测后可微调；改动只需调本常量，所有进度折算逻辑都基于它。
+// 见 plan_flash_progress_0x38_*.md §"EXEC 阶段权重的物理含义"。
+// -----------------------------------------------------------------------------
+namespace FwFlashProgress {
+inline constexpr int kPctData  = 20;
+inline constexpr int kPctErase = 5;
+inline constexpr int kPctWrite = 70;
+inline constexpr int kPctTail  = 5;
+static_assert(kPctData + kPctErase + kPctWrite + kPctTail == 100,
+              "FwFlashProgress weights must sum to 100");
+}  // namespace FwFlashProgress
