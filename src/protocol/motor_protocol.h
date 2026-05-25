@@ -56,6 +56,16 @@ inline constexpr uint8_t CmdFlashCancel = 0x36;         ///< 重置 session 到 
 inline constexpr uint8_t CmdFlashResetChip = 0x37;      ///< 单独调 aw_reset_chip()（响应: [ispStatus 1B]）
 inline constexpr uint8_t CmdFlashExecProgress = 0x38;   ///< STM32 主动上报 EXEC 进度（SEQ=0xFF，载荷: [phase 1B][done LE 4B][total LE 4B]）
 
+// --- STM32 本地 FLASH 文件存储（0x39~0x3E，协议 v2.10）---
+// 写 STM32 自身 Flash Sector 5-11（[0x08020000, 0x08100000) = 896KB）暂存任意文件。
+// 单插槽覆盖：每次 WRITE_BEGIN 整区擦除。下载字节与原始上传文件 1:1 无损（改扩展名即可复原）。
+inline constexpr uint8_t CmdFlashStoreWriteBegin = 0x39; ///< 开始写入 session（载荷: [totalBytes LE 4B]；响应: [status 1B]；阻塞 3-7s 整区擦）
+inline constexpr uint8_t CmdFlashStoreWriteData  = 0x3A; ///< 写一包（载荷: [pktSeq LE 2B][chunk]；响应: [nextSeq LE 2B] 或错误响应）
+inline constexpr uint8_t CmdFlashStoreWriteEnd   = 0x3B; ///< 提交并校验 CRC（载荷: [expectedCrc32 LE 4B]；响应: [status 1B]）
+inline constexpr uint8_t CmdFlashStoreReadBegin  = 0x3C; ///< 读元数据（无载荷；响应: [status 1B][size LE 4B][crc32 LE 4B]）
+inline constexpr uint8_t CmdFlashStoreReadData   = 0x3D; ///< 读一包（载荷: [pktSeq LE 2B]；响应: [chunk N≤252B] 或错误响应）
+inline constexpr uint8_t CmdFlashStoreInfo       = 0x3E; ///< 查询容量（无载荷；响应: [totalCapacity LE 4B][usedSize LE 4B]）
+
 // --- 示波器采样 ---
 inline constexpr uint8_t CmdStartSampling = 0x50;       ///< 启动采样
 inline constexpr uint8_t CmdStopSampling = 0x51;        ///< 停止采样
@@ -301,6 +311,68 @@ bool decodeFlashExecProgress(const QByteArray &data,
                              uint8_t *phaseOut,
                              quint32 *doneOut,
                              quint32 *totalOut);
+
+// ---------------------------------------------------------------------------
+// STM32 本地 FLASH 文件存储（0x39~0x3E，协议 v2.10）
+//
+// 状态码 FlashStoreStatus 与 STM32 端 App/Inc/app_flashstore.h 的 FsStatus
+// 枚举严格对齐——任一侧改动必须同步另一侧（值、名称、语义）。
+// ---------------------------------------------------------------------------
+
+/// @brief Flash 文件存储操作状态（用于 0x39 / 0x3B / 0x3C 响应的 status 字段）
+enum class FlashStoreStatus : uint8_t {
+    Ok           = 0x00,  ///< 成功
+    Empty        = 0x01,  ///< 元数据 magic = 0xFFFFFFFF（slot 为空，正常状态）
+    Corrupt      = 0x02,  ///< 元数据 magic 非法或 size 越界
+    WriteFailed  = 0x03,  ///< Flash erase / program 硬件失败
+    CrcMismatch  = 0x04,  ///< WRITE_END：PC 给的 CRC 与 STM32 累计 CRC 不一致 → 元数据未写
+    Busy         = 0x05,  ///< 保留
+    OutOfRange   = 0x06,  ///< totalBytes / pktSeq / len 越界
+    SeqError     = 0x07,  ///< pktSeq 不连续 / 无 active session / WriteEnd 时 offset != totalBytes
+};
+
+/// @brief Flash 文件存储状态的可读名称
+/// @param status  状态码原值
+/// @return 名称 C 字符串（"OK" / "EMPTY" / ... / "UNKNOWN"）
+const char *flashStoreStatusName(uint8_t status);
+
+/// @brief 编码 0x39 WRITE_BEGIN 命令载荷（4 字节小端）
+/// @param totalBytes  即将写入的总字节数；调用方保证 1 ≤ totalBytes ≤ 917488
+QByteArray encodeFlashStoreWriteBegin(quint32 totalBytes);
+
+/// @brief 编码 0x3A WRITE_DATA 命令载荷
+/// @param pktSeq  当前包序号（从 0 严格递增，2 字节小端）
+/// @param chunk   本包数据（≤ 252 字节，与 0x33 一致）
+QByteArray encodeFlashStoreWriteData(quint16 pktSeq, const QByteArray &chunk);
+
+/// @brief 编码 0x3B WRITE_END 命令载荷（4 字节小端）
+/// @param expectedCrc32  PC 端预先对原始文件算出的 CRC32（IEEE 802.3）
+QByteArray encodeFlashStoreWriteEnd(quint32 expectedCrc32);
+
+/// @brief 编码 0x3D READ_DATA 命令载荷（2 字节小端）
+/// @param pktSeq  请求第 pktSeq 包（0-based，offset = pktSeq * 252）
+QByteArray encodeFlashStoreReadData(quint16 pktSeq);
+
+/// @brief 解码 0x3A WRITE_DATA 响应（2 字节小端，STM32 期望的下一个 pktSeq）
+/// @return true=解析成功；失败时 nextSeqOut 不变
+bool decodeFlashStoreWriteDataResponse(const QByteArray &data, quint16 *nextSeqOut);
+
+/// @brief 解码 0x39 WRITE_BEGIN / 0x3B WRITE_END 响应（1 字节 status）
+/// @return true=解析成功；失败时 statusOut 不变
+bool decodeFlashStoreSimpleStatus(const QByteArray &data, uint8_t *statusOut);
+
+/// @brief 解码 0x3C READ_BEGIN 响应（9 字节: status + size + crc32，均小端）
+/// @return true=解析成功；失败时 out 参数不变
+bool decodeFlashStoreReadBeginResponse(const QByteArray &data,
+                                       uint8_t *statusOut,
+                                       quint32 *sizeOut,
+                                       quint32 *crc32Out);
+
+/// @brief 解码 0x3E INFO 响应（8 字节: totalCapacity + usedSize，均小端）
+/// @return true=解析成功；失败时 out 参数不变
+bool decodeFlashStoreInfoResponse(const QByteArray &data,
+                                  quint32 *totalCapacityOut,
+                                  quint32 *usedSizeOut);
 
 // ---------------------------------------------------------------------------
 // 响应载荷解码

@@ -50,6 +50,10 @@ void ActivityBar::connectSignals() {
         setActivePage(ScopePage);
         emit pageSelected(ScopePage);
     });
+    connect(m_storageButton, &QPushButton::clicked, this, [this] {
+        setActivePage(FlashStoragePage);
+        emit pageSelected(FlashStoragePage);
+    });
     connect(m_debugButton, &QPushButton::clicked, this, [this] {
         setActivePage(DebugPage);
         emit pageSelected(DebugPage);
@@ -72,6 +76,9 @@ void ActivityBar::setPageEnabled(int page, bool enabled) {
     case ScopePage:
         m_scopeButton->setEnabled(enabled);
         break;
+    case FlashStoragePage:
+        m_storageButton->setEnabled(enabled);
+        break;
     case DebugPage:
         break; // 调试按钮始终可用
     default:
@@ -86,6 +93,7 @@ void ActivityBar::setActivePage(int index) {
         m_registerButton,
         m_flashButton,
         m_scopeButton,
+        m_storageButton,
         m_debugButton,
         m_settingsButton,
     };
@@ -95,6 +103,7 @@ void ActivityBar::setActivePage(int index) {
             || (button == m_registerButton && index == RegisterPage)
             || (button == m_flashButton && index == FlashPage)
             || (button == m_scopeButton && index == ScopePage)
+            || (button == m_storageButton && index == FlashStoragePage)
             || (button == m_debugButton && index == DebugPage);
         button->setProperty("active", active);
         MotorDev::UiUtil::repolish(button);
@@ -126,6 +135,7 @@ void ActivityBar::setupUi() {
         {&m_registerButton, "registerButton", "读写"},
         {&m_flashButton, "flashButton", "烧录"},
         {&m_scopeButton, "scopeButton", "示波"},
+        {&m_storageButton, "storageButton", "存储"},
         {&m_debugButton, "debugButton", "调试"},
     };
 

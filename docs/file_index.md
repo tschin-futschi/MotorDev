@@ -82,6 +82,15 @@
 - `src/protocol/motor_protocol` `[协议]` — AW 本地 ISP 命令 `0x32`~`0x37` 编解码（小端载荷,与 STM32 端 `pFrame->data[i]` 解码方式对齐）+ `AwIspStatus` 枚举与名称表 + `0x38 FLASH_EXEC_PROGRESS` 事件帧 `decodeFlashExecProgress` + `FlashExecPhase` 枚举 + 保留通用 I2C 透传 `0x30`(写) / `0x31`(读) 编解码（业务侧已不再使用,作为通用 debug 工具保留）
 - `src/mainwindow.cpp` 路由：`unsolicitedFrameReceived` 分支识别 0x38 进度帧，通过 `findChild<FwFlashService>` + `QMetaObject::invokeMethod(QueuedConnection)` 转发给 service slot
 
+### STM32 自身 FLASH 文件存储（协议 v2.10 / 0x39~0x3E）
+> 与 §"固件烧录"（AW IC ISP）**完全独立**的功能：上位机把任意本地文件上传到 STM32 内置 Flash Sector 5-11（`[0x08020000, 0x08100000)`，896 KB）暂存，另一台电脑可下载下来。下载字节与原始上传文件 1:1 无损，改扩展名即可复原。单插槽覆盖模型：每次上传整区擦除（~3-7s 阻塞），不做多文件管理。
+> STM32 端：`Linker/STM32F429ZGTX_FLASH.ld` `FLASH LENGTH` 已收缩 1024K → 128K 防固件膨胀覆盖文件区；`BSP/Src/bsp_flash.c` 提供 Erase/Program/Read；`App/Src/app_flashstore.c` 提供 7 个 API（Init/WriteBegin/Data/End/ReadBegin/Data/GetInfo）+ 16B 元数据 `[magic 0xA5C3E18F][size][crc32][reserved]`；`App/Src/app_protocol.c` 加 6 个 handler。CRC32 算法 IEEE 802.3，两侧严格对算。
+
+- `src/tabs/flashstoragetab` `[UI-Tab]` — FLASH 存储 Tab 容器，单栏布局：容量行（已用/总/剩余 + 刷新）+ 操作行（上传/下载/取消 + 阶段标签）+ 进度条 + 日志面板（复用 `FwFlashLogPanel`）。构造接收 `SerialManager *`，创建 `FlashStoreService` 并 wire 7 个信号
+- `src/services/flashstoreservice` `[通信]` — 状态机（Idle/WritePreparing/WriteBeginning/WriteSending/WriteEnding/ReadBeginning/ReadFetching/QueryingInfo/Completed/Failed/Cancelled）+ fast-path 投递到 SerialManager 工作线程同步调 `sendAndWaitResponse` + 心跳暂停/恢复（与 FwFlashService 同款）+ 协作式取消。三种操作：startWrite（读文件 → 算 CRC32 → 0x39 → 0x3A 循环 → 0x3B）/ startRead（0x3C → 0x3D 循环 → 落盘 → 本地 CRC 校验）/ refreshInfo（0x3E 单帧）。下载文件名 `FLASH_HHMMSS.txt`（PC 本地时间，同秒冲突追加 `_N`）
+- `src/protocol/motor_protocol` `[协议]` — 6 个命令码 `CmdFlashStoreWriteBegin / WriteData / WriteEnd / ReadBegin / ReadData / Info`（0x39~0x3E）+ `FlashStoreStatus` 枚举与 `flashStoreStatusName` + 4 个 encode 函数 + 4 个 decode 函数（小端 LE，与 STM32 端 FsStatus 严格对齐）
+- `src/protocol/firmware_parser` `[协议]` — `computeCrc32` 被 FlashStoreService 复用，与 STM32 端 `app_flashstore.c::crc32_update` byte-by-byte 一致
+
 ### 串口调试模拟器
 - `src/tabs/serialdebugtab` `[UI-Tab]` — 串口调试模拟器独立窗口，应答配置 + 活动日志 UI；点击 ActivityBar "调试" 按钮弹出，不占用 ContentStack 页面
 - `src/services/simulatorservice` `[通信]` — 模拟器命令分发与模拟响应（I2C 扫描/寄存器读写/PMIC/采样启停/发生器），独立 std::thread 生成正弦波形流（基波 1Hz + 纹波 100Hz，通道间相位偏移）
@@ -90,7 +99,7 @@
 ### 主窗口框架与页面导航
 - `src/main.cpp` — 程序入口，创建 QApplication 和 MainWindow，安装全局 Qt 消息处理器（将 qDebug/qWarning 路由至 LogPanel）
 - `src/mainwindow` `[UI-Shell]` — 主窗口，持有并组合所有顶层组件，管理串口连接后部分页面的启用/禁用状态
-- `src/widgets/activitybar` `[UI-Shell]` — 左侧活动栏（配置/读写/烧录/示波四个页面切换按钮；另有"设置"按钮为 UI 占位，未连接信号）
+- `src/widgets/activitybar` `[UI-Shell]` — 左侧活动栏（配置/读写/烧录/示波/存储 五个页面切换按钮 + 调试按钮（浮动窗口）；另有"设置"按钮为 UI 占位，未连接信号）
 - `src/widgets/topbar` `[UI-Shell]` — 顶栏（Logo、串口连接状态显示、示波器页面专属控件：视图模式切换/Style/采样启停；语言切换 combo 为 UI 占位，**i18n 未实现**）
 
 ### 日志面板
@@ -125,6 +134,7 @@
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
 | 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 已落地：`AwLocalIspStrategy` 走 STM32 本地 ISP 协议 0x32~0x37（BEGIN → DATA 循环 → EXEC，失败时 RESET_CHIP + CANCEL 收尾）；上位机不再依赖 PC 端 DLL。DW9786 / DW9788 仍为 stub |
+| STM32 FLASH 文件存储 | `src/tabs/flashstoragetab` + `src/services/flashstoreservice` | 已实现：单插槽覆盖（每次擦 Sector 5-11 共 896 KB）+ 上传/下载/容量查询；下载 1:1 无损（改扩展名复原）；协议 v2.10 / 0x39~0x3E |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
 

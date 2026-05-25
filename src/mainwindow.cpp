@@ -17,6 +17,7 @@
 #include "services/generatorservice.h"
 #include "services/scopeservice.h"
 #include "tabs/configtab.h"
+#include "tabs/flashstoragetab.h"
 #include "tabs/fwflashtab.h"
 #include "tabs/oscilloscoptab.h"
 #include "tabs/registerrwtab.h"
@@ -88,6 +89,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
     m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
     m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+    m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
     m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
     m_scopeTab->setEnabled(true);
 }
@@ -203,6 +205,10 @@ void MainWindow::setupUi() {
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);
     m_contentStack->addWidget(m_scopeTab);    // index 3: 示波器页
+
+    // STM32 自身 FLASH 文件存储页（协议 v2.10 / 0x39~0x3E）
+    m_flashStorageTab = new FlashStorageTab(m_serialManager, m_contentStack);
+    m_contentStack->addWidget(m_flashStorageTab); // index 4: FLASH 文件存储页
 
     // 烧录前置序列：从 OscilloscopTab 持有的 service 实例查找并注入回调
     // findChild 依赖各 service 在对应 tab 构造时以 this 作为 QObject parent，
@@ -354,6 +360,7 @@ void MainWindow::connectSignals() {
         m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
         m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
         m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
     });
@@ -365,6 +372,7 @@ void MainWindow::connectSignals() {
         m_activityBar->setPageEnabled(ActivityBar::RegisterPage, true);
         m_activityBar->setPageEnabled(ActivityBar::FlashPage, true);
         m_activityBar->setPageEnabled(ActivityBar::ScopePage, true);
+        m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
 

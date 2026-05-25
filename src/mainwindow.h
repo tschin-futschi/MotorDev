@@ -20,6 +20,7 @@ class CommandDispatcher;
 class ConfigTab;
 class DeviceContext;
 class FwFlashTab;
+class FlashStorageTab;
 class LogPanel;
 class OscilloscopTab;
 class QStackedWidget;
@@ -67,8 +68,9 @@ private:
     // --- Tab 页面 ---
     ConfigTab *m_configTab = nullptr;                ///< 配置 Tab（串口/IC/PMIC）
     RegisterRwTab *m_registerTab = nullptr;          ///< 寄存器读写 Tab
-    FwFlashTab *m_fwFlashTab = nullptr;              ///< 固件烧录 Tab
+    FwFlashTab *m_fwFlashTab = nullptr;              ///< 固件烧录 Tab（AW IC ISP）
     OscilloscopTab *m_scopeTab = nullptr;            ///< 示波器 Tab
+    FlashStorageTab *m_flashStorageTab = nullptr;    ///< STM32 自身 FLASH 文件存储 Tab（协议 v2.10）
     SerialDebugTab *m_debugTab = nullptr;            ///< 串口调试模拟器（浮动窗口）
 
     /// @brief 是否已对当前会话中的 INIT_FAIL_* 弹过提示框（防重弹；串口断开重置）

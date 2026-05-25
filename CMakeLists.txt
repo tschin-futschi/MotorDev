@@ -52,6 +52,8 @@ qt_add_executable(MotorDev
     src/services/flashstrategyregistry.h
     src/services/fwflashservice.cpp
     src/services/fwflashservice.h
+    src/services/flashstoreservice.cpp
+    src/services/flashstoreservice.h
     src/services/flashstrategies/aw_local_isp_strategy.cpp
     src/services/flashstrategies/aw_local_isp_strategy.h
     src/services/flashstrategies/aw86006_strategy.cpp
@@ -105,6 +107,8 @@ qt_add_executable(MotorDev
     src/tabs/serialdebugtab.h
     src/tabs/fwflashtab.cpp
     src/tabs/fwflashtab.h
+    src/tabs/flashstoragetab.cpp
+    src/tabs/flashstoragetab.h
     src/tabs/oscilloscoptab.cpp
     src/tabs/oscilloscoptab.h
     resources/resources.qrc

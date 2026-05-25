@@ -40,6 +40,12 @@ const char *commandName(uint8_t cmd) {
     case CmdFlashCancel: return "FlashCancel";
     case CmdFlashResetChip: return "FlashResetChip";
     case CmdFlashExecProgress: return "FlashExecProgress";
+    case CmdFlashStoreWriteBegin: return "FlashStoreWriteBegin";
+    case CmdFlashStoreWriteData:  return "FlashStoreWriteData";
+    case CmdFlashStoreWriteEnd:   return "FlashStoreWriteEnd";
+    case CmdFlashStoreReadBegin:  return "FlashStoreReadBegin";
+    case CmdFlashStoreReadData:   return "FlashStoreReadData";
+    case CmdFlashStoreInfo:       return "FlashStoreInfo";
     case CmdStartSampling: return "StartSampling";
     case CmdStopSampling: return "StopSampling";
     case CmdSetSampleInterval: return "SetSampleInterval";
@@ -392,6 +398,110 @@ bool decodeFlashExecProgress(const QByteArray &data,
     };
     *doneOut = u32LE(1);
     *totalOut = u32LE(5);
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// STM32 本地 FLASH 文件存储 — 0x39 ~ 0x3E（协议 v2.10）
+// 小端布局；状态码与 STM32 端 FsStatus 严格对齐
+// -----------------------------------------------------------------------------
+
+const char *flashStoreStatusName(uint8_t status) {
+    switch (static_cast<FlashStoreStatus>(status)) {
+    case FlashStoreStatus::Ok:          return "OK";
+    case FlashStoreStatus::Empty:       return "EMPTY";
+    case FlashStoreStatus::Corrupt:     return "CORRUPT";
+    case FlashStoreStatus::WriteFailed: return "WRITE_FAILED";
+    case FlashStoreStatus::CrcMismatch: return "CRC_MISMATCH";
+    case FlashStoreStatus::Busy:        return "BUSY";
+    case FlashStoreStatus::OutOfRange:  return "OUT_OF_RANGE";
+    case FlashStoreStatus::SeqError:    return "SEQ_ERROR";
+    }
+    return "UNKNOWN";
+}
+
+// appendU32LE / appendU16LE 已在本文件 line 318/325 定义（file-static）, 直接复用。
+// 这里只补两个 read helper, 命名加 fs 前缀避免与未来扩展冲突。
+namespace {
+inline quint32 fsReadU32LE(const QByteArray &data, int offset) {
+    return  static_cast<quint8>(data.at(offset))
+         | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 1))) << 8)
+         | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 2))) << 16)
+         | (static_cast<quint32>(static_cast<quint8>(data.at(offset + 3))) << 24);
+}
+inline quint16 fsReadU16LE(const QByteArray &data, int offset) {
+    return static_cast<quint16>(static_cast<quint8>(data.at(offset)))
+         | (static_cast<quint16>(static_cast<quint8>(data.at(offset + 1))) << 8);
+}
+}  // namespace
+
+QByteArray encodeFlashStoreWriteBegin(quint32 totalBytes) {
+    QByteArray payload;
+    payload.reserve(4);
+    appendU32LE(payload, totalBytes);
+    return payload;
+}
+
+QByteArray encodeFlashStoreWriteData(quint16 pktSeq, const QByteArray &chunk) {
+    QByteArray payload;
+    payload.reserve(2 + chunk.size());
+    appendU16LE(payload, pktSeq);
+    payload.append(chunk);
+    return payload;
+}
+
+QByteArray encodeFlashStoreWriteEnd(quint32 expectedCrc32) {
+    QByteArray payload;
+    payload.reserve(4);
+    appendU32LE(payload, expectedCrc32);
+    return payload;
+}
+
+QByteArray encodeFlashStoreReadData(quint16 pktSeq) {
+    QByteArray payload;
+    payload.reserve(2);
+    appendU16LE(payload, pktSeq);
+    return payload;
+}
+
+bool decodeFlashStoreWriteDataResponse(const QByteArray &data, quint16 *nextSeqOut) {
+    if (data.size() < 2 || nextSeqOut == nullptr) {
+        return false;
+    }
+    *nextSeqOut = fsReadU16LE(data, 0);
+    return true;
+}
+
+bool decodeFlashStoreSimpleStatus(const QByteArray &data, uint8_t *statusOut) {
+    if (data.size() < 1 || statusOut == nullptr) {
+        return false;
+    }
+    *statusOut = static_cast<uint8_t>(data.at(0));
+    return true;
+}
+
+bool decodeFlashStoreReadBeginResponse(const QByteArray &data,
+                                       uint8_t *statusOut,
+                                       quint32 *sizeOut,
+                                       quint32 *crc32Out) {
+    if (data.size() < 9 || statusOut == nullptr ||
+        sizeOut == nullptr || crc32Out == nullptr) {
+        return false;
+    }
+    *statusOut = static_cast<uint8_t>(data.at(0));
+    *sizeOut   = fsReadU32LE(data, 1);
+    *crc32Out  = fsReadU32LE(data, 5);
+    return true;
+}
+
+bool decodeFlashStoreInfoResponse(const QByteArray &data,
+                                  quint32 *totalCapacityOut,
+                                  quint32 *usedSizeOut) {
+    if (data.size() < 8 || totalCapacityOut == nullptr || usedSizeOut == nullptr) {
+        return false;
+    }
+    *totalCapacityOut = fsReadU32LE(data, 0);
+    *usedSizeOut      = fsReadU32LE(data, 4);
     return true;
 }
 

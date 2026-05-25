@@ -21,11 +21,12 @@ class ActivityBar : public QWidget {
 public:
     /// @brief 页面索引枚举
     enum Page {
-        ConfigPage = 0,     ///< 配置页
-        RegisterPage = 1,   ///< 寄存器读写页
-        FlashPage = 2,      ///< 固件烧录页
-        ScopePage = 3,      ///< 示波器页
-        DebugPage = 4,      ///< 串口调试页
+        ConfigPage = 0,         ///< 配置页
+        RegisterPage = 1,       ///< 寄存器读写页
+        FlashPage = 2,          ///< 固件烧录页（AW IC ISP）
+        ScopePage = 3,          ///< 示波器页
+        FlashStoragePage = 4,   ///< STM32 自身 FLASH 文件存储页（协议 v2.10）
+        DebugPage = 5,          ///< 串口调试页（浮动窗口，不占 ContentStack）
     };
 
     /// @brief 构造活动栏，默认选中 ConfigPage
@@ -57,6 +58,7 @@ private:
     QPushButton *m_registerButton = nullptr;    ///< "读写"按钮
     QPushButton *m_flashButton = nullptr;       ///< "烧录"按钮
     QPushButton *m_scopeButton = nullptr;       ///< "示波"按钮
+    QPushButton *m_storageButton = nullptr;     ///< "存储"按钮（FLASH 文件存储）
     QPushButton *m_debugButton = nullptr;       ///< "调试"按钮
     QPushButton *m_settingsButton = nullptr;    ///< "设置"按钮（底部）
 };
