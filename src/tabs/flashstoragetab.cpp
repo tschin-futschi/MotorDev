@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QStandardPaths>
@@ -85,6 +86,12 @@ void FlashStorageTab::setupUi() {
                                        Style::Size::FwFlashCancelButtonH));
     btnRow->addWidget(m_cancelBtn);
 
+    m_wipeBtn = new QPushButton(tr("清空 FLASH"), this);
+    m_wipeBtn->setObjectName(QStringLiteral("flashStoreWipeBtn"));
+    m_wipeBtn->setMinimumSize(QSize(Style::Size::FwFlashStartButtonW,
+                                     Style::Size::FwFlashStartButtonH));
+    btnRow->addWidget(m_wipeBtn);
+
     m_stageLabel = new QLabel(this);
     m_stageLabel->setObjectName(QStringLiteral("flashStoreStageLabel"));
     QPalette stagePal = m_stageLabel->palette();
@@ -137,6 +144,7 @@ void FlashStorageTab::connectSignals() {
     connect(m_uploadBtn,   &QPushButton::clicked, this, &FlashStorageTab::onUploadClicked);
     connect(m_downloadBtn, &QPushButton::clicked, this, &FlashStorageTab::onDownloadClicked);
     connect(m_cancelBtn,   &QPushButton::clicked, this, &FlashStorageTab::onCancelClicked);
+    connect(m_wipeBtn,     &QPushButton::clicked, this, &FlashStorageTab::onWipeClicked);
 
     connect(m_service, &FlashStoreService::stateChanged,    this, &FlashStorageTab::onServiceStateChanged);
     connect(m_service, &FlashStoreService::stageMessage,    this, &FlashStorageTab::onServiceStage);
@@ -156,6 +164,7 @@ void FlashStorageTab::updateButtonsEnabled() {
     m_uploadBtn->setEnabled(!busy);
     m_downloadBtn->setEnabled(!busy);
     m_refreshBtn->setEnabled(!busy);
+    m_wipeBtn->setEnabled(!busy);
     m_cancelBtn->setEnabled(busy);
 }
 
@@ -222,6 +231,20 @@ void FlashStorageTab::onCancelClicked() {
 
 void FlashStorageTab::onRefreshClicked() {
     m_service->refreshInfo();
+}
+
+void FlashStorageTab::onWipeClicked() {
+    // 危险操作二次确认。默认按钮 = No，防 Enter 键误触发。
+    const QMessageBox::StandardButton ret = QMessageBox::warning(
+        this,
+        tr("确认清空"),
+        tr("此操作将清空 STM32 上的 Flash 文件存储区（896 KB），\n"
+           "且**不可恢复**。\n\n"
+           "确定继续吗？"),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (ret != QMessageBox::Yes) return;
+    m_service->startWipe();
 }
 
 // -----------------------------------------------------------------------------

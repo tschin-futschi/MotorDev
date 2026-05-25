@@ -65,6 +65,7 @@ inline constexpr uint8_t CmdFlashStoreWriteEnd   = 0x3B; ///< 提交并校验 CR
 inline constexpr uint8_t CmdFlashStoreReadBegin  = 0x3C; ///< 读元数据（无载荷；响应: [status 1B][size LE 4B][crc32 LE 4B]）
 inline constexpr uint8_t CmdFlashStoreReadData   = 0x3D; ///< 读一包（载荷: [pktSeq LE 2B]；响应: [chunk N≤252B] 或错误响应）
 inline constexpr uint8_t CmdFlashStoreInfo       = 0x3E; ///< 查询容量（无载荷；响应: [totalCapacity LE 4B][usedSize LE 4B]）
+inline constexpr uint8_t CmdFlashStoreWipe       = 0x3F; ///< 整区擦除（无载荷；响应: [status LE 1B]；阻塞 3-7s，消除存储痕迹）
 
 // --- 示波器采样 ---
 inline constexpr uint8_t CmdStartSampling = 0x50;       ///< 启动采样

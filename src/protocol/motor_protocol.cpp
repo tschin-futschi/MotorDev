@@ -46,6 +46,7 @@ const char *commandName(uint8_t cmd) {
     case CmdFlashStoreReadBegin:  return "FlashStoreReadBegin";
     case CmdFlashStoreReadData:   return "FlashStoreReadData";
     case CmdFlashStoreInfo:       return "FlashStoreInfo";
+    case CmdFlashStoreWipe:       return "FlashStoreWipe";
     case CmdStartSampling: return "StartSampling";
     case CmdStopSampling: return "StopSampling";
     case CmdSetSampleInterval: return "SetSampleInterval";

@@ -202,6 +202,19 @@ void FlashStoreService::refreshInfo() {
 }
 
 // -----------------------------------------------------------------------------
+// startWipe
+// -----------------------------------------------------------------------------
+
+void FlashStoreService::startWipe() {
+    if (!armBusy()) return;
+    // 复用 WriteBeginning 状态（语义近似：都是整区擦），不引入新状态
+    setState(State::WriteBeginning);
+    emit stageMessage(QStringLiteral("擦除 Flash 区域（3-7 秒，不可取消）..."));
+    emitLog(LogLevel::Info, QStringLiteral("开始清空 Flash 文件存储区"));
+    dispatchOp(Op::Wipe);
+}
+
+// -----------------------------------------------------------------------------
 // 文件名生成（同秒冲突时追加 _N）
 // -----------------------------------------------------------------------------
 
@@ -516,6 +529,30 @@ void FlashStoreService::dispatchOp(Op op,
                 ok = true;
                 break;
             }
+
+            // ============================ WIPE =============================
+            case Op::Wipe: {
+                QByteArray resp;
+                // 复用 WRITE_BEGIN 的 15s 超时（同样擦 7 个 Sector，~3-7s 阻塞）
+                if (!sendCmd(MotorProtocol::CmdFlashStoreWipe, {},
+                             resp, kBeginTimeoutMs, "WIPE", &errorMsg)) {
+                    break;
+                }
+                uint8_t st = 0;
+                if (!MotorProtocol::decodeFlashStoreSimpleStatus(resp, &st) ||
+                    st != static_cast<uint8_t>(MotorProtocol::FlashStoreStatus::Ok)) {
+                    errorMsg = QStringLiteral("WIPE 失败：%1（status=0x%2）")
+                                   .arg(QString::fromLatin1(MotorProtocol::flashStoreStatusName(st)))
+                                   .arg(st, 2, 16, QLatin1Char('0'));
+                    break;
+                }
+                // 擦除成功 → slot 即时归零，触发容量 UI 立即刷新
+                infoTotal = kMaxFileBytes;
+                infoUsed  = 0U;
+                ok = true;
+                logOnMain(LogLevel::Ok, QStringLiteral("Flash 文件存储区已清空"));
+                break;
+            }
             }
 
             // -------- 回主线程统一收尾 --------
@@ -526,6 +563,7 @@ void FlashStoreService::dispatchOp(Op op,
                 case Op::Write: summary = QStringLiteral("上传成功"); break;
                 case Op::Read:  summary = QStringLiteral("下载成功"); break;
                 case Op::Info:  summary = QStringLiteral("容量查询完成"); break;
+                case Op::Wipe:  summary = QStringLiteral("Flash 区域已清空"); break;
                 }
             } else {
                 summary = wasCancelled ? QStringLiteral("已取消") : errorMsg;

@@ -80,6 +80,11 @@ public slots:
     /// @brief 查询容量（0x3E INFO 单帧），不读文件内容
     void refreshInfo();
 
+    /// @brief 清空 STM32 Flash 文件存储区（0x3F WIPE，整区擦回 0xFF）
+    /// 阻塞 3-7s 与上传相同。完成后 service 会自动 emit infoUpdated(917488, 0)
+    /// 让 UI 容量行立即刷新到"已用 0 / 剩余 896 KB"。
+    void startWipe();
+
     /// @brief 协作式取消（翻 cancelFlag；strategy 在下一个安全点退出）
     void cancel();
 
@@ -107,8 +112,8 @@ private:
     void releaseBusy(bool success, bool wasCancelled, const QString &summary);
 
     /// @brief 把烧录任务投递到 SerialManager 工作线程同步执行
-    /// （内部决定具体路径：write / read / info）
-    enum class Op { Write, Read, Info };
+    /// （内部决定具体路径：write / read / info / wipe）
+    enum class Op { Write, Read, Info, Wipe };
     void dispatchOp(Op op,
                     const QByteArray &writeData = {},
                     quint32 writeCrc = 0,

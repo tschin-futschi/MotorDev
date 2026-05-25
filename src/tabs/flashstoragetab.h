@@ -36,6 +36,7 @@ private slots:
     void onDownloadClicked();
     void onCancelClicked();
     void onRefreshClicked();
+    void onWipeClicked();
 
     void onServiceStateChanged(FlashStoreService::State newState);
     void onServiceStage(const QString &message);
@@ -59,6 +60,7 @@ private:
     QPushButton *m_uploadBtn = nullptr;
     QPushButton *m_downloadBtn = nullptr;
     QPushButton *m_cancelBtn = nullptr;
+    QPushButton *m_wipeBtn = nullptr;
     QLabel *m_stageLabel = nullptr;
     QProgressBar *m_progress = nullptr;
     FwFlashLogPanel *m_logPanel = nullptr;
