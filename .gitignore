@@ -90,3 +90,7 @@ Desktop.ini
 
 # Tracking exports
 /TRACKING/*.html
+
+# Local debug / test artifacts (capture logs, fake firmware for path testing)
+/I2C_Data/
+/aw_test_fake.bin
