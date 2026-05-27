@@ -39,4 +39,14 @@ public:
                        std::function<void(qint64 sentBytes)> progress,
                        const std::atomic<bool> &cancelFlag,
                        QString *errorMessage) = 0;
+
+    /// @brief 是否由策略自身报告 0~100% 全程进度（覆盖 service 的分阶段权重模型）。
+    ///
+    /// 默认 false：strategy 上报字节数对应 DATA 阶段（占总进度 FwFlashProgress::kPctData=20%），
+    /// 后续 ERASE/WRITE/TAIL 由 STM32 端 0x38 进度帧通过 FwFlashService::onFlashExecProgress 推进。
+    /// AW 系列走此路径（DATA → STM32 ISP → 0x38 反馈）。
+    ///
+    /// 返回 true 时：strategy 内部独立完成全部烧录工作（无 0x38 反馈），上报的 progress(sentBytes)
+    /// 字节比例直接映射为 UI 进度百分比（0~100%）。DW9788N 走此路径（vendor 库一气呵成烧录）。
+    virtual bool reportsFullProgress() const { return false; }
 };

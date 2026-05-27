@@ -25,7 +25,11 @@ void FlashStrategyRegistry::registerBuiltins() {
     add(std::make_unique<AW86006Strategy>(m_serialManager, m_awLogSink));
     add(std::make_unique<AW86100Strategy>(m_serialManager, m_awLogSink));
     add(std::make_unique<DW9786Strategy>());
-    add(std::make_unique<DW9788Strategy>());
+    // DW9788：复用 AW 的 LogSink 类型（DW9788Strategy::LogSink 是 AW 的别名）
+    // eraseCalibration=false（OTA 默认，保留校准），slaveId8bit=0x48（PDF 示例值）
+    add(std::make_unique<DW9788Strategy>(m_serialManager, m_awLogSink,
+                                          /*eraseCalibration=*/false,
+                                          /*slaveId8bit=*/0x48));
 }
 
 void FlashStrategyRegistry::add(std::unique_ptr<FlashStrategy> s) {

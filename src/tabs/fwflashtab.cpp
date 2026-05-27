@@ -21,6 +21,7 @@
 
 #include <QComboBox>
 #include <QEvent>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
@@ -336,6 +337,16 @@ void FwFlashTab::onClearFileClicked() {
 void FwFlashTab::parseAndShowFile(const QString &path) {
     m_currentFilePath = path;
     m_pathEdit->setText(path);
+    m_lastParseFailed = false;
+    m_rawFileBytes.clear();
+
+    // 预读文件以备 DW 自定义 hex fallback 用（开销小，64KB hex 文本约 288KB）
+    {
+        QFile f(path);
+        if (f.open(QIODevice::ReadOnly)) {
+            m_rawFileBytes = f.readAll();
+        }
+    }
 
     const FirmwareInfo info = FirmwareParser::parseFile(path);
     m_infoPanel->setInfo(info);
@@ -344,7 +355,17 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
         m_currentFileValid = false;
         m_currentFirmwareData.clear();
         m_currentFirmwareTotal = 0;
+        m_lastParseFailed = true;
         m_logPanel->appendError(tr("文件解析失败：%1").arg(info.errorMessage));
+
+        // DW9788N / DW9786 厂商 hex 文件（每行一个 32-bit hex）与 Intel HEX 格式不同，
+        // FirmwareParser 必然失败；若当前 IC 选的是 DW 系列则回退到 strategy 内部解析。
+        if (!tryDwHexFallback()) {
+            // 未选 DW IC：仅提示一句，待用户切到 DW 时由 onIcChanged 再尝试
+            m_logPanel->appendWarn(
+                tr("提示：如使用 DW9788N/DW9786 自定义 hex 文件（每行一个 32-bit 值），"
+                   "请在 IC 下拉中选择 DW9788/DW9786，解析失败时将自动回退使用原始字节烧录。"));
+        }
         updateStartEnabled();
         return;
     }
@@ -398,9 +419,32 @@ void FwFlashTab::clearFileState() {
     m_currentFileValid = false;
     m_currentFirmwareData.clear();
     m_currentFirmwareTotal = 0;
+    m_lastParseFailed = false;
+    m_rawFileBytes.clear();
     m_pathEdit->clear();
     m_infoPanel->clear();
     updateStartEnabled();
+}
+
+bool FwFlashTab::tryDwHexFallback() {
+    if (!m_lastParseFailed) return false;
+    if (m_rawFileBytes.isEmpty()) return false;
+
+    const QString icModel = m_icCombo->currentData().toString();
+    const bool isDw = (icModel == QLatin1String("DW9788") ||
+                       icModel == QLatin1String("DW9786"));
+    if (!isDw) return false;
+
+    m_currentFirmwareData = m_rawFileBytes;
+    m_currentFirmwareTotal = m_rawFileBytes.size();
+    m_currentFileValid = true;
+    // 提示：文件大小 = hex 文本字节数（约 160 KB）；实际烧入 IC 的固件 = 64 KB
+    // （vendor 每行 1 个 32-bit hex → 16384 行 → 32768 words = 64 KB）
+    m_logPanel->appendWarn(
+        tr("已按 DW 自定义 hex 模式接受文件原始字节（%1 字节，实际烧入固件约 64 KB），"
+           "具体行解析将在烧录时进行")
+            .arg(m_rawFileBytes.size()));
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -414,6 +458,24 @@ void FwFlashTab::onIcChanged(int /*index*/) {
     } else {
         FlashStrategy *s = m_registry->find(icModel);
         m_icDescLabel->setText(s != nullptr ? s->icDescription() : QString());
+    }
+
+    // 文件解析失败但走过 DW fallback 后，若用户切到非 DW IC，需撤销 fallback
+    // 否则 AW 烧录会拿到 DW 的 hex 文本字节。
+    const bool isDw = (icModel == QLatin1String("DW9788") ||
+                       icModel == QLatin1String("DW9786"));
+    if (m_lastParseFailed && m_currentFileValid && !isDw) {
+        m_currentFileValid = false;
+        m_currentFirmwareData.clear();
+        m_currentFirmwareTotal = 0;
+        m_logPanel->appendWarn(
+            tr("已撤销 DW 自定义 hex 回退（当前 IC 非 DW 系列），请重新选择固件文件"));
+    }
+
+    // 切到 DW IC 时，若此前文件 FirmwareParser 解析失败可能是 DW 自定义 hex 格式，
+    // 现在可以回退接受
+    if (m_lastParseFailed && !m_currentFileValid && isDw) {
+        tryDwHexFallback();
     }
     updateStartEnabled();
 }

@@ -64,6 +64,14 @@ qt_add_executable(MotorDev
     src/services/flashstrategies/dw9786_strategy.h
     src/services/flashstrategies/dw9788_strategy.cpp
     src/services/flashstrategies/dw9788_strategy.h
+    src/services/flashstrategies/hl9788n_bridge.cpp
+    src/services/flashstrategies/hl9788n_bridge.h
+    src/services/flashstrategies/hl9788n_vendor_include.h
+    src/services/flashstrategies/vendor/hl9788n/Func.cpp
+    src/services/flashstrategies/vendor/hl9788n/Func.h
+    src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.cpp
+    src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.h
+    src/services/flashstrategies/vendor/hl9788n/stdafx.h
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
@@ -129,7 +137,10 @@ if(WIN32)
     endif()
 endif()
 
-target_include_directories(MotorDev PRIVATE src)
+target_include_directories(MotorDev PRIVATE
+    src
+    src/services/flashstrategies/vendor/hl9788n
+)
 
 target_link_libraries(MotorDev PRIVATE
     Qt6::Widgets
@@ -139,6 +150,21 @@ target_link_libraries(MotorDev PRIVATE
     Qt6::PrintSupport
     Qt6::OpenGLWidgets
 )
+
+if(WIN32)
+    # HL9788N vendor 库依赖：m_delay() 用 timeBeginPeriod/timeGetTime；
+    # hl978x_extfuncinit() 用 GetFileVersionInfo。
+    target_link_libraries(MotorDev PRIVATE winmm version)
+
+    # vendor 源码使用 _T(__FUNCTION__) 等 MSVC-特有写法，需 ANSI 路径才能编译。
+    # Qt6 在 Windows 默认全局定义 UNICODE/_UNICODE，会破坏 vendor 编译。
+    # 这里只对 vendor 两个 cpp 取消这两个宏（其它源码不变）。
+    set_source_files_properties(
+        src/services/flashstrategies/vendor/hl9788n/Func.cpp
+        src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.cpp
+        PROPERTIES COMPILE_OPTIONS "-UUNICODE;-U_UNICODE"
+    )
+endif()
 
 # （历史）AW86100.dll POST_BUILD 部署已于 2026-05-19 协议 v2.6 / v2.7 改版后移除：
 # 烧录改走 STM32 本地 ISP（协议 0x32~0x37），上位机不再依赖 PC 端 DLL。

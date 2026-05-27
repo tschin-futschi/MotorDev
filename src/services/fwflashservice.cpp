@@ -242,20 +242,23 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
     QMetaObject::invokeMethod(m_serialManager, [self, strategy, firmware, cancelFlag, total]() {
         if (self.isNull()) return;
         QString errorMsg;
-        auto progress = [self, total](qint64 sent) {
+        const bool fullProgress = strategy->reportsFullProgress();
+        auto progress = [self, total, fullProgress](qint64 sent) {
             if (self.isNull()) return;
-            // strategy 上报的是 firmware 已发字节(0x33 DATA 累计 offset)，
-            // 不超过 firmware 总长；qMin clamp 是历史防御性兜底，保留即可。
+            // strategy 上报的是已发字节，不超过总长；qMin clamp 防御兜底
             const qint64 displaySent = qMin(sent, total);
-            // DATA 阶段总进度区间：0 → kPctData(20%)。
-            // 后续 ERASE / WRITE / TAIL 由 STM32 端 0x38 进度帧通过 onFlashExecProgress 推进。
-            const int dataPct = (total > 0)
-                                   ? static_cast<int>(displaySent * FwFlashProgress::kPctData / total)
-                                   : 0;
+            // fullProgress=true：strategy 自报全程 0~100%（DW9788 vendor 库一气呵成）
+            // fullProgress=false：strategy 只报 DATA 阶段，占总进度 kPctData=20%（AW 路径，
+            //   后续 ERASE/WRITE/TAIL 由 STM32 端 0x38 进度帧通过 onFlashExecProgress 推进）
+            const int pct = (total > 0)
+                ? (fullProgress
+                       ? static_cast<int>(displaySent * 100 / total)
+                       : static_cast<int>(displaySent * FwFlashProgress::kPctData / total))
+                : 0;
             // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
-            QMetaObject::invokeMethod(self.data(), [self, dataPct]() {
+            QMetaObject::invokeMethod(self.data(), [self, pct]() {
                 if (self.isNull()) return;
-                self->emitProgressPct(dataPct);
+                self->emitProgressPct(pct);
             }, Qt::QueuedConnection);
             emit self->stageMessage(
                 QStringLiteral("传输中 %1 KB / %2 KB")
