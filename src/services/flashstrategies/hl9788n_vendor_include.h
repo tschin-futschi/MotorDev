@@ -22,9 +22,22 @@
 #define HL9788N_OIS_EXPORTS
 #endif
 
+// 抑制 vendor 头自身的两类警告：
+//   - extra tokens at end of #else directive：api_ref.h:84 处的 `#else if`（应为 `#else`）
+//     是 vendor 笔误，GCC 解释为 `#else` 时多余 if 是 token noise，逻辑无影响。
+// 仅对 vendor 头的 include 区间生效，不影响后续代码。
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wendif-labels"
+#endif
+
 // vendor 公共头
 #include "Func.h"
 #include "hl9788n_api_ref.h"
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 // -----------------------------------------------------------------------------
 // 清理 vendor 宏污染（必须在 vendor 头之后才能 #undef）

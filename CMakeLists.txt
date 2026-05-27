@@ -159,10 +159,16 @@ if(WIN32)
     # vendor 源码使用 _T(__FUNCTION__) 等 MSVC-特有写法，需 ANSI 路径才能编译。
     # Qt6 在 Windows 默认全局定义 UNICODE/_UNICODE，会破坏 vendor 编译。
     # 这里只对 vendor 两个 cpp 取消这两个宏（其它源码不变）。
+    # 同时抑制 vendor 自身的两类原有警告（不修 vendor 文件）：
+    #   -Wno-write-strings : vendor log_tprintf 的 TCHAR* 非 const 形参 + 我们把 _T(x)
+    #                        重定义为 x 后，string literal → char* 在 C++ 被禁。仅警告，
+    #                        vendor 内部只读不写格式串。
+    #   -Wno-endif-labels  : vendor api_ref.h:84 处 `#else if`（应为 `#else`）的 vendor bug。
+    #                        GCC 解释为 #else 时多余 if 是 token noise，逻辑无影响。
     set_source_files_properties(
         src/services/flashstrategies/vendor/hl9788n/Func.cpp
         src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.cpp
-        PROPERTIES COMPILE_OPTIONS "-UUNICODE;-U_UNICODE"
+        PROPERTIES COMPILE_OPTIONS "-UUNICODE;-U_UNICODE;-Wno-write-strings;-Wno-endif-labels"
     )
 endif()
 
