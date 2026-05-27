@@ -54,15 +54,6 @@ public:
     bool reportsFullProgress() const override { return true; }
 
 private:
-    /// @brief 把 DW 自定义 hex 文本（每行 32-bit hex）解析为 vendor 内存布局的 uint16_t 数组
-    /// @param firmware  原始字节流（hex 文本）
-    /// @param outWords  输出 uint16_t 数组（FW_SIZE = 0x10000 个元素）
-    /// @param errOut    解析失败原因（含行号）
-    /// @return true=解析成功；false=失败
-    bool parseHl9788nHex(const QByteArray &firmware,
-                          uint16_t *outWords,
-                          QString *errOut) const;
-
     void log(LogLevel level, const QString &message) const;
 
     SerialManager *m_serialManager = nullptr;

@@ -39,104 +39,9 @@ void DW9788Strategy::log(LogLevel level, const QString &message) const {
     if (m_logSink) m_logSink(level, message);
 }
 
-// -----------------------------------------------------------------------------
-// DW 自定义 hex 文本解析（每行一个 32-bit hex 字符串）
-//
-// 行格式：8 个十六进制字符（可带前导/末尾空白），换行分隔。
-// 拆分规则（与 vendor hl9788n_api_ref.cpp:752-753 保持一致）：
-//   FW[2i]   = val32 & 0xFFFF          // low 16
-//   FW[2i+1] = (val32 >> 16) & 0xFFFF  // high 16
-//
-// 容量说明：
-//   vendor FW_SIZE = 0x10000 是固件"字节"总数（注释 "64KB"），不是 word 数。
-//   vendor flash 主体把 2 段 × FW_HALF_SIZE 字节 = FW_SIZE 字节 烧到 IC。
-//   uint16_t 元素数 = FW_SIZE / 2 = 32768 words；hex 文件行数 = words / 2 = 16384 行。
-//   （vendor 静态缓冲 FW_DATA_HL9788N[FW_SIZE] 实际为 128KB，是 vendor 内部冗余；
-//   实际烧到 IC 的只用前一半。）
-//
-// 空行忽略；非空白字符不全为 hex 时返回错误（含行号 + 内容片段）。
-// -----------------------------------------------------------------------------
-bool DW9788Strategy::parseHl9788nHex(const QByteArray &firmware,
-                                      uint16_t *outWords,
-                                      QString *errOut) const {
-    constexpr int kExpectedWords = static_cast<int>(FW_SIZE) / 2;   // 32768 words = 64KB
-    constexpr int kExpectedLines = kExpectedWords / 2;              // 16384 lines (each line = 2 words)
-
-    if (firmware.isEmpty()) {
-        if (errOut) *errOut = QStringLiteral("固件内容为空");
-        return false;
-    }
-
-    int wordIdx = 0;
-    int lineNo  = 0;          // 1-based 行号（含空行计数）
-    int dataLineCount = 0;    // 非空数据行计数
-
-    int pos = 0;
-    const int total = firmware.size();
-    while (pos < total) {
-        // 找下一个换行
-        int nl = firmware.indexOf('\n', pos);
-        const int end = (nl < 0) ? total : nl;
-        QByteArray line = firmware.mid(pos, end - pos);
-        pos = (nl < 0) ? total : (nl + 1);
-        ++lineNo;
-
-        // 去掉 \r、首尾空白
-        line = line.trimmed();
-        if (line.endsWith('\r')) line.chop(1);
-        if (line.isEmpty()) continue;
-
-        // 校验：所有字符必须是十六进制
-        for (int i = 0; i < line.size(); ++i) {
-            const char c = line.at(i);
-            const bool hexOk = (c >= '0' && c <= '9') ||
-                                (c >= 'A' && c <= 'F') ||
-                                (c >= 'a' && c <= 'f');
-            if (!hexOk) {
-                if (errOut) {
-                    const QString snippet = QString::fromLatin1(line.left(32));
-                    *errOut = QStringLiteral("第 %1 行非法 hex 字符 '%2' (内容: \"%3\")")
-                                  .arg(lineNo).arg(QChar(c)).arg(snippet);
-                }
-                return false;
-            }
-        }
-
-        // 写两个 uint16_t
-        if (wordIdx + 1 >= kExpectedWords) {
-            if (errOut) {
-                *errOut = QStringLiteral("第 %1 行：固件超出预期长度 (已读 %2 words，上限 %3)")
-                              .arg(lineNo).arg(wordIdx).arg(kExpectedWords);
-            }
-            return false;
-        }
-
-        bool convOk = false;
-        const quint32 val32 = static_cast<quint32>(line.toUInt(&convOk, 16));
-        if (!convOk) {
-            if (errOut) {
-                const QString snippet = QString::fromLatin1(line.left(32));
-                *errOut = QStringLiteral("第 %1 行 hex 转换失败 (内容: \"%2\")")
-                              .arg(lineNo).arg(snippet);
-            }
-            return false;
-        }
-
-        outWords[wordIdx++] = static_cast<uint16_t>(val32 & 0xFFFFu);
-        outWords[wordIdx++] = static_cast<uint16_t>((val32 >> 16) & 0xFFFFu);
-        ++dataLineCount;
-    }
-
-    if (wordIdx != kExpectedWords) {
-        if (errOut) {
-            *errOut = QStringLiteral("数据行数不足：得到 %1 行 (%2 words)，预期 %3 行 (%4 words)")
-                          .arg(dataLineCount).arg(wordIdx)
-                          .arg(kExpectedLines).arg(kExpectedWords);
-        }
-        return false;
-    }
-    return true;
-}
+// 注：原 DW9788Strategy::parseHl9788nHex 已下沉到 FirmwareParser::parseHl9788Hex
+// （src/protocol/firmware_parser.cpp）。strategy 收到的 firmware 已是 65536 字节
+// 小端二进制，直接 reinterpret_cast 即可传 vendor SDK。
 
 // -----------------------------------------------------------------------------
 // FlashStrategy::flash
@@ -161,12 +66,20 @@ bool DW9788Strategy::flash(const QByteArray &firmware,
                "DW9788Strategy::flash",
                "must run in SerialManager worker thread (fast-path)");
 
-    if (firmware.isEmpty()) {
-        setErr(QStringLiteral("固件内容为空"));
+    // firmware 已由 FirmwareParser::parseHl9788Hex 解析为 65536 字节小端二进制
+    // (FW_SIZE = 64KB = 32768 uint16)。此处只做尺寸校验。
+    constexpr int kFirmwareWords = static_cast<int>(FW_SIZE) / 2;          // 32768
+    constexpr int kFirmwareBytes = kFirmwareWords * static_cast<int>(sizeof(uint16_t));  // 65536
+
+    if (firmware.size() != kFirmwareBytes) {
+        setErr(QStringLiteral("固件大小异常：得到 %1 字节，期望 %2 字节 (64KB)。"
+                              "请确认选中的是 HL9788N hex 文件，并由 FirmwareParser "
+                              "按 Hl9788Hex 格式解析为二进制。")
+                   .arg(firmware.size()).arg(kFirmwareBytes));
         return false;
     }
 
-    const qint64 progressTotal = firmware.size();
+    const qint64 progressTotal = firmware.size();  // 64KB
     auto reportPct = [&](int pct) {
         if (!progress) return;
         const int clamped = qBound(0, pct, 100);
@@ -174,29 +87,17 @@ bool DW9788Strategy::flash(const QByteArray &firmware,
     };
 
     log(LogLevel::Info,
-        QStringLiteral("HL9788N 烧录开始 (slave=0x%1, mode=%2, hexBytes=%3)")
+        QStringLiteral("HL9788N 烧录开始 (slave=0x%1, mode=%2, firmware=%3 字节)")
             .arg(m_slaveId8bit, 2, 16, QLatin1Char('0'))
             .arg(m_eraseCalibration ? QStringLiteral("量产")
                                     : QStringLiteral("OTA (保留校准)"))
             .arg(progressTotal));
     reportPct(0);
 
-    // -------- 步骤 A：解析 hex --------
     if (cancelFlag.load()) { setErr(QStringLiteral("用户取消")); return false; }
 
-    // 实际固件数据 = FW_SIZE / 2 = 32768 words = 64KB；分配 64KB 堆缓冲
-    constexpr int kFirmwareWords = static_cast<int>(FW_SIZE) / 2;
-    QByteArray buf(kFirmwareWords * static_cast<int>(sizeof(uint16_t)), 0);
-    uint16_t *fwWords = reinterpret_cast<uint16_t *>(buf.data());
-
-    QString parseErr;
-    if (!parseHl9788nHex(firmware, fwWords, &parseErr)) {
-        setErr(QStringLiteral("固件解析失败: %1").arg(parseErr));
-        return false;
-    }
-    log(LogLevel::Info, QStringLiteral("固件解析完成 (%1 words = %2 KB)")
-                            .arg(kFirmwareWords)
-                            .arg(kFirmwareWords * 2 / 1024));
+    // 直接以 firmware buffer 作为 vendor 所需 uint16_t 数组（小端布局一致）
+    const uint16_t *fwWords = reinterpret_cast<const uint16_t *>(firmware.constData());
 
     // -------- attach 桥接层 --------
     auto logToBridge = [this](const QString &s) {

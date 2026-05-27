@@ -220,6 +220,106 @@ quint32 FirmwareParser::computeCrc32(const QByteArray &data) {
     return crc32Compute(data);
 }
 
+namespace {
+
+// -----------------------------------------------------------------------------
+// Dongwoon HL9788N 自定义 hex 文本（.hex 后缀但非 Intel HEX）
+// 行格式：8 个十六进制字符 + 换行；无 `:` 前缀、无校验和；总行数 16384 = 64KB 数据
+// 拆分规则（与 vendor hl9788n_api_ref.cpp:752-753 一致）：
+//   out[2i]   = val32 & 0xFFFF          // low 16
+//   out[2i+1] = (val32 >> 16) & 0xFFFF  // high 16
+// 输出 data: 65536 字节小端二进制，可直接 reinterpret_cast<const uint16_t*> 传 vendor。
+// -----------------------------------------------------------------------------
+FirmwareInfo parseHl9788Hex(const QFileInfo &fi, const QByteArray &content) {
+    constexpr int kExpectedWords = 32768;       // 64KB / 2 = 32768 uint16
+    constexpr int kExpectedLines = kExpectedWords / 2;  // 16384
+
+    FirmwareInfo info;
+    info.fileName = fi.fileName();
+    info.fileSizeBytes = content.size();
+    info.format = FirmwareFormat::Hl9788Hex;
+
+    QByteArray buf(kExpectedWords * static_cast<int>(sizeof(quint16)), 0);
+    auto *outWords = reinterpret_cast<quint16 *>(buf.data());
+
+    int wordIdx = 0;
+    int lineNo = 0;
+    int dataLineCount = 0;
+    int pos = 0;
+    const int total = content.size();
+
+    while (pos < total) {
+        int nl = content.indexOf('\n', pos);
+        const int end = (nl < 0) ? total : nl;
+        QByteArray line = content.mid(pos, end - pos);
+        pos = (nl < 0) ? total : (nl + 1);
+        ++lineNo;
+
+        if (line.endsWith('\r')) line.chop(1);
+        line = line.trimmed();
+        if (line.isEmpty()) continue;
+
+        for (int i = 0; i < line.size(); ++i) {
+            const char c = line.at(i);
+            const bool hexOk = (c >= '0' && c <= '9') ||
+                                (c >= 'A' && c <= 'F') ||
+                                (c >= 'a' && c <= 'f');
+            if (!hexOk) {
+                const QString snippet = QString::fromLatin1(line.left(32));
+                info.errorMessage = QStringLiteral("第 %1 行非法 hex 字符 '%2' (内容: \"%3\")")
+                                        .arg(lineNo).arg(QChar(c)).arg(snippet);
+                return info;
+            }
+        }
+
+        if (wordIdx + 1 >= kExpectedWords) {
+            info.errorMessage = QStringLiteral(
+                "第 %1 行：固件超出预期长度 (已读 %2 words，上限 %3)")
+                .arg(lineNo).arg(wordIdx).arg(kExpectedWords);
+            return info;
+        }
+
+        bool convOk = false;
+        const quint32 val32 = static_cast<quint32>(line.toUInt(&convOk, 16));
+        if (!convOk) {
+            const QString snippet = QString::fromLatin1(line.left(32));
+            info.errorMessage = QStringLiteral("第 %1 行 hex 转换失败 (内容: \"%2\")")
+                                    .arg(lineNo).arg(snippet);
+            return info;
+        }
+
+        outWords[wordIdx++] = static_cast<quint16>(val32 & 0xFFFFu);
+        outWords[wordIdx++] = static_cast<quint16>((val32 >> 16) & 0xFFFFu);
+        ++dataLineCount;
+    }
+
+    if (wordIdx != kExpectedWords) {
+        info.errorMessage = QStringLiteral(
+            "数据行数不足：得到 %1 行 (%2 words)，预期 %3 行 (%4 words)")
+            .arg(dataLineCount).arg(wordIdx)
+            .arg(kExpectedLines).arg(kExpectedWords);
+        return info;
+    }
+
+    info.data = buf;
+    info.effectiveBytes = buf.size();
+    info.crc32 = FirmwareParser::computeCrc32(buf);
+    info.valid = true;
+    return info;
+}
+
+// 内容嗅探：根据第一行非空白字符判断是 Intel HEX (`:` 起始) 还是 Hl9788Hex (纯 hex 字符)
+bool looksLikeIntelHex(const QByteArray &content) {
+    for (int i = 0; i < content.size(); ++i) {
+        const char c = content.at(i);
+        if (c == ' ' || c == '\t' || c == '\r' || c == '\n') continue;
+        return c == ':';
+    }
+    return false;
+}
+
+}  // namespace
+
 FirmwareInfo FirmwareParser::parseFile(const QString &path) {
     FirmwareInfo info;
     QFileInfo fi(path);
@@ -248,7 +348,12 @@ FirmwareInfo FirmwareParser::parseFile(const QString &path) {
         return parseBin(fi, content);
     }
     if (suffix == QLatin1String("hex")) {
-        return parseHex(fi, content);
+        // .hex 后缀有两种实际格式：Intel HEX 和 DW HL9788N 自定义 hex。
+        // 嗅探首字符：`:` 是 Intel HEX；其余按 Hl9788Hex 处理。
+        if (looksLikeIntelHex(content)) {
+            return parseHex(fi, content);
+        }
+        return parseHl9788Hex(fi, content);
     }
     info.errorMessage = QStringLiteral("不支持的文件格式：.%1").arg(suffix);
     return info;

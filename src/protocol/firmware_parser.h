@@ -20,7 +20,10 @@
 enum class FirmwareFormat {
     Unknown,
     Bin,
-    Hex,
+    Hex,        ///< Intel HEX（每行 `:` 开头 + 校验和）
+    Hl9788Hex,  ///< Dongwoon HL9788N 自定义 hex：每行 1 个 32-bit 十六进制字（无 `:` 前缀），
+                ///< 共 16384 行 = 32768 words = 64KB。解析后 data 为 65536 字节小端二进制，
+                ///< 可直接 reinterpret_cast<const uint16_t*> 传给 vendor SDK。
 };
 
 /// @brief Intel HEX 中一段连续地址区间

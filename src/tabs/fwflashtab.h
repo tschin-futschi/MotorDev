@@ -75,12 +75,6 @@ private:
     void clearFileState();
     void updateStartEnabled();
 
-    /// @brief 当 IC 为 DW9788/DW9786 且 FirmwareParser 解析失败时，回退使用文件原始字节作为
-    /// "DW 自定义 hex 文本"传给 strategy，由 strategy 内部按行解析。
-    /// 调用前提：m_lastParseFailed && current IC 为 DW 系列。
-    /// @return true=回退成功（已设置 m_currentFileValid 等）；false=不适用或当前文件无内容
-    bool tryDwHexFallback();
-
     // --- 核心依赖 ---
     std::unique_ptr<FlashStrategyRegistry> m_registry;
     FwFlashService *m_service = nullptr;
@@ -90,11 +84,6 @@ private:
     bool m_currentFileValid = false;
     QByteArray m_currentFirmwareData;
     qint64 m_currentFirmwareTotal = 0;
-
-    // DW 自定义 hex fallback 用：FirmwareParser 解析失败但文件已加载时保留原始字节，
-    // 供 onIcChanged() 切到 DW 时 tryDwHexFallback() 复用，避免重读文件。
-    bool m_lastParseFailed = false;
-    QByteArray m_rawFileBytes;
 
     // --- 布局容器 ---
     QWidget *m_mainContent = nullptr;
