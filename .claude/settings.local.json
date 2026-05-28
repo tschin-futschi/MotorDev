@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(ls review_*.md)",
-      "Edit",
-      "Write"
-    ]
-  }
-}

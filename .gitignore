@@ -94,3 +94,6 @@ Desktop.ini
 # Local debug / test artifacts (capture logs, fake firmware for path testing)
 /I2C_Data/
 /aw_test_fake.bin
+
+# Claude Code local permission overrides (per-user)
+/.claude/settings.local.json
