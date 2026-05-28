@@ -5,6 +5,7 @@
 #include "tabs/registerrwtab.h"
 
 #include "services/batchregisterservice.h"
+#include "services/blockreadservice.h"
 #include "services/commanddispatcher.h"
 #include "services/registerservice.h"
 #include "ui/style_constants.h"
@@ -17,10 +18,12 @@
 #include <QEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QDebug>
 #include <QLabel>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QStandardPaths>
@@ -38,20 +41,28 @@ RegisterRwTab::RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent)
     : QWidget(parent) {
     m_service = new RegisterService(dispatcher, this);
     m_batchService = new BatchRegisterService(dispatcher, this);
+    m_blockReadService = new BlockReadService(dispatcher, this);
     setupUi();
     connectSignals();
 
     // 浏览对话框默认目录：Documents
-    m_batchLastBrowseDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString docs = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    m_batchLastBrowseDir = docs;
+    m_blockReadLastDir = docs;
+    if (m_blockReadDirEdit != nullptr) {
+        m_blockReadDirEdit->setText(m_blockReadLastDir);
+    }
 
     // 从持久化文件加载上次的寄存器配置
     m_registerTable->loadConfig(configFilePath());
 }
 
 RegisterRwTab::~RegisterRwTab() {
-    // 批量读写浮窗为 Qt::Tool 顶级窗口（parent=nullptr），手动 delete
+    // 两个浮窗均为 Qt::Tool 顶级窗口（parent=nullptr），手动 delete
     delete m_batchPanel;
     m_batchPanel = nullptr;
+    delete m_blockReadPanel;
+    m_blockReadPanel = nullptr;
 }
 
 // =============================================================================
@@ -59,11 +70,16 @@ RegisterRwTab::~RegisterRwTab() {
 // =============================================================================
 
 bool RegisterRwTab::eventFilter(QObject *watched, QEvent *event) {
-    if (watched == m_batchPanel && event->type() == QEvent::Close) {
-        // 用户点击窗口关闭按钮 → 取消 toggle，同步 UI 状态
+    if (event->type() == QEvent::Close) {
+        // 用户点击窗口关闭按钮 → 取消对应 toggle，同步 UI 状态
         // 注：setChecked(false) 会触发 toggled 信号，lambda 内 hide() 但浮窗已被 close 路径隐藏，无副作用
-        if (m_batchToggleBtn != nullptr && m_batchToggleBtn->isChecked()) {
+        // 注：关闭块读取浮窗不会取消运行中的任务（任务后台继续，完成后文件正常落盘 — 决策 D6 隔壁 Risk 项）
+        if (watched == m_batchPanel
+            && m_batchToggleBtn != nullptr && m_batchToggleBtn->isChecked()) {
             m_batchToggleBtn->setChecked(false);
+        } else if (watched == m_blockReadPanel
+                   && m_blockReadToggleBtn != nullptr && m_blockReadToggleBtn->isChecked()) {
+            m_blockReadToggleBtn->setChecked(false);
         }
     }
     return QWidget::eventFilter(watched, event);
@@ -203,6 +219,37 @@ void RegisterRwTab::connectSignals() {
             this, &RegisterRwTab::onBatchServiceLog);
     connect(m_batchService, &BatchRegisterService::finished,
             this, &RegisterRwTab::onBatchServiceFinished);
+
+    // -------------------------------------------------------------------------
+    // 块读取浮窗 toggle + 操作按钮 + Service 信号
+    // -------------------------------------------------------------------------
+    connect(m_blockReadToggleBtn, &QToolButton::toggled, this, [this](bool checked) {
+        if (checked) {
+            m_blockReadPanel->show();
+            m_blockReadPanel->raise();
+            m_blockReadPanel->activateWindow();
+        } else {
+            m_blockReadPanel->hide();
+        }
+    });
+
+    connect(m_blockReadBrowseBtn, &QPushButton::clicked,
+            this, &RegisterRwTab::onBlockReadBrowseDirClicked);
+    connect(m_blockReadStartBtn, &QPushButton::clicked,
+            this, &RegisterRwTab::onBlockReadStartClicked);
+    connect(m_blockReadCancelBtn, &QPushButton::clicked,
+            this, &RegisterRwTab::onBlockReadCancelClicked);
+
+    connect(m_blockReadService, &BlockReadService::stateChanged,
+            this, &RegisterRwTab::onBlockReadServiceStateChanged);
+    connect(m_blockReadService, &BlockReadService::progress,
+            this, &RegisterRwTab::onBlockReadServiceProgress);
+    connect(m_blockReadService, &BlockReadService::stageMessage,
+            this, &RegisterRwTab::onBlockReadServiceStageMessage);
+    connect(m_blockReadService, &BlockReadService::logMessage,
+            this, &RegisterRwTab::onBlockReadServiceLog);
+    connect(m_blockReadService, &BlockReadService::finished,
+            this, &RegisterRwTab::onBlockReadServiceFinished);
 }
 
 // =============================================================================
@@ -322,6 +369,17 @@ void RegisterRwTab::setupUi() {
     m_batchToggleBtn->setMinimumHeight(Style::Size::SidebarComboMinHeight);
     m_batchToggleBtn->setText(tr("批量读写"));
     toolbarRow->addWidget(m_batchToggleBtn);
+
+    // 紧挨「批量读写」放「块读取」按钮（仿同款风格：QToolButton checkable + 再点关闭）
+    toolbarRow->addSpacing(10);
+    m_blockReadToggleBtn = new QToolButton(m_mainContent);
+    m_blockReadToggleBtn->setObjectName(QStringLiteral("registerRwBlockReadToggleBtn"));
+    m_blockReadToggleBtn->setCheckable(true);
+    m_blockReadToggleBtn->setChecked(false);
+    m_blockReadToggleBtn->setMinimumHeight(Style::Size::SidebarComboMinHeight);
+    m_blockReadToggleBtn->setText(tr("块读取"));
+    toolbarRow->addWidget(m_blockReadToggleBtn);
+
     mainLayout->addLayout(toolbarRow);
 
     // 批量读写浮窗（Qt::Tool 顶级窗口，parent=nullptr，析构手动 delete）
@@ -405,6 +463,116 @@ void RegisterRwTab::setupUi() {
     modeGroup->setExclusive(true);
     modeGroup->addButton(m_decButton);
     modeGroup->addButton(m_hexButton);
+
+    // -------------------------------------------------------------------------
+    // 块读取浮窗（独立 Qt::Tool 顶级窗口）
+    // 布局（垂直）：
+    //   起始地址：[__________]
+    //   寄存器个数：[__________]
+    //   保存目录：[__________________] [浏览...]
+    //   [============进度条============] N%
+    //   状态文字
+    //   [开始读取]   [取消]
+    // -------------------------------------------------------------------------
+    m_blockReadPanel = new QWidget(nullptr, Qt::Tool);
+    m_blockReadPanel->setObjectName(QStringLiteral("registerRwBlockReadPanel"));
+    m_blockReadPanel->setWindowTitle(tr("块读取"));
+    m_blockReadPanel->setAttribute(Qt::WA_DeleteOnClose, false);
+    m_blockReadPanel->installEventFilter(this);
+    m_blockReadPanel->resize(520, 240);
+    m_blockReadPanel->hide();
+
+    auto *blockLayout = new QVBoxLayout(m_blockReadPanel);
+    blockLayout->setObjectName(QStringLiteral("blockReadLayout"));
+    blockLayout->setSpacing(10);
+    blockLayout->setContentsMargins(Style::Size::ContentSpacing,
+                                     Style::Size::ContentSpacing,
+                                     Style::Size::ContentSpacing,
+                                     Style::Size::ContentSpacing);
+
+    auto *form = new QFormLayout();
+    form->setObjectName(QStringLiteral("blockReadForm"));
+    form->setHorizontalSpacing(10);
+    form->setVerticalSpacing(8);
+
+    m_blockReadStartEdit = new QLineEdit(m_blockReadPanel);
+    m_blockReadStartEdit->setObjectName(QStringLiteral("blockReadStartEdit"));
+    m_blockReadStartEdit->setPlaceholderText(tr("0xB002 或 B002"));
+    m_blockReadStartEdit->setProperty("inputRole", QStringLiteral("form"));
+    form->addRow(tr("起始地址："), m_blockReadStartEdit);
+
+    m_blockReadCountEdit = new QLineEdit(m_blockReadPanel);
+    m_blockReadCountEdit->setObjectName(QStringLiteral("blockReadCountEdit"));
+    m_blockReadCountEdit->setPlaceholderText(tr("十进制，例如 100"));
+    m_blockReadCountEdit->setProperty("inputRole", QStringLiteral("form"));
+    form->addRow(tr("寄存器个数："), m_blockReadCountEdit);
+
+    // 保存目录行：[只读 LineEdit] [浏览按钮]
+    auto *dirRow = new QHBoxLayout();
+    dirRow->setObjectName(QStringLiteral("blockReadDirRow"));
+    dirRow->setSpacing(8);
+    m_blockReadDirEdit = new QLineEdit(m_blockReadPanel);
+    m_blockReadDirEdit->setObjectName(QStringLiteral("blockReadDirEdit"));
+    m_blockReadDirEdit->setReadOnly(true);
+    m_blockReadDirEdit->setProperty("inputRole", QStringLiteral("form"));
+    dirRow->addWidget(m_blockReadDirEdit, 1);
+    m_blockReadBrowseBtn = new QPushButton(m_blockReadPanel);
+    m_blockReadBrowseBtn->setObjectName(QStringLiteral("blockReadBrowseBtn"));
+    m_blockReadBrowseBtn->setMinimumSize(QSize(96, 32));
+    m_blockReadBrowseBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadBrowseBtn->setProperty("buttonRole", QStringLiteral("secondary"));
+    m_blockReadBrowseBtn->setText(tr("浏览..."));
+    dirRow->addWidget(m_blockReadBrowseBtn);
+    form->addRow(tr("保存目录："), dirRow);
+
+    blockLayout->addLayout(form);
+
+    // 进度条
+    m_blockReadProgressBar = new QProgressBar(m_blockReadPanel);
+    m_blockReadProgressBar->setObjectName(QStringLiteral("blockReadProgressBar"));
+    m_blockReadProgressBar->setRange(0, 100);
+    m_blockReadProgressBar->setValue(0);
+    m_blockReadProgressBar->setTextVisible(true);
+    blockLayout->addWidget(m_blockReadProgressBar);
+
+    // 状态文字
+    m_blockReadStatusLabel = new QLabel(m_blockReadPanel);
+    m_blockReadStatusLabel->setObjectName(QStringLiteral("blockReadStatusLabel"));
+    {
+        QFont f = m_blockReadStatusLabel->font();
+        f.setPixelSize(11);
+        m_blockReadStatusLabel->setFont(f);
+        QPalette pal = m_blockReadStatusLabel->palette();
+        pal.setColor(QPalette::WindowText, Style::Color::FwFlashStageLabelFg);
+        m_blockReadStatusLabel->setPalette(pal);
+    }
+    m_blockReadStatusLabel->setWordWrap(false);
+    m_blockReadStatusLabel->setText(QString());
+    m_blockReadStatusLabel->setMinimumHeight(20);
+    blockLayout->addWidget(m_blockReadStatusLabel);
+
+    // 操作按钮行：开始 / 取消
+    auto *btnRow = new QHBoxLayout();
+    btnRow->setObjectName(QStringLiteral("blockReadBtnRow"));
+    btnRow->setSpacing(10);
+    btnRow->addStretch(1);
+    m_blockReadStartBtn = new QPushButton(m_blockReadPanel);
+    m_blockReadStartBtn->setObjectName(QStringLiteral("blockReadStartBtn"));
+    m_blockReadStartBtn->setMinimumSize(QSize(96, 32));
+    m_blockReadStartBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadStartBtn->setProperty("buttonRole", QStringLiteral("primary-sidebar"));
+    m_blockReadStartBtn->setText(tr("开始读取"));
+    btnRow->addWidget(m_blockReadStartBtn);
+
+    m_blockReadCancelBtn = new QPushButton(m_blockReadPanel);
+    m_blockReadCancelBtn->setObjectName(QStringLiteral("blockReadCancelBtn"));
+    m_blockReadCancelBtn->setMinimumSize(QSize(96, 32));
+    m_blockReadCancelBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadCancelBtn->setProperty("buttonRole", QStringLiteral("secondary"));
+    m_blockReadCancelBtn->setText(tr("取消"));
+    m_blockReadCancelBtn->setEnabled(false);  // 空闲时禁用
+    btnRow->addWidget(m_blockReadCancelBtn);
+    blockLayout->addLayout(btnRow);
 }
 
 // =============================================================================
@@ -495,4 +663,133 @@ RegisterRwTab::BusyOwner RegisterRwTab::slotIndexToOwner(int slotIndex) {
     case 3: return BusyOwner::BatchSlot4;
     default: return BusyOwner::None;
     }
+}
+
+// =============================================================================
+// 块读取浮窗 UI 行为（业务逻辑在 BlockReadService；与全局互斥位 m_busyOwner 解耦）
+// =============================================================================
+
+namespace {
+/// @brief 解析 hex 地址：接受 `0xB002` 与 `B002` 两种格式
+/// @return true=解析成功；输出 quint16 地址
+bool parseHexAddressFlexible(const QString &text, quint16 *out) {
+    QString trimmed = text.trimmed();
+    if (trimmed.isEmpty() || out == nullptr) return false;
+    if (trimmed.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive)) {
+        trimmed.remove(0, 2);
+    }
+    bool ok = false;
+    const quint16 v = trimmed.toUShort(&ok, 16);
+    if (!ok) return false;
+    *out = v;
+    return true;
+}
+}  // namespace
+
+void RegisterRwTab::onBlockReadBrowseDirClicked() {
+    if (m_blockReadService != nullptr && m_blockReadService->isBusy()) return;
+
+    const QString dir = QFileDialog::getExistingDirectory(
+        m_blockReadPanel,
+        tr("选择 CSV 保存目录"),
+        m_blockReadLastDir,
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (dir.isEmpty()) return;
+
+    m_blockReadLastDir = dir;
+    if (m_blockReadDirEdit != nullptr) {
+        m_blockReadDirEdit->setText(dir);
+    }
+}
+
+void RegisterRwTab::onBlockReadStartClicked() {
+    if (m_blockReadService == nullptr) return;
+    if (m_blockReadService->isBusy()) return;
+
+    quint16 startAddr = 0;
+    if (!parseHexAddressFlexible(m_blockReadStartEdit->text(), &startAddr)) {
+        m_blockReadStatusLabel->setText(tr("起始地址格式错误（应为 0xXXXX 或 XXXX）"));
+        return;
+    }
+
+    bool ok = false;
+    const int count = m_blockReadCountEdit->text().trimmed().toInt(&ok);
+    if (!ok || count < 1) {
+        m_blockReadStatusLabel->setText(tr("寄存器个数必须为正整数"));
+        return;
+    }
+
+    const quint32 endAddr = static_cast<quint32>(startAddr) + 2u * static_cast<quint32>(count - 1);
+    if (endAddr > 0xFFFEu) {
+        const QString hex = QString::number(startAddr, 16).toUpper().rightJustified(4, QLatin1Char('0'));
+        m_blockReadStatusLabel->setText(
+            tr("地址范围越界：起始 0x%1 + %2 个寄存器超过 0xFFFE 上限").arg(hex).arg(count));
+        return;
+    }
+
+    if (m_blockReadLastDir.isEmpty() || !QFileInfo(m_blockReadLastDir).isDir()) {
+        m_blockReadStatusLabel->setText(tr("请先选择保存目录"));
+        return;
+    }
+
+    // 重置进度条 + 提交任务
+    if (m_blockReadProgressBar != nullptr) {
+        m_blockReadProgressBar->setRange(0, count);
+        m_blockReadProgressBar->setValue(0);
+    }
+    m_blockReadService->start(startAddr, count, m_blockReadLastDir);
+}
+
+void RegisterRwTab::onBlockReadCancelClicked() {
+    if (m_blockReadService != nullptr) {
+        m_blockReadService->cancel();
+    }
+}
+
+// -----------------------------------------------------------------------------
+// BlockReadService 信号回调（UI 渲染层）
+// -----------------------------------------------------------------------------
+
+void RegisterRwTab::onBlockReadServiceStateChanged(BlockReadService::State state) {
+    // 按钮启用态：Reading / WritingFile 时禁用 Start / 输入字段 / 浏览，启用 Cancel
+    const bool busy = (state == BlockReadService::State::Reading
+                       || state == BlockReadService::State::WritingFile);
+    if (m_blockReadStartBtn != nullptr) m_blockReadStartBtn->setEnabled(!busy);
+    if (m_blockReadStartEdit != nullptr) m_blockReadStartEdit->setEnabled(!busy);
+    if (m_blockReadCountEdit != nullptr) m_blockReadCountEdit->setEnabled(!busy);
+    if (m_blockReadBrowseBtn != nullptr) m_blockReadBrowseBtn->setEnabled(!busy);
+    if (m_blockReadCancelBtn != nullptr) {
+        // 取消仅在 Reading 阶段有意义；WritingFile 已无法中断
+        m_blockReadCancelBtn->setEnabled(state == BlockReadService::State::Reading);
+    }
+}
+
+void RegisterRwTab::onBlockReadServiceProgress(int done, int total) {
+    if (m_blockReadProgressBar != nullptr) {
+        if (m_blockReadProgressBar->maximum() != total) {
+            m_blockReadProgressBar->setRange(0, total);
+        }
+        m_blockReadProgressBar->setValue(done);
+    }
+}
+
+void RegisterRwTab::onBlockReadServiceStageMessage(const QString &message) {
+    if (m_blockReadStatusLabel != nullptr) {
+        m_blockReadStatusLabel->setText(message);
+    }
+}
+
+void RegisterRwTab::onBlockReadServiceLog(BlockReadService::LogLevel level, const QString &message) {
+    // Service 内部已 qCInfo / qCWarning 走全局 LogPanel；此处仅作为未来局部日志展示 hook
+    Q_UNUSED(level);
+    Q_UNUSED(message);
+}
+
+void RegisterRwTab::onBlockReadServiceFinished(bool success, const QString &summary, const QString &savedPath) {
+    Q_UNUSED(success);
+    Q_UNUSED(summary);
+    Q_UNUSED(savedPath);
+    // 进度条与状态文字已由 progress / stageMessage 信号渲染；
+    // 按钮启用态由 stateChanged 信号收口（finished 之后 service setState(Idle)）
+    // 此处无需额外动作。
 }

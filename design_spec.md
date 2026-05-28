@@ -367,6 +367,94 @@ windowTitle: "批量读写"
 
 完全独立（决策 #11）：批量读写浮窗操作的对象是配置文件 + 芯片寄存器，**不读、不写 `RegisterTable`**；表格里的内容也不受批量操作影响。用户如需在主表格查看刚写入的值，需手动点 Sidebar「全部读取」回读。
 
+#### 块读取浮动窗口（独立 Qt::Tool 浮窗，2026-05-28 新增）
+
+入口：RegisterRwTab 主区域工具栏「批量读写」按钮**右侧**新增「块读取」QToolButton（checkable，再点关闭，与批量读写按钮同款风格）；两个按钮之间 10px 间距。
+
+```
+容器: QWidget (objectName: registerRwBlockReadPanel)，parent=nullptr，windowFlags=Qt::Tool
+windowTitle: "块读取"
+属性: Qt::WA_DeleteOnClose=false（手动管理生命周期；RegisterRwTab 析构时 delete）
+初始尺寸: 520 × 240 px
+默认状态: hide()，由 toggle 按钮控制显隐
+事件过滤: RegisterRwTab::eventFilter 监听 QEvent::Close 同步按钮
+内边距: Style::Size::ContentSpacing (16)
+行间距: 10px
+```
+
+浮窗结构（垂直）：
+
+```
+┌── 块读取 ──────────────────────────────────────────┐
+│ 起始地址：    [_____________]  (placeholder "0xB002 或 B002")
+│ 寄存器个数：  [_____________]  (placeholder "十进制，例如 100")
+│ 保存目录：    [_____________________________]  [浏览...]
+│
+│ [████████████░░░░░░░░░░░░] 50/100               (QProgressBar)
+│ 状态: 块读取：50/100 0xB05A = 0xABCD OK            (QLabel)
+│
+│                          [开始读取]    [取消]
+└────────────────────────────────────────────────────┘
+```
+
+字段说明：
+
+| 字段 | 控件 | 说明 |
+|---|---|---|
+| 起始地址 | QLineEdit | 接受 `0xB002` / `B002` 两种 hex 格式 |
+| 寄存器个数 | QLineEdit | 十进制 ≥ 1；地址按 +2 步进（与现有批量读写一致） |
+| 保存目录 | QLineEdit（只读）+ QPushButton「浏览...」 | 浏览按钮调 `QFileDialog::getExistingDirectory`；初始值 = `Documents` |
+| 进度条 | QProgressBar (0~N) | 实时显示已成功条目 / 总条目 |
+| 状态文字 | QLabel (11px, FwFlashStageLabelFg) | 进度 / 完成 / 错误反馈 |
+| 开始读取 | QPushButton (96×32) | 校验通过后启动任务；运行时禁用 |
+| 取消 | QPushButton (96×32) | 协作式取消；空闲时禁用，仅 Reading 阶段启用 |
+
+字段校验（决策 D9）：
+
+| 错误 | 状态文字 |
+|---|---|
+| 起始地址格式错 | `起始地址格式错误（应为 0xXXXX 或 XXXX）` |
+| 个数非正整数 | `寄存器个数必须为正整数` |
+| 地址越界 | `地址范围越界：起始 0xFFF0 + 100 个寄存器超过 0xFFFE 上限` |
+| 目录未选 | `请先选择保存目录` |
+
+读取流程：
+1. 用户填入起始地址 + 个数 + 目录 → 点「开始读取」
+2. 校验通过后 `BlockReadService::start(startAddr, count, dir)` 启动
+3. Service 内部按地址 +2 步进逐条调内部 `RegisterService::readSingleRow`（独立通道，与 RegisterTable / BatchRegisterService 隔离）
+4. 成功每条 → 累积到 `m_results`，emit progress + stageMessage
+5. **失败即停**（决策 D5）→ 立即收口：已读到的成功条目仍写入 CSV
+6. **协作式取消**（决策 D6）→ 用户点取消 → 置 cancelFlag → 当前 in-flight 命令响应后立即收口；已读条目仍写入 CSV
+7. 所有路径（完成 / 失败 / 取消）均走 `finishAndWriteCsv()`：状态 → WritingFile → QSaveFile 原子写 → emit finished
+
+CSV 文件格式（决策 D4）：
+
+```
+addr,value\n
+B002,1002\n
+B004,ABCD\n
+B006,0000\n
+...
+```
+
+- 首行表头 `addr,value`（小写）
+- 数据行 `XXXX,XXXX` — 4 位大写 hex，**无 `0x` 前缀**，逗号后**无空格**
+- 行尾 LF（不是 CRLF）
+- 文件命名 `Bulkread_HHMMSS.csv`（PC 本地时间，QTime 格式 `HHmmss`）
+- 同秒冲突自动追加 `_N`（如 `Bulkread_172345_1.csv`），最多尝试 999 次
+
+互斥规则（决策 D7）：
+
+- **独立通道**：不与 Sidebar「全部读取/全部写入」、批量读写浮窗共享互斥位
+- 块读取运行中，Sidebar 与批量读写按钮**仍可点击**；底层 SerialManager 命令队列串行执行
+- 块读取自身也互斥：service 同时只能跑一个任务；同 service 重入会被 `isBusy()` 拒绝
+
+持久化（决策 D10）：
+
+- **仅记忆「上次保存目录」**（`m_blockReadLastDir`，会话内成员变量），关闭/打开浮窗保留
+- 起始地址、个数字段每次空白
+- 不持久化到磁盘
+
 ### 状态栏（StatusBar）
 
 ```

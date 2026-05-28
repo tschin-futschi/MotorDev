@@ -44,6 +44,8 @@ qt_add_executable(MotorDev
     src/services/registerservice.h
     src/services/batchregisterservice.cpp
     src/services/batchregisterservice.h
+    src/services/blockreadservice.cpp
+    src/services/blockreadservice.h
     src/services/scopeservice.cpp
     src/services/scopeservice.h
     src/services/simulatorserial.cpp

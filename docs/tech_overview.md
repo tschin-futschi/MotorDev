@@ -66,6 +66,7 @@ MotorDev/
 │   │   ├── configservice.cpp / .h     # 串口连接、I2C 扫描、IC 地址、PMIC 配置/复位
 │   │   ├── registerservice.cpp / .h   # 单行/批量寄存器读写 + 500ms 超时
 │   │   ├── batchregisterservice.cpp / .h # 批量读写浮窗业务层：文件解析 + 状态机 + 顺序读写 + 进度信号
+│   │   ├── blockreadservice.cpp / .h    # 块读取浮窗业务层：连续地址段 dump → CSV + 协作式取消 + 失败即停（已成功条目仍写文件）
 │   │   ├── scopeservice.cpp / .h      # 4 步采样启动序列 + 流帧批量 + 5s 看门狗
 │   │   ├── cyclicwriteservice.cpp / .h # 循环写入服务（轮询 + 连续错误自停）
 │   │   ├── generatorservice.cpp / .h  # 波形发生器（Linear/Cosine/Sawtooth + 3s ACK 超时）

@@ -30,15 +30,16 @@
 - `src/tabs/configtab` `[UI-Tab]` — Config File 行（文件选择 combo、Browse/Write/Read 按钮；**当前为 UI stub，按钮未连接信号**）
 
 ### 寄存器读写
-- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、批量读写浮窗（4 槽独立操作，全局互斥）
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、批量读写浮窗（4 槽独立操作，全局互斥）、块读取浮窗（独立通道，不互斥）
 - `src/services/registerservice` `[通信]` — 单行/批量读写队列、500ms 超时、sessionId 防过期响应
 - `src/services/batchregisterservice` `[通信]` — 批量读写浮窗的业务层：内部持有独立 RegisterService 实例（与 RegisterTable 隔离）+ 状态机（Idle/Parsing/Writing/Reading/Completed/Failed）+ 调用 `BatchRegisterFile` 解析与回写；通过 `stageMessage` / `logMessage` / `finished` 信号上报，UI 只渲染不掺业务
+- `src/services/blockreadservice` `[通信]` — 块读取浮窗的业务层：独立 RegisterService 实例（与 RegisterTable / BatchRegisterService 完全隔离）+ 状态机（Idle/Reading/WritingFile/Completed/Failed/Cancelled）+ 协作式取消（cancelFlag）+ 失败即停（已成功条目仍写文件）；通过 `stateChanged` / `progress` / `stageMessage` / `logMessage` / `finished` 信号上报；CSV 输出按标准格式（首行表头 `addr,value` + 4 位大写 hex 无 `0x` + LF 行尾）；文件命名 `Bulkread_HHMMSS.csv`（PC 本地时间，同秒冲突自动 `_N`）
 - `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 30 行）
 - `src/protocol/motor_protocol` `[协议]` — 读写寄存器指令编码/响应解码
 - `src/protocol/register_utils` `[协议]` — 地址/值文本统一解析（含 0x 前缀）
 
 ### 寄存器配置文件自动保存/加载
-- `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；批量读写浮窗（弹出式 Qt::Tool）4 槽独立支持「配置文件 ↔ 芯片寄存器」往返，浮窗状态 / 路径不持久化（每次启动空白）
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；批量读写浮窗（弹出式 Qt::Tool）4 槽独立支持「配置文件 ↔ 芯片寄存器」往返，浮窗状态 / 路径不持久化（每次启动空白）；块读取浮窗（独立 Qt::Tool）按起始地址 + 个数（步进 +2）连续 dump 到目录下的 `Bulkread_HHMMSS.csv`，浮窗仅记忆「上次保存目录」其余字段每次空白
 - `src/widgets/registertable` `[UI-Widget]` — `loadConfig`/`saveConfig` 实现，读写 JSON 格式的地址-描述-值配置
 - `src/protocol/batch_register_file` `[协议]` — 批量读写浮窗的配置文件解析与回写：`<addr>, <value>` + `//` 注释 + 空行 三态行处理；解析严格全或无（含格式错 / 重复地址 / 越界 等异常分类）；回写时保留原文件结构（注释 / 行序 / 行末注释）仅替换数据行「值」列，输出统一删空行
 
@@ -133,6 +134,7 @@
 | PMIC 电压配置 | `src/tabs/configtab` + `src/services/configservice` | 已实现：DRVDD/IOVDD/VCMVDD 三路电压输入 + 两步序列（SetVoltage → Enable）+ Disable + 5s 超时 |
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` + `src/protocol/batch_register_file` | 已实现：4 槽独立操作（前 2 写、后 2 读）；配置文件格式 `<addr>, <value>` + `//` 注释（参考 `register_read.txt`）；遇错即停；读出全或无（中止时原文件不动）；全局互斥（与 Sidebar 全部读/写 互锁）；浮窗内底部状态文字反馈 |
+| 寄存器块读取（连续地址段 dump） | `src/tabs/registerrwtab` + `src/services/blockreadservice` | 已实现：起始地址 + 个数（步进 +2）→ `Bulkread_HHMMSS.csv`；失败即停 / 协作式取消（已成功条目仍写文件）；进度条 + 状态文字反馈；独立通道（不与 Sidebar 全部读/写 / 批量读写互斥） |
 | 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击全屏，右键重置 |
 | 示波器十字光标 | `src/widgets/scopeplotwidget` + `src/widgets/topbar` | 已实现：TopBar 切换按钮 + 吸附最近样本读数 |
 | 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
@@ -158,7 +160,7 @@
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel`, `src/widgets/fwfileinfopanel`, `src/widgets/fwflashcontrolpanel`, `src/widgets/fwflashlogpanel` |
-| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
+| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/batchregisterservice`, `src/services/blockreadservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstoreservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |
