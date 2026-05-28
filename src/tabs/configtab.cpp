@@ -9,7 +9,6 @@
 #include "services/configservice.h"
 #include "ui/repolish.h"
 #include "ui/style_constants.h"
-#include "widgets/sidebar.h"
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -409,18 +408,7 @@ void ConfigTab::setupUi() {
     topLayout->setSpacing(0);
     topLayout->setContentsMargins(0, 0, 0, 0);
 
-    // --- 侧边栏（空内容，仅标题） ---
-    m_sidebarContent = new QWidget(this);
-    m_sidebarContent->setObjectName(QStringLiteral("sidebarContent"));
-    auto *sidebarLayout = new QVBoxLayout(m_sidebarContent);
-    sidebarLayout->setObjectName(QStringLiteral("sidebarLayout"));
-    sidebarLayout->setSpacing(8);
-    sidebarLayout->setContentsMargins(10, 8, 10, 8);
-    sidebarLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
-    auto *sidebar = new Sidebar(tr("配置"), m_sidebarContent, this);
-    topLayout->addWidget(sidebar);
-
-    // --- 主内容区 ---
+    // --- 主内容区（无 Sidebar，主区域占满）---
     m_mainContent = new QWidget(this);
     m_mainContent->setObjectName(QStringLiteral("mainContent"));
     auto *mainContentLayout = new QVBoxLayout(m_mainContent);

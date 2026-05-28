@@ -100,7 +100,7 @@ MotorDev/
 │       ├── topbar.cpp / .h          # 顶栏（Logo、连接状态、MCU 启动状态徽章、Overlay/Style/Crosshair；语言切换占位）
 │       ├── sidebar.cpp / .h         # 可收缩侧边栏（configtab/registerrwtab/oscilloscoptab 共用）
 │       ├── logpanel.cpp / .h        # 底部日志面板（全局单例，跨线程安全）
-│       ├── registertable.cpp / .h   # 寄存器表格组件（4 组×20 行）
+│       ├── registertable.cpp / .h   # 寄存器表格组件（4 组×30 行）
 │       ├── scopeplotwidget.cpp / .h # 示波器波形绘制画布（QOpenGLWidget + QPainter，含内嵌采样按钮）
 │       ├── scopepreviewwidget.cpp / .h # 示波器独立预览控件（自带正弦波数据源，UI 演示用）
 │       ├── scopestylepanel.cpp / .h    # 示波器通道样式面板（颜色/线宽/线型/数据点）

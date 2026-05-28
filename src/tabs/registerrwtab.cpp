@@ -98,11 +98,13 @@ void RegisterRwTab::connectSignals() {
     // -------------------------------------------------------------------------
 
     // 全部读取：收集所有有地址的行，发起批量读取
+    // 上限用 RegisterTable::totalRows()，覆盖动态扩展行
     connect(m_readAllButton, &QPushButton::clicked, this, [this]() {
         if (isBusy()) return;
         setBusyOwner(BusyOwner::SidebarAll);
         QVector<RegisterService::RowRequest> rows;
-        for (int row = 0; row < Style::Size::TableGroupCount * Style::Size::TableRowCount; ++row) {
+        const int total = m_registerTable->totalRows();
+        for (int row = 0; row < total; ++row) {
             if (m_registerTable->rowHasAddress(row)) {
                 RegisterService::RowRequest req;
                 req.globalRow = row;
@@ -118,7 +120,8 @@ void RegisterRwTab::connectSignals() {
         if (isBusy()) return;
         setBusyOwner(BusyOwner::SidebarAll);
         QVector<RegisterService::RowRequest> rows;
-        for (int row = 0; row < Style::Size::TableGroupCount * Style::Size::TableRowCount; ++row) {
+        const int total = m_registerTable->totalRows();
+        for (int row = 0; row < total; ++row) {
             if (m_registerTable->rowHasAddress(row) && m_registerTable->rowHasValue(row)) {
                 RegisterService::RowRequest req;
                 req.globalRow = row;

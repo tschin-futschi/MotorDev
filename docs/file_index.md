@@ -33,7 +33,7 @@
 - `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、批量读写浮窗（4 槽独立操作，全局互斥）
 - `src/services/registerservice` `[通信]` — 单行/批量读写队列、500ms 超时、sessionId 防过期响应
 - `src/services/batchregisterservice` `[通信]` — 批量读写浮窗的业务层：内部持有独立 RegisterService 实例（与 RegisterTable 隔离）+ 状态机（Idle/Parsing/Writing/Reading/Completed/Failed）+ 调用 `BatchRegisterFile` 解析与回写；通过 `stageMessage` / `logMessage` / `finished` 信号上报，UI 只渲染不掺业务
-- `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 20 行）
+- `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 30 行）
 - `src/protocol/motor_protocol` `[协议]` — 读写寄存器指令编码/响应解码
 - `src/protocol/register_utils` `[协议]` — 地址/值文本统一解析（含 0x 前缀）
 
@@ -177,6 +177,6 @@
 - `src/devicecontext` — 当前 IC 类型和从机地址，目前仅 configtab 读写；其他 Tab 尚未接入
 - `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
-- `src/widgets/sidebar` — 可折叠侧边栏容器，被 configtab、registerrwtab、oscilloscoptab 三个 Tab 共用（fwflashtab 已不使用 Sidebar）
+- `src/widgets/sidebar` — 可折叠侧边栏容器，被 registerrwtab、oscilloscoptab 两个 Tab 共用（configtab、fwflashtab、flashstoragetab 已不使用 Sidebar）
 - `src/services/fwflashservice` — 通过 `findChild` 间接依赖 `ScopeService::requestStop()` / `GeneratorService::stop()` / `CyclicWriteService::stop()`；以 fire-and-forget 方式调用，3 个 Service 的实现签名变化会影响烧录前置序列。**烧录任务通过 invokeMethod 投递到 `SerialManager` 工作线程同步执行（fast-path）**，期间该线程的 event loop 被 strategy->flash() 同步占用，其他依赖 SerialManager 的 Service 在此期间提交命令会排队等候。**心跳暂停 / 恢复**：在投递烧录任务前 stopHeartbeat（QueuedConnection 同序入队），任务完成回主线程后 startHeartbeat（无论成功/失败/取消都恢复）。PMIC 不在前置序列中关闭，烧录期间 IC 必须保持正常供电
 - `src/serialmanager` — `sendAndWaitResponse` 同步 API 用于烧录链路 fast-path（仅可在自己的工作线程调用，会同步阻塞该线程直到收到响应或超时）；常规命令仍走 `sendCommand`+`emit frameReceived` 异步路径；`startHeartbeat` / `stopHeartbeat` 供 FwFlashService 在烧录前后调用

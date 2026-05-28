@@ -186,7 +186,7 @@ Sidebar 内容:
 
 ```
 表格类型: QTableWidget
-布局: 4 组并排，每组 5 列，共 20 列；每组 20 行
+布局: 4 组并排，每组 5 列，共 20 列；每组 30 行
 整体缩放: 紧凑 CSS 样式（小字号 + 小行高），不使用 QGraphicsProxyWidget
 
 列结构（每组，重复 4 次）:
@@ -228,7 +228,7 @@ Sidebar 内容:
 格式: JSON
 路径: QStandardPaths::AppDataLocation / "registers.json"
 触发: 描述、地址或值单元格内容变更后立即保存；批量读取完成后自动保存
-内容: 4 组 × 20 行共 80 条记录，每条包含 {desc: string, addr: string, val: string}
+内容: 4 组 × 30 行共 120 条记录，每条包含 {desc: string, addr: string, val: string}
 启动时自动加载
 ```
 
@@ -907,7 +907,7 @@ Style::Size::   ContentPadding (24) / ContentSpacing (16)
 
 ### 无 Sidebar
 
-不同于 ConfigTab / RegisterRwTab / OscilloscopTab，FlashStorageTab 直接以单栏占满主内容区，不挂 `Sidebar` 容器（与 FwFlashTab 一致）。
+不同于 RegisterRwTab / OscilloscopTab，FlashStorageTab 直接以单栏占满主内容区，不挂 `Sidebar` 容器（与 FwFlashTab / ConfigTab 一致）。
 
 ---
 

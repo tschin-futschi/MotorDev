@@ -2,15 +2,16 @@
 // @file    registertable.h
 // @brief   寄存器表格控件 — 多组寄存器的地址/值编辑、单行读写、状态反馈
 //
-// RegisterTable 提供一个 20行 × 20列 的 QTableWidget，分为 4 组（每组 5 列）：
+// RegisterTable 提供一个 TableRowCount × (TableGroupCount × 5) 的 QTableWidget，
+// 分为 TableGroupCount 组（每组 5 列）：
 // 每组包含：描述 | 地址 | 值 | R(读按钮) | W(写按钮)
-// 共 4 组 × 20 行 = 80 个寄存器行（globalRow 0~79）。
+// 行数固定 Style::Size::TableRowCount（30），通过 totalRows() 暴露给外部。
 //
 // 功能：
 // - 单行读写：点击 R/W 按钮发出 readRowRequested/writeRowRequested 信号
 // - 值显示模式切换：Hex（0x####）/ Dec（有符号十进制）
 // - 行状态反馈：pending（等待中 "..."）、error（失败 "--"）、写入反馈闪烁
-// - 配置持久化：保存/加载到 JSON 文件
+// - 配置持久化：保存到 JSON，记录数 = TableRowCount × TableGroupCount
 //
 // globalRow 与表格坐标的映射：
 //   globalRow = group * TableRowCount + tableRow
@@ -19,6 +20,9 @@
 // =============================================================================
 #pragma once
 
+#include "ui/style_constants.h"
+
+#include <QVector>
 #include <QWidget>
 
 #include <cstdint>
@@ -30,6 +34,7 @@ class QTableWidget;
 ///
 /// 封装 QTableWidget，提供寄存器地址/值编辑和读写操作的 UI。
 /// 表格分为 4 组（Style::Size::TableGroupCount），每组之间有分隔线。
+/// 行数固定 Style::Size::TableRowCount。
 class RegisterTable : public QWidget {
     Q_OBJECT
 
@@ -49,8 +54,14 @@ public:
     /// @brief 切换值显示模式（Hex ↔ Dec），自动转换已有值
     void setValueMode(ValueMode mode);
 
+    /// @brief 当前表格的全局行总数（TableRowCount × TableGroupCount）
+    ///
+    /// 外部模块（如 RegisterRwTab 的全部读 / 全部写循环）应通过此接口获取行数，
+    /// 避免在多处硬编码 `Style::Size::TableRowCount × TableGroupCount`。
+    int totalRows() const { return m_rowCount * MotorDev::Style::Size::TableGroupCount; }
+
     /// @brief 更新指定行的值显示（根据当前 ValueMode 格式化）
-    /// @param globalRow 全局行索引（0~79）
+    /// @param globalRow 全局行索引（0 ~ totalRows()-1）
     /// @param value 寄存器值
     void updateRowValue(int globalRow, qint16 value);
 
@@ -79,6 +90,9 @@ public:
     void saveConfig(const QString &path) const;
 
     /// @brief 从 JSON 文件加载描述/地址/值到表格
+    ///
+    /// 兼容旧版本不同 TableRowCount 的 JSON：按 jsonSize / TableGroupCount
+    /// 推断旧文件 rowsPerGroup，加载到表格前 min(rowsPerGroup, TableRowCount) 行。
     void loadConfig(const QString &path);
 
 signals:
@@ -97,14 +111,17 @@ signals:
     void configChanged();
 
 private:
-    /// @brief 构建 UI（表格 + 列头 + 单元格 + R/W 按钮）
+    /// @brief 构建 UI（表格框架 + 列头 + TableRowCount 行）
     void setupUi();
 
-    /// @brief 连接 R/W 按钮和 itemChanged 信号
+    /// @brief 连接 itemChanged 信号（R/W 按钮信号在 appendOneRow 内单行连接）
     void connectSignals();
 
-    /// @brief 应用各列宽度设置
+    /// @brief 应用各列宽度设置（描述/地址/值 Stretch；R/W 固定）
     void applyColumnWidths();
+
+    /// @brief 追加一行（创建 4 组 × 5 列的 items + R/W 按钮 + 信号连接），m_rowCount++
+    void appendOneRow();
 
     // --- 列索引计算辅助 ---
     static int descCol(int group) { return group * 5 + 0; }   ///< 描述列
@@ -113,8 +130,18 @@ private:
     static int readCol(int group) { return group * 5 + 3; }   ///< 读按钮列
     static int writeCol(int group) { return group * 5 + 4; }  ///< 写按钮列
 
-    QTableWidget *m_tableWidget = nullptr;      ///< 底层 QTableWidget
-    QPushButton *m_readButtons[80] = {};        ///< 80 个读按钮
-    QPushButton *m_writeButtons[80] = {};       ///< 80 个写按钮
-    ValueMode m_valueMode = ValueMode::Hex;     ///< 当前值显示模式
+    /// @brief 按钮数组下标 (tableRow × TableGroupCount + group)
+    ///
+    /// 按钮数组采用 row-major 布局，使 appendOneRow 只需在数组尾部连续 push_back
+    /// 4 个按钮（每组 1 个）。注意 globalRow 仍按外部约定 = group × m_rowCount + tableRow。
+    static int buttonIndex(int group, int tableRow) {
+        return tableRow * MotorDev::Style::Size::TableGroupCount + group;
+    }
+
+    QTableWidget *m_tableWidget = nullptr;          ///< 底层 QTableWidget
+    int m_rowCount = 0;                             ///< 表格行数（构造时由 appendOneRow 累加至 TableRowCount）
+    QVector<QPushButton*> m_readButtons;            ///< 读按钮（大小 = TableRowCount × TableGroupCount）
+    QVector<QPushButton*> m_writeButtons;           ///< 写按钮（同上）
+    ValueMode m_valueMode = ValueMode::Hex;         ///< 当前值显示模式
+    bool m_connected = true;                        ///< 当前串口连接状态（用于新建行的按钮启用态）
 };
