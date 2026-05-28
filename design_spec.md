@@ -165,9 +165,14 @@ Header:
 ```
 [Sidebar 168px] | [主内容区]
 
-主内容区：垂直 QSplitter，用户可拖动分割条调整上下比例
-  上半部分: RegisterTable（主表格）
-  下半部分: 三个 GroupBox 水平排列，比例 5:3:3
+主内容区（垂直 QVBoxLayout，无 QSplitter）:
+  · RegisterTable（主表格，stretch=1，占满主内容区）
+  · 常驻工具条（一行紧凑高度，右对齐 toggle 按钮「批量读写」）
+
+批量读写面板：**独立 Qt::Tool 浮动窗口**（与示波器 ShowRegister / ShowGenerator 同款机制），
+  · 默认隐藏，点击工具条按钮弹出；
+  · 浮窗可拖到主窗口外、独立缩放；
+  · 关闭浮窗（窗口右上 × 或再点按钮）后按钮状态自动同步。
 
 Sidebar 内容:
   - "全部读取" 按钮（高32px，绿色系）
@@ -236,30 +241,131 @@ Sidebar 内容:
 错误处理: 单行失败（超时/错误响应）时标记 "--"，继续处理队列中下一行
 ```
 
-#### 批量读写面板（下半部分）
+#### 批量读写浮动窗口（独立 Qt::Tool 浮窗）
 
-**GroupBox "批量读写"（比例 5）**
+整体布局调整（2026-05-28 起，参考示波器 ShowRegister / ShowGenerator 同款机制）：
+- 删除原 QSplitter 上下分屏 5:3:3（含两个空占位 GroupBox），不再保留占位框
+- RegisterTable 占主内容区 stretch=1，始终占满主内容区
+- RegisterTable 下方新增一行常驻工具条（紧凑高度 = `Style::Size::SidebarComboMinHeight`），右对齐放 toggle 按钮「批量读写」
+- 批量读写面板**不再内嵌在主窗口**，改为独立 `Qt::Tool` 顶级浮动窗口弹出
 
-内含 4 行，每行从左到右：
+常驻工具条 toggle 按钮：
 
-| 控件 | 类型 | 说明 |
-|------|------|------|
-| 批量写入 / 批量读出 | QPushButton | 点击触发该行的批量写入或读出操作 |
-| 描述框 | QLineEdit | 用户自定义描述，标注该行用途 |
-| 路径框 | QLineEdit | 显示选中的文件路径（只读，由浏览对话框填入） |
-| 浏览 | QPushButton | 打开文件选择对话框，将路径填入路径框 |
+```
+控件: QToolButton (objectName: registerRwBatchToggleBtn)
+属性: checkable=true，**默认 checked=false（浮窗默认隐藏）**
+文字: 固定 "批量读写"（不随状态切换；checked 视觉由 QToolButton 自带样式表达）
+高度: Style::Size::SidebarComboMinHeight (28)
+位置: 工具条右对齐（左侧 addStretch）
+```
 
-行分布：
-- 第 1、2 行：批量写入（左侧按钮文字"批量写入"）
-- 第 3、4 行：批量读出（左侧按钮文字"批量读出"）
+点击行为：
+- check → `m_batchPanel->show()` + `raise()` + `activateWindow()`
+- uncheck → `m_batchPanel->hide()`
+- 用户点浮窗右上角关闭按钮（×）→ 触发 `QEvent::Close`，RegisterRwTab 的 `eventFilter` 同步把按钮 `setChecked(false)`
 
-**GroupBox 2（比例 3）**
+批量读写浮窗：
 
-暂时留空，仅显示边框占位，无内容，标题待定。
+```
+容器: QWidget (objectName: registerRwBatchPanel)，parent=nullptr，windowFlags=Qt::Tool
+windowTitle: "批量读写"
+属性: Qt::WA_DeleteOnClose=false（手动管理生命周期；RegisterRwTab 析构时 delete）
+初始尺寸: 600 × 220 px
+默认状态: hide()，由 toggle 按钮控制显隐
+事件过滤: RegisterRwTab::eventFilter 监听 QEvent::Close 同步按钮
+内边距: Style::Size::ContentSpacing (16)
+行间距: 10px
+```
 
-**GroupBox 3（比例 3）**
+浮窗内含 4 行，每行 **3 列**：
 
-暂时留空，仅显示边框占位，无内容，标题待定。
+| 列 | 控件 | 类型 | 说明 |
+|---|------|------|------|
+| 1 | 批量写入 / 批量读出 | QPushButton (96×32) | 点击触发该行的批量写入或读出操作 |
+| 2 | 路径框 | QLineEdit (readOnly, stretch=1) | 显示选中的配置文件路径，由浏览对话框填入 |
+| 3 | 浏览 | QPushButton (96×32) | 打开文件选择对话框，过滤器 `配置文件 (*.txt);;所有文件 (*.*)` |
+
+4 个独立操作槽（数据流：配置文件 ↔ 芯片寄存器，同一配置文件既是写入源也是读出目标）：
+- 第 1、2 行：「批量写入」配置文件 → 芯片（解析文件中的「地址+值」列表，逐条写入芯片寄存器）
+- 第 3、4 行：「批量读出」芯片 → 配置文件（读取文件中地址列表对应的寄存器值，回写到该文件）
+
+浮窗**底部**额外有一行状态文字 `QLabel`（`objectName=registerRwBatchStatusLabel`，字号 11px，颜色 `FwFlashStageLabelFg`）：实时显示当前任务进度、完成总结或错误原因；空闲时保持最后一次任务的结果文字（不主动清空）。
+
+状态不持久化：每次启动应用，浮窗均处于隐藏状态、4 个路径框为空、状态文字为空；位置 / 尺寸不记忆。
+
+#### 配置文件格式（写入 / 读出 共用）
+
+参考 `register_read.txt` 同款格式：
+
+```
+//如下寄存器是AF方面的设置
+0xB500, 0x1234  // 电流Machine
+0xB408, 0x5678
+
+//OIS
+//0xB567, 0x4444
+```
+
+解析规则：
+- 每条数据行：`<addr>, <value>`（逗号分隔，前后可有空白；地址 16-bit、值 16-bit，均必须为 `0x` 前缀的十六进制）
+- `//` 起到行末视为注释；行首 `//` 整行注释、行末 `// xxx` 同行尾注释都跳过
+- 空行解析时跳过、回写时一律删除
+- 整行注释（包括被注释掉的数据行 `//0xB567, 0x4444`）在批量读出回写时**原样保留**
+- 同一地址在文件中出现两次视为格式错误
+
+#### 「批量写入」流程（文件 → 芯片）
+
+1. 点「浏览」选择配置文件 → 路径填入路径框；状态文字保持空
+2. 点「批量写入」按钮：
+   - 若路径为空：状态文字 `"批量写入 #i：请先浏览选择配置文件"`，不发任何命令
+   - 解析文件（**严格全或无**：任一异常立即拒绝整批）
+   - 若解析失败：状态文字给出具体错误（见下表），不发任何命令
+   - 解析成功：按文件顺序逐条调 `RegisterService::writeSingleRow`（0x21 协议）
+3. **遇错即停**：单条写入失败 → 立即中止剩余条目，状态文字提示出错位置（已写入到芯片的部分无法回滚）
+4. 全部成功 → 状态文字 `"批量写入 #i 完成：N/N 成功"`
+
+#### 「批量读出」流程（芯片 → 文件）
+
+1. 同上选文件
+2. 点「批量读出」按钮：
+   - 同上做文件解析校验
+   - 解析成功：按文件顺序逐条调 `RegisterService::readSingleRow`（0x20 协议）
+3. **遇错即停 + 全或无回写**（决策 #7）：单条读取失败 → 立即中止剩余条目；**原文件完全不修改**（即使前面部分已读到新值，也不回写）；状态文字提示出错位置
+4. 全部成功 → 用新读到的值回写文件：
+   - **保留原结构**：注释、整行注释、行序、行末注释、地址列文本完全不变
+   - 仅替换数据行的「值」列为新读到的 `0x%04X` 大写格式
+   - 输出时**统一删除所有空行**
+5. 状态文字 `"批量读出 #i 完成：N/N 成功，已写回 <文件名>"`
+
+#### 状态文字格式样例
+
+| 场景 | 状态文字 |
+|---|---|
+| 启动 | `批量写入 #1 启动：12 条数据行` |
+| 进行中 | `批量写入 #1：5/12 0xB500 = 0x1234 OK` |
+| 完成 | `批量写入 #1 完成：12/12 成功` |
+| 读出完成 | `批量读出 #3 完成：8/8 成功，已写回 register_read.txt` |
+| 写入中止 | `批量写入 #1 中止：第 5/12 条 0xB500 写入失败` |
+| 读出中止 | `批量读出 #3 中止：第 5/8 条 0xB500 读取失败（原文件未修改）` |
+| 路径未选 | `批量写入 #1：请先浏览选择配置文件` |
+| 解析错（格式）| `批量写入 #1：第 5 行格式错误（应为 \`<addr>, <value>\`）：xyz` |
+| 解析错（地址越界）| `批量写入 #1：第 3 行地址越界（应在 0x0000~0xFFFF）：0x12345` |
+| 解析错（值越界）| `批量写入 #1：第 7 行值越界（应在 0x0000~0xFFFF）：0x12345` |
+| 解析错（重复地址）| `批量写入 #1：第 9 行与第 4 行地址重复：0xB500` |
+| 解析错（空文件）| `批量写入 #1：文件无有效数据行（仅含注释或空行）` |
+| 解析错（文件读不到）| `批量写入 #1：文件读取失败：<系统原因>` |
+
+#### 互斥与按钮可用性
+
+- **全局互斥**（决策 #8）：任意时刻最多 1 个批量/全量任务在跑
+- 槽 #i 运行中 → 其他 3 个槽的按钮 + 4 个浏览按钮 + Sidebar 全部读取/全部写入 按钮**全部 disable**
+- Sidebar 全部读取/全部写入 运行中 → 4 个槽的按钮 + 4 个浏览按钮**全部 disable**
+- 任务结束（成功 / 失败 / 中止）后所有按钮恢复 enable
+- **不提供取消按钮**（决策 #12）：任务一旦启动必须跑完或自然中止
+
+#### 与 `RegisterTable` 主表格的关系
+
+完全独立（决策 #11）：批量读写浮窗操作的对象是配置文件 + 芯片寄存器，**不读、不写 `RegisterTable`**；表格里的内容也不受批量操作影响。用户如需在主表格查看刚写入的值，需手动点 Sidebar「全部读取」回读。
 
 ### 状态栏（StatusBar）
 
@@ -626,6 +732,182 @@ Crosshair toggle: QToolButton，checkable；文字在「使用十字光标：开
 当前状态: 未实现（占位，暂无内容）
 保留作为未来采样通道属性配置入口，具体内容待规格细化后补充。
 ```
+
+---
+
+## STM32 FLASH 文件存储页面规格
+
+> 与 §"FW 烧录页面规格"（AW IC ISP 烧录）**完全独立**的功能：把任意本地文件上传到 STM32 内置 Flash Sector 5-11（`[0x08020000, 0x08100000)`，896 KB）暂存，另一台 PC 再下载。下载字节与原始上传文件 **1:1 无损**，改扩展名即可复原。单插槽覆盖模型：每次上传整区擦除（~3-7s 阻塞）。协议 v2.11 / 0x39~0x3F。
+
+```
+整体布局（垂直，无 Sidebar）:
+[主内容区垂直 QVBoxLayout]
+
+  ┌── 容量行 ────────────────────────────────────────────────┐
+  │  容量：已用 N / 总 M | 剩余 K        [刷新容量]          │
+  └──────────────────────────────────────────────────────────┘
+  ┌── 操作行 ────────────────────────────────────────────────┐
+  │  [上传文件...] [下载到本地...] [取消] [清空 FLASH]  阶段 │
+  └──────────────────────────────────────────────────────────┘
+  ┌── 进度条 ────────────────────────────────────────────────┐
+  │  ▓▓▓▓▓░░░░░░░░░░░░░░░░░░  0~100%（绿色渐变 chunk）        │
+  └──────────────────────────────────────────────────────────┘
+  ┌── 操作日志面板（FwFlashLogPanel 复用，stretch=1）─────────┐
+  │  [HH:mm:ss.zzz] [LEVEL] 消息                              │
+  │  ...                                                      │
+  │  [清空]（右下）                                           │
+  └──────────────────────────────────────────────────────────┘
+
+外边距: Style::Size::ContentPadding (24px)
+行间距: Style::Size::ContentSpacing (16px)
+按钮间距: 8px
+
+连接状态不影响 FlashStorageTab：所有控件始终可用（产品决策 2026-05-21）。
+按钮可用性仅由 `FlashStoreService::isBusy()` 决定：忙碌时操作按钮 disable、取消按钮 enable；空闲时反之。
+```
+
+### 容量行
+
+```
+[QLabel 容量文本 stretch=1] [QPushButton 刷新容量]
+
+QLabel 文字格式:
+  · 未刷新:        "容量：未知（点击刷新查询）"
+  · 已刷新:        "容量：已用 X.XX KB / 总 Y.YY KB | 剩余 Z.ZZ KB"
+  · 字段文字色:    Style::Color::FwFlashStageLabelFg
+  · 单位自动选择:  < 1KB → B；< 1MB → KB；≥ 1MB → MB（QString::number(v, 'f', 2)）
+
+QPushButton:
+  · 文字: "刷新容量"
+  · 触发协议命令: 0x3E INFO（无载荷，响应 8B totalCapacity + usedSize 小端）
+  · 总容量固定为 917488 字节（= 896 KB - 16 B 元数据）
+  · 进入任何任务时 disable，任务完成自动 enable
+```
+
+### 操作行
+
+```
+[上传文件... 120×32] [下载到本地... 120×32] [取消 100×32] [清空 FLASH 120×32]  [阶段标签 stretch]
+
+按钮尺寸（复用 FwFlash 常量）:
+  · 上传 / 下载 / 清空: Style::Size::FwFlashStartButtonW (120) × FwFlashStartButtonH (32)
+  · 取消:               Style::Size::FwFlashCancelButtonW (100) × FwFlashCancelButtonH (32)
+
+按钮行为:
+  · 上传文件...: QFileDialog::getOpenFileName，过滤器 "All Files (*.*)"，起始目录 Documents；
+                 选定后立即客户端校验文件大小（1 ≤ size ≤ 917488），失败仅在日志面板写 Error
+                 不弹窗；通过校验则调 FlashStoreService::startWrite(path)，对应协议
+                 0x39 BEGIN → 0x3A DATA × N → 0x3B END
+  · 下载到本地...: QFileDialog::getExistingDirectory 选目录；保存文件名约定
+                 "FLASH_<HHmmss>.txt"（PC 本地时间；同秒冲突追加 "_N"）；
+                 对应协议 0x3C READ_BEGIN → 0x3D READ_DATA × N，落盘后本地 CRC32 校验
+  · 取消:        调 FlashStoreService::cancel()；NOR Flash 物理擦除（0x39 / 0x3F 期间
+                 ~3-7s）无法中途中断，UI 上的取消在 WIPE / 整区擦阶段为提示性
+  · 清空 FLASH:  弹 QMessageBox::warning 二次确认（详见下文），通过后调 startWipe()
+                 → 协议 0x3F WIPE 单帧，成功后自动 emit infoUpdated(917488, 0) 刷新容量行
+
+阶段标签:
+  · 字体: 11px，颜色 Style::Color::FwFlashStageLabelFg
+  · 文本由 FlashStoreService 通过 stageMessage 信号推送，例如:
+    "空闲" / "准备中..." / "整区擦除中..." / "上传 50% (456.0 KB / 896.0 KB)" /
+    "下载中..." / "正在清空 FLASH..." / "完成" / "失败：<原因>" / "已取消"
+```
+
+### 进度条
+
+```
+[QProgressBar 高 18px，range 0~100，textVisible，居中对齐]
+
+样式（与 FwFlashControlPanel 进度条完全一致）:
+  · border: 1px solid Style::Color::DefaultBorder
+  · border-radius: 5px
+  · background:  Style::Color::WindowBackground
+  · color:       Style::Color::AppText
+  · chunk:       qlineargradient 从 Style::Color::FwFlashProgressChunkStart 到
+                 FwFlashProgressChunkEnd，radius 4px，margin 1px
+
+进度来源:
+  · 上传: 已发字节 / totalBytes × 100
+  · 下载: 已接字节 / metadataSize × 100
+  · WIPE / INFO: 单帧操作，不更新进度条（保持 0 或最后值）
+```
+
+### 操作日志面板
+
+```
+复用 FwFlashLogPanel 组件（QPlainTextEdit 只读，monospace 11px，maximumBlockCount=2000）
+行格式: [HH:mm:ss.zzz] [LEVEL] <内容>，按级别上色（Info / Warn / Error / Ok）
+仅当滚动条已在底部时新日志才自动滚到底部
+```
+
+### 「清空 FLASH」二次确认弹窗
+
+```
+QMessageBox::warning(parent=this,
+                     title="确认清空",
+                     text="此操作将清空 STM32 上的 Flash 文件存储区（896 KB），\n
+                           且**不可恢复**。\n\n
+                           确定继续吗？",
+                     buttons=Yes | No,
+                     defaultButton=No)   ← 默认 No 防 Enter 键误触发
+
+仅 Yes 时调用 FlashStoreService::startWipe()，对应协议 0x3F WIPE（~3-7s 阻塞，
+心跳暂停/恢复由 FlashStoreService 自动处理）。
+```
+
+### 视觉常量（复用 `style_constants.h`，不引入新常量）
+
+```
+Style::Color::  FwFlashStageLabelFg (容量行 / 阶段标签文字)
+                DefaultBorder / WindowBackground / AppText (进度条边框 / 背景 / 文字)
+                FwFlashProgressChunkStart / End (进度条渐变 chunk 颜色)
+                FwFlashLogInfoFg / WarnFg / ErrorFg / OkFg (日志 4 级颜色)
+Style::Size::   ContentPadding (24) / ContentSpacing (16)
+                FwFlashStartButtonW (120) / FwFlashStartButtonH (32)
+                FwFlashCancelButtonW (100) / FwFlashCancelButtonH (32)
+                FwFlashProgressH (18)
+```
+
+> 与 FwFlash 完全复用，避免引入并行常量；后续如果调色板分化，再拆出独立 `FlashStore*` 命名空间。
+
+### 操作流程
+
+#### 上传文件
+
+1. 用户点「上传文件...」选定本地文件
+2. 客户端校验 1 ≤ size ≤ 917488；超限只在日志面板写 Error
+3. 通过校验后 FlashStoreService 心跳暂停 → 0x39 BEGIN（含整区擦 ~3-7s 阻塞）
+4. 0x3A DATA 分包送（每包 252 字节，UI 实时刷新进度条与阶段文字）
+5. 0x3B WRITE_END 提交并校验 CRC（PC 端预先对原始文件算的 CRC32 比对 STM32 累计 CRC）
+6. CRC 匹配 → 成功；不匹配 → 元数据不写入，slot 仍为 EMPTY，日志写 Error
+7. 任意结果 → 心跳恢复，容量行自动刷新
+
+#### 下载到本地
+
+1. 用户点「下载到本地...」选定目标目录
+2. FlashStoreService 心跳暂停 → 0x3C READ_BEGIN 拿 size + crc32
+3. 0x3D READ_DATA × N 分包读取（每包 252 字节，UI 实时刷新进度条）
+4. 落盘到 `<dir>/FLASH_<HHmmss>.txt`（同秒冲突追加 `_N`）
+5. 本地对落盘文件算 CRC32 比对 0x3C 拿到的 crc32；不一致 → 日志写 Warn 提示用户文件可能受损
+6. 日志写 OK 提示完整路径："已保存到：<path>（改回原扩展名即可使用）"
+7. 心跳恢复
+
+#### 清空 FLASH
+
+1. 用户点「清空 FLASH」→ QMessageBox 二次确认（默认 No）
+2. 用户确认 Yes → FlashStoreService 心跳暂停 → 0x3F WIPE 单帧（~3-7s 阻塞）
+3. STM32 整区擦除 Sector 5-11（含元数据 16 B），不可取消
+4. 响应到达后 service 自动 emit infoUpdated(917488, 0)，容量行刷新为"已用 0 / 总 896 KB | 剩余 896 KB"
+5. 心跳恢复
+
+#### 刷新容量
+
+1. 用户点「刷新容量」→ 0x3E INFO 单帧（微秒级）
+2. 响应后容量行更新
+
+### 无 Sidebar
+
+不同于 ConfigTab / RegisterRwTab / OscilloscopTab，FlashStorageTab 直接以单栏占满主内容区，不挂 `Sidebar` 容器（与 FwFlashTab 一致）。
 
 ---
 

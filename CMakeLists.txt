@@ -30,6 +30,8 @@ qt_add_executable(MotorDev
     src/protocol/sampling_config.h
     src/protocol/firmware_parser.cpp
     src/protocol/firmware_parser.h
+    src/protocol/batch_register_file.cpp
+    src/protocol/batch_register_file.h
     src/services/configservice.cpp
     src/services/configservice.h
     src/services/commanddispatcher.cpp
@@ -40,6 +42,8 @@ qt_add_executable(MotorDev
     src/services/generatorservice.h
     src/services/registerservice.cpp
     src/services/registerservice.h
+    src/services/batchregisterservice.cpp
+    src/services/batchregisterservice.h
     src/services/scopeservice.cpp
     src/services/scopeservice.h
     src/services/simulatorserial.cpp

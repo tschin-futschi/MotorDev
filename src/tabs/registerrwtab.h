@@ -6,27 +6,32 @@
 // - 寄存器表格：支持逐行读/写、地址和值的编辑
 // - 全部读取/写入：批量操作所有有效行
 // - Hex/Dec 切换：切换数值显示模式
-// - 批量读写区域：支持 4 组文件批量读写（功能开发中）
+// - 批量读写浮窗：4 个独立操作槽（前 2 写、后 2 读），业务由 BatchRegisterService 承载
 //
 // 布局结构：
 // ┌──────────┬────────────────────────────────────────────┐
 // │ Sidebar  │ ┌────────────────────────────────────────┐ │
-// │ 全部读取 │ │ RegisterTable（寄存器表格）             │ │
+// │ 全部读取 │ │ RegisterTable（寄存器表格） stretch=1   │ │
 // │ 全部写入 │ │                                        │ │
-// │ DEC/HEX  │ ├────────────────────────────────────────┤ │
-// │          │ │ 批量读写区域（4行 + 2个占位卡片）      │ │
+// │ DEC/HEX  │ ├───────────────────── [批量读写]──────┤ │  常驻工具条（右对齐 toggle）
 // └──────────┴────────────────────────────────────────────┘
+//
+// 批量读写面板以独立 Qt::Tool 浮动窗口弹出（参考示波器 ShowRegister 模式），
+// 由工具条 toggle 按钮控制显隐，可拖到主窗口外；用户关闭浮窗时按钮状态自动同步。
 //
 // 寄存器表格配置持久化到 AppData/registers.json。
 // =============================================================================
 #pragma once
 
+#include "services/batchregisterservice.h"
+
+#include <QString>
 #include <QWidget>
 
 class QLabel;
 class QPushButton;
+class QToolButton;
 class QLineEdit;
-class QSplitter;
 class CommandDispatcher;
 class RegisterService;
 class RegisterTable;
@@ -50,7 +55,21 @@ public slots:
     /// @param connected true=已连接，false=未连接
     void setConnected(bool connected);
 
+protected:
+    /// @brief 监听浮动批量读写浮窗的 Close 事件，同步 toggle 按钮状态。
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
+    /// @brief 谁占用了全局互斥位（4 个批量槽 + Sidebar 全部读写 之间互斥）
+    enum class BusyOwner {
+        None,
+        BatchSlot1,
+        BatchSlot2,
+        BatchSlot3,
+        BatchSlot4,
+        SidebarAll,     ///< Sidebar 全部读取 / 全部写入
+    };
+
     /// @brief 构建 UI 布局
     void setupUi();
 
@@ -61,13 +80,28 @@ private:
     /// @return AppData 下的 registers.json 完整路径
     QString configFilePath() const;
 
+    // --- 批量浮窗 UI 行为（仅控件交互，业务在 BatchRegisterService）---
+    void onBatchBrowseClicked(int slotIndex);
+    void onBatchActionClicked(int slotIndex);
+
+    // --- BatchRegisterService 信号回调（UI 渲染层）---
+    void onBatchServiceStageMessage(const QString &message);
+    void onBatchServiceLog(BatchRegisterService::LogLevel level, const QString &message);
+    void onBatchServiceFinished(bool success, const QString &summary);
+
+    // --- 互斥锁 ---
+    void setBusyOwner(BusyOwner owner);
+    void updateBusyUi();
+    bool isBusy() const { return m_busyOwner != BusyOwner::None; }
+    static BusyOwner slotIndexToOwner(int slotIndex);
+
     // --- 核心依赖 ---
-    RegisterService *m_service = nullptr;       ///< 寄存器读写服务
+    RegisterService *m_service = nullptr;             ///< 寄存器读写服务（RegisterTable + Sidebar 全部读/写）
+    BatchRegisterService *m_batchService = nullptr;   ///< 批量读写业务服务（封装文件解析 + 状态机 + 逐条收发）
 
     // --- 布局容器 ---
     QWidget *m_sidebarContent = nullptr;        ///< 侧边栏内容区
     QWidget *m_mainContent = nullptr;           ///< 主内容区容器
-    QSplitter *m_mainSplitter = nullptr;        ///< 上下区域的垂直分割器
 
     // --- 主要控件 ---
     RegisterTable *m_registerTable = nullptr;   ///< 寄存器表格控件
@@ -76,9 +110,18 @@ private:
     QPushButton *m_decButton = nullptr;         ///< DEC 模式切换按钮（互斥）
     QPushButton *m_hexButton = nullptr;         ///< HEX 模式切换按钮（互斥）
 
-    // --- 批量操作控件（功能开发中）---
+    // --- 批量读写浮动窗口 ---
+    QToolButton *m_batchToggleBtn = nullptr;    ///< 常驻工具条 toggle（checkable，默认未弹出）
+    QWidget *m_batchPanel = nullptr;            ///< 批量读写浮窗（Qt::Tool 顶级窗口，parent=nullptr，析构手动 delete）
+    QLabel *m_batchStatusLabel = nullptr;       ///< 浮窗底部状态文字（进度 / 完成 / 错误）
+
+    // --- 批量操作控件 ---
+    // 每行 3 列：[批量写入/批量读出 按钮] [文件路径 只读] [浏览 按钮]
     QPushButton *m_batchBtn[4] = {};            ///< 4 组批量操作按钮（前 2 写，后 2 读）
-    QLineEdit *m_batchDescEdit[4] = {};         ///< 4 组批量操作描述输入框
     QLineEdit *m_batchPathEdit[4] = {};         ///< 4 组批量操作文件路径（只读）
     QPushButton *m_batchBrowseBtn[4] = {};      ///< 4 组文件浏览按钮
+
+    // --- 互斥锁 + 浏览状态 ---
+    BusyOwner m_busyOwner = BusyOwner::None;    ///< 当前互斥位归属
+    QString m_batchLastBrowseDir;               ///< 浏览对话框上次使用的目录（会话内）
 };

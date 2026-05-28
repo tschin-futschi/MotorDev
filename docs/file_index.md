@@ -30,15 +30,17 @@
 - `src/tabs/configtab` `[UI-Tab]` — Config File 行（文件选择 combo、Browse/Write/Read 按钮；**当前为 UI stub，按钮未连接信号**）
 
 ### 寄存器读写
-- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、批量按钮（仅控件）
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、批量读写浮窗（4 槽独立操作，全局互斥）
 - `src/services/registerservice` `[通信]` — 单行/批量读写队列、500ms 超时、sessionId 防过期响应
+- `src/services/batchregisterservice` `[通信]` — 批量读写浮窗的业务层：内部持有独立 RegisterService 实例（与 RegisterTable 隔离）+ 状态机（Idle/Parsing/Writing/Reading/Completed/Failed）+ 调用 `BatchRegisterFile` 解析与回写；通过 `stageMessage` / `logMessage` / `finished` 信号上报，UI 只渲染不掺业务
 - `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 20 行）
 - `src/protocol/motor_protocol` `[协议]` — 读写寄存器指令编码/响应解码
 - `src/protocol/register_utils` `[协议]` — 地址/值文本统一解析（含 0x 前缀）
 
 ### 寄存器配置文件自动保存/加载
-- `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；底部"批量读写"面板的文件选择按钮**当前为 UI stub，未连接信号**
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；批量读写浮窗（弹出式 Qt::Tool）4 槽独立支持「配置文件 ↔ 芯片寄存器」往返，浮窗状态 / 路径不持久化（每次启动空白）
 - `src/widgets/registertable` `[UI-Widget]` — `loadConfig`/`saveConfig` 实现，读写 JSON 格式的地址-描述-值配置
+- `src/protocol/batch_register_file` `[协议]` — 批量读写浮窗的配置文件解析与回写：`<addr>, <value>` + `//` 注释 + 空行 三态行处理；解析严格全或无（含格式错 / 重复地址 / 越界 等异常分类）；回写时保留原文件结构（注释 / 行序 / 行末注释）仅替换数据行「值」列，输出统一删空行
 
 ### 示波器/波形观测
 > 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、双击全屏、十字光标吸附读数、调试模拟器端到端数据路径。
@@ -64,13 +66,14 @@
 ### 固件烧录
 > 2026-05-19 起改为 STM32 本地 ISP 烧录方案（协议 v2.7 §4.3.5，命令 0x32~0x37）。废除原 AW SDK DLL 链路。
 > 2026-05-24 新增协议级真实进度：协议 v2.9 §4.3.5 加 `0x38 FLASH_EXEC_PROGRESS` 事件帧（STM32→PC 主动上报，SEQ=0xFF，载荷 `[phase(1)][done(4 LE)][total(4 LE)]`，phase 0=ERASE / 1=WRITE）。STM32 在 EXEC 期间于 `aw_flash_download_check` 内 erase 前/后 + write 循环每次后主动上报，上位机据此驱动 EXEC 阶段进度条真实推进。4 阶段权重映射 DATA 20% / ERASE 5% / WRITE 70% / TAIL 5%，常量集中在 `FwFlashProgress` 命名空间。
-> 框架：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex`）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；strategy 直接调 `SerialManager::sendAndWaitResponse` 发协议 0x32~0x37 命令）+ 协作式取消（`cancelFlag`）+ **心跳暂停 / 恢复**（EXEC 阻塞 5-10s 期间 STM32 不响应任何帧，FwFlashService 在烧录任务前 stopHeartbeat、任务完成回主线程后 startHeartbeat）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 共用 `AwLocalIspStrategy` 基类（BEGIN → DATA 循环 → EXEC,失败时 RESET_CHIP + CANCEL 收尾）；DW9786 / DW9788 仍为 stub。UI 加载固件后即校验 ≤ 64 KB 且 4 字节对齐（STM32 端 SRAM1 单缓冲上限）。
+> 2026-05-27 新增 DW9788 (Dongwoon HL9788N) 真实烧录：通过 `Hl9788nBridge` 把 vendor SDK 与 SerialManager 桥接，vendor 内部 I2C 调用翻译为协议 0x30 / 0x31 透传命令；DW9788 路径**不走** 0x32~0x37 本地 ISP，而是 vendor SDK 一次性完成 `id_check → fw_update_dma → ois_reset → fw_info → verify`，**OTA 模式默认保留模组校准数据**。FirmwareParser 同时支持 HL9788N 自定义 hex 文本（每行 1 个 32-bit hex 字，共 16384 行 = 64 KB），解析为 65536 字节小端二进制后直接 reinterpret_cast 给 vendor SDK。
+> 框架：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex` / HL9788N hex）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；AW strategy 直接调 `SerialManager::sendAndWaitResponse` 发协议 0x32~0x37 命令，DW9788 strategy 走 vendor SDK + 0x30/0x31 透传）+ 协作式取消（`cancelFlag`）+ **心跳暂停 / 恢复**（EXEC 阻塞 5-10s 期间 STM32 不响应任何帧，FwFlashService 在烧录任务前 stopHeartbeat、任务完成回主线程后 startHeartbeat）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86006 / AW86100 共用 `AwLocalIspStrategy` 基类（BEGIN → DATA 循环 → EXEC,失败时 RESET_CHIP + CANCEL 收尾）；DW9788 通过 `Hl9788nBridge` + vendor SDK 完成（见上）；DW9786 仍为 stub。UI 加载固件后即校验：AW 路径 ≤ 64 KB 且 4 字节对齐（STM32 端 SRAM1 单缓冲上限）；HL9788N 路径固定 64 KB。
 
 - `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *`，构造 `LogSink` lambda 注入 registry，让 strategy 日志转发到 `FwFlashLogPanel`；`parseAndShowFile` 加载固件后校验 ≤ 64 KB / 4 字节对齐
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
 - `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
-- `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并；CRC32（IEEE 802.3）；1024 KB 通用上限（AW 本地 ISP 实际可用上限 64 KB 在 UI/strategy 层另行校验）
+- `src/protocol/firmware_parser` `[协议]` — `.bin` 直读 + Intel `.hex` 解析与段合并 + **HL9788N 自定义 hex 解析**（每行 1 个 32-bit hex 字，16384 行 = 32768 words = 65536 字节小端二进制）；CRC32（IEEE 802.3）；1024 KB 通用上限（AW 本地 ISP 实际可用上限 64 KB 在 UI/strategy 层另行校验；HL9788N hex 固定 64 KB）
 - `src/services/fwflashservice` `[通信]` — 状态机 + 前置序列协调 + 通过 `invokeMethod(QueuedConnection)` 把烧录任务投递到 SerialManager 工作线程（fast-path）+ 烧录前后 stopHeartbeat / startHeartbeat + 进度/日志/状态信号 + `onFlashExecProgress` slot 消费 STM32 端 0x38 进度帧（按 DATA/ERASE/WRITE/TAIL 权重折算总进度 + emitProgressPct helper 统一上报）
 - `src/services/flashstrategy` `[通信]` — 烧录策略抽象基类（接口定义）
 - `src/services/flashstrategyregistry` `[通信]` — 策略注册中心（构造接收 `SerialManager *` 与 `AwLocalIspStrategy::LogSink`，按 IC 型号枚举/查找）
@@ -78,7 +81,10 @@
 - `src/services/flashstrategies/aw86006_strategy` `[通信]` — AW86006 烧录策略（继承 `AwLocalIspStrategy`，仅声明型号 / 描述）
 - `src/services/flashstrategies/aw86100_strategy` `[通信]` — AW86100 烧录策略（继承 `AwLocalIspStrategy`，与 AW86006 共用 STM32 端 ISP 驱动）
 - `src/services/flashstrategies/dw9786_strategy` `[通信]` — DW9786 烧录策略（stub）
-- `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 烧录策略（stub）
+- `src/services/flashstrategies/dw9788_strategy` `[通信]` — DW9788 (HL9788N) 真实烧录策略：通过 `Hl9788nBridge` 调 vendor SDK；fast-path 同线程；OTA 模式（默认）严禁调用 `module_cal_erase`；量产模式可显式开启；固件 `FirmwareParser::parseHl9788Hex` 出来的 65536 字节小端二进制直接 reinterpret_cast 给 SDK
+- `src/services/flashstrategies/hl9788n_bridge` `[通信]` — HL9788N vendor 库与 SerialManager 的桥接层：通过 3 个 vendor 全局函数指针（WriteI2CDev / ReadI2CDev / OutputLog）把 vendor I2C 调用翻译为 0x30 / 0x31 透传命令；progress / cancel hook 注入；`describeRvStatus` 把 `hl9788n_rv_status()` 位掩码翻成中文；attach / detach 单例语义（同时刻仅 1 个 DW IC 烧录）
+- `src/services/flashstrategies/hl9788n_vendor_include.h` `[通信]` — vendor 包装头：先让 Qt/std 头展开，再引入 vendor 并 `#undef` 污染宏（Wait / round）；所有需引用 vendor 的 .cpp 必须 `#include` 它而非直接 include vendor 头
+- `src/services/flashstrategies/vendor/hl9788n/Func`、`hl9788n_api_ref`、`stdafx.h` `[通信-第三方]` — Dongwoon 原厂 vendor 源码（最小改动以适配 MotorDev 工程：`#define UNICODE off` / CMake 关闭 vendor TU 的 UNICODE / 静音特定警告；vendor 业务代码不动）
 - `src/protocol/motor_protocol` `[协议]` — AW 本地 ISP 命令 `0x32`~`0x37` 编解码（小端载荷,与 STM32 端 `pFrame->data[i]` 解码方式对齐）+ `AwIspStatus` 枚举与名称表 + `0x38 FLASH_EXEC_PROGRESS` 事件帧 `decodeFlashExecProgress` + `FlashExecPhase` 枚举 + 保留通用 I2C 透传 `0x30`(写) / `0x31`(读) 编解码（业务侧已不再使用,作为通用 debug 工具保留）
 - `src/mainwindow.cpp` 路由：`unsolicitedFrameReceived` 分支识别 0x38 进度帧，通过 `findChild<FwFlashService>` + `QMetaObject::invokeMethod(QueuedConnection)` 转发给 service slot
 
@@ -126,14 +132,14 @@
 |------|---------|------|
 | PMIC 电压配置 | `src/tabs/configtab` + `src/services/configservice` | 已实现：DRVDD/IOVDD/VCMVDD 三路电压输入 + 两步序列（SetVoltage → Enable）+ Disable + 5s 超时 |
 | IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
-| 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` | UI stub，按钮未连接信号 |
+| 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` + `src/protocol/batch_register_file` | 已实现：4 槽独立操作（前 2 写、后 2 读）；配置文件格式 `<addr>, <value>` + `//` 注释（参考 `register_read.txt`）；遇错即停；读出全或无（中止时原文件不动）；全局互斥（与 Sidebar 全部读/写 互锁）；浮窗内底部状态文字反馈 |
 | 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击全屏，右键重置 |
 | 示波器十字光标 | `src/widgets/scopeplotwidget` + `src/widgets/topbar` | 已实现：TopBar 切换按钮 + 吸附最近样本读数 |
 | 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
-| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 已落地：`AwLocalIspStrategy` 走 STM32 本地 ISP 协议 0x32~0x37（BEGIN → DATA 循环 → EXEC，失败时 RESET_CHIP + CANCEL 收尾）；上位机不再依赖 PC 端 DLL。DW9786 / DW9788 仍为 stub |
+| 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86006 / AW86100 / DW9788 已落地。AW86006/AW86100：`AwLocalIspStrategy` 走 STM32 本地 ISP 协议 0x32~0x37（BEGIN → DATA 循环 → EXEC，失败时 RESET_CHIP + CANCEL 收尾）；上位机不再依赖 PC 端 DLL。DW9788：`DW9788Strategy` + `Hl9788nBridge` 调 Dongwoon HL9788N vendor SDK，vendor I2C 通过 0x30 / 0x31 透传到 STM32；OTA 模式默认保留模组校准。DW9786 仍为 stub |
 | STM32 FLASH 文件存储 | `src/tabs/flashstoragetab` + `src/services/flashstoreservice` | 已实现：单插槽覆盖（每次擦 Sector 5-11 共 896 KB）+ 上传/下载/容量查询/**清空 FLASH(0x3F WIPE)**；下载 1:1 无损（改扩展名复原）；协议 v2.11 / 0x39~0x3F |
 | 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
 | 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
