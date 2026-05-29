@@ -273,9 +273,12 @@ int dw9786_fw_download_with_buffer(const u16 *fw_data, u32 word_count)
 	/*Flash lut unlocked*/
 	dw9786_flash_acess(MCS_CODE);
 
+	/* [MOTORDEV PATCH] 进度上报单位 = 千分位 (0..10000)，为提升 UI 平滑度。 */
 	DW9786_PATCH_REPORT(0);
 
-	/* Sector erase */
+	/* Sector erase — 不上报进度，进度条停在 0% 对应真实 IC erase 操作（~100ms）。
+	 * 与 HL9788N v4 一致：按"已烧字节 / 总字节"线性，erase/checksum/verify 自然停顿。
+	 */
 	for (i = 0; i < FMC_PAGE; i++) {
 		if (DW9786_PATCH_CANCELLED()) {
 			log_tprintf(1, _T("[dw9786_download_fw_with_buffer] cancelled at erase i=%d"), i);
@@ -286,11 +289,11 @@ int dw9786_fw_download_with_buffer(const u16 *fw_data, u32 word_count)
 		RamWriteA(0xED0C, 0x0002); // Sector Erase(2KB)
 		addr += 0x800;
 		m_delay(5);
-		/* erase 占总进度 0~5% */
-		DW9786_PATCH_REPORT((int)((long)(i + 1) * 5L / FMC_PAGE));
 	}
 
-	/* flash fw write */
+	/* flash fw write — 每个 packet 后按"已烧字节 / 总字节"线性上报 0~100%。
+	 * (i + MCS_PKT_SIZE) 是已写完的 word 数，total = MCS_SIZE_W = 20480 word。
+	 */
 	for (i = 0; i < (int)MCS_SIZE_W; i += MCS_PKT_SIZE) {
 		if (DW9786_PATCH_CANCELLED()) {
 			log_tprintf(1, _T("[dw9786_download_fw_with_buffer] cancelled at write i=%d"), i);
@@ -299,8 +302,8 @@ int dw9786_fw_download_with_buffer(const u16 *fw_data, u32 word_count)
 		if (i == 0) RamWriteA(0xED28, MCS_START_ADDRESS); // 16bit write
 		/* program sequential write — vendor original cast: (u16 *)(buf + i) */
 		CntWrt(0xED2C, (u16 *)(fw_data + i), MCS_PKT_SIZE); // 16bit write
-		/* write 占总进度 5~100% */
-		DW9786_PATCH_REPORT(5 + (int)((long)(i + MCS_PKT_SIZE) * 95L / (long)MCS_SIZE_W));
+		/* 千分位精度 (0..10000)：1280 packet × 7.8 ‰/packet → 每 packet ~7.8 milli 增量，UI 顺滑 */
+		DW9786_PATCH_REPORT((int)((long)(i + MCS_PKT_SIZE) * 10000L / (long)MCS_SIZE_W));
 	}
 
 	/* Checksum calculation for mcs data */
@@ -322,7 +325,7 @@ int dw9786_fw_download_with_buffer(const u16 *fw_data, u32 word_count)
 	log_tprintf(1, _T("[dw9786_download_fw_with_buffer] finished!"));
 	m_delay(10);
 
-	DW9786_PATCH_REPORT(100);
+	DW9786_PATCH_REPORT(10000);  /* 千分位 = 100% */
 	return msg;
 }
 

@@ -75,10 +75,11 @@ bool DW9786Strategy::flash(const QByteArray &firmware,
     }
 
     const qint64 progressTotal = firmware.size();  // 40KB
-    auto reportPct = [&](int pct) {
+    // vendor 上报单位 = 千分位 (0..10000)；strategy 直接用千分位算字节，避免 1% 截断
+    auto reportPctMilli = [&](int pct_milli) {
         if (!progress) return;
-        const int clamped = qBound(0, pct, 100);
-        progress(static_cast<qint64>(progressTotal) * clamped / 100);
+        const int clamped = qBound(0, pct_milli, 10000);
+        progress(static_cast<qint64>(progressTotal) * clamped / 10000);
     };
 
     log(LogLevel::Info,
@@ -87,7 +88,7 @@ bool DW9786Strategy::flash(const QByteArray &firmware,
             .arg(m_eraseCalibration ? QStringLiteral("量产")
                                     : QStringLiteral("OTA (保留校准)"))
             .arg(progressTotal));
-    reportPct(0);
+    reportPctMilli(0);
 
     if (cancelFlag.load()) { setErr(QStringLiteral("用户取消")); return false; }
 
@@ -101,7 +102,7 @@ bool DW9786Strategy::flash(const QByteArray &firmware,
     Dw9786Bridge::attach(m_serialManager, logToBridge);
     Dw9786Bridge::setCancelFlag(&cancelFlag);
     Dw9786Bridge::setProgressCallback(
-        [&reportPct](int pct) { reportPct(pct); });
+        [&reportPctMilli](int pct_milli) { reportPctMilli(pct_milli); });
 
     bool success = false;
     auto cleanup = [&]() {
@@ -156,7 +157,7 @@ bool DW9786Strategy::flash(const QByteArray &firmware,
         }
 
         log(LogLevel::Ok, QStringLiteral("DW9786 烧录完成"));
-        reportPct(100);
+        reportPctMilli(10000);
         success = true;
     } while (false);
 

@@ -247,19 +247,24 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
             if (self.isNull()) return;
             // strategy 上报的是已发字节，不超过总长；qMin clamp 防御兜底
             const qint64 displaySent = qMin(sent, total);
-            // fullProgress=true：strategy 自报全程 0~100%（DW9788 vendor 库一气呵成）
+            // fullProgress=true：strategy 自报全程 0~100%（DW9788/DW9786 vendor 库一气呵成）
+            //   直接 emit progressUpdated(sent, total) 保留字节级精度，UI 顺滑
             // fullProgress=false：strategy 只报 DATA 阶段，占总进度 kPctData=20%（AW 路径，
             //   后续 ERASE/WRITE/TAIL 由 STM32 端 0x38 进度帧通过 onFlashExecProgress 推进）
-            const int pct = (total > 0)
-                ? (fullProgress
-                       ? static_cast<int>(displaySent * 100 / total)
-                       : static_cast<int>(displaySent * FwFlashProgress::kPctData / total))
-                : 0;
-            // 跨线程 emit：从 SerialManager 工作线程到主线程，AutoConnection 自动 QueuedConnection
-            QMetaObject::invokeMethod(self.data(), [self, pct]() {
-                if (self.isNull()) return;
-                self->emitProgressPct(pct);
-            }, Qt::QueuedConnection);
+            if (fullProgress) {
+                QMetaObject::invokeMethod(self.data(), [self, displaySent, total]() {
+                    if (self.isNull()) return;
+                    emit self->progressUpdated(displaySent, total);
+                }, Qt::QueuedConnection);
+            } else {
+                const int pct = (total > 0)
+                    ? static_cast<int>(displaySent * FwFlashProgress::kPctData / total)
+                    : 0;
+                QMetaObject::invokeMethod(self.data(), [self, pct]() {
+                    if (self.isNull()) return;
+                    self->emitProgressPct(pct);
+                }, Qt::QueuedConnection);
+            }
             emit self->stageMessage(
                 QStringLiteral("传输中 %1 KB / %2 KB")
                     .arg(QString::number(displaySent / 1024.0, 'f', 1))
