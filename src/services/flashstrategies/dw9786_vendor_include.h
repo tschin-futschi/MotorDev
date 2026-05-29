@@ -15,6 +15,10 @@
 // =============================================================================
 #pragma once
 
+// [MOTORDEV PATCH] Rename dw9786 vendor internal symbols so bridge/strategy TUs
+// see the same renamed identifiers as vendor TUs (must be first include).
+#include "dw9786_symbol_rename.h"
+
 // vendor api_ref.h 的 _EXPORT 宏在未定义 DW9786_OIS_EXPORTS 时取 dllimport 分支
 // （生成 __imp_xxx 链接符号）。MotorDev 是静态链入 exe，必须让所有 TU 看到一致
 // 的 dllexport 视图，否则链接器报 undefined reference to `__imp_dw9786_*`。

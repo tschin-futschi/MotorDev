@@ -33,7 +33,7 @@ void CntWrt( unsigned short addr, unsigned short *dat, int size )
 	}
 
 	WriteI2CDev(_SLV_OIS_>>1, size*2+2, tmp);
-	delete [] tmp; 
+	delete [] tmp;
 }
 
 

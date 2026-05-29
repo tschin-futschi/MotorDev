@@ -12,6 +12,11 @@
 // =============================================================================
 #pragma once
 
+// [MOTORDEV PATCH] Rename all dw9786 vendor internal symbols to avoid link conflict
+// with hl9788n vendor. Must be FIRST include in this header so all vendor sources
+// see the renamed identifiers.
+#include "dw9786_symbol_rename.h"
+
 // Enable C11 Annex K bounds-checked functions (fopen_s 等) before any CRT include
 #ifndef __STDC_WANT_LIB_EXT1__
 #define __STDC_WANT_LIB_EXT1__ 1

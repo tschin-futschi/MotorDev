@@ -162,13 +162,17 @@ void attach(SerialManager *sm,
     g_cancelFlag        = nullptr;
     g_attached          = true;
 
-    // 注入到 vendor 函数指针。注意：HL9788N 与 DW9786 vendor 共享同名全局符号
-    // （link 阶段 --allow-multiple-definition 合并），attach 此处的赋值会覆盖
-    // 当前进程内的 WriteI2CDev/ReadI2CDev/OutputLog，所以同时刻仅允许 1 个桥接
-    // 层 attach（调用方约束）。
-    WriteI2CDev = &bridge_i2c_write;
-    ReadI2CDev  = &bridge_i2c_read;
-    OutputLog   = &bridge_output_log;
+    // 用 vendor 自身的标准初始化接口 dw978x_extfuncinit 注入函数指针。
+    // 关键：--allow-multiple-definition 让两个 vendor 的同名全局 WriteI2CDev/
+    // ReadI2CDev/OutputLog 看似"合并"，但 dw9786 vendor 内部函数实际引用的可能是
+    // 它自己 TU 内的副本（取决于编译器/链接器行为），从外部 TU 直接赋值不可靠。
+    // dw978x_extfuncinit 在 dw9786 vendor 内部实现并赋值，保证写到 vendor 自己看到
+    // 的那个全局，绕开 link 合并行为差异。
+    DW978x_ExtFuncList fnList;
+    fnList.pFunc_I2C_Write  = (ptrfunc_I2CWrite)&bridge_i2c_write;
+    fnList.pFunc_I2C_Read   = (ptrfunc_I2CRead)&bridge_i2c_read;
+    fnList.pFunc_OutputLog  = (ptrfunc_OutputLog)&bridge_output_log;
+    dw978x_extfuncinit(&fnList);
 
     // vendor _with_buffer 的 hook 入口
     dw9786_set_progress_cb(&vendor_progress_trampoline);
@@ -190,9 +194,9 @@ void detach() {
     dw9786_set_progress_cb(nullptr);
     dw9786_set_cancel_check(nullptr);
 
-    WriteI2CDev = nullptr;
-    ReadI2CDev  = nullptr;
-    OutputLog   = nullptr;
+    // 用 extfuncinit 注入 nullptr 等价于清理 vendor 内部函数指针
+    DW978x_ExtFuncList nullList = {nullptr, nullptr, nullptr};
+    dw978x_extfuncinit(&nullList);
 
     g_serial      = nullptr;
     g_logSink     = nullptr;
