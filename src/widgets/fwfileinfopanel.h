@@ -49,4 +49,8 @@ private:
     QLabel *m_addrRangeValue = nullptr;
     QLabel *m_effectiveLabel = nullptr;
     QLabel *m_effectiveValue = nullptr;
+
+    // Hl9788Hex 补齐路径专属：原始行数 + 填充行数 + footer CRC32
+    QLabel *m_paddingLabel = nullptr;
+    QLabel *m_paddingValue = nullptr;
 };

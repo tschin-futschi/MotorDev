@@ -118,6 +118,12 @@ void FwFileInfoPanel::setupUi() {
     m_effectiveValue = makeLabel(validPage, QString(), true);
     grid->addWidget(m_effectiveValue, row++, 1, Qt::AlignLeft);
 
+    m_paddingLabel = makeLabel(validPage, tr("自动补齐"), false);
+    grid->addWidget(m_paddingLabel, row, 0, Qt::AlignLeft);
+    m_paddingValue = makeLabel(validPage, QString(), true);
+    m_paddingValue->setWordWrap(true);
+    grid->addWidget(m_paddingValue, row++, 1, Qt::AlignLeft);
+
     grid->setRowStretch(row, 1);
     m_stack->addWidget(validPage);
 
@@ -152,25 +158,57 @@ void FwFileInfoPanel::setInfo(const FirmwareInfo &info) {
 
     m_fileNameValue->setText(info.fileName);
     m_fileSizeValue->setText(formatSize(info.fileSizeBytes));
-    m_formatValue->setText(info.format == FirmwareFormat::Hex
-                               ? tr("Intel HEX")
-                               : tr("Binary"));
+
+    QString formatText;
+    switch (info.format) {
+    case FirmwareFormat::Bin:        formatText = tr("Binary"); break;
+    case FirmwareFormat::Hex:        formatText = tr("Intel HEX"); break;
+    case FirmwareFormat::Hl9788Hex:  formatText = tr("Dongwoon HL9788N hex"); break;
+    case FirmwareFormat::Dw9786Hex:  formatText = tr("Dongwoon DW9786 hex"); break;
+    default:                          formatText = tr("Unknown"); break;
+    }
+    m_formatValue->setText(formatText);
     m_crc32Value->setText(formatHex32(info.crc32));
 
-    const bool isHex = info.format == FirmwareFormat::Hex;
-    m_segCountLabel->setVisible(isHex);
-    m_segCountValue->setVisible(isHex);
-    m_addrRangeLabel->setVisible(isHex);
-    m_addrRangeValue->setVisible(isHex);
-    m_effectiveLabel->setVisible(isHex);
-    m_effectiveValue->setVisible(isHex);
+    const bool isIntelHex = info.format == FirmwareFormat::Hex;
+    const bool isHl9788   = info.format == FirmwareFormat::Hl9788Hex;
+    const bool isDw9786   = info.format == FirmwareFormat::Dw9786Hex;
+    const bool isDwCustom = isHl9788 || isDw9786;
 
-    if (isHex) {
+    // 段数 / 地址范围：仅 Intel HEX 有意义
+    m_segCountLabel->setVisible(isIntelHex);
+    m_segCountValue->setVisible(isIntelHex);
+    m_addrRangeLabel->setVisible(isIntelHex);
+    m_addrRangeValue->setVisible(isIntelHex);
+
+    // 有效字节：Intel HEX 与 DW vendor hex 都有意义
+    const bool showEffective = isIntelHex || isDwCustom;
+    m_effectiveLabel->setVisible(showEffective);
+    m_effectiveValue->setVisible(showEffective);
+
+    // 自动补齐行：仅 DW vendor hex 且触发补齐时显示
+    const bool showPadding = isDwCustom && info.paddingApplied;
+    m_paddingLabel->setVisible(showPadding);
+    m_paddingValue->setVisible(showPadding);
+
+    if (isIntelHex) {
         m_segCountValue->setText(QString::number(info.segments.size()));
         m_addrRangeValue->setText(QStringLiteral("%1 - %2")
                                       .arg(formatHex32(info.minAddress))
                                       .arg(formatHex32(info.maxAddress)));
         m_effectiveValue->setText(QStringLiteral("%1 字节").arg(info.effectiveBytes));
+    } else if (isDwCustom) {
+        m_effectiveValue->setText(QStringLiteral("%1 字节").arg(info.effectiveBytes));
+        if (info.paddingApplied) {
+            const int expectedLines = isHl9788 ? 16384 : 10240;
+            // 期望行数 - 原始行数 - 2 = 填充 0 的行数；最后再加 1 行 footer CRC + 1 行 0
+            const int padLines = expectedLines - info.originalLines - 2;
+            m_paddingValue->setText(
+                tr("%1 原始行 + %2 填充 0 行 + footer (CRC32=%3, 末行全 0)")
+                    .arg(info.originalLines)
+                    .arg(padLines)
+                    .arg(formatHex32(info.footerCrc32)));
+        }
     }
 
     m_stack->setCurrentIndex(1);

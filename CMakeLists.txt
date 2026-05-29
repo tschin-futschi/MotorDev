@@ -78,6 +78,14 @@ qt_add_executable(MotorDev
     src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.cpp
     src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.h
     src/services/flashstrategies/vendor/hl9788n/stdafx.h
+    src/services/flashstrategies/dw9786_bridge.cpp
+    src/services/flashstrategies/dw9786_bridge.h
+    src/services/flashstrategies/dw9786_vendor_include.h
+    src/services/flashstrategies/vendor/dw9786/Func.cpp
+    src/services/flashstrategies/vendor/dw9786/Func.h
+    src/services/flashstrategies/vendor/dw9786/dw9786_api_ref.cpp
+    src/services/flashstrategies/vendor/dw9786/dw9786_api_ref.h
+    src/services/flashstrategies/vendor/dw9786/stdafx.h
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
@@ -146,6 +154,7 @@ endif()
 target_include_directories(MotorDev PRIVATE
     src
     src/services/flashstrategies/vendor/hl9788n
+    src/services/flashstrategies/vendor/dw9786
 )
 
 target_link_libraries(MotorDev PRIVATE
@@ -162,6 +171,17 @@ if(WIN32)
     # hl978x_extfuncinit() 用 GetFileVersionInfo。
     target_link_libraries(MotorDev PRIVATE winmm version)
 
+    # HL9788N 与 DW9786 vendor 来自同一厂商 (Dongwoon)，两组 cpp 共有十几处同名
+    # 全局符号（RamWriteA/RamReadA/log_tprintf/_SLV_OIS_/m_delay/wait_check_register/
+    # WriteI2CDev/ReadI2CDev/OutputLog 等）。源码层面 rename 工作量大且破坏 vendor
+    # 维护性。link 阶段用 --allow-multiple-definition 让重复定义合并到第一个版本。
+    # 安全性依赖：(1) 两个 vendor 同名函数语义高度一致（同厂商同实现）；
+    # (2) 关键全局函数指针 (WriteI2CDev 等) 每次 attach 时由桥接层重设；
+    # (3) Hl9788nBridge 与 Dw9786Bridge 互斥（同时刻仅 1 个 DW IC 烧录）
+    if(NOT MSVC)
+        target_link_options(MotorDev PRIVATE "-Wl,--allow-multiple-definition")
+    endif()
+
     # vendor 源码使用 _T(__FUNCTION__) 等 MSVC-特有写法，需 ANSI 路径才能编译。
     # Qt6 在 Windows 默认全局定义 UNICODE/_UNICODE，会破坏 vendor 编译。
     # 这里只对 vendor 两个 cpp 取消这两个宏（其它源码不变）。
@@ -174,6 +194,8 @@ if(WIN32)
     set_source_files_properties(
         src/services/flashstrategies/vendor/hl9788n/Func.cpp
         src/services/flashstrategies/vendor/hl9788n/hl9788n_api_ref.cpp
+        src/services/flashstrategies/vendor/dw9786/Func.cpp
+        src/services/flashstrategies/vendor/dw9786/dw9786_api_ref.cpp
         PROPERTIES COMPILE_OPTIONS "-UUNICODE;-U_UNICODE;-Wno-write-strings;-Wno-endif-labels"
     )
 endif()

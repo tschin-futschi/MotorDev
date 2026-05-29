@@ -19,7 +19,9 @@
 #include "widgets/fwflashcontrolpanel.h"
 #include "widgets/fwflashlogpanel.h"
 
+#include <QByteArray>
 #include <QComboBox>
+#include <QDir>
 #include <QEvent>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -28,13 +30,16 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLatin1Char>
 #include <QLineEdit>
 #include <QMetaObject>
 #include <QPointer>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QSaveFile>
 #include <QShowEvent>
 #include <QSplitter>
+#include <QTime>
 #include <QVBoxLayout>
 
 using namespace MotorDev;
@@ -59,6 +64,93 @@ protected:
         return QObject::eventFilter(watched, event);
     }
 };
+
+/// 把补齐后的 DW vendor hex 文本另存到原始 hex 文件所在目录。
+/// 支持 Hl9788Hex (16384 行) 与 Dw9786Hex (10240 行) 两种格式，拆字规则按 info.format 切换。
+/// 文件名：<stem>--00000000--<HHMMSS>.hex（ASCII 双减号 + 字面 8 个 0 + PC 本地时分秒）
+/// 仅在 info.paddingApplied 时由调用方触发；返回是否成功 + 输出路径或错误信息。
+bool saveDwPaddedHex(const FirmwareInfo &info,
+                     const QString &originalPath,
+                     QString *outSavedPath,
+                     QString *outErrorMessage) {
+    int kExpectedWords = 0;
+    bool highFirst = false;
+    switch (info.format) {
+    case FirmwareFormat::Hl9788Hex:
+        kExpectedWords = 32768;  // 16384 lines
+        highFirst = false;       // parser: out[2i]=low, out[2i+1]=high
+        break;
+    case FirmwareFormat::Dw9786Hex:
+        kExpectedWords = 20480;  // 10240 lines
+        highFirst = true;        // parser: out[2i]=high, out[2i+1]=low
+        break;
+    default:
+        if (outErrorMessage) *outErrorMessage = QStringLiteral("不支持的固件格式");
+        return false;
+    }
+    const int kExpectedLines = kExpectedWords / 2;
+    constexpr int kLineBytes = 9;  // 8 hex 字符 + LF
+
+    if (info.data.size() != kExpectedWords * static_cast<int>(sizeof(quint16))) {
+        if (outErrorMessage) *outErrorMessage = QStringLiteral("固件数据大小异常");
+        return false;
+    }
+    const auto *outWords = reinterpret_cast<const quint16 *>(info.data.constData());
+
+    // 反推 32-bit 行内容（与 parser 拆字规则对称）：
+    //   HL9788N: parser out[2i]=low, out[2i+1]=high → reverse: val = (out[2i+1]<<16) | out[2i]
+    //   DW9786:  parser out[2i]=high, out[2i+1]=low → reverse: val = (out[2i]<<16) | out[2i+1]
+    QByteArray textBuf;
+    textBuf.resize(kExpectedLines * kLineBytes);
+    static constexpr char kHexTable[] = "0123456789ABCDEF";
+    char *p = textBuf.data();
+    for (int i = 0; i < kExpectedLines; ++i) {
+        const quint32 hi = highFirst ? outWords[2 * i] : outWords[2 * i + 1];
+        const quint32 lo = highFirst ? outWords[2 * i + 1] : outWords[2 * i];
+        const quint32 v = (hi << 16) | lo;
+        p[0] = kHexTable[(v >> 28) & 0xFu];
+        p[1] = kHexTable[(v >> 24) & 0xFu];
+        p[2] = kHexTable[(v >> 20) & 0xFu];
+        p[3] = kHexTable[(v >> 16) & 0xFu];
+        p[4] = kHexTable[(v >> 12) & 0xFu];
+        p[5] = kHexTable[(v >>  8) & 0xFu];
+        p[6] = kHexTable[(v >>  4) & 0xFu];
+        p[7] = kHexTable[v & 0xFu];
+        p[8] = '\n';
+        p += kLineBytes;
+    }
+
+    const QFileInfo fi(originalPath);
+    const QString stem = fi.completeBaseName();
+    const QString dir  = fi.absolutePath();
+    const QString suffix = fi.suffix().isEmpty() ? QStringLiteral("hex") : fi.suffix();
+    const QString hhmmss = QTime::currentTime().toString(QStringLiteral("HHmmss"));
+    // 统一用 ASCII 双减号分隔
+    const QString baseName = stem + QStringLiteral("--00000000--") + hhmmss;
+
+    QString candidate = dir + QLatin1Char('/') + baseName + QLatin1Char('.') + suffix;
+    for (int n = 1; QFileInfo::exists(candidate) && n <= 1000; ++n) {
+        candidate = dir + QLatin1Char('/') + baseName + QLatin1Char('_')
+                    + QString::number(n) + QLatin1Char('.') + suffix;
+    }
+
+    QSaveFile saver(candidate);
+    if (!saver.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        if (outErrorMessage) *outErrorMessage = saver.errorString();
+        return false;
+    }
+    if (saver.write(textBuf) != static_cast<qint64>(textBuf.size())) {
+        if (outErrorMessage) *outErrorMessage = saver.errorString();
+        saver.cancelWriting();
+        return false;
+    }
+    if (!saver.commit()) {
+        if (outErrorMessage) *outErrorMessage = saver.errorString();
+        return false;
+    }
+    if (outSavedPath) *outSavedPath = candidate;
+    return true;
+}
 
 void applyPanelShadow(QWidget *widget) {
     auto *effect = new QGraphicsDropShadowEffect(widget);
@@ -337,7 +429,17 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
     m_currentFilePath = path;
     m_pathEdit->setText(path);
 
-    const FirmwareInfo info = FirmwareParser::parseFile(path);
+    // 根据当前 IC combo 选择给 parser 传 hint：DW9786 / DW9788 hex 行内格式
+    // 相同（每行 8 hex），仅拆字规则与预期行数不同，无法靠文件内容嗅探区分。
+    IcHint icHint = IcHint::Auto;
+    const QString icModelSelected = m_icCombo->currentData().toString();
+    if (icModelSelected == QStringLiteral("DW9786")) {
+        icHint = IcHint::Dw9786;
+    } else if (icModelSelected == QStringLiteral("DW9788")) {
+        icHint = IcHint::Hl9788;
+    }
+
+    const FirmwareInfo info = FirmwareParser::parseFile(path, icHint);
     m_infoPanel->setInfo(info);
 
     if (!info.valid) {
@@ -383,6 +485,35 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
             .arg(info.fileName)
             .arg(info.data.size())
             .arg(info.crc32, 8, 16, QLatin1Char('0')));
+    const bool isDwPadded = (info.format == FirmwareFormat::Hl9788Hex ||
+                              info.format == FirmwareFormat::Dw9786Hex) &&
+                             info.paddingApplied;
+    if (isDwPadded) {
+        const int expectedLines = (info.format == FirmwareFormat::Hl9788Hex) ? 16384 : 10240;
+        const QString icLabel = (info.format == FirmwareFormat::Hl9788Hex)
+                                    ? QStringLiteral("HL9788N hex")
+                                    : QStringLiteral("DW9786 hex");
+        m_logPanel->appendWarn(
+            tr("%1 仅 %2 行（< %3），已自动补齐：填 0 + footer CRC32 0x%4，"
+               "实际烧入 %5 字节")
+                .arg(icLabel)
+                .arg(info.originalLines)
+                .arg(expectedLines)
+                .arg(info.footerCrc32, 8, 16, QLatin1Char('0'))
+                .arg(info.data.size()));
+
+        QString savedPath, saveErr;
+        const bool savedOk = saveDwPaddedHex(info, m_currentFilePath,
+                                              &savedPath, &saveErr);
+        if (savedOk) {
+            m_logPanel->appendOk(
+                tr("已保存补齐烧录文件：%1")
+                    .arg(QDir::toNativeSeparators(savedPath)));
+        } else {
+            m_logPanel->appendWarn(
+                tr("补齐烧录文件保存失败（不影响继续烧录）：%1").arg(saveErr));
+        }
+    }
     if (padBytes > 0) {
         m_logPanel->appendWarn(
             tr("固件 %1 字节非 4 字节对齐，已自动末尾补 %2 字节 0xFF → %3 字节后写入")
@@ -414,6 +545,14 @@ void FwFlashTab::onIcChanged(int /*index*/) {
     } else {
         FlashStrategy *s = m_registry->find(icModel);
         m_icDescLabel->setText(s != nullptr ? s->icDescription() : QString());
+    }
+    // 已选文件 + 切到 DW 系列 IC 时，必须重新按对应 IcHint 解析（DW9786 / DW9788
+    // hex 行内格式相同但拆字 + 行数不同，旧解析结果用错 IC 会让 strategy size
+    // 校验失败或烧错数据）
+    if (!m_currentFilePath.isEmpty() &&
+        (icModel == QStringLiteral("DW9786") || icModel == QStringLiteral("DW9788"))) {
+        parseAndShowFile(m_currentFilePath);
+        return;
     }
     updateStartEnabled();
 }
