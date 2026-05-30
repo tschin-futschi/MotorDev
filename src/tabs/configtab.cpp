@@ -462,7 +462,8 @@ void ConfigTab::setupUi() {
     m_icCombo = new QComboBox(m_icGroup);
     m_icCombo->setObjectName(QStringLiteral("icCombo"));
     m_icCombo->setProperty("inputRole", QStringLiteral("form"));
-    m_icCombo->addItems({QStringLiteral("AW86008"), QStringLiteral("DW9786"), QStringLiteral("DW9788")});
+    m_icCombo->addItems({QStringLiteral("AW86008"), QStringLiteral("AW86100"),
+                         QStringLiteral("DW9786"), QStringLiteral("DW9788")});
     icFormLayout->setWidget(0, QFormLayout::FieldRole, m_icCombo);
     auto *slaveIdLabel = new QLabel(m_icGroup);
     slaveIdLabel->setObjectName(QStringLiteral("slaveIdLabel"));

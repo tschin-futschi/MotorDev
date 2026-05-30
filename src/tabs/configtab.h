@@ -93,7 +93,7 @@ private:
     QGroupBox *m_pmicGroup = nullptr;           ///< PMIC 配置卡片
 
     // --- IC 卡片控件 ---
-    QComboBox *m_icCombo = nullptr;             ///< IC 型号下拉框（AW86008/DW9786/DW9788）
+    QComboBox *m_icCombo = nullptr;             ///< IC 型号下拉框（AW86008/AW86100/DW9786/DW9788）
     QComboBox *m_slaveIdCombo = nullptr;        ///< I2C 从设备地址下拉框
     QPushButton *m_icScanButton = nullptr;      ///< I2C 扫描按钮
     QPushButton *m_icConnectButton = nullptr;   ///< IC 连接按钮（设置从设备地址）
