@@ -4,6 +4,7 @@
 // =============================================================================
 #include "widgets/registertable.h"
 
+#include "protocol/register_utils.h"
 #include "ui/style_constants.h"
 #include "ui/repolish.h"
 
@@ -73,39 +74,6 @@ bool parseAddressText(const QString &text, quint16 *value) {
     return true;
 }
 
-/// @brief 解析寄存器值文本（支持 "0x" 十六进制和十进制）
-bool parseRegisterValueText(const QString &text, qint16 *value) {
-    QString trimmed = text.trimmed();
-    if (trimmed.isEmpty()) {
-        return false;
-    }
-
-    // 十六进制模式
-    if (trimmed.startsWith(QStringLiteral("0x"), Qt::CaseInsensitive)) {
-        trimmed.remove(0, 2);
-        bool ok = false;
-        const quint16 raw = trimmed.toUShort(&ok, 16);
-        if (!ok) {
-            return false;
-        }
-        if (value != nullptr) {
-            *value = static_cast<qint16>(raw);
-        }
-        return true;
-    }
-
-    // 十进制模式
-    bool ok = false;
-    const qint16 parsed = trimmed.toShort(&ok, 10);
-    if (!ok) {
-        return false;
-    }
-
-    if (value != nullptr) {
-        *value = parsed;
-    }
-    return true;
-}
 } // namespace
 
 // =============================================================================
@@ -253,7 +221,7 @@ void RegisterTable::connectSignals() {
         // 值列编辑 → 自动格式化为当前 ValueMode
         if (columnMod == 2) {
             qint16 value = 0;
-            if (parseRegisterValueText(item->text(), &value)) {
+            if (RegisterUtils::parseSignedValue(item->text(), &value)) {
                 const int group = item->column() / 5;
                 const int globalRow = group * m_rowCount + item->row();
                 updateRowValue(globalRow, value);
@@ -323,7 +291,7 @@ void RegisterTable::setValueMode(ValueMode mode) {
         }
 
         qint16 signedValue = 0;
-        if (parseRegisterValueText(text, &signedValue)) {
+        if (RegisterUtils::parseSignedValue(text, &signedValue)) {
             updateRowValue(globalRow, signedValue);
         }
     }
@@ -344,12 +312,7 @@ void RegisterTable::updateRowValue(int globalRow, qint16 value) {
         return;
     }
     const QSignalBlocker blocker(m_tableWidget);
-    if (m_valueMode == ValueMode::Hex) {
-        const quint16 rawValue = static_cast<quint16>(value);
-        item->setText(QStringLiteral("0x") + QString::number(rawValue, 16).toUpper().rightJustified(4, QLatin1Char('0')));
-    } else {
-        item->setText(QString::number(value));
-    }
+    item->setText(RegisterUtils::formatValue(value, m_valueMode == ValueMode::Hex));
     item->setForeground(QBrush(Style::Color::RegisterValueText));
 }
 
@@ -436,7 +399,7 @@ bool RegisterTable::rowHasValue(int globalRow) const {
         return false;
     }
     qint16 value = 0;
-    return parseRegisterValueText(item->text(), &value);
+    return RegisterUtils::parseSignedValue(item->text(), &value);
 }
 
 quint16 RegisterTable::rowAddress(int globalRow) const {
@@ -464,7 +427,7 @@ qint16 RegisterTable::rowValue(int globalRow) const {
         return 0;
     }
     qint16 value = 0;
-    return parseRegisterValueText(item->text(), &value) ? value : 0;
+    return RegisterUtils::parseSignedValue(item->text(), &value) ? value : 0;
 }
 
 // =============================================================================

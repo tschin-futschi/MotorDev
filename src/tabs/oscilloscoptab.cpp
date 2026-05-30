@@ -168,9 +168,6 @@ void OscilloscopTab::connectSignals() {
     connect(m_bottomPanel, &ScopeBottomPanel::registerStartRequested, this, &OscilloscopTab::onRegisterStartRequested);
     connect(m_bottomPanel, &ScopeBottomPanel::registerStopRequested, this, &OscilloscopTab::onRegisterStopRequested);
     connect(m_bottomPanel, &ScopeBottomPanel::clearPanelRequested, this, &OscilloscopTab::onRegisterClearRequested);
-    connect(m_bottomPanel, &ScopeBottomPanel::loadParamsRequested, this, []() {
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Load parameters");
-    });
 
     // BottomPanel → 波形生成器服务
     connect(m_bottomPanel, &ScopeBottomPanel::generatorLinearStartRequested,
@@ -246,8 +243,7 @@ void OscilloscopTab::connectSignals() {
         }
 
         ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
-        panel->setValueText(
-            row, QStringLiteral("0x%1").arg(static_cast<quint16>(value), 4, 16, QLatin1Char('0')).toUpper());
+        panel->setValueNumeric(row, value);    // 按面板当前 HEX/DEC 模式格式化
         panel->setButtonFeedback(row, true, QStringLiteral("ok"));
     });
     connect(m_regService, &RegisterService::rowReadError, this, [this](int row) {
@@ -294,9 +290,11 @@ void OscilloscopTab::connectSignals() {
             if (!RegisterUtils::parseNumber(addrText, &addr)) {
                 return false;
             }
-            if (!RegisterUtils::parseNumber(valueText, &value)) {
+            qint16 signedValue = 0;
+            if (!RegisterUtils::parseSignedValue(valueText, &signedValue)) {
                 return false;
             }
+            value = static_cast<quint16>(signedValue);    // 写入按 16 位裸值下发
             panel->setAddressError(row, false);
             return true;
         });
@@ -488,19 +486,21 @@ void OscilloscopTab::onRegisterWriteRequested(int row) {
 
     ScopeRegisterPanel *panel = m_bottomPanel->registerPanel();
     quint16 address = 0;
-    quint16 value = 0;
+    qint16 value = 0;
     if (!RegisterUtils::parseNumber(panel->addressText(row), &address)) {
         panel->setAddressError(row, true);
         return;
     }
-    if (!RegisterUtils::parseNumber(panel->valueText(row), &value)) {
+    if (!RegisterUtils::parseSignedValue(panel->valueText(row), &value)) {
+        panel->setValueError(row, true);
         qDebug().noquote() << QStringLiteral("[Scope Reg] Skip invalid value row %1").arg(row + 1);
         return;
     }
 
     panel->setAddressError(row, false);
+    panel->setValueError(row, false);
     panel->setButtonFeedback(row, false, QStringLiteral("pending"));
-    m_regService->writeSingleRow(row, address, static_cast<qint16>(value));
+    m_regService->writeSingleRow(row, address, value);
 }
 
 /// @brief 启动循环写入：从寄存器面板读取间隔参数

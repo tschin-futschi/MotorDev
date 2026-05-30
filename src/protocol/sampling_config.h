@@ -33,4 +33,20 @@ int displayWindowMsForText(const QString &text);
 /// @return 用于填充下拉框的字符串列表
 QStringList intervalLabels();
 
+// --- 采样配置默认值（唯一来源）---
+// 下拉框初值、OscilloscopTab、ScopeService 的启动默认值统一取自以下函数，
+// 避免同一默认值在多处硬编码导致漂移（如文本与索引不一致）。
+
+/// @brief 默认采样间隔 UI 文本
+QString defaultIntervalLabel();
+
+/// @brief 默认采样间隔协议索引（= intervalIndexForText(defaultIntervalLabel())）
+uint8_t defaultIntervalIndex();
+
+/// @brief 默认显示窗口 UI 文本
+QString defaultDisplayWindowLabel();
+
+/// @brief 默认显示窗口毫秒值（= displayWindowMsForText(defaultDisplayWindowLabel())）
+int defaultDisplayWindowMs();
+
 }  // namespace SamplingConfig

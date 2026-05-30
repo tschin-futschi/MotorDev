@@ -25,6 +25,7 @@
 // =============================================================================
 #pragma once
 
+#include "protocol/sampling_config.h"
 #include "ui/scopeviewmode.h"
 
 #include <QKeyEvent>
@@ -174,9 +175,9 @@ private:
     QWidget *m_fullscreenWindow = nullptr;              ///< 全屏窗口（null=非全屏）
     int m_plotLayoutIndex = -1;                         ///< PlotWidget 在布局中的原始索引（全屏恢复用）
     bool m_scopeRunning = false;                        ///< 采样运行状态
-    QString m_sampleIntervalText = QStringLiteral("1000 us"); ///< 采样间隔显示文本
+    QString m_sampleIntervalText = SamplingConfig::defaultIntervalLabel(); ///< 采样间隔显示文本
 
-    // --- 采样配置 ---
-    uint8_t m_sampleIntervalIndex = 0x04;               ///< 采样间隔索引（协议值）
-    int m_displayWindowMs = 50;                          ///< 显示窗口宽度（毫秒）
+    // --- 采样配置（默认值统一取自 SamplingConfig，避免与 BottomPanel / ScopeService 漂移）---
+    uint8_t m_sampleIntervalIndex = SamplingConfig::defaultIntervalIndex();  ///< 采样间隔索引（协议值）
+    int m_displayWindowMs = SamplingConfig::defaultDisplayWindowMs();         ///< 显示窗口宽度（毫秒）
 };

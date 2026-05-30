@@ -223,8 +223,8 @@ void ScopePlotWidget::setChannelData(const QVector<PlotChannelData> &channels) {
 
 /// @brief 配置采集参数：计算原始窗口点数、降采样桶宽和 UI 显示点数。
 ///
-/// 降采样策略：若原始点数超过 kUiRingSize（3000），按桶宽聚合。
-/// 例如：窗口 4000ms / 间隔 100us → 40000 点 → 桶宽 14 → UI 约 2857 点。
+/// 降采样策略：若原始点数超过 kUiRingSize（8192），按桶宽聚合。
+/// 例如：窗口 4000ms / 间隔 100us → 40000 点 → 桶宽 5 → UI 8000 点。
 void ScopePlotWidget::configureAcquisition(int intervalUs, int windowMs) {
     if (intervalUs <= 0 || windowMs <= 0) {
         return;

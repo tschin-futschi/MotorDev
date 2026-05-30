@@ -62,7 +62,6 @@ signals:
     void registerStartRequested();
     void registerStopRequested();
     void clearPanelRequested();
-    void loadParamsRequested();
 
     // --- 生成器面板信号 ---
     void generatorLinearStartRequested(quint16 addr, qint16 min, qint16 max, qint16 step, int intervalMs);

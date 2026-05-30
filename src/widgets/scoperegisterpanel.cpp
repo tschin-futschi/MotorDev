@@ -4,13 +4,14 @@
 //
 // 布局结构（每行一组）：
 //   [描述输入] [地址输入] [值输入] [R按钮] [W按钮]  × 8 行
-//   [间隔标签] [间隔输入] [启动] [停止] ---弹簧--- [清除面板] [录入参数]
+//   [间隔标签] [间隔输入] [启动] [停止] ---弹簧--- [清除面板] [HEX/DEC]
 //
 // 本面板仅负责 UI 展示和用户交互信号发射，
 // 实际的寄存器读写逻辑由外部（OscilloscpTab）通过信号槽连接处理。
 // =============================================================================
 #include "widgets/scoperegisterpanel.h"
 
+#include "protocol/register_utils.h"
 #include "ui/repolish.h"
 
 #include <QHBoxLayout>
@@ -57,12 +58,21 @@ QString ScopeRegisterPanel::intervalText() const {
 // 公共设置接口
 // =============================================================================
 
-/// @brief 设置指定行的值输入框文本（用于读取结果回填）。
+/// @brief 设置指定行的值输入框文本（原样写入，不做格式化）。
 void ScopeRegisterPanel::setValueText(int row, const QString &text) {
     if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
         return;
     }
     m_valueEdits[row]->setText(text);
+}
+
+/// @brief 按当前显示进制格式化并写入指定行的值（读回填用），同时清除该行红框。
+void ScopeRegisterPanel::setValueNumeric(int row, qint16 value) {
+    if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
+        return;
+    }
+    m_valueEdits[row]->setText(RegisterUtils::formatValue(value, m_hexMode));
+    setValueError(row, false);
 }
 
 /// @brief 设置指定行的地址输入框错误状态。
@@ -75,6 +85,65 @@ void ScopeRegisterPanel::setAddressError(int row, bool error) {
 
     m_addrEdits[row]->setProperty("hasError", error);
     MotorDev::UiUtil::repolish(m_addrEdits[row]);
+}
+
+/// @brief 设置指定行的值输入框错误状态（数值非法时红框，复用 hasError QSS）。
+void ScopeRegisterPanel::setValueError(int row, bool error) {
+    if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
+        return;
+    }
+
+    m_valueEdits[row]->setProperty("hasError", error);
+    MotorDev::UiUtil::repolish(m_valueEdits[row]);
+}
+
+/// @brief 校验指定行数值：空文本清错；非空则解析，失败标红、成功清错。
+void ScopeRegisterPanel::validateValueRow(int row) {
+    if (row < 0 || row >= RowCount || m_valueEdits[row] == nullptr) {
+        return;
+    }
+
+    const QString text = m_valueEdits[row]->text().trimmed();
+    if (text.isEmpty()) {
+        setValueError(row, false);
+        return;
+    }
+    setValueError(row, !RegisterUtils::parseSignedValue(text, nullptr));
+}
+
+/// @brief 切换 HEX/DEC 显示模式：翻转标志 → 重排数值 → 刷新按钮文案。
+void ScopeRegisterPanel::toggleValueFormat() {
+    m_hexMode = !m_hexMode;
+    reformatAllValues();
+    refreshFormatButtonText();
+}
+
+/// @brief 按当前模式重排所有行数值：合法值重新格式化并清错，非法非空保留原文并标红。
+void ScopeRegisterPanel::reformatAllValues() {
+    for (int row = 0; row < RowCount; ++row) {
+        if (m_valueEdits[row] == nullptr) {
+            continue;
+        }
+        const QString text = m_valueEdits[row]->text().trimmed();
+        if (text.isEmpty()) {
+            setValueError(row, false);
+            continue;
+        }
+        qint16 value = 0;
+        if (RegisterUtils::parseSignedValue(text, &value)) {
+            m_valueEdits[row]->setText(RegisterUtils::formatValue(value, m_hexMode));
+            setValueError(row, false);
+        } else {
+            setValueError(row, true);
+        }
+    }
+}
+
+/// @brief 切换按钮文案显示当前显示模式。
+void ScopeRegisterPanel::refreshFormatButtonText() {
+    if (m_formatToggleButton != nullptr) {
+        m_formatToggleButton->setText(m_hexMode ? QStringLiteral("HEX") : QStringLiteral("DEC"));
+    }
 }
 
 /// @brief 设置指定行按钮的操作反馈状态（成功/失败闪烁）。
@@ -120,15 +189,19 @@ void ScopeRegisterPanel::setCyclicRunning(bool running) {
     }
 }
 
-/// @brief 清空所有行的地址、值输入框和错误状态。
+/// @brief 清空所有行的描述、地址、值输入框和错误状态。
 void ScopeRegisterPanel::clearAll() {
     for (int row = 0; row < RowCount; ++row) {
+        if (m_descEdits[row] != nullptr) {
+            m_descEdits[row]->clear();
+        }
         if (m_addrEdits[row] != nullptr) {
             m_addrEdits[row]->clear();
             setAddressError(row, false);
         }
         if (m_valueEdits[row] != nullptr) {
             m_valueEdits[row]->clear();
+            setValueError(row, false);
         }
     }
 
@@ -155,13 +228,17 @@ void ScopeRegisterPanel::connectSignals() {
             setAddressError(row, false);
             emit writeRequested(row);
         });
+        // 数值框：离开输入即校验，非法标红
+        connect(m_valueEdits[row], &QLineEdit::editingFinished, this, [this, row]() {
+            validateValueRow(row);
+        });
     }
 
     // ---------- 底部控制按钮 ----------
     connect(m_startButton, &QPushButton::clicked, this, &ScopeRegisterPanel::startRequested);
     connect(m_stopButton, &QPushButton::clicked, this, &ScopeRegisterPanel::stopRequested);
     connect(m_clearButton, &QPushButton::clicked, this, &ScopeRegisterPanel::clearPanelRequested);
-    connect(m_loadButton, &QPushButton::clicked, this, &ScopeRegisterPanel::loadParamsRequested);
+    connect(m_formatToggleButton, &QPushButton::clicked, this, &ScopeRegisterPanel::toggleValueFormat);
 }
 
 // =============================================================================
@@ -280,10 +357,10 @@ void ScopeRegisterPanel::setupUi() {
     m_clearButton->setText(tr("清除面板"));
     intervalRow->addWidget(m_clearButton);
 
-    // --- 录入参数按钮 ---
-    m_loadButton = new QPushButton(this);
-    m_loadButton->setObjectName(QStringLiteral("loadButton"));
-    m_loadButton->setProperty("buttonRole", QStringLiteral("action-load"));
-    m_loadButton->setText(tr("录入参数"));
-    intervalRow->addWidget(m_loadButton);
+    // --- HEX/DEC 显示切换按钮（替换原"录入参数"）---
+    m_formatToggleButton = new QPushButton(this);
+    m_formatToggleButton->setObjectName(QStringLiteral("formatToggleButton"));
+    m_formatToggleButton->setProperty("buttonRole", QStringLiteral("action-format"));
+    m_formatToggleButton->setText(QStringLiteral("HEX"));    // 默认 HEX 模式（与 m_hexMode 一致）
+    intervalRow->addWidget(m_formatToggleButton);
 }

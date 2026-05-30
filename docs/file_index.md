@@ -36,7 +36,7 @@
 - `src/services/blockreadservice` `[通信]` — 块读取浮窗的业务层：独立 RegisterService 实例（与 RegisterTable / BatchRegisterService 完全隔离）+ 状态机（Idle/Reading/WritingFile/Completed/Failed/Cancelled）+ 协作式取消（cancelFlag）+ 失败即停（已成功条目仍写文件）；通过 `stateChanged` / `progress` / `stageMessage` / `logMessage` / `finished` 信号上报；CSV 输出按标准格式（首行表头 `addr,value` + 4 位大写 hex 无 `0x` + LF 行尾）；文件命名 `Bulkread_HHMMSS.csv`（PC 本地时间，同秒冲突自动 `_N`）
 - `src/widgets/registertable` `[UI-Widget]` — 寄存器表格显示与编辑（4 组 × 30 行）
 - `src/protocol/motor_protocol` `[协议]` — 读写寄存器指令编码/响应解码
-- `src/protocol/register_utils` `[协议]` — 地址/值文本统一解析（含 0x 前缀）
+- `src/protocol/register_utils` `[协议]` — 地址/值文本解析与格式化唯一来源（`parseNumber` 无符号地址；`parseSignedValue` 有符号值 0x→HEX/否则 DEC；`formatValue` 按 HEX/DEC 格式化）；被 RegisterTable 与 ScopeRegisterPanel 共用
 
 ### 寄存器配置文件自动保存/加载
 - `src/tabs/registerrwtab` `[UI-Tab]` — 表格数据自动保存至 `AppDataLocation/registers.json`，启动时自动加载；批量读写浮窗（弹出式 Qt::Tool）4 槽独立支持「配置文件 ↔ 芯片寄存器」往返，浮窗状态 / 路径不持久化（每次启动空白）；块读取浮窗（独立 Qt::Tool）按起始地址 + 个数（步进 +2）连续 dump 到目录下的 `Bulkread_HHMMSS.csv`，浮窗仅记忆「上次保存目录」其余字段每次空白
@@ -53,7 +53,7 @@
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
 - `src/widgets/scopechannelstrip` `[UI-Widget]` — 单通道配置条（启用开关、描述、寄存器地址）
 - `src/widgets/scopemarqueelabel` `[UI-Widget]` — 跑马灯状态标签（采样/循环写入/发生器活跃状态汇总）
-- `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 循环写入间隔/启动/停止/清除/录入参数）
+- `src/widgets/scoperegisterpanel` `[UI-Widget]` — 示波器侧寄存器读写面板（8 行 R/W + 循环写入间隔/启动/停止/清除 + HEX/DEC 切换按钮）；值列输入按 0x 前缀判进制（有符号 DEC -32768~32767），非法值红框（editingFinished/写入/切换时校验），切换按当前模式重排合法值；解析/格式化复用 `register_utils`
 - `src/widgets/scopegeneratorpanel` `[UI-Widget]` — 信号发生器配置面板（Linear/Cosine/Sawtooth 模式切换 + 参数校验）
 - `src/widgets/scopepreviewwidget` `[UI-Widget]` — 独立预览控件，自带正弦数据源用于 UI 演示与样式验证
 - `src/models/scopechannelmodel` `[数据模型]` — 8 通道配置数据模型（启用/描述/地址/颜色/线宽/线型/数据点 + 协议参数生成）

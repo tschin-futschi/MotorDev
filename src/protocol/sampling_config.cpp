@@ -57,4 +57,23 @@ int displayWindowMsForText(const QString &text) {
     return 50;  // 默认 50 ms
 }
 
+// --- 采样配置默认值（唯一来源）---
+// 默认 UI 文本在此集中定义，索引/毫秒值由对应映射函数派生，确保三者始终一致。
+
+QString defaultIntervalLabel() {
+    return QStringLiteral("500 us");
+}
+
+uint8_t defaultIntervalIndex() {
+    return intervalIndexForText(defaultIntervalLabel());
+}
+
+QString defaultDisplayWindowLabel() {
+    return QStringLiteral("50 ms");
+}
+
+int defaultDisplayWindowMs() {
+    return displayWindowMsForText(defaultDisplayWindowLabel());
+}
+
 }  // namespace SamplingConfig

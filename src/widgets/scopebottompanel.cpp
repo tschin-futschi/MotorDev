@@ -83,9 +83,10 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     m_yAxisMenu->addAction(tr("Manual..."));
     m_yAxisButton->setMenu(m_yAxisMenu);
 
-    // 默认采样间隔 = 1000 us（索引 4），显示窗口 = 50 ms（索引 0）
-    m_intervalCombo->setCurrentIndex(4);
-    m_windowCombo->setCurrentIndex(0);
+    // 采样间隔 / 显示窗口默认值统一取自 SamplingConfig（唯一来源）。
+    // 须在 connectSignals() 之前设置：此时尚未连接 currentTextChanged，不会发初始信号。
+    m_intervalCombo->setCurrentText(SamplingConfig::defaultIntervalLabel());
+    m_windowCombo->setCurrentText(SamplingConfig::defaultDisplayWindowLabel());
 
     connectSignals();
     refreshPanels();
@@ -357,7 +358,6 @@ void ScopeBottomPanel::connectSignals() {
     connect(m_registerPanel, &ScopeRegisterPanel::startRequested, this, &ScopeBottomPanel::registerStartRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::stopRequested, this, &ScopeBottomPanel::registerStopRequested);
     connect(m_registerPanel, &ScopeRegisterPanel::clearPanelRequested, this, &ScopeBottomPanel::clearPanelRequested);
-    connect(m_registerPanel, &ScopeRegisterPanel::loadParamsRequested, this, &ScopeBottomPanel::loadParamsRequested);
 
     // --- 生成器面板信号转发 ---
     connect(m_generatorPanel, &ScopeGeneratorPanel::linearStartRequested, this, &ScopeBottomPanel::generatorLinearStartRequested);

@@ -13,6 +13,8 @@
 // =============================================================================
 #pragma once
 
+#include "protocol/sampling_config.h"
+
 #include <QAtomicInt>
 #include <QByteArray>
 #include <QObject>
@@ -119,8 +121,8 @@ private:
     ScopeStreamBatcher *m_streamBatcher = nullptr;
     QTimer *m_streamWatchdog = nullptr;
 
-    uint8_t m_sampleIntervalIndex = 0x04;
-    int m_displayWindowMs = 50;
+    uint8_t m_sampleIntervalIndex = SamplingConfig::defaultIntervalIndex();
+    int m_displayWindowMs = SamplingConfig::defaultDisplayWindowMs();
     uint8_t m_lastStreamMask = 0x00;
     PendingCommand m_pendingCommand = PendingCommand::None;
     bool m_startPending = false;
