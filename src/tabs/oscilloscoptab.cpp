@@ -11,6 +11,7 @@
 #include "services/cyclicwriteservice.h"
 #include "services/generatorservice.h"
 #include "services/registerservice.h"
+#include "services/scoperecordservice.h"
 #include "services/scopeservice.h"
 #include "ui/style_constants.h"
 #include "widgets/scopebottompanel.h"
@@ -20,6 +21,9 @@
 #include "widgets/scopestylepanel.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QProcess>
+#include <QSettings>
 #include <QSplitter>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -43,10 +47,20 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
     m_generatorService = new GeneratorService(dispatcher, this);
     m_cyclicWriteService = new CyclicWriteService(m_regService, this);
     m_cyclicWriteService->setRowCount(ScopeRegisterPanel::rowCount());
+    m_recordService = new ScopeRecordService(m_channelModel, this);
 
     setupUi();
     connectSignals();
     refreshPlotData();
+
+    // 载入上次记录目录（QSettings 跨会话持久化）
+    QSettings settings(QSettings::IniFormat, QSettings::UserScope,
+                       QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
+    const QString savedRecordDir = settings.value(QStringLiteral("scope/recordDir")).toString();
+    if (!savedRecordDir.isEmpty()) {
+        m_recordService->setRecordDirectory(savedRecordDir);
+        m_bottomPanel->setRecordDir(savedRecordDir);
+    }
 
     // 性能统计定时器：每秒输出一次绘制耗时、FPS、采样率
     m_perfTimer = new QTimer(this);
@@ -178,8 +192,34 @@ void OscilloscopTab::connectSignals() {
             m_generatorService, &GeneratorService::startSawtooth);
     connect(m_bottomPanel, &ScopeBottomPanel::generatorStopRequested,
             m_generatorService, &GeneratorService::stop);
-    connect(m_bottomPanel, &ScopeBottomPanel::captureNoteChanged, this, [](const QString &text) {
-        qDebug().noquote() << QStringLiteral("[Scope GUI] Capture note=%1").arg(text);
+    // BottomPanel → 数据记录目录：更新服务 + QSettings 持久化
+    connect(m_bottomPanel, &ScopeBottomPanel::recordDirChanged, this, [this](const QString &dir) {
+        m_recordService->setRecordDirectory(dir);
+        QSettings settings(QSettings::IniFormat, QSettings::UserScope,
+                           QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
+        settings.setValue(QStringLiteral("scope/recordDir"), dir);
+        qDebug().noquote() << QStringLiteral("[Scope GUI] Record dir=%1").arg(dir);
+    });
+
+    // BottomPanel → "打开"：用 Excel 打开记录目录下最新的 Scope_*.csv
+    connect(m_bottomPanel, &ScopeBottomPanel::openLatestRecordRequested, this, [this]() {
+        const QString path = m_recordService->latestRecordFile();
+        if (path.isEmpty()) {
+            qWarning().noquote()
+                << QStringLiteral("[Scope Record] 无记录文件可打开（检查记录目录与是否已采样）");
+            return;
+        }
+        const QString native = QDir::toNativeSeparators(path);
+        // Windows `start "" excel "<file>"`：经 App Paths 解析 Excel，尊重"用 Excel 打开"
+        const bool ok = QProcess::startDetached(
+            QStringLiteral("cmd"),
+            {QStringLiteral("/c"), QStringLiteral("start"), QStringLiteral(""),
+             QStringLiteral("excel"), native});
+        if (ok) {
+            qDebug().noquote() << QStringLiteral("[Scope GUI] Open in Excel: %1").arg(native);
+        } else {
+            qWarning().noquote() << QStringLiteral("[Scope Record] 启动 Excel 失败：%1").arg(native);
+        }
     });
 
     // -------------------------------------------------------------------------
@@ -233,6 +273,20 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::samplesReceived, m_plotWidget, &ScopePlotWidget::appendSamples);
     connect(m_service, &ScopeService::acquisitionConfigured, m_plotWidget, &ScopePlotWidget::configureAcquisition);
     connect(m_service, &ScopeService::resetViewRequested, m_plotWidget, &ScopePlotWidget::resetView);
+
+    // -------------------------------------------------------------------------
+    // ScopeService → 数据记录服务（采样参数 / 启停 / 数据）
+    // 采样启动即开录、停止即停录；记录全速率原始采样到 CSV
+    // -------------------------------------------------------------------------
+    connect(m_service, &ScopeService::acquisitionConfigured, m_recordService, &ScopeRecordService::onAcquisitionConfigured);
+    connect(m_service, &ScopeService::runningChanged, m_recordService, &ScopeRecordService::onRunningChanged);
+    connect(m_service, &ScopeService::samplesReceived, m_recordService, &ScopeRecordService::onSamplesReceived);
+    connect(m_recordService, &ScopeRecordService::recordingChanged, this, [this](bool, const QString &) {
+        refreshMarqueeStatus();
+    });
+    connect(m_recordService, &ScopeRecordService::recordError, this, [](const QString &message) {
+        qWarning().noquote() << QStringLiteral("[Scope Record] %1").arg(message);
+    });
 
     // -------------------------------------------------------------------------
     // RegisterService → 寄存器面板反馈
@@ -568,6 +622,9 @@ void OscilloscopTab::refreshMarqueeStatus() {
         QString sampleText = m_sampleIntervalText;
         sampleText.remove(QLatin1Char(' '));
         parts << QStringLiteral("Sampling @ %1").arg(sampleText);
+    }
+    if (m_recordService != nullptr && m_recordService->isRecording()) {
+        parts << QStringLiteral("● Rec → %1").arg(m_recordService->currentFileName());
     }
     if (m_cyclicWriteService != nullptr && m_cyclicWriteService->isRunning()) {
         parts << QStringLiteral("Cyclic Write @ %1ms").arg(m_cyclicWriteService->intervalMs());

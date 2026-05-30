@@ -55,6 +55,12 @@ public:
     /// @brief 获取跑马灯标签
     ScopeMarqueeLabel *marqueeLabel() const;
 
+    /// @brief 设置记录目录路径框文本（载入 QSettings 初值用，不发信号）
+    void setRecordDir(const QString &dir);
+
+    /// @brief 返回当前记录目录路径框文本（已 trim）
+    QString recordDir() const;
+
 signals:
     // --- 寄存器面板信号 ---
     void registerReadRequested(int row);
@@ -79,7 +85,8 @@ signals:
     void sampleIntervalChanged(const QString &text);
     void displayWindowChanged(const QString &text);
     void runningToggled(bool running);
-    void captureNoteChanged(const QString &text);
+    void recordDirChanged(const QString &dir);
+    void openLatestRecordRequested();
 
     // --- Y 轴控制信号 ---
     void yAxisAutoRequested();
@@ -115,7 +122,9 @@ private:
     QComboBox *m_intervalCombo = nullptr;            ///< 采样间隔下拉框
     QToolButton *m_yAxisButton = nullptr;            ///< Y 轴模式按钮
     QComboBox *m_windowCombo = nullptr;              ///< 显示窗口下拉框
-    QLineEdit *m_noteEdit = nullptr;                 ///< 备注输入框
+    QLineEdit *m_recordDirEdit = nullptr;            ///< 数据记录目录路径框
+    QPushButton *m_recordDirBrowseButton = nullptr;  ///< 记录目录浏览按钮
+    QPushButton *m_recordOpenButton = nullptr;       ///< 用 Excel 打开最新记录文件
 
     // --- 通道条 ---
     QWidget *m_channelStripRow = nullptr;            ///< 通道条行容器

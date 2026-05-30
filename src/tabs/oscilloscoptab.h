@@ -40,6 +40,7 @@ class ScopeBottomPanel;
 class ScopeChannelModel;
 class ScopePlotWidget;
 class RegisterService;
+class ScopeRecordService;
 class ScopeService;
 class ScopeStylePanel;
 class SerialManager;
@@ -159,6 +160,7 @@ private:
     RegisterService *m_regService = nullptr;            ///< 寄存器读写服务（辅助面板用）
     GeneratorService *m_generatorService = nullptr;     ///< 波形生成器服务
     CyclicWriteService *m_cyclicWriteService = nullptr; ///< 循环写入服务
+    ScopeRecordService *m_recordService = nullptr;      ///< 数据记录服务（CSV）
 
     // --- UI 控件 ---
     QSplitter *m_splitter = nullptr;                    ///< 水平分割器（波形区 | 样式面板）

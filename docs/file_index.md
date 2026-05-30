@@ -45,9 +45,10 @@
 
 ### 示波器/波形观测
 > 示波器数据流已接入，支持 8 通道 60fps 实时渲染、拖拽缩放（X/Y 轴）、双击全屏、十字光标吸附读数、调试模拟器端到端数据路径。
+> 数据记录：采样期间将全速率原始采样持续写入 CSV（`ScopeRecordService`），采样启停即录制启停，目录由顶部行 Record Dir 控件指定。
 > 示波器工具栏控件（视图模式切换、Style、Crosshair）位于 TopBar 仅示波器页面可见；采样启停按钮内嵌在绘图区。
 
-- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，协调 ScopeService / RegisterService / GeneratorService / CyclicWriteService 四个服务；通过 MainWindow 桥接与 TopBar 上的示波器控件交互
+- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，协调 ScopeService / RegisterService / GeneratorService / CyclicWriteService / ScopeRecordService 五个服务；通过 MainWindow 桥接与 TopBar 上的示波器控件交互；记录目录经 QSettings(`scope/recordDir`) 跨会话持久化
 - `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击全屏，内嵌采样按钮，十字光标）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔，8 通道稳定 60fps
 - `src/widgets/scopestylepanel` `[UI-Widget]` — 示波器通道样式面板（颜色选择、线宽、线型、数据点开关）；由 TopBar 的 Style 按钮触发显隐
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
@@ -59,6 +60,7 @@
 - `src/models/scopechannelmodel` `[数据模型]` — 8 通道配置数据模型（启用/描述/地址/颜色/线宽/线型/数据点 + 协议参数生成）
 - `src/models/channelbuffer` `[数据模型]` — 单通道双层环形缓冲（原始环 + UI 降采样环）
 - `src/services/scopeservice` `[通信]` — 4 步采样启动序列（Interval/Channels/Map/Start）+ ScopeStreamBatcher 流帧批量接收 + 5s 看门狗 + 背压（QAtomicInt）
+- `src/services/scoperecordservice` `[通信]` — 示波器数据持续记录：监听 ScopeService 的 `acquisitionConfigured`/`runningChanged`/`samplesReceived`，采样启动即开录、停止即停录；全速率原始采样写入 `Scope_YYYYMMDD_HHMMSS.csv`（首行注释元信息 + `time_us,CHx,...`，有符号十进制，每帧一行）；列 = 会话开始时 `currentChannelMask` 通道；目录由 UI/QSettings 提供，未设/无效则不录并经 `recordError` 提示；主线程缓冲写 + 1s flush
 - `src/services/registerservice` `[通信]` — 寄存器面板单行/批量读写
 - `src/services/cyclicwriteservice` `[通信]` — 寄存器面板循环写入（轮询 + 连续错误 5 次自停）
 - `src/services/generatorservice` `[通信]` — 发生器协议命令（0x55/0x56/0x57/0x58）与运行状态管理 + 3s ACK 超时
@@ -141,7 +143,8 @@
 | 寄存器块读取（连续地址段 dump） | `src/tabs/registerrwtab` + `src/services/blockreadservice` | 已实现：起始地址 + 个数（步进 +2）→ `Bulkread_HHMMSS.csv`；失败即停 / 协作式取消（已成功条目仍写文件）；进度条 + 状态文字反馈；独立通道（不与 Sidebar 全部读/写 / 批量读写互斥） |
 | 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击全屏，右键重置 |
 | 示波器十字光标 | `src/widgets/scopeplotwidget` + `src/widgets/topbar` | 已实现：TopBar 切换按钮 + 吸附最近样本读数 |
-| 示波器导出/截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
+| 示波器数据记录（CSV） | `src/services/scoperecordservice` + `src/widgets/scopebottompanel` | 已实现：采样启停即录制启停，全速率原始采样写 `Scope_YYYYMMDD_HHMMSS.csv`；目录用户指定（Record Dir + 浏览 + QSettings 持久化），未设/无效则不录并提示；"打开"按钮用 Excel 打开最新记录文件（`latestRecordFile()` + `start excel`） |
+| 示波器截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |

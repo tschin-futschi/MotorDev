@@ -4,7 +4,7 @@
 //
 // 底部面板布局：
 //   ┌─ channelFrame（可折叠）─────────────────────────┐
-//   │ [Interval▼] [Y Axis▼] [Window▼] [Note 输入框]  │
+//   │ [Interval▼] [Y Axis▼] [Window▼] [Record Dir 路径][浏览…] │
 //   │ [CH1] [CH2] [CH3] [CH4] [CH5] [CH6] [CH7] [CH8]│
 //   └─────────────────────────────────────────────────┘
 //   ---弹簧--- [Hide Channels] [Show Register] [Show Generator] [Marquee]
@@ -27,6 +27,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QEvent>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QGuiApplication>
 #include <QHBoxLayout>
@@ -57,9 +58,9 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     m_channelFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
-    // Note 输入框占据剩余空间
+    // 记录目录路径框占据剩余空间
     if (auto *channelHeaderLayout = qobject_cast<QHBoxLayout *>(m_channelFrame->layout()->itemAt(0)->layout())) {
-        channelHeaderLayout->setStretch(channelHeaderLayout->indexOf(m_noteEdit), 1);
+        channelHeaderLayout->setStretch(channelHeaderLayout->indexOf(m_recordDirEdit), 1);
     }
 
     // ---------- 创建 8 个通道条 ----------
@@ -108,6 +109,18 @@ ScopeBottomPanel::~ScopeBottomPanel() {
 /// @brief 返回寄存器面板指针（供外部连接信号用）。
 ScopeRegisterPanel *ScopeBottomPanel::registerPanel() const {
     return m_registerPanel;
+}
+
+/// @brief 设置记录目录路径框文本（用于从 QSettings 载入初值，不发信号）。
+void ScopeBottomPanel::setRecordDir(const QString &dir) {
+    if (m_recordDirEdit != nullptr) {
+        m_recordDirEdit->setText(dir);
+    }
+}
+
+/// @brief 返回当前记录目录路径框文本。
+QString ScopeBottomPanel::recordDir() const {
+    return m_recordDirEdit != nullptr ? m_recordDirEdit->text().trimmed() : QString();
 }
 
 /// @brief 返回波形生成器面板指针。
@@ -368,7 +381,18 @@ void ScopeBottomPanel::connectSignals() {
     // --- 采样配置变更 ---
     connect(m_intervalCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::sampleIntervalChanged);
     connect(m_windowCombo, &QComboBox::currentTextChanged, this, &ScopeBottomPanel::displayWindowChanged);
-    connect(m_noteEdit, &QLineEdit::textChanged, this, &ScopeBottomPanel::captureNoteChanged);
+    connect(m_recordDirEdit, &QLineEdit::editingFinished, this, [this]() {
+        emit recordDirChanged(m_recordDirEdit->text().trimmed());
+    });
+    connect(m_recordDirBrowseButton, &QPushButton::clicked, this, [this]() {
+        const QString start = m_recordDirEdit->text().trimmed();
+        const QString dir = QFileDialog::getExistingDirectory(this, tr("选择数据记录目录"), start);
+        if (!dir.isEmpty()) {
+            m_recordDirEdit->setText(dir);
+            emit recordDirChanged(dir);
+        }
+    });
+    connect(m_recordOpenButton, &QPushButton::clicked, this, &ScopeBottomPanel::openLatestRecordRequested);
 
     // --- Y 轴菜单 ---
     connect(m_yAxisMenu, &QMenu::triggered, this, [this](QAction *action) {
@@ -498,17 +522,30 @@ void ScopeBottomPanel::setupUi() {
                              QStringLiteral("1000 ms"), QStringLiteral("2000 ms"), QStringLiteral("4000 ms")});
     channelHeaderLayout->addWidget(m_windowCombo);
 
-    // 采集备注输入
-    auto *noteLabel = new QLabel(m_channelFrame);
-    noteLabel->setObjectName(QStringLiteral("noteLabel"));
-    noteLabel->setText(QStringLiteral("Capture Note"));
-    channelHeaderLayout->addWidget(noteLabel);
+    // 数据记录目录（替换原 Capture Note）：标签 + 路径框（占满右侧）+ 浏览按钮
+    auto *recordDirLabel = new QLabel(m_channelFrame);
+    recordDirLabel->setObjectName(QStringLiteral("recordDirLabel"));
+    recordDirLabel->setText(QStringLiteral("Record Dir"));
+    channelHeaderLayout->addWidget(recordDirLabel);
 
-    m_noteEdit = new QLineEdit(m_channelFrame);
-    m_noteEdit->setObjectName(QStringLiteral("noteEdit"));
-    m_noteEdit->setMinimumSize(QSize(220, 0));
-    m_noteEdit->setPlaceholderText(QStringLiteral("Add capture note"));
-    channelHeaderLayout->addWidget(m_noteEdit);
+    m_recordDirEdit = new QLineEdit(m_channelFrame);
+    m_recordDirEdit->setObjectName(QStringLiteral("recordDirEdit"));
+    m_recordDirEdit->setMinimumSize(QSize(220, 0));
+    m_recordDirEdit->setPlaceholderText(QStringLiteral("数据记录保存目录（采样时自动写入 CSV）"));
+    channelHeaderLayout->addWidget(m_recordDirEdit);
+
+    m_recordDirBrowseButton = new QPushButton(m_channelFrame);
+    m_recordDirBrowseButton->setObjectName(QStringLiteral("recordDirBrowseButton"));
+    m_recordDirBrowseButton->setProperty("buttonRole", QStringLiteral("toggle"));
+    m_recordDirBrowseButton->setText(QStringLiteral("浏览…"));
+    channelHeaderLayout->addWidget(m_recordDirBrowseButton);
+
+    m_recordOpenButton = new QPushButton(m_channelFrame);
+    m_recordOpenButton->setObjectName(QStringLiteral("recordOpenButton"));
+    m_recordOpenButton->setProperty("buttonRole", QStringLiteral("toggle"));
+    m_recordOpenButton->setText(QStringLiteral("打开"));
+    m_recordOpenButton->setToolTip(QStringLiteral("用 Excel 打开最新的记录文件"));
+    channelHeaderLayout->addWidget(m_recordOpenButton);
 
     // --- 通道条行（8 个 ScopeChannelStrip 的占位容器） ---
     m_channelStripRow = new QWidget(m_channelFrame);

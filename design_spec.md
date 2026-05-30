@@ -783,7 +783,11 @@ Crosshair toggle: QToolButton，checkable；文字在「使用十字光标：开
     （选项与 protocol.md 4.4 节 0x52 索引表 0x00~0x06 严格对应，由 SamplingConfig::intervalLabels() 提供）
   [Y Axis QToolButton（下拉菜单: Auto / Manual...）]
   [Display Window 标签] [QComboBox: 50 ms / 200 ms / 500 ms / 1000 ms / 2000 ms / 4000 ms]
-  [Capture Note 标签] [QLineEdit]
+  [Record Dir 标签] [QLineEdit 路径框（占满右侧）] [浏览… 按钮] [打开 按钮]
+    （数据记录目录，替代原 Capture Note；QFileDialog 选目录，QSettings 跨会话持久化；
+     采样启动即把全速率原始采样写入 `<dir>/Scope_YYYYMMDD_HHMMSS.csv`，停止即停；
+     目录未设/无效则不录制，仅在日志面板提示；
+     "打开"按钮：用 Excel（Windows `start excel`）打开记录目录下最新的 Scope_*.csv，无文件则日志提示）
   注：采样启停按钮位于 ScopePlotWidget 绘图区内嵌位置，不在底部面板亦不在 TopBar
   底部按钮行（右对齐）: [Hide/Show Channels] [Hide/Show Register] [Hide/Show Generator] 三个切换按钮
 
