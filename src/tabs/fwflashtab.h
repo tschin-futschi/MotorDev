@@ -26,6 +26,7 @@
 #include <memory>
 
 class SerialManager;
+class DeviceContext;
 class FlashStrategyRegistry;
 class FwFileInfoPanel;
 class FwFlashControlPanel;
@@ -41,7 +42,8 @@ class FwFlashTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit FwFlashTab(SerialManager *serialManager, QWidget *parent = nullptr);
+    explicit FwFlashTab(SerialManager *serialManager, DeviceContext *deviceContext,
+                        QWidget *parent = nullptr);
     ~FwFlashTab() override;
 
     /// @brief 注入"立即停止"回调，由 MainWindow 绑定到对应 Service。
@@ -71,6 +73,7 @@ private:
     void setupUi();
     void connectSignals();
     void rebuildIcCombo();
+    void syncIcFromContext();   ///< 目标 IC 只读跟随配置页 Select IC（DeviceContext）
     void parseAndShowFile(const QString &path);
     void clearFileState();
     void updateStartEnabled();
@@ -78,6 +81,7 @@ private:
     // --- 核心依赖 ---
     std::unique_ptr<FlashStrategyRegistry> m_registry;
     FwFlashService *m_service = nullptr;
+    DeviceContext *m_deviceContext = nullptr;   ///< 共享 IC 类型模型（目标 IC 跟随其变化）
 
     // --- 当前选中文件解析结果 ---
     QString m_currentFilePath;

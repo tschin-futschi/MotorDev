@@ -200,7 +200,7 @@ void MainWindow::setupUi() {
 
     // 烧录改用 STM32 本地 ISP（协议 0x32~0x37），IC 7-bit 地址由 STM32 端
     // ISP 驱动内部约定，不再由上位机传入。
-    m_fwFlashTab = new FwFlashTab(m_serialManager, m_contentStack);
+    m_fwFlashTab = new FwFlashTab(m_serialManager, m_deviceContext, m_contentStack);
     m_contentStack->addWidget(m_fwFlashTab);  // index 2: 固件烧录页
 
     m_scopeTab = new OscilloscopTab(m_serialManager, m_dispatcher, m_contentStack);

@@ -72,7 +72,7 @@
 > 2026-05-27 新增 DW9788 (Dongwoon HL9788N) 真实烧录：通过 `Hl9788nBridge` 把 vendor SDK 与 SerialManager 桥接，vendor 内部 I2C 调用翻译为协议 0x30 / 0x31 透传命令；DW9788 路径**不走** 0x32~0x37 本地 ISP，而是 vendor SDK 一次性完成 `id_check → fw_update_dma → ois_reset → fw_info → verify`，**OTA 模式默认保留模组校准数据**。FirmwareParser 同时支持 HL9788N 自定义 hex 文本（每行 1 个 32-bit hex 字，共 16384 行 = 64 KB），解析为 65536 字节小端二进制后直接 reinterpret_cast 给 vendor SDK。
 > 框架：UI 5 区（IC 选择 / 文件选择 / 文件信息 / 烧录控制 / 操作日志）+ 文件解析（`.bin` / Intel `.hex` / HL9788N hex）+ 策略模式 + 前置序列（停采样 → 停发生器 → 停循环写入）+ **fast-path 烧录线程**（任务通过 `invokeMethod(QueuedConnection)` 投递到 SerialManager 工作线程同步执行；AW strategy 直接调 `SerialManager::sendAndWaitResponse` 发协议 0x32~0x37 命令，DW9788 strategy 走 vendor SDK + 0x30/0x31 透传）+ 协作式取消（`cancelFlag`）+ **心跳暂停 / 恢复**（EXEC 阻塞 5-10s 期间 STM32 不响应任何帧，FwFlashService 在烧录任务前 stopHeartbeat、任务完成回主线程后 startHeartbeat）。**PMIC 不在前置序列中关闭：烧录期间 IC 必须保持正常供电**。AW86008 / AW86100 共用 `AwLocalIspStrategy` 基类（BEGIN → DATA 循环 → EXEC,失败时 RESET_CHIP + CANCEL 收尾）；DW9788 通过 `Hl9788nBridge` + vendor SDK 完成（见上）；DW9786 仍为 stub。UI 加载固件后即校验：AW 路径 ≤ 64 KB 且 4 字节对齐（STM32 端 SRAM1 单缓冲上限）；HL9788N 路径固定 64 KB。
 
-- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *`，构造 `LogSink` lambda 注入 registry，让 strategy 日志转发到 `FwFlashLogPanel`；`parseAndShowFile` 加载固件后校验 ≤ 64 KB / 4 字节对齐；HL9788N hex 触发补齐时由 `saveHl9788nPaddedHex` 把实际烧入的 16384 行 hex 文本另存到原始 hex 同目录，文件名 `<stem>--00000000--<HHMMSS>.hex`（同秒冲突追加 `_N`），失败仅 warn 不阻塞烧录
+- `src/tabs/fwflashtab` `[UI-Tab]` — 固件烧录 Tab 容器；持有 `FlashStrategyRegistry` 与 `FwFlashService`，组织 5 区主内容布局；构造接收 `SerialManager *` 与 `DeviceContext *`（目标 IC 下拉**只读单向跟随**配置页 Select IC，监听 `DeviceContext::icTypeChanged` 经 `syncIcFromContext` 按 icModel 字符串选中，无占位项）；构造 `LogSink` lambda 注入 registry，让 strategy 日志转发到 `FwFlashLogPanel`；`parseAndShowFile` 加载固件后校验 ≤ 64 KB / 4 字节对齐；HL9788N hex 触发补齐时由 `saveHl9788nPaddedHex` 把实际烧入的 16384 行 hex 文本另存到原始 hex 同目录，文件名 `<stem>--00000000--<HHMMSS>.hex`（同秒冲突追加 `_N`），失败仅 warn 不阻塞烧录
 - `src/widgets/fwfileinfopanel` `[UI-Widget]` — 固件文件信息面板（QStackedWidget：空 / 合法 / 错误三页切换）
 - `src/widgets/fwflashcontrolpanel` `[UI-Widget]` — 烧录控制面板(开始/取消按钮、进度条、阶段标签)
 - `src/widgets/fwflashlogpanel` `[UI-Widget]` — 烧录操作日志面板（4 级颜色、时间戳、滚动到底自动跟随）
@@ -183,7 +183,7 @@
 - `src/services/commanddispatcher` — 所有应用层 Service 的统一入口，优先级队列与响应匹配集中在此
 - `src/protocol/motor_protocol` — 所有读写操作的指令编解码集中在此
 - `src/protocol/sampling_config` — 采样间隔/显示窗口下拉选项的唯一来源，变更影响 UI 与协议两侧
-- `src/devicecontext` — 当前 IC 类型和从机地址，目前仅 configtab 读写；其他 Tab 尚未接入
+- `src/devicecontext` — 当前 IC 类型和从机地址：configtab 读写（Select IC）；fwflashtab 单向只读接入（目标 IC 跟随 `icTypeChanged`）；其他 Tab 尚未接入
 - `src/models/scopechannelmodel` — 示波器 8 通道配置数据模型，被 OscilloscopTab、ScopeStylePanel、ScopeBottomPanel、ScopeService 共享
 - `src/ui/style_constants.h` — 所有 UI 组件的颜色和尺寸来源，变更影响全局外观
 - `src/widgets/sidebar` — 可折叠侧边栏容器，被 registerrwtab、oscilloscoptab 两个 Tab 共用（configtab、fwflashtab、flashstoragetab 已不使用 Sidebar）

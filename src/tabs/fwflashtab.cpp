@@ -9,6 +9,7 @@
 // =============================================================================
 #include "tabs/fwflashtab.h"
 
+#include "devicecontext.h"
 #include "protocol/firmware_parser.h"
 #include "services/flashstrategies/aw_local_isp_strategy.h"
 #include "services/flashstrategy.h"
@@ -168,8 +169,9 @@ void enableCardHover(QWidget *widget, GroupHoverFilter *filter) {
 
 }  // namespace
 
-FwFlashTab::FwFlashTab(SerialManager *serialManager, QWidget *parent)
-    : QWidget(parent) {
+FwFlashTab::FwFlashTab(SerialManager *serialManager, DeviceContext *deviceContext, QWidget *parent)
+    : QWidget(parent)
+    , m_deviceContext(deviceContext) {
     setupUi();
 
     // FwFlashLogPanel 在 setupUi() 中创建；构造 logSink lambda 把 AwLocalIspStrategy 的
@@ -195,7 +197,7 @@ FwFlashTab::FwFlashTab(SerialManager *serialManager, QWidget *parent)
     connectSignals();
     rebuildIcCombo();
 
-    onIcChanged(m_icCombo->currentIndex());
+    syncIcFromContext();   // 目标 IC 跟随配置页 Select IC（会触发 onIcChanged）
     updateStartEnabled();
     m_controlPanel->setStageText(tr("空闲"));
 }
@@ -288,6 +290,9 @@ void FwFlashTab::setupUi() {
     m_icCombo->setObjectName(QStringLiteral("fwFlashIcCombo"));
     m_icCombo->setMinimumWidth(Style::Size::FwFlashIcComboW);
     m_icCombo->setMinimumHeight(Style::Size::SidebarComboMinHeight);
+    // 目标 IC 只读跟随配置页 Select IC（DeviceContext），不在本页单独选择
+    m_icCombo->setEnabled(false);
+    m_icCombo->setToolTip(tr("目标 IC 跟随配置页 Select IC，请在配置页修改"));
     icRow->addWidget(m_icCombo);
 
     m_icDescLabel = new QLabel(leftPane);
@@ -382,6 +387,11 @@ void FwFlashTab::connectSignals() {
     connect(m_clearFileBtn, &QPushButton::clicked, this, &FwFlashTab::onClearFileClicked);
     connect(m_icCombo, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &FwFlashTab::onIcChanged);
+    // 目标 IC 单向跟随配置页 Select IC（DeviceContext 为唯一来源）
+    if (m_deviceContext != nullptr) {
+        connect(m_deviceContext, &DeviceContext::icTypeChanged,
+                this, [this](MotorIcType) { syncIcFromContext(); });
+    }
 
     connect(m_controlPanel, &FwFlashControlPanel::startRequested,
             this, &FwFlashTab::onStartRequested);
@@ -396,14 +406,31 @@ void FwFlashTab::connectSignals() {
 }
 
 void FwFlashTab::rebuildIcCombo() {
+    // 目标 IC 始终跟随配置页一个有效选择，故不再设"请选择目标 IC..."占位项
     m_icCombo->blockSignals(true);
     m_icCombo->clear();
-    m_icCombo->addItem(tr("请选择目标 IC..."), QString());
     for (FlashStrategy *s : m_registry->all()) {
         m_icCombo->addItem(s->icModel(), s->icModel());
     }
     m_icCombo->setCurrentIndex(0);
     m_icCombo->blockSignals(false);
+}
+
+/// @brief 按配置页 Select IC（DeviceContext）选中对应的目标 IC，单向只读跟随。
+void FwFlashTab::syncIcFromContext() {
+    if (m_deviceContext == nullptr) {
+        return;
+    }
+    const QString icModel = DeviceContext::motorIcTypeToString(m_deviceContext->icType());
+    const int idx = m_icCombo->findData(icModel);
+    if (idx < 0) {
+        return;   // 该 IC 无对应烧录策略（正常不会发生）
+    }
+    if (idx == m_icCombo->currentIndex()) {
+        onIcChanged(idx);                 // 索引未变，手动刷新描述/启用态
+    } else {
+        m_icCombo->setCurrentIndex(idx);  // 变化 → currentIndexChanged 自动触发 onIcChanged
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -563,7 +590,7 @@ void FwFlashTab::updateStartEnabled() {
     m_controlPanel->setStartEnabled(!busy && icSelected && m_currentFileValid);
     m_controlPanel->setCancelEnabled(busy);
 
-    m_icCombo->setEnabled(!busy);
+    // m_icCombo 始终只读（跟随配置页），不参与 busy 启用切换
     m_browseBtn->setEnabled(!busy);
     m_clearFileBtn->setEnabled(!busy && (m_currentFileValid || !m_currentFilePath.isEmpty()));
 }
