@@ -520,14 +520,25 @@ void FwFlashTab::parseAndShowFile(const QString &path) {
         const QString icLabel = (info.format == FirmwareFormat::Hl9788Hex)
                                     ? QStringLiteral("HL9788N hex")
                                     : QStringLiteral("DW9786 hex");
-        m_logPanel->appendWarn(
-            tr("%1 仅 %2 行（< %3），已自动补齐：填 0 + footer CRC32 0x%4，"
-               "实际烧入 %5 字节")
-                .arg(icLabel)
-                .arg(info.originalLines)
-                .arg(expectedLines)
-                .arg(info.footerCrc32, 8, 16, QLatin1Char('0'))
-                .arg(info.data.size()));
+        if (info.format == FirmwareFormat::Dw9786Hex) {
+            // [临时实验 2026-05-30] DW9786 尾部填 0xFFFF、不补 0、不写 footer
+            m_logPanel->appendWarn(
+                tr("%1 仅 %2 行（< %3），【临时实验】尾部填 0xFFFF（不补 0、不写 footer，"
+                   "保持擦除态），实际烧入 %4 字节")
+                    .arg(icLabel)
+                    .arg(info.originalLines)
+                    .arg(expectedLines)
+                    .arg(info.data.size()));
+        } else {
+            m_logPanel->appendWarn(
+                tr("%1 仅 %2 行（< %3），已自动补齐：填 0 + footer CRC32 0x%4，"
+                   "实际烧入 %5 字节")
+                    .arg(icLabel)
+                    .arg(info.originalLines)
+                    .arg(expectedLines)
+                    .arg(info.footerCrc32, 8, 16, QLatin1Char('0'))
+                    .arg(info.data.size()));
+        }
 
         QString savedPath, saveErr;
         const bool savedOk = saveDwPaddedHex(info, m_currentFilePath,
