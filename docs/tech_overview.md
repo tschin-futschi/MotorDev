@@ -78,7 +78,7 @@ MotorDev/
 │   │   ├── flashstrategyregistry.cpp / .h # 烧录策略注册中心（按 IC 型号枚举/查找）
 │   │   └── flashstrategies/
 │   │       ├── aw_local_isp_strategy.cpp / .h # AW 本地 ISP 策略基类（0x32~0x37 序列）
-│   │       ├── aw86006_strategy.cpp / .h      # AW86006 策略（继承 AW base）
+│   │       ├── aw86008_strategy.cpp / .h      # AW86008 策略（继承 AW base）
 │   │       ├── aw86100_strategy.cpp / .h      # AW86100 策略（继承 AW base）
 │   │       ├── dw9786_strategy.cpp / .h       # DW9786 策略（stub）
 │   │       ├── dw9788_strategy.cpp / .h       # DW9788 (HL9788N) 真实策略：vendor SDK + I2C 透传
@@ -125,7 +125,7 @@ MotorDev/
 | UI Tab | 业务页面 | `tabs/{configtab,registerrwtab,fwflashtab,oscilloscoptab,flashstoragetab,serialdebugtab}` |
 | UI Widget | 复用控件 | `widgets/{registertable,scopeplotwidget,scopebottompanel,scopechannelstrip,scoperegisterpanel,scopegeneratorpanel,scopestylepanel,scopepreviewwidget,scopemarqueelabel,fwfileinfopanel,fwflashcontrolpanel,fwflashlogpanel}` |
 | 服务层 | 业务逻辑封装，UI/通信解耦 | `services/{commanddispatcher,configservice,registerservice,batchregisterservice,scopeservice,cyclicwriteservice,generatorservice,simulatorservice,fwflashservice,flashstoreservice}` |
-| 烧录策略层 | 按 IC 型号封装烧录算法（策略模式） | `services/{flashstrategy,flashstrategyregistry}`、`services/flashstrategies/{aw_local_isp_strategy,aw86006_strategy,aw86100_strategy,dw9786_strategy,dw9788_strategy,hl9788n_bridge}` |
+| 烧录策略层 | 按 IC 型号封装烧录算法（策略模式） | `services/{flashstrategy,flashstrategyregistry}`、`services/flashstrategies/{aw_local_isp_strategy,aw86008_strategy,aw86100_strategy,dw9786_strategy,dw9788_strategy,hl9788n_bridge}` |
 | 第三方 vendor | Dongwoon HL9788N 原厂 SDK 源码（最小改动适配 MotorDev 工程） | `services/flashstrategies/vendor/hl9788n/{Func,hl9788n_api_ref,stdafx.h}` |
 | 数据模型层 | 状态与缓冲 | `models/{scopechannelmodel,channelbuffer}`、`devicecontext` |
 | 协议层 | 指令编解码、采样参数映射、固件文件解析、批量读写配置文件 | `protocol/{motor_protocol,register_utils,sampling_config,firmware_parser,batch_register_file}` |
@@ -146,7 +146,7 @@ MotorDev/
 4. Tab 0 配置（串口/IC/PMIC）✓
 5. Tab 1 寄存器读写（RegisterTable + Hex/Dec + 自动持久化）✓
 6. Tab 2 FW 烧录 ✓
-   - AW86006 / AW86100：STM32 本地 ISP（协议 0x32~0x37）+ 0x38 真实进度
+   - AW86008 / AW86100：STM32 本地 ISP（协议 0x32~0x37）+ 0x38 真实进度
    - DW9788 (HL9788N)：vendor SDK + I2C 透传桥接（OTA 模式默认保留校准）
    - DW9786：stub
 7. Tab 3 示波器（QPainter + QOpenGLWidget 自研渲染，8ch 60fps）✓

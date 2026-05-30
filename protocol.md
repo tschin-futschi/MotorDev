@@ -374,7 +374,7 @@ INIT_FAIL_I2C2 帧（8 字节）： AA 55 FF 0B 01 02 [CRC_H] [CRC_L]
 
 **用途**：服务于厂家烧录 SDK DLL（如 AW86100.dll）的 `pFunc_I2C_Write` 回调，上位机把 DLL 的写请求按本协议透传给 STM32，STM32 端在软件位拼 I2C 总线上以单次 transaction 完成：`START → addr+W → [若 AddrSize > 0 发 AddrBytes 寄存器地址段] → Data 段 → STOP`。
 
-**注**：自 v2.6 起，AW86006 / AW86100 烧录改为 STM32 本地 ISP 执行（见 §修订记录 v2.6），本命令仅保留为通用 I2C 透传 debug 工具，新工程不应再依赖 AW SDK DLL 经此命令烧录。
+**注**：自 v2.6 起，AW86008 / AW86100 烧录改为 STM32 本地 ISP 执行（见 §修订记录 v2.6），本命令仅保留为通用 I2C 透传 debug 工具，新工程不应再依赖 AW SDK DLL 经此命令烧录。
 
 **AW SDK 场景约定**：`pFunc_I2C_Write` 回调签名只有 `(DevId, WrSize, WrData)` 三个参数（无 AddrSize），DLL 自行把寄存器地址拼在 WrData 头部交给上位机。因此本命令在服务 AW SDK 时 `AddrSize` 恒为 `0`，Data 段为 DLL 不透明字节流（可能在头部包含 IC 寄存器地址，由 DLL 决定），STM32 端原样透传到 I2C 总线即可，**不得**自行解析或重组。WrData 按 `WrData[0..WrSize-1]` 索引顺序追加到载荷，对应总线发送顺序（先发 WrData[0]）。
 
@@ -393,7 +393,7 @@ INIT_FAIL_I2C2 帧（8 字节）： AA 55 FF 0B 01 02 [CRC_H] [CRC_L]
 
 **用途**：服务于厂家烧录 SDK DLL 的 `pFunc_I2C_Read` 回调，STM32 端在软件位拼 I2C 总线上完成：`AddrSize > 0` 时走 `START → addr+W → AddrBytes → RepeatedStart → addr+R → 读 ReadLen 字节 → STOP`；`AddrSize == 0` 时走 `START → addr+R → 读 ReadLen 字节 → STOP`。
 
-**注**：自 v2.6 起，AW86006 / AW86100 烧录改为 STM32 本地 ISP 执行（见 §修订记录 v2.6），本命令仅保留为通用 I2C 透传 debug 工具，新工程不应再依赖 AW SDK DLL 经此命令烧录。
+**注**：自 v2.6 起，AW86008 / AW86100 烧录改为 STM32 本地 ISP 执行（见 §修订记录 v2.6），本命令仅保留为通用 I2C 透传 debug 工具，新工程不应再依赖 AW SDK DLL 经此命令烧录。
 
 **AW SDK 场景约定**：`pFunc_I2C_Read` 回调签名为 `(DevId, AddrSize, pAddr, RdSize, pRdBuf)`，AddrSize 由 DLL 决定，烧录过程中常见取值为 1 或 2 字节寄存器地址；AddrSize=0（无寄存器地址直读）在 AW SDK 中是否会被实际调用属 OPEN 项，待供应商书面确认。AddrBytes 按 `pAddr` 缓冲索引 `0..AddrSize-1` 顺序追加到载荷，对应总线发送顺序（先发 AddrBytes[0]）；STM32 端原样转发到总线、不得翻转或重排字节序。
 
@@ -955,7 +955,7 @@ T_sample ≥ max( T_i2c + T_main,  T_uart,  T_i2c / k )
 | v2.3 | 2026-05-12 | 0x30 / 0x31 用途段描述与 STM32 实际 I2C 驱动方式对齐：STM32 端使用软件位拼 I2C（StdPeriph + GPIO bit-bang），不存在 HAL 库；用途段改为 START/STOP/RepeatedStart 时序描述，移除对 HAL_I2C_Master_Transmit / HAL_I2C_Mem_Read / HAL_I2C_Master_Receive 的引用 |
 | v2.4 | 2026-05-12 | 0x30 章节新增 **AW SDK 场景约定** 段落，明确：`pFunc_I2C_Write` 回调签名无 AddrSize，DLL 自行把寄存器地址拼在 WrData 头部；因此服务 AW SDK 时 AddrSize 恒为 0，Data 段为 DLL 不透明字节流，STM32 端原样透传不得解析或重组 |
 | v2.5 | 2026-05-12 | 0x31 章节新增 **AW SDK 场景约定** 段落（对称 0x30 v2.4），明确：`pFunc_I2C_Read` 回调签名含 AddrSize（由 DLL 决定，常见 1 或 2，AddrSize=0 是否实际调用属 OPEN 待供应商确认）；AddrBytes 按 `pAddr` 索引顺序对应总线发送顺序，STM32 端不得翻转字节序。同步在 0x30 段补充 WrData 字节顺序与总线发送顺序的对应说明 |
-| v2.6 | 2026-05-19 | AW86006 / AW86100 烧录方案变更：废弃「PC 端 AW DLL → 0x30/0x31 透传」链路，改为 STM32 本地 ISP 烧录。原因：DLL 透传对 USB 转串口（如 FT232）的 Latency Timer 等通讯设置敏感，导致烧录程序不通用。0x30/0x31 保留为通用 I2C 透传 debug 工具不删除；新增 `0x32` ~ `0x37` 命令号预留给本地 ISP 烧录，字段后续补齐 |
+| v2.6 | 2026-05-19 | AW86008 / AW86100 烧录方案变更：废弃「PC 端 AW DLL → 0x30/0x31 透传」链路，改为 STM32 本地 ISP 烧录。原因：DLL 透传对 USB 转串口（如 FT232）的 Latency Timer 等通讯设置敏感，导致烧录程序不通用。0x30/0x31 保留为通用 I2C 透传 debug 工具不删除；新增 `0x32` ~ `0x37` 命令号预留给本地 ISP 烧录，字段后续补齐 |
 | v2.7 | 2026-05-19 | AW 本地 ISP 烧录 6 条命令字段定义完成：`0x32` BEGIN（`[addr][totalBytes]`）/ `0x33` DATA（`[pktSeq][chunk]` → `[nextSeq]`）/ `0x34` EXEC（→ `[ispStatus]`，阻塞 5-10s）/ `0x35` STATUS（→ `[state][rxOffset][totalBytes]`）/ `0x36` CANCEL / `0x37` RESET_CHIP。固件 max 64 KB（受 SRAM1 单缓冲限制）；`0x34` 阻塞期间 PC 须临时禁用心跳 |
 | v2.8 | 2026-05-21 | 新增 `0x0B BOOT_STATUS` 启动状态报告帧（STM32→PC 主动发送，SEQ=0xFF，LEN=1）。状态码：`0x00` BOOT_OK（全部模块初始化完成）/ `0x01` INIT_FAIL_I2C1 / `0x02` INIT_FAIL_I2C2 / `0x03` INIT_FAIL_I2C3 / `0x04` INIT_FAIL_PMIC / `0x05` INIT_FAIL_AWISP。用串口诊断替代原 LED 频率码（100/200/400/800/1600ms 区分模块的方案），LED 退化为二元"健康/卡死"指示。PC 上电连接后 ≥2s 未收到任何 0x0B 帧应判定 STM32 异常 |
 | v2.9 | 2026-05-24 | 新增 `0x38 FLASH_EXEC_PROGRESS` 事件帧（STM32→PC 主动上报，SEQ=0xFF，LEN=9）。载荷 `[phase(1)] [done(4 LE)] [total(4 LE)]`；phase `0=ERASE` / `1=WRITE`。STM32 在 `0x34 EXEC` 期间于 `aw_flash_download_check` 内 erase 前/后 + write 块循环每次后主动上报，PC 据此驱动 EXEC 阶段真实进度。PC 端可选支持；不识别不影响烧录功能 |

@@ -2,11 +2,11 @@
 // @file    flashstrategyregistry.h
 // @brief   烧录策略注册中心 — 按 IC 型号查找/枚举已注册策略
 //
-// 构造时一次性注册所有内置策略(AW86006 / AW86100 / DW9786 / DW9788)。
+// 构造时一次性注册所有内置策略(AW86008 / AW86100 / DW9786 / DW9788)。
 // 后续新增 IC 仅需在 flashstrategies/ 下新增子类并在 registerBuiltins()
 // 加一行 add(...) 即可,UI 自动列出。
 //
-// AW86006 / AW86100 共用 AwLocalIspStrategy 基类(协议 0x32~0x37 本地 ISP),
+// AW86008 / AW86100 共用 AwLocalIspStrategy 基类(协议 0x32~0x37 本地 ISP),
 // 仅需注入 SerialManager 和 LogSink;其他 IC 不依赖这些注入。
 // =============================================================================
 #pragma once

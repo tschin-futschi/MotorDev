@@ -17,7 +17,7 @@
 
 /// @brief 电机驱动 IC 类型枚举
 enum class MotorIcType {
-    AW86006,   ///< Awinic AW86006
+    AW86008,   ///< Awinic AW86008
     DW9786,    ///< Dongwoon DW9786
     DW9788     ///< Dongwoon DW9788
 };
@@ -35,7 +35,7 @@ public:
     explicit DeviceContext(QObject *parent = nullptr);
 
     /// @brief IC 类型枚举与下拉框索引互转
-    /// @param index  下拉框索引（0=AW86006, 1=DW9786, 2=DW9788）
+    /// @param index  下拉框索引（0=AW86008, 1=DW9786, 2=DW9788）
     /// @return 对应的 IC 类型
     static MotorIcType motorIcTypeFromIndex(int index);
 
@@ -68,6 +68,6 @@ signals:
     void slaveIdChanged(uint8_t id);
 
 private:
-    MotorIcType m_icType = MotorIcType::AW86006;  ///< 当前 IC 类型（默认 AW86006）
+    MotorIcType m_icType = MotorIcType::AW86008;  ///< 当前 IC 类型（默认 AW86008）
     uint8_t m_slaveId = 0x00;                      ///< 当前 I2C 从机地址（默认 0x00）
 };

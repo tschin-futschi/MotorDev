@@ -9,13 +9,13 @@
 
 /// @brief 下拉框索引转 IC 类型
 /// @param index  下拉框索引
-/// @return 对应的 IC 类型；无效索引默认返回 AW86006
+/// @return 对应的 IC 类型；无效索引默认返回 AW86008
 MotorIcType DeviceContext::motorIcTypeFromIndex(int index) {
     switch (index) {
     case 1: return MotorIcType::DW9786;
     case 2: return MotorIcType::DW9788;
     case 0:
-    default: return MotorIcType::AW86006;
+    default: return MotorIcType::AW86008;
     }
 }
 
@@ -26,7 +26,7 @@ int DeviceContext::indexFromMotorIcType(MotorIcType type) {
     switch (type) {
     case MotorIcType::DW9786: return 1;
     case MotorIcType::DW9788: return 2;
-    case MotorIcType::AW86006:
+    case MotorIcType::AW86008:
     default: return 0;
     }
 }
@@ -36,7 +36,7 @@ int DeviceContext::indexFromMotorIcType(MotorIcType type) {
 /// @return 型号名称字符串
 QString DeviceContext::motorIcTypeToString(MotorIcType type) {
     switch (type) {
-    case MotorIcType::AW86006: return QStringLiteral("AW86006");
+    case MotorIcType::AW86008: return QStringLiteral("AW86008");
     case MotorIcType::DW9786: return QStringLiteral("DW9786");
     case MotorIcType::DW9788: return QStringLiteral("DW9788");
     }

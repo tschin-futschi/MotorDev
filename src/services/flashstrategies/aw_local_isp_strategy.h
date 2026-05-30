@@ -1,6 +1,6 @@
 // =============================================================================
 // @file    aw_local_isp_strategy.h
-// @brief   AW 本地 ISP 烧录策略基类(AW86006 / AW86100 共用,协议 0x32~0x37)
+// @brief   AW 本地 ISP 烧录策略基类(AW86008 / AW86100 共用,协议 0x32~0x37)
 //
 // 替代旧 AwSdkStrategy:不再依赖 PC 端 DLL,烧录逻辑下沉到 STM32 端的 ISP 驱动
 // (`Flash/AW/AW86008_86100/aw_flash.c` / `aw_uboot_isp.c`)。
@@ -48,7 +48,7 @@ public:
 
 protected:
     /// @brief 烧录目标 Flash 起始地址。默认 `AW_FLASH_BASE = 0x01000000`,
-    /// AW86006 / AW86100 共用 ISP 驱动,故子类无需 override。
+    /// AW86008 / AW86100 共用 ISP 驱动,故子类无需 override。
     virtual quint32 flashTargetAddr() const { return 0x01000000U; }
 
 private:

@@ -4,7 +4,7 @@
 // =============================================================================
 #include "services/flashstrategyregistry.h"
 
-#include "services/flashstrategies/aw86006_strategy.h"
+#include "services/flashstrategies/aw86008_strategy.h"
 #include "services/flashstrategies/aw86100_strategy.h"
 #include "services/flashstrategies/dw9786_strategy.h"
 #include "services/flashstrategies/dw9788_strategy.h"
@@ -22,7 +22,7 @@ FlashStrategyRegistry::FlashStrategyRegistry(SerialManager *serialManager,
 FlashStrategyRegistry::~FlashStrategyRegistry() = default;
 
 void FlashStrategyRegistry::registerBuiltins() {
-    add(std::make_unique<AW86006Strategy>(m_serialManager, m_awLogSink));
+    add(std::make_unique<AW86008Strategy>(m_serialManager, m_awLogSink));
     add(std::make_unique<AW86100Strategy>(m_serialManager, m_awLogSink));
     // DW9786：复用 AW 的 LogSink 类型；eraseCalibration=false（OTA），
     // slaveId8bit=0x24（vendor _SLV_OIS_ 默认值）

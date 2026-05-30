@@ -64,8 +64,8 @@ qt_add_executable(MotorDev
     src/services/flashstoreservice.h
     src/services/flashstrategies/aw_local_isp_strategy.cpp
     src/services/flashstrategies/aw_local_isp_strategy.h
-    src/services/flashstrategies/aw86006_strategy.cpp
-    src/services/flashstrategies/aw86006_strategy.h
+    src/services/flashstrategies/aw86008_strategy.cpp
+    src/services/flashstrategies/aw86008_strategy.h
     src/services/flashstrategies/aw86100_strategy.cpp
     src/services/flashstrategies/aw86100_strategy.h
     src/services/flashstrategies/dw9786_strategy.cpp
