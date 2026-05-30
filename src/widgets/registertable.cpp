@@ -316,6 +316,28 @@ void RegisterTable::updateRowValue(int globalRow, qint16 value) {
     item->setForeground(QBrush(Style::Color::RegisterValueText));
 }
 
+void RegisterTable::clearAll() {
+    {
+        // 阻塞 itemChanged，避免逐格触发上百次自动保存；清空后统一发一次 configChanged
+        const QSignalBlocker blocker(m_tableWidget);
+        for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
+            for (int row = 0; row < m_rowCount; ++row) {
+                if (auto *desc = m_tableWidget->item(row, descCol(group))) {
+                    desc->setText(QString{});
+                }
+                if (auto *addr = m_tableWidget->item(row, addrCol(group))) {
+                    addr->setText(QString{});
+                }
+                if (auto *value = m_tableWidget->item(row, valueCol(group))) {
+                    value->setText(QString{});
+                    value->setForeground(QBrush(Style::Color::RegisterValueText));  // 复位错误红
+                }
+            }
+        }
+    }
+    emit configChanged();   // 触发一次自动保存，使清空状态持久化
+}
+
 void RegisterTable::markRowError(int globalRow) {
     if (globalRow < 0 || globalRow >= TotalRows) {
         return;

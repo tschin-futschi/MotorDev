@@ -246,7 +246,8 @@ Sidebar 内容:
 整体布局调整（2026-05-28 起，参考示波器 ShowRegister / ShowGenerator 同款机制）：
 - 删除原 QSplitter 上下分屏 5:3:3（含两个空占位 GroupBox），不再保留占位框
 - RegisterTable 占主内容区 stretch=1，始终占满主内容区
-- RegisterTable 下方新增一行常驻工具条（紧凑高度 = `Style::Size::SidebarComboMinHeight`），右对齐放 toggle 按钮「批量读写」
+- RegisterTable 下方新增一行常驻工具条（紧凑高度 = `Style::Size::SidebarComboMinHeight`），右对齐放按钮：`[页面清除] [批量读写] [块读取]`（页面清除在「批量读写」左侧）
+  - 「页面清除」`QToolButton`（objectName `registerRwClearPageBtn`，**非 checkable**）：即时清空 RegisterTable 所有描述/地址/值（含错误态复位），无确认框；由 `RegisterTable::clearAll()` 实现并触发一次 `configChanged` 持久化空状态
 - 批量读写面板**不再内嵌在主窗口**，改为独立 `Qt::Tool` 顶级浮动窗口弹出
 
 常驻工具条 toggle 按钮：

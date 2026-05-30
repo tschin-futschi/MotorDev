@@ -159,6 +159,13 @@ void RegisterRwTab::connectSignals() {
         if (checked) m_registerTable->setValueMode(RegisterTable::ValueMode::Dec);
     });
 
+    // 页面清除：清空表格所有描述/地址/值（即时，无确认框；持久化由 RegisterTable 内部触发）
+    connect(m_clearPageBtn, &QToolButton::clicked, this, [this]() {
+        if (m_registerTable != nullptr) {
+            m_registerTable->clearAll();
+        }
+    });
+
     // -------------------------------------------------------------------------
     // 批量读写浮窗 toggle（参考示波器 ShowRegister 模式：独立 Qt::Tool 浮动窗口）
     // 按钮文字始终为「批量读写」，按下/弹起状态由 QToolButton checked 视觉表达。
@@ -361,6 +368,14 @@ void RegisterRwTab::setupUi() {
     toolbarRow->setSpacing(0);
     toolbarRow->setContentsMargins(0, 0, 0, 0);
     toolbarRow->addStretch(1);
+
+    // 页面清除：一次性动作按钮（非 toggle），清空表格所有描述/地址/值
+    m_clearPageBtn = new QToolButton(m_mainContent);
+    m_clearPageBtn->setObjectName(QStringLiteral("registerRwClearPageBtn"));
+    m_clearPageBtn->setMinimumHeight(Style::Size::SidebarComboMinHeight);
+    m_clearPageBtn->setText(tr("页面清除"));
+    toolbarRow->addWidget(m_clearPageBtn);
+    toolbarRow->addSpacing(10);
 
     m_batchToggleBtn = new QToolButton(m_mainContent);
     m_batchToggleBtn->setObjectName(QStringLiteral("registerRwBatchToggleBtn"));

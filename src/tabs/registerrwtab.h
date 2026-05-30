@@ -129,6 +129,9 @@ private:
     QPushButton *m_decButton = nullptr;         ///< DEC 模式切换按钮（互斥）
     QPushButton *m_hexButton = nullptr;         ///< HEX 模式切换按钮（互斥）
 
+    // --- 工具条操作按钮 ---
+    QToolButton *m_clearPageBtn = nullptr;      ///< 页面清除（清空表格所有描述/地址/值）
+
     // --- 批量读写浮动窗口 ---
     QToolButton *m_batchToggleBtn = nullptr;    ///< 常驻工具条 toggle（checkable，默认未弹出）
     QWidget *m_batchPanel = nullptr;            ///< 批量读写浮窗（Qt::Tool 顶级窗口，parent=nullptr，析构手动 delete）

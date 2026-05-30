@@ -30,7 +30,7 @@
 - `src/tabs/configtab` `[UI-Tab]` — Config File 行（文件选择 combo、Browse/Write/Read 按钮；**当前为 UI stub，按钮未连接信号**）
 
 ### 寄存器读写
-- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、批量读写浮窗（4 槽独立操作，全局互斥）、块读取浮窗（独立通道，不互斥）
+- `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、页面清除（工具条按钮，位于「批量读写」左侧，即时清空表格所有描述/地址/值并触发持久化，无确认框）、批量读写浮窗（4 槽独立操作，全局互斥）、块读取浮窗（独立通道，不互斥）
 - `src/services/registerservice` `[通信]` — 单行/批量读写队列、500ms 超时、sessionId 防过期响应
 - `src/services/batchregisterservice` `[通信]` — 批量读写浮窗的业务层：内部持有独立 RegisterService 实例（与 RegisterTable 隔离）+ 状态机（Idle/Parsing/Writing/Reading/Completed/Failed）+ 调用 `BatchRegisterFile` 解析与回写；通过 `stageMessage` / `logMessage` / `finished` 信号上报，UI 只渲染不掺业务
 - `src/services/blockreadservice` `[通信]` — 块读取浮窗的业务层：独立 RegisterService 实例（与 RegisterTable / BatchRegisterService 完全隔离）+ 状态机（Idle/Reading/WritingFile/Completed/Failed/Cancelled）+ 协作式取消（cancelFlag）+ 失败即停（已成功条目仍写文件）；通过 `stateChanged` / `progress` / `stageMessage` / `logMessage` / `finished` 信号上报；CSV 输出按标准格式（首行表头 `addr,value` + 4 位大写 hex 无 `0x` + LF 行尾）；文件命名 `Bulkread_HHMMSS.csv`（PC 本地时间，同秒冲突自动 `_N`）

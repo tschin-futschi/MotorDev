@@ -95,6 +95,9 @@ public:
     /// 推断旧文件 rowsPerGroup，加载到表格前 min(rowsPerGroup, TableRowCount) 行。
     void loadConfig(const QString &path);
 
+    /// @brief 清空所有行的描述/地址/值（含错误态复位），并触发一次 configChanged 持久化
+    void clearAll();
+
 signals:
     /// @brief 请求读取指定行
     /// @param globalRow 全局行索引
