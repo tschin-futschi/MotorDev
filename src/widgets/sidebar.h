@@ -44,6 +44,9 @@ public:
     /// @brief 获取嵌入的内容控件
     QWidget *contentWidget() const;
 
+    /// @brief 设置标题文字（用于语言切换即时刷新）
+    void setTitle(const QString &title);
+
     /// @brief 设置 body 区域宽度（展开时生效）
     /// @param width 像素宽度（不含 handle 宽度）
     void setBodyWidth(int width);

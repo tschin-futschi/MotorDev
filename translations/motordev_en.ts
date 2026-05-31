@@ -1,0 +1,1226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="en_US">
+<context>
+    <name>ActivityBar</name>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="169"/>
+        <source>设置</source>
+        <translation>Settings</translation>
+    </message>
+</context>
+<context>
+    <name>ConfigTab</name>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="99"/>
+        <location filename="../src/tabs/configtab.cpp" line="819"/>
+        <source>请先扫描</source>
+        <translation>Scan first</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="101"/>
+        <location filename="../src/tabs/configtab.cpp" line="820"/>
+        <source>选择串口</source>
+        <translation>Select COM</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="116"/>
+        <location filename="../src/tabs/configtab.cpp" line="375"/>
+        <location filename="../src/tabs/configtab.cpp" line="821"/>
+        <source>选择配置文件</source>
+        <translation>Select config file</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="376"/>
+        <source>JSON 配置文件 (*.json);;所有文件 (*.*)</source>
+        <translation>JSON Config (*.json);;All Files (*.*)</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="496"/>
+        <location filename="../src/tabs/configtab.cpp" line="837"/>
+        <source>断开</source>
+        <translation>Disconnect</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="496"/>
+        <location filename="../src/tabs/configtab.cpp" line="602"/>
+        <location filename="../src/tabs/configtab.cpp" line="655"/>
+        <location filename="../src/tabs/configtab.cpp" line="825"/>
+        <location filename="../src/tabs/configtab.cpp" line="837"/>
+        <source>连接</source>
+        <translation>Connect</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="570"/>
+        <location filename="../src/tabs/configtab.cpp" line="812"/>
+        <source>选择 IC</source>
+        <translation>Select IC</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="580"/>
+        <location filename="../src/tabs/configtab.cpp" line="813"/>
+        <source>从机地址</source>
+        <translation>Slave ID</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="595"/>
+        <location filename="../src/tabs/configtab.cpp" line="649"/>
+        <location filename="../src/tabs/configtab.cpp" line="824"/>
+        <location filename="../src/tabs/configtab.cpp" line="826"/>
+        <source>扫描</source>
+        <translation>Scan</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="608"/>
+        <location filename="../src/tabs/configtab.cpp" line="809"/>
+        <source>串口</source>
+        <translation>Serial</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="621"/>
+        <location filename="../src/tabs/configtab.cpp" line="814"/>
+        <source>端口</source>
+        <translation>Port</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="631"/>
+        <location filename="../src/tabs/configtab.cpp" line="815"/>
+        <source>波特率</source>
+        <translation>Baud Rate</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="661"/>
+        <location filename="../src/tabs/configtab.cpp" line="827"/>
+        <source>设备复位</source>
+        <translation>Reset Device</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="667"/>
+        <location filename="../src/tabs/configtab.cpp" line="828"/>
+        <source>电机测试</source>
+        <translation>Motor Test</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="717"/>
+        <location filename="../src/tabs/configtab.cpp" line="829"/>
+        <source>配置 PMIC</source>
+        <translation>Config PMIC</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="728"/>
+        <location filename="../src/tabs/configtab.cpp" line="830"/>
+        <source>关闭 PMIC</source>
+        <translation>Disable PMIC</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="750"/>
+        <location filename="../src/tabs/configtab.cpp" line="816"/>
+        <source>配置文件</source>
+        <translation>Config File</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="764"/>
+        <location filename="../src/tabs/configtab.cpp" line="831"/>
+        <source>浏览文件</source>
+        <translation>Browse</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="770"/>
+        <location filename="../src/tabs/configtab.cpp" line="832"/>
+        <source>写入配置文件</source>
+        <translation>Write Config</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/configtab.cpp" line="776"/>
+        <location filename="../src/tabs/configtab.cpp" line="833"/>
+        <source>回填配置文件</source>
+        <translation>Read Config</translation>
+    </message>
+</context>
+<context>
+    <name>FlashStorageTab</name>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="31"/>
+        <source>空闲</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="62"/>
+        <source>刷新容量</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="72"/>
+        <source>上传文件...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="78"/>
+        <source>下载到本地...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="84"/>
+        <source>取消</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="90"/>
+        <source>清空 FLASH</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="184"/>
+        <source>容量：未知（点击刷新查询）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="188"/>
+        <source>容量：已用 %1 / 总 %2 | 剩余 %3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="203"/>
+        <source>选择要上传的文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="203"/>
+        <source>All Files (*.*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="210"/>
+        <source>文件为空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="215"/>
+        <source>文件 %1 字节超出 STM32 Flash 存储区上限（%2 字节，约 896 KB）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="227"/>
+        <source>选择下载目录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="261"/>
+        <source>确认清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="262"/>
+        <source>此操作将清空 STM32 上的 Flash 文件存储区（896 KB），
+且**不可恢复**。
+
+确定继续吗？</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="310"/>
+        <source>已保存到：%1（改回原扩展名即可使用）</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FwFileInfoPanel</name>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="69"/>
+        <source>请先选择固件文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="90"/>
+        <source>文件名</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="94"/>
+        <source>文件大小</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="98"/>
+        <source>文件格式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="102"/>
+        <source>CRC32</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="106"/>
+        <source>段数</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="111"/>
+        <source>地址范围</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="116"/>
+        <source>有效字节</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="121"/>
+        <source>自动补齐</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="154"/>
+        <source>解析失败：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="164"/>
+        <source>Binary</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="165"/>
+        <source>Intel HEX</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="166"/>
+        <source>Dongwoon HL9788N hex</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="167"/>
+        <source>Dongwoon DW9786 hex</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="168"/>
+        <source>Unknown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="207"/>
+        <source>%1 原始行 + %2 填充 0 行 + footer (CRC32=%3, 末行全 0)</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FwFlashControlPanel</name>
+    <message>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="19"/>
+        <source>烧录控制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="23"/>
+        <source>空闲</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="44"/>
+        <source>开始烧录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="50"/>
+        <source>取消烧录</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FwFlashLogPanel</name>
+    <message>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="21"/>
+        <source>操作日志</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="49"/>
+        <source>清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FwFlashTab</name>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="203"/>
+        <source>空闲</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="306"/>
+        <source>目标 IC：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="318"/>
+        <source>目标 IC 跟随配置页 Select IC，请在配置页修改</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="331"/>
+        <source>固件文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="349"/>
+        <source>点击「浏览...」选择 .bin 或 .hex 固件文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="352"/>
+        <source>浏览...</source>
+        <translation>Browse...</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="357"/>
+        <source>清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="466"/>
+        <source>选择固件文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="468"/>
+        <source>Firmware Files (*.bin *.hex);;Binary (*.bin);;Intel HEX (*.hex)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="475"/>
+        <source>已清空文件选择</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="499"/>
+        <source>文件解析失败：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="513"/>
+        <source>固件 %1 字节超出 AW 本地 ISP 上限（64 KB），无法烧录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="534"/>
+        <source>已加载固件：%1（%2 字节，CRC32 0x%3）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="547"/>
+        <source>%1 仅 %2 行（&lt; %3），已自动补齐：填 0 + footer CRC32 0x%4，实际烧入 %5 字节</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="560"/>
+        <source>已保存补齐烧录文件：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="564"/>
+        <source>补齐烧录文件保存失败（不影响继续烧录）：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="569"/>
+        <source>固件 %1 字节非 4 字节对齐，已自动末尾补 %2 字节 0xFF → %3 字节后写入</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/fwflashtab.cpp" line="628"/>
+        <source>请先选择 IC 与有效固件文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>LogPanel</name>
+    <message>
+        <location filename="../src/widgets/logpanel.cpp" line="121"/>
+        <source>输出</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/logpanel.cpp" line="129"/>
+        <source>清空</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>MainWindow</name>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="60"/>
+        <source>MotorDev</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="218"/>
+        <source>固件 v0.0.0 · 编译日期 2026-01-01</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="374"/>
+        <source>STM32 启动失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="375"/>
+        <source>%1
+
+STM32 已进入 LED 快闪死循环，不再响应任何命令。
+请处理硬件问题后重启 MCU。</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RegisterRwTab</name>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="305"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="610"/>
+        <source>全部读取</source>
+        <translation>Read All</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="313"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="611"/>
+        <source>全部写入</source>
+        <translation>Write All</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="321"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="612"/>
+        <source>数值表示</source>
+        <translation>Value Format</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="334"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="613"/>
+        <source>DEC</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="342"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="614"/>
+        <source>HEX</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="346"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="609"/>
+        <source>读写</source>
+        <translation>R/W</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="375"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="615"/>
+        <source>页面清除</source>
+        <translation>Clear Page</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="384"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="402"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="616"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="620"/>
+        <source>批量读写</source>
+        <translation>Batch R/W</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="394"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="493"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="617"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="627"/>
+        <source>块读取</source>
+        <translation>Block Read</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="455"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="623"/>
+        <source>浏览</source>
+        <translation>Browse</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="514"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="628"/>
+        <source>0xB002 或 B002</source>
+        <translation>0xB002 or B002</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="516"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="630"/>
+        <source>起始地址：</source>
+        <translation>Start Addr:</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="521"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="629"/>
+        <source>十进制，例如 100</source>
+        <translation>Decimal, e.g. 100</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="523"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="631"/>
+        <source>寄存器个数：</source>
+        <translation>Count:</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="540"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="633"/>
+        <source>浏览...</source>
+        <translation>Browse...</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="542"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="632"/>
+        <source>保存目录：</source>
+        <translation>Save Dir:</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="581"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="634"/>
+        <source>开始读取</source>
+        <translation>Start Read</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="589"/>
+        <location filename="../src/tabs/registerrwtab.cpp" line="635"/>
+        <source>取消</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="622"/>
+        <source>批量写入</source>
+        <translation>Batch Write</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="622"/>
+        <source>批量读出</source>
+        <translation>Batch Read</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="647"/>
+        <source>选择批量写入的配置文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="648"/>
+        <source>选择批量读出的配置文件</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="649"/>
+        <source>配置文件 (*.txt);;所有文件 (*.*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="754"/>
+        <source>选择 CSV 保存目录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="771"/>
+        <source>起始地址格式错误（应为 0xXXXX 或 XXXX）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="778"/>
+        <source>寄存器个数必须为正整数</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="786"/>
+        <source>地址范围越界：起始 0x%1 + %2 个寄存器超过 0xFFFE 上限</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/registerrwtab.cpp" line="791"/>
+        <source>请先选择保存目录</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RegisterTable</name>
+    <message>
+        <location filename="../src/widgets/registertable.cpp" line="125"/>
+        <location filename="../src/widgets/registertable.cpp" line="154"/>
+        <source>描述</source>
+        <translation>Desc</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/registertable.cpp" line="125"/>
+        <location filename="../src/widgets/registertable.cpp" line="154"/>
+        <source>地址</source>
+        <translation>Addr</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/registertable.cpp" line="125"/>
+        <location filename="../src/widgets/registertable.cpp" line="154"/>
+        <source>值</source>
+        <translation>Value</translation>
+    </message>
+</context>
+<context>
+    <name>ScopeBottomPanel</name>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="79"/>
+        <source>寄存器读写</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="80"/>
+        <source>波形生成器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="84"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="429"/>
+        <source>Auto</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="85"/>
+        <source>Manual...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="302"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="596"/>
+        <source>隐藏通道</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="302"/>
+        <source>显示通道</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="303"/>
+        <source>隐藏寄存器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="303"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="603"/>
+        <source>显示寄存器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="304"/>
+        <source>隐藏生成器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="304"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="610"/>
+        <source>显示生成器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="312"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="535"/>
+        <source>Y 轴：自动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="316"/>
+        <source>Y 轴：%1 ~ %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="332"/>
+        <source>设置 Y Axis 范围</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="345"/>
+        <source>例如 -1000</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="346"/>
+        <source>例如 1000</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="347"/>
+        <source>最小值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="348"/>
+        <source>最大值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="415"/>
+        <source>选择数据记录目录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="520"/>
+        <source>采样时间间隔</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="541"/>
+        <source>显示时间窗口</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="554"/>
+        <source>波形存储目录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="616"/>
+        <source>空闲</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopeChannelStrip</name>
+    <message>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="91"/>
+        <source>CH1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="99"/>
+        <source>描述</source>
+        <translation>Desc</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="107"/>
+        <source>0x0000</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopeGeneratorPanel</name>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="230"/>
+        <source>波形生成器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="241"/>
+        <source>线性</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="244"/>
+        <source>余弦</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="246"/>
+        <source>锯齿</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="275"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="353"/>
+        <source>寄存器地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="276"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="354"/>
+        <source>最小值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="277"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="355"/>
+        <source>最大值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="278"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="356"/>
+        <source>步进</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="279"/>
+        <source>间隔（毫秒）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="312"/>
+        <source>幅值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="313"/>
+        <source>偏移</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="316"/>
+        <source>频率（Hz）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="324"/>
+        <source>CH%1 地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="325"/>
+        <source>CH%1 相位（度）</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="365"/>
+        <source>启动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="370"/>
+        <source>停止</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopePlotWidget</name>
+    <message>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="151"/>
+        <source>停止采样</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="151"/>
+        <source>开始采样</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="508"/>
+        <source>重置缩放</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="978"/>
+        <source>Live scope preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="978"/>
+        <source>Scope idle preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopeRecordService</name>
+    <message>
+        <location filename="../src/services/scoperecordservice.cpp" line="92"/>
+        <source>未设置记录目录，本次采样未记录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/services/scoperecordservice.cpp" line="97"/>
+        <source>记录目录无效，本次采样未记录：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/services/scoperecordservice.cpp" line="110"/>
+        <source>无有效采样通道，本次采样未记录</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/services/scoperecordservice.cpp" line="126"/>
+        <source>无法创建记录文件：%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopeRegisterPanel</name>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="344"/>
+        <source>读</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="353"/>
+        <source>写</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="366"/>
+        <source>下发时间间隔</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="382"/>
+        <source>启动</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="389"/>
+        <source>停止</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="398"/>
+        <source>清除面板</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ScopeStylePanel</name>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="129"/>
+        <source>选择通道颜色</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="193"/>
+        <source>通道样式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="200"/>
+        <source>恢复默认</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <source>实线</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <source>虚线</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <source>点线</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <source>点划线</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <source>实点线</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>SerialDebugTab</name>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="41"/>
+        <source>串口调试模拟器</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="48"/>
+        <source>选择端口</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="84"/>
+        <source>未选择串口</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="147"/>
+        <source>断开</source>
+        <translation>Disconnect</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="147"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="242"/>
+        <source>连接</source>
+        <translation>Connect</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="151"/>
+        <source>● 已连接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="151"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="248"/>
+        <source>● 未连接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="207"/>
+        <source>端口：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="220"/>
+        <source>波特率:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="234"/>
+        <source>刷新</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="276"/>
+        <source>应答配置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="295"/>
+        <source>I2C扫描地址</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="303"/>
+        <source>IC连接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="307"/>
+        <source>成功</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="308"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="325"/>
+        <source>失败</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="312"/>
+        <source>寄存器读返回值</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="320"/>
+        <source>寄存器写</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="329"/>
+        <source>响应延迟(ms)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="354"/>
+        <source>活动日志</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="362"/>
+        <source>清除</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>SimulatorService</name>
+    <message>
+        <location filename="../src/services/simulatorservice.cpp" line="177"/>
+        <source>模拟器已连接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/services/simulatorservice.cpp" line="192"/>
+        <source>模拟器已断开</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/services/simulatorservice.cpp" line="578"/>
+        <source>未知命令</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>TopBar</name>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="82"/>
+        <location filename="../src/widgets/topbar.cpp" line="225"/>
+        <source>串口</source>
+        <translation>Serial</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="83"/>
+        <source>切换视图模式</source>
+        <translation>Toggle view mode</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="85"/>
+        <source>切换样式面板</source>
+        <translation>Toggle style panel</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="86"/>
+        <location filename="../src/widgets/topbar.cpp" line="273"/>
+        <source>样式</source>
+        <translation>Style</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="88"/>
+        <source>切换十字光标</source>
+        <translation>Toggle crosshair</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="96"/>
+        <location filename="../src/widgets/topbar.cpp" line="112"/>
+        <source>已连接</source>
+        <translation>Connected</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="96"/>
+        <location filename="../src/widgets/topbar.cpp" line="119"/>
+        <location filename="../src/widgets/topbar.cpp" line="243"/>
+        <source>未连接</source>
+        <translation>Disconnected</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="100"/>
+        <location filename="../src/widgets/topbar.cpp" line="137"/>
+        <source>MCU: 已就绪</source>
+        <translation>MCU: Ready</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="101"/>
+        <location filename="../src/widgets/topbar.cpp" line="137"/>
+        <source>MCU: 初始化失败</source>
+        <translation>MCU: Init failed</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="102"/>
+        <location filename="../src/widgets/topbar.cpp" line="149"/>
+        <location filename="../src/widgets/topbar.cpp" line="257"/>
+        <source>MCU: 未知</source>
+        <translation>MCU: Unknown</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="167"/>
+        <location filename="../src/widgets/topbar.cpp" line="265"/>
+        <source>叠加</source>
+        <translation>Overlay</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="168"/>
+        <source>分层</source>
+        <translation>Stacked</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="175"/>
+        <source>使用十字光标：开启</source>
+        <translation>Crosshair: On</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="176"/>
+        <location filename="../src/widgets/topbar.cpp" line="281"/>
+        <source>使用十字光标：关闭</source>
+        <translation>Crosshair: Off</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/topbar.cpp" line="292"/>
+        <source>中文</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+</TS>

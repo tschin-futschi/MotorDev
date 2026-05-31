@@ -51,7 +51,11 @@ qrc_*.cpp
 /generic/
 /networkinformation/
 /tls/
-/translations/
+# windeployqt 在根目录生成的 Qt 自带翻译（qtbase_*.qm 等）忽略，但放行项目自有的 i18n 源
+/translations/*
+!/translations/motordev_en.ts
+!/translations/motordev_en.qm
+!/translations/translations.qrc
 opengl32sw.dll
 D3Dcompiler_47.dll
 libgcc_s_seh-1.dll

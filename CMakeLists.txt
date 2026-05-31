@@ -141,6 +141,7 @@ qt_add_executable(MotorDev
     src/tabs/oscilloscoptab.cpp
     src/tabs/oscilloscoptab.h
     resources/resources.qrc
+    translations/translations.qrc
 )
 
 if(WIN32)

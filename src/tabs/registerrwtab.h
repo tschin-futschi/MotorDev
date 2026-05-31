@@ -33,6 +33,7 @@
 #include <QWidget>
 
 class QLabel;
+class QEvent;
 class QJsonArray;
 class QProgressBar;
 class QPushButton;
@@ -41,6 +42,7 @@ class QLineEdit;
 class CommandDispatcher;
 class RegisterService;
 class RegisterTable;
+class Sidebar;
 
 /// @brief 寄存器读写页面 Tab
 ///
@@ -71,6 +73,9 @@ protected:
     /// @brief 监听浮动批量读写 / 块读取浮窗的 Close 事件，同步对应 toggle 按钮状态。
     bool eventFilter(QObject *watched, QEvent *event) override;
 
+    /// @brief 语言切换（QEvent::LanguageChange）时即时刷新本页（含两浮窗）所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 谁占用了全局互斥位（4 个批量槽 + Sidebar 全部读写 之间互斥）
     ///
@@ -89,6 +94,9 @@ private:
 
     /// @brief 连接信号槽（表格↔Service、按钮↔操作）
     void connectSignals();
+
+    /// @brief 重设本页所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     // --- 批量浮窗 UI 行为（仅控件交互，业务在 BatchRegisterService）---
     void onBatchBrowseClicked(int slotIndex);
@@ -127,11 +135,18 @@ private:
     QWidget *m_mainContent = nullptr;           ///< 主内容区容器
 
     // --- 主要控件 ---
+    Sidebar *m_sidebar = nullptr;               ///< 侧边栏（标题"读写"，语言切换刷新）
     RegisterTable *m_registerTable = nullptr;   ///< 寄存器表格控件
+    QLabel *m_valueModeLabel = nullptr;         ///< "数值表示" 标签
     QPushButton *m_readAllButton = nullptr;     ///< "全部读取"按钮
     QPushButton *m_writeAllButton = nullptr;    ///< "全部写入"按钮
     QPushButton *m_decButton = nullptr;         ///< DEC 模式切换按钮（互斥）
     QPushButton *m_hexButton = nullptr;         ///< HEX 模式切换按钮（互斥）
+
+    // --- 块读取浮窗的表单标签（提为成员以支持语言即时切换）---
+    QLabel *m_blockStartLabel = nullptr;        ///< "起始地址："
+    QLabel *m_blockCountLabel = nullptr;        ///< "寄存器个数："
+    QLabel *m_blockDirLabel = nullptr;          ///< "保存目录："
 
     // --- 工具条操作按钮 ---
     QToolButton *m_clearPageBtn = nullptr;      ///< 页面清除（清空表格所有描述/地址/值）

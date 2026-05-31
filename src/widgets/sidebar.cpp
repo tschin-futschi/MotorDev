@@ -63,6 +63,12 @@ QWidget *Sidebar::contentWidget() const {
     return m_contentWidget;
 }
 
+void Sidebar::setTitle(const QString &title) {
+    if (m_headerLabel != nullptr) {
+        m_headerLabel->setText(title);
+    }
+}
+
 // =============================================================================
 // Body 宽度设置
 // =============================================================================

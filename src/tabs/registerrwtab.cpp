@@ -316,10 +316,10 @@ void RegisterRwTab::setupUi() {
     sidebarLayout->addItem(new QSpacerItem(20, 10, QSizePolicy::Minimum, QSizePolicy::Fixed));
 
     // Hex/Dec 模式切换
-    auto *valueModeLabel = new QLabel(m_sidebarContent);
-    valueModeLabel->setObjectName(QStringLiteral("valueModeLabel"));
-    valueModeLabel->setText(tr("数值表示"));
-    sidebarLayout->addWidget(valueModeLabel);
+    m_valueModeLabel = new QLabel(m_sidebarContent);
+    m_valueModeLabel->setObjectName(QStringLiteral("valueModeLabel"));
+    m_valueModeLabel->setText(tr("数值表示"));
+    sidebarLayout->addWidget(m_valueModeLabel);
 
     auto *modeRow = new QHBoxLayout();
     modeRow->setObjectName(QStringLiteral("modeRow"));
@@ -343,8 +343,8 @@ void RegisterRwTab::setupUi() {
     modeRow->addWidget(m_hexButton);
 
     sidebarLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
-    auto *sidebar = new Sidebar(tr("读写"), m_sidebarContent, this);
-    topLayout->addWidget(sidebar);
+    m_sidebar = new Sidebar(tr("读写"), m_sidebarContent, this);
+    topLayout->addWidget(m_sidebar);
 
     // --- 主内容区 ---
     m_mainContent = new QWidget(this);
@@ -513,13 +513,15 @@ void RegisterRwTab::setupUi() {
     m_blockReadStartEdit->setObjectName(QStringLiteral("blockReadStartEdit"));
     m_blockReadStartEdit->setPlaceholderText(tr("0xB002 或 B002"));
     m_blockReadStartEdit->setProperty("inputRole", QStringLiteral("form"));
-    form->addRow(tr("起始地址："), m_blockReadStartEdit);
+    m_blockStartLabel = new QLabel(tr("起始地址："), m_blockReadPanel);
+    form->addRow(m_blockStartLabel, m_blockReadStartEdit);
 
     m_blockReadCountEdit = new QLineEdit(m_blockReadPanel);
     m_blockReadCountEdit->setObjectName(QStringLiteral("blockReadCountEdit"));
     m_blockReadCountEdit->setPlaceholderText(tr("十进制，例如 100"));
     m_blockReadCountEdit->setProperty("inputRole", QStringLiteral("form"));
-    form->addRow(tr("寄存器个数："), m_blockReadCountEdit);
+    m_blockCountLabel = new QLabel(tr("寄存器个数："), m_blockReadPanel);
+    form->addRow(m_blockCountLabel, m_blockReadCountEdit);
 
     // 保存目录行：[只读 LineEdit] [浏览按钮]
     auto *dirRow = new QHBoxLayout();
@@ -537,7 +539,8 @@ void RegisterRwTab::setupUi() {
     m_blockReadBrowseBtn->setProperty("buttonRole", QStringLiteral("secondary"));
     m_blockReadBrowseBtn->setText(tr("浏览..."));
     dirRow->addWidget(m_blockReadBrowseBtn);
-    form->addRow(tr("保存目录："), dirRow);
+    m_blockDirLabel = new QLabel(tr("保存目录："), m_blockReadPanel);
+    form->addRow(m_blockDirLabel, dirRow);
 
     blockLayout->addLayout(form);
 
@@ -587,6 +590,49 @@ void RegisterRwTab::setupUi() {
     m_blockReadCancelBtn->setEnabled(false);  // 空闲时禁用
     btnRow->addWidget(m_blockReadCancelBtn);
     blockLayout->addLayout(btnRow);
+
+    retranslateUi();  // 统一初始化可见文字（语言切换时由 changeEvent 再次调用）
+}
+
+// =============================================================================
+// 语言切换：即时刷新本页（含两浮窗）所有可见文字
+// =============================================================================
+
+void RegisterRwTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void RegisterRwTab::retranslateUi() {
+    if (m_sidebar != nullptr) m_sidebar->setTitle(tr("读写"));
+    if (m_readAllButton != nullptr) m_readAllButton->setText(tr("全部读取"));
+    if (m_writeAllButton != nullptr) m_writeAllButton->setText(tr("全部写入"));
+    if (m_valueModeLabel != nullptr) m_valueModeLabel->setText(tr("数值表示"));
+    if (m_decButton != nullptr) m_decButton->setText(tr("DEC"));
+    if (m_hexButton != nullptr) m_hexButton->setText(tr("HEX"));
+    if (m_clearPageBtn != nullptr) m_clearPageBtn->setText(tr("页面清除"));
+    if (m_batchToggleBtn != nullptr) m_batchToggleBtn->setText(tr("批量读写"));
+    if (m_blockReadToggleBtn != nullptr) m_blockReadToggleBtn->setText(tr("块读取"));
+
+    // 批量读写浮窗
+    if (m_batchPanel != nullptr) m_batchPanel->setWindowTitle(tr("批量读写"));
+    for (int i = 0; i < 4; ++i) {
+        if (m_batchBtn[i] != nullptr) m_batchBtn[i]->setText(i < 2 ? tr("批量写入") : tr("批量读出"));
+        if (m_batchBrowseBtn[i] != nullptr) m_batchBrowseBtn[i]->setText(tr("浏览"));
+    }
+
+    // 块读取浮窗
+    if (m_blockReadPanel != nullptr) m_blockReadPanel->setWindowTitle(tr("块读取"));
+    if (m_blockReadStartEdit != nullptr) m_blockReadStartEdit->setPlaceholderText(tr("0xB002 或 B002"));
+    if (m_blockReadCountEdit != nullptr) m_blockReadCountEdit->setPlaceholderText(tr("十进制，例如 100"));
+    if (m_blockStartLabel != nullptr) m_blockStartLabel->setText(tr("起始地址："));
+    if (m_blockCountLabel != nullptr) m_blockCountLabel->setText(tr("寄存器个数："));
+    if (m_blockDirLabel != nullptr) m_blockDirLabel->setText(tr("保存目录："));
+    if (m_blockReadBrowseBtn != nullptr) m_blockReadBrowseBtn->setText(tr("浏览..."));
+    if (m_blockReadStartBtn != nullptr) m_blockReadStartBtn->setText(tr("开始读取"));
+    if (m_blockReadCancelBtn != nullptr) m_blockReadCancelBtn->setText(tr("取消"));
 }
 
 // =============================================================================

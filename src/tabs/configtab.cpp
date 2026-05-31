@@ -14,6 +14,7 @@
 #include <QDoubleSpinBox>
 #include <QEvent>
 #include <QFileDialog>
+#include <QLabel>
 #include <QFileInfo>
 #include <QGraphicsDropShadowEffect>
 #include <QGridLayout>
@@ -371,7 +372,7 @@ void ConfigTab::connectSignals() {
             startDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
         }
         const QString path = QFileDialog::getSaveFileName(
-            this, tr("Select Config File"), startDir,
+            this, tr("选择配置文件"), startDir,
             tr("JSON 配置文件 (*.json);;所有文件 (*.*)"), nullptr,
             QFileDialog::DontConfirmOverwrite);
         if (!path.isEmpty()) {
@@ -564,20 +565,20 @@ void ConfigTab::setupUi() {
     icFormLayout->setHorizontalSpacing(16);
     icFormLayout->setVerticalSpacing(10);
     icGroupLayout->addLayout(icFormLayout);
-    auto *icLabel = new QLabel(m_icGroup);
-    icLabel->setObjectName(QStringLiteral("icLabel"));
-    icLabel->setText(tr("选择 IC"));
-    icFormLayout->setWidget(0, QFormLayout::LabelRole, icLabel);
+    m_icLabel = new QLabel(m_icGroup);
+    m_icLabel->setObjectName(QStringLiteral("icLabel"));
+    m_icLabel->setText(tr("选择 IC"));
+    icFormLayout->setWidget(0, QFormLayout::LabelRole, m_icLabel);
     m_icCombo = new QComboBox(m_icGroup);
     m_icCombo->setObjectName(QStringLiteral("icCombo"));
     m_icCombo->setProperty("inputRole", QStringLiteral("form"));
     m_icCombo->addItems({QStringLiteral("AW86008"), QStringLiteral("AW86100"),
                          QStringLiteral("DW9786"), QStringLiteral("DW9788")});
     icFormLayout->setWidget(0, QFormLayout::FieldRole, m_icCombo);
-    auto *slaveIdLabel = new QLabel(m_icGroup);
-    slaveIdLabel->setObjectName(QStringLiteral("slaveIdLabel"));
-    slaveIdLabel->setText(tr("从机地址"));
-    icFormLayout->setWidget(1, QFormLayout::LabelRole, slaveIdLabel);
+    m_slaveIdLabel = new QLabel(m_icGroup);
+    m_slaveIdLabel->setObjectName(QStringLiteral("slaveIdLabel"));
+    m_slaveIdLabel->setText(tr("从机地址"));
+    icFormLayout->setWidget(1, QFormLayout::LabelRole, m_slaveIdLabel);
     m_slaveIdCombo = new QComboBox(m_icGroup);
     m_slaveIdCombo->setObjectName(QStringLiteral("slaveIdCombo"));
     m_slaveIdCombo->setProperty("inputRole", QStringLiteral("form"));
@@ -604,7 +605,7 @@ void ConfigTab::setupUi() {
     icButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     // ----- Serial 卡片 -----
-    makeCard(m_serialGroup, QStringLiteral("serialGroup"), QStringLiteral("Serial"));
+    makeCard(m_serialGroup, QStringLiteral("serialGroup"), tr("串口"));
     upperLayout->addWidget(m_serialGroup, 0, 1);
     auto *serialGroupLayout = new QVBoxLayout(m_serialGroup);
     serialGroupLayout->setObjectName(QStringLiteral("serialGroupLayout"));
@@ -615,20 +616,20 @@ void ConfigTab::setupUi() {
     serialFormLayout->setHorizontalSpacing(16);
     serialFormLayout->setVerticalSpacing(10);
     serialGroupLayout->addLayout(serialFormLayout);
-    auto *portLabel = new QLabel(m_serialGroup);
-    portLabel->setObjectName(QStringLiteral("portLabel"));
-    portLabel->setText(tr("端口"));
-    serialFormLayout->setWidget(0, QFormLayout::LabelRole, portLabel);
+    m_portLabel = new QLabel(m_serialGroup);
+    m_portLabel->setObjectName(QStringLiteral("portLabel"));
+    m_portLabel->setText(tr("端口"));
+    serialFormLayout->setWidget(0, QFormLayout::LabelRole, m_portLabel);
     m_portCombo = new QComboBox(m_serialGroup);
     m_portCombo->setObjectName(QStringLiteral("portCombo"));
     m_portCombo->setProperty("inputRole", QStringLiteral("form"));
     m_portCombo->setEditable(true);
     m_portCombo->setInsertPolicy(QComboBox::NoInsert);
     serialFormLayout->setWidget(0, QFormLayout::FieldRole, m_portCombo);
-    auto *baudRateLabel = new QLabel(m_serialGroup);
-    baudRateLabel->setObjectName(QStringLiteral("baudRateLabel"));
-    baudRateLabel->setText(tr("波特率"));
-    serialFormLayout->setWidget(1, QFormLayout::LabelRole, baudRateLabel);
+    m_baudRateLabel = new QLabel(m_serialGroup);
+    m_baudRateLabel->setObjectName(QStringLiteral("baudRateLabel"));
+    m_baudRateLabel->setText(tr("波特率"));
+    serialFormLayout->setWidget(1, QFormLayout::LabelRole, m_baudRateLabel);
     m_baudRateCombo = new QComboBox(m_serialGroup);
     m_baudRateCombo->setObjectName(QStringLiteral("baudRateCombo"));
     m_baudRateCombo->setProperty("inputRole", QStringLiteral("form"));
@@ -724,7 +725,7 @@ void ConfigTab::setupUi() {
     m_pmicDisableButton->setObjectName(QStringLiteral("pmicDisableButton"));
     m_pmicDisableButton->setMinimumSize(QSize(0, 32));
     m_pmicDisableButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_pmicDisableButton->setText(tr("PMIC Off"));
+    m_pmicDisableButton->setText(tr("关闭 PMIC"));
     m_pmicDisableButton->setProperty("buttonRole", QStringLiteral("secondary"));
     pmicButtonRow->addWidget(m_pmicDisableButton);
 
@@ -744,10 +745,10 @@ void ConfigTab::setupUi() {
     configFileLayout->setSpacing(10);
     configFileLayout->setContentsMargins(0, 0, 0, 0);
     lowerLayout->addWidget(configFileRow);
-    auto *configFileLabel = new QLabel(configFileRow);
-    configFileLabel->setObjectName(QStringLiteral("configFileLabel"));
-    configFileLabel->setText(tr("配置文件"));
-    configFileLayout->addWidget(configFileLabel);
+    m_configFileLabel = new QLabel(configFileRow);
+    m_configFileLabel->setObjectName(QStringLiteral("configFileLabel"));
+    m_configFileLabel->setText(tr("配置文件"));
+    configFileLayout->addWidget(m_configFileLabel);
     // 文件浏览框紧跟标签，并占据该行剩余空间（stretch=1），让三个按钮保持紧凑
     m_fileCombo = new QComboBox(configFileRow);
     m_fileCombo->setObjectName(QStringLiteral("fileCombo"));
@@ -788,4 +789,51 @@ void ConfigTab::setupUi() {
     // 上方卡片区占 4/5，下方配置文件区占 1/5
     m_mainSplitter->setStretchFactor(0, 4);
     m_mainSplitter->setStretchFactor(1, 1);
+
+    retranslateUi();  // 统一初始化可见文字（语言切换时由 changeEvent 再次调用）
+}
+
+// =============================================================================
+// 语言切换：即时刷新本页所有可见文字
+// =============================================================================
+
+void ConfigTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void ConfigTab::retranslateUi() {
+    // 卡片标题（IC / PMIC 为保留术语不译；串口可译）
+    if (m_serialGroup != nullptr) m_serialGroup->setTitle(tr("串口"));
+
+    // 标签
+    if (m_icLabel != nullptr) m_icLabel->setText(tr("选择 IC"));
+    if (m_slaveIdLabel != nullptr) m_slaveIdLabel->setText(tr("从机地址"));
+    if (m_portLabel != nullptr) m_portLabel->setText(tr("端口"));
+    if (m_baudRateLabel != nullptr) m_baudRateLabel->setText(tr("波特率"));
+    if (m_configFileLabel != nullptr) m_configFileLabel->setText(tr("配置文件"));
+
+    // 占位符
+    if (m_slaveIdCombo != nullptr) m_slaveIdCombo->setPlaceholderText(tr("请先扫描"));
+    if (m_portCombo != nullptr) m_portCombo->setPlaceholderText(tr("选择串口"));
+    if (m_fileCombo != nullptr) m_fileCombo->setPlaceholderText(tr("选择配置文件"));
+
+    // 按钮（静态文本）
+    if (m_icScanButton != nullptr) m_icScanButton->setText(tr("扫描"));
+    if (m_icConnectButton != nullptr) m_icConnectButton->setText(tr("连接"));
+    if (m_scanButton != nullptr) m_scanButton->setText(tr("扫描"));
+    if (m_resetButton != nullptr) m_resetButton->setText(tr("设备复位"));
+    if (m_motorTestButton != nullptr) m_motorTestButton->setText(tr("电机测试"));
+    if (m_pmicConfigButton != nullptr) m_pmicConfigButton->setText(tr("配置 PMIC"));
+    if (m_pmicDisableButton != nullptr) m_pmicDisableButton->setText(tr("关闭 PMIC"));
+    if (m_browseButton != nullptr) m_browseButton->setText(tr("浏览文件"));
+    if (m_writeButton != nullptr) m_writeButton->setText(tr("写入配置文件"));
+    if (m_readButton != nullptr) m_readButton->setText(tr("回填配置文件"));
+
+    // 动态：连接按钮按当前连接状态
+    if (m_connectButton != nullptr && m_service != nullptr) {
+        m_connectButton->setText(m_service->isConnected() ? tr("断开") : tr("连接"));
+    }
 }

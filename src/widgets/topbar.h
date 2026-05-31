@@ -14,6 +14,7 @@
 #include <QtTypes>
 #include <QWidget>
 class QComboBox;
+class QEvent;
 class QFrame;
 class QLabel;
 class QToolButton;
@@ -37,6 +38,9 @@ signals:
     /// @brief 十字光标启用/禁用请求
     /// @param enabled true=启用十字光标，false=禁用
     void crosshairToggleRequested(bool enabled);
+
+    /// @brief 语言切换请求（0=中文，1=English，对应下拉索引）
+    void languageChanged(int index);
 
 public slots:
     /// @brief 串口连接成功 → 更新端口/波特率文字和指示灯
@@ -65,6 +69,13 @@ public slots:
     /// @param enabled true=开启，false=关闭
     void setCrosshairEnabled(bool enabled);
 
+    /// @brief 设置语言下拉当前项（0=中文，1=English）；会触发 languageChanged
+    void setLanguageIndex(int index);
+
+protected:
+    /// @brief 语言切换时（QEvent::LanguageChange）即时刷新本控件所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局
     void setupUi();
@@ -72,7 +83,11 @@ private:
     /// @brief 连接信号槽
     void connectSignals();
 
+    /// @brief 重设所有用户可见文字（首次 setupUi 调用 + 语言切换时调用）
+    void retranslateUi();
+
     QSvgWidget *m_logo = nullptr;               ///< SVG Logo（22x22）
+    QLabel *m_portLabel = nullptr;              ///< "串口" 静态标签
     QLabel *m_portValueLabel = nullptr;         ///< 串口/波特率文字（如 "COM3 / 115200"）
     QLabel *m_connectionIndicator = nullptr;    ///< 连接状态圆点（7x7，QSS 驱动颜色）
     QLabel *m_connectionLabel = nullptr;        ///< 连接状态文字（"已连接"/"未连接"）

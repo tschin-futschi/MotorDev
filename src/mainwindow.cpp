@@ -31,8 +31,10 @@
 
 #include <QPointer>
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QGuiApplication>
+#include <QSettings>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLoggingCategory>
@@ -40,6 +42,7 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QStackedWidget>
+#include <QTranslator>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -95,12 +98,44 @@ MainWindow::MainWindow(QWidget *parent)
     m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
     m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
     m_scopeTab->setEnabled(true);
+
+    // 按上次所选语言启动（0=中文默认，1=English）。setLanguageIndex 会触发
+    // languageChanged → applyLanguage 装载对应 QTranslator。
+    QSettings settings(QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
+    const int savedLang = settings.value(QStringLiteral("ui/language"), 0).toInt();
+    if (savedLang != 0) {
+        m_topBar->setLanguageIndex(savedLang);
+    }
 }
 
 MainWindow::~MainWindow() {
     // SerialManager 在独立线程运行，需在主窗口销毁前手动删除
     delete m_serialManager;
     m_serialManager = nullptr;
+}
+
+// -----------------------------------------------------------------------------
+// 界面语言切换
+// -----------------------------------------------------------------------------
+
+void MainWindow::applyLanguage(int index) {
+    // index：0=中文（源语言，不装翻译器），1=English（装载内嵌 .qm）。
+    // 装/卸 QTranslator 后 Qt 自动向所有顶层 widget 投递 LanguageChange 事件，
+    // 各控件 changeEvent → retranslateUi 即时刷新。
+    if (index == 1) {
+        if (m_enTranslator == nullptr) {
+            m_enTranslator = new QTranslator(this);
+            if (!m_enTranslator->load(QStringLiteral(":/i18n/motordev_en.qm"))) {
+                qCWarning(lcMainWindow) << "加载 English 翻译资源失败 :/i18n/motordev_en.qm";
+            }
+        }
+        QCoreApplication::installTranslator(m_enTranslator);
+    } else if (m_enTranslator != nullptr) {
+        QCoreApplication::removeTranslator(m_enTranslator);
+    }
+
+    QSettings settings(QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
+    settings.setValue(QStringLiteral("ui/language"), index);
 }
 
 // -----------------------------------------------------------------------------
@@ -349,6 +384,9 @@ void MainWindow::connectSignals() {
     connect(m_topBar, &TopBar::styleToggleRequested, m_scopeTab, &OscilloscopTab::onStyleToggleRequested);
     connect(m_topBar, &TopBar::crosshairToggleRequested, m_scopeTab, &OscilloscopTab::onCrosshairToggleRequested);
     connect(m_scopeTab, &OscilloscopTab::viewModeChanged, m_topBar, &TopBar::setViewMode);
+
+    // 语言切换：TopBar 下拉 → 装/卸 QTranslator（即时刷新全 UI）
+    connect(m_topBar, &TopBar::languageChanged, this, &MainWindow::applyLanguage);
 
     // --- 调试模拟器数据流 → 示波器 ---
     connect(m_debugTab, &SerialDebugTab::debugStreamGenerated,

@@ -9,6 +9,7 @@
 #include "ui/style_constants.h"
 
 #include <QComboBox>
+#include <QEvent>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -42,10 +43,6 @@ TopBar::~TopBar() = default;
 // =============================================================================
 
 void TopBar::connectSignals() {
-    m_viewModeButton->setToolTip(tr("切换视图模式"));
-    m_styleButton->setToolTip(tr("切换样式面板"));
-    m_crosshairButton->setToolTip(tr("切换十字光标"));
-
     // Overlay ↔ Stacked 切换
     connect(m_viewModeButton, &QToolButton::clicked, this, [this]() {
         const int nextMode = m_viewMode == 0 ? 1 : 0;
@@ -63,6 +60,47 @@ void TopBar::connectSignals() {
         setCrosshairEnabled(checked);
         emit crosshairToggleRequested(checked);
     });
+
+    // 语言切换：下拉索引（0=中文，1=English）转发给上层处理 QTranslator 装卸
+    connect(m_languageCombo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &TopBar::languageChanged);
+}
+
+// =============================================================================
+// 语言切换：即时刷新本控件所有可见文字
+// =============================================================================
+
+void TopBar::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void TopBar::retranslateUi() {
+    // 静态文字
+    if (m_portLabel != nullptr) m_portLabel->setText(tr("串口"));
+    if (m_viewModeButton != nullptr) m_viewModeButton->setToolTip(tr("切换视图模式"));
+    if (m_styleButton != nullptr) {
+        m_styleButton->setToolTip(tr("切换样式面板"));
+        m_styleButton->setText(tr("样式"));
+    }
+    if (m_crosshairButton != nullptr) m_crosshairButton->setToolTip(tr("切换十字光标"));
+
+    // 动态文字：按当前状态重设（避免切换后停留旧语言）
+    setViewMode(m_viewMode);
+    if (m_crosshairButton != nullptr) setCrosshairEnabled(m_crosshairButton->isChecked());
+
+    if (m_connectionLabel != nullptr && m_connectionIndicator != nullptr) {
+        const bool connected = m_connectionIndicator->property("connected").toBool();
+        m_connectionLabel->setText(connected ? tr("已连接") : tr("未连接"));
+    }
+    if (m_mcuLabel != nullptr && m_mcuIndicator != nullptr) {
+        const QString state = m_mcuIndicator->property("mcuState").toString();
+        m_mcuLabel->setText(state == QLatin1String("ok")   ? tr("MCU: 已就绪")
+                          : state == QLatin1String("fail") ? tr("MCU: 初始化失败")
+                                                           : tr("MCU: 未知"));
+    }
 }
 
 // =============================================================================
@@ -138,6 +176,12 @@ void TopBar::setCrosshairEnabled(bool enabled) {
             : tr("使用十字光标：关闭"));
 }
 
+void TopBar::setLanguageIndex(int index) {
+    if (m_languageCombo != nullptr) {
+        m_languageCombo->setCurrentIndex(index);
+    }
+}
+
 // =============================================================================
 // UI 构建
 // =============================================================================
@@ -176,10 +220,10 @@ void TopBar::setupUi() {
     topBarLayout->addWidget(separator);
 
     // 串口状态区：标签 + 端口值 + 指示灯 + 状态文字
-    auto *portLabel = new QLabel(this);
-    portLabel->setObjectName(QStringLiteral("portLabel"));
-    portLabel->setText(tr("串口"));
-    topBarLayout->addWidget(portLabel);
+    m_portLabel = new QLabel(this);
+    m_portLabel->setObjectName(QStringLiteral("portLabel"));
+    m_portLabel->setText(tr("串口"));
+    topBarLayout->addWidget(m_portLabel);
 
     m_portValueLabel = new QLabel(this);
     m_portValueLabel->setObjectName(QStringLiteral("portValueLabel"));
@@ -248,4 +292,6 @@ void TopBar::setupUi() {
     m_languageCombo->addItem(tr("中文"));
     m_languageCombo->addItem(QStringLiteral("English"));
     topBarLayout->addWidget(m_languageCombo);
+
+    retranslateUi();  // 统一初始化所有可见文字（语言切换时由 changeEvent 再次调用）
 }

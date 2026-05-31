@@ -27,6 +27,7 @@
 
 #include <cstdint>
 
+class QEvent;
 class QJsonArray;
 class QPushButton;
 class QTableWidget;
@@ -106,6 +107,10 @@ public:
     /// @brief 清空所有行的描述/地址/值（含错误态复位），并触发一次 configChanged 持久化
     void clearAll();
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新表头文字
+    void changeEvent(QEvent *event) override;
+
 signals:
     /// @brief 请求读取指定行
     /// @param globalRow 全局行索引
@@ -127,6 +132,9 @@ private:
 
     /// @brief 连接 itemChanged 信号（R/W 按钮信号在 appendOneRow 内单行连接）
     void connectSignals();
+
+    /// @brief 重设表头文字（描述/地址/值；R/W 列保留）
+    void retranslateUi();
 
     /// @brief 应用各列宽度设置（描述/地址/值 Stretch；R/W 固定）
     void applyColumnWidths();

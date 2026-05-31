@@ -31,8 +31,10 @@ class CommandDispatcher;
 class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
+class QEvent;
 class QGroupBox;
 class QJsonObject;
+class QLabel;
 class QPushButton;
 class SerialManager;
 class QSplitter;
@@ -80,12 +82,19 @@ signals:
     /// @brief 请求把当前配置写入指定路径（由 MainWindow → AppConfigService 处理）
     void writeConfigRequested(const QString &path);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时即时刷新本页所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局（三张卡片 + 下方配置文件区，无侧边栏）
     void setupUi();
 
     /// @brief 连接所有信号槽（UI↔Service、ComboBox↔DeviceContext）
     void connectSignals();
+
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     /// @brief 刷新可用串口列表到 m_portCombo
     void refreshAvailablePorts();
@@ -106,6 +115,13 @@ private:
     QGroupBox *m_icGroup = nullptr;             ///< IC 配置卡片
     QGroupBox *m_serialGroup = nullptr;         ///< 串口配置卡片
     QGroupBox *m_pmicGroup = nullptr;           ///< PMIC 配置卡片
+
+    // --- 可翻译的静态标签（提为成员以支持语言即时切换 retranslateUi）---
+    QLabel *m_icLabel = nullptr;                ///< "选择 IC"
+    QLabel *m_slaveIdLabel = nullptr;           ///< "从机地址"
+    QLabel *m_portLabel = nullptr;              ///< "端口"
+    QLabel *m_baudRateLabel = nullptr;          ///< "波特率"
+    QLabel *m_configFileLabel = nullptr;        ///< "配置文件"
 
     // --- IC 卡片控件 ---
     QComboBox *m_icCombo = nullptr;             ///< IC 型号下拉框（AW86008/AW86100/DW9786/DW9788）

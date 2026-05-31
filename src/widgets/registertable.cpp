@@ -10,6 +10,7 @@
 
 #include <QAbstractItemView>
 #include <QBrush>
+#include <QEvent>
 #include <QFile>
 #include <QFont>
 #include <QHeaderView>
@@ -134,6 +135,31 @@ void RegisterTable::setupUi() {
     }
 
     applyColumnWidths();
+    retranslateUi();  // 表头文字（语言切换时由 changeEvent 再次调用）
+}
+
+// =============================================================================
+// 语言切换：刷新表头文字
+// =============================================================================
+
+void RegisterTable::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void RegisterTable::retranslateUi() {
+    if (m_tableWidget == nullptr) return;
+    const QStringList headers = {tr("描述"), tr("地址"), tr("值"),
+                                 QStringLiteral("R"), QStringLiteral("W")};
+    for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
+        for (int column = 0; column < headers.size(); ++column) {
+            if (auto *item = m_tableWidget->horizontalHeaderItem(group * 5 + column)) {
+                item->setText(headers[column]);
+            }
+        }
+    }
 }
 
 // =============================================================================
