@@ -21,6 +21,7 @@
 
 class SerialManager;
 class FwFlashLogPanel;
+class QEvent;
 class QLabel;
 class QProgressBar;
 class QPushButton;
@@ -38,6 +39,10 @@ public:
 
     /// @brief 回填 FLASH 存储页功能参数（上次目录，作为后续文件对话框起始目录）
     void applyFlashStoreConfig(const QJsonObject &flashStore);
+
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新本页静态可见文字
+    void changeEvent(QEvent *event) override;
 
 private slots:
     void onUploadClicked();
@@ -57,6 +62,7 @@ private slots:
 private:
     void setupUi();
     void connectSignals();
+    void retranslateUi();   ///< 重设本页静态可见文字（setupUi 末尾 + 语言切换调用）
     void updateButtonsEnabled();
     void updateCapacityLabel(quint32 totalCapacity, quint32 usedSize);
     static QString humanBytes(quint64 v);
@@ -74,4 +80,9 @@ private:
     FwFlashLogPanel *m_logPanel = nullptr;
 
     QString m_lastDir;  ///< 上次上传/下载使用的目录（文件对话框起始目录；由配置文件存取）
+
+    // --- 语言切换重译所需的动态文字状态 ---
+    quint32 m_lastTotalCapacity = 0;    ///< 上次容量查询结果（语言切换时按当前语言重绘容量标签）
+    quint32 m_lastUsedSize = 0;
+    bool m_stageIsIdle = true;          ///< 阶段标签是否处于"空闲"默认态（仅启动到首次操作前为真）
 };

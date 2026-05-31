@@ -140,87 +140,96 @@
 <context>
     <name>FlashStorageTab</name>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="31"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="32"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="165"/>
         <source>空闲</source>
         <translation>Idle</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="62"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="63"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="156"/>
         <source>刷新容量</source>
-        <translation type="unfinished"></translation>
+        <translation>Refresh Capacity</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="72"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="73"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="157"/>
         <source>上传文件...</source>
-        <translation type="unfinished"></translation>
+        <translation>Upload File...</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="78"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="79"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="158"/>
         <source>下载到本地...</source>
-        <translation type="unfinished"></translation>
+        <translation>Download to Local...</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="84"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="85"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="159"/>
         <source>取消</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="90"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="91"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="160"/>
         <source>清空 FLASH</source>
-        <translation type="unfinished"></translation>
+        <translation>Wipe FLASH</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="184"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="217"/>
         <source>容量：未知（点击刷新查询）</source>
-        <translation type="unfinished"></translation>
+        <translation>Capacity: unknown (click Refresh to query)</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="188"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="221"/>
         <source>容量：已用 %1 / 总 %2 | 剩余 %3</source>
-        <translation type="unfinished"></translation>
+        <translation>Capacity: used %1 / total %2 | free %3</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="203"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="236"/>
         <source>选择要上传的文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Select file to upload</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="203"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="236"/>
         <source>All Files (*.*)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="210"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="243"/>
         <source>文件为空</source>
-        <translation type="unfinished"></translation>
+        <translation>File is empty</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="215"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="248"/>
         <source>文件 %1 字节超出 STM32 Flash 存储区上限（%2 字节，约 896 KB）</source>
-        <translation type="unfinished"></translation>
+        <translation>File %1 bytes exceeds the STM32 Flash storage limit (%2 bytes, ~896 KB)</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="227"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="260"/>
         <source>选择下载目录</source>
-        <translation type="unfinished"></translation>
+        <translation>Select download directory</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="261"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="294"/>
         <source>确认清空</source>
-        <translation type="unfinished"></translation>
+        <translation>Confirm Wipe</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="262"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="295"/>
         <source>此操作将清空 STM32 上的 Flash 文件存储区（896 KB），
 且**不可恢复**。
 
 确定继续吗？</source>
-        <translation type="unfinished"></translation>
+        <translation>This will wipe the Flash file storage area (896 KB) on the STM32,
+and is **irreversible**.
+
+Proceed?</translation>
     </message>
     <message>
-        <location filename="../src/tabs/flashstoragetab.cpp" line="310"/>
+        <location filename="../src/tabs/flashstoragetab.cpp" line="344"/>
         <source>已保存到：%1（改回原扩展名即可使用）</source>
-        <translation type="unfinished"></translation>
+        <translation>Saved to: %1 (rename back to the original extension to use)</translation>
     </message>
 </context>
 <context>
@@ -387,7 +396,7 @@
         <location filename="../src/tabs/fwflashtab.cpp" line="350"/>
         <location filename="../src/tabs/fwflashtab.cpp" line="431"/>
         <source>点击「浏览...」选择 .bin 或 .hex 固件文件</source>
-        <translation>Click "Browse..." to select a .bin or .hex firmware file</translation>
+        <translation>Click &quot;Browse...&quot; to select a .bin or .hex firmware file</translation>
     </message>
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="353"/>

@@ -8,6 +8,7 @@
 #include "ui/style_constants.h"
 #include "widgets/fwflashlogpanel.h"
 
+#include <QEvent>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -134,6 +135,35 @@ void FlashStorageTab::setupUi() {
     // -------- Row 4: 日志面板（复用 FwFlashLogPanel）--------
     m_logPanel = new FwFlashLogPanel(this);
     root->addWidget(m_logPanel, 1);
+
+    retranslateUi();
+}
+
+// -----------------------------------------------------------------------------
+// 语言切换 / 文字重设
+// -----------------------------------------------------------------------------
+
+void FlashStorageTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设按钮文字，并按当前语言重绘容量标签（用记忆的容量值）/ 空闲态阶段文字。
+/// 日志面板与进度条无需重译；进行中的真实阶段消息保持原状。
+void FlashStorageTab::retranslateUi() {
+    if (m_refreshBtn != nullptr)  m_refreshBtn->setText(tr("刷新容量"));
+    if (m_uploadBtn != nullptr)   m_uploadBtn->setText(tr("上传文件..."));
+    if (m_downloadBtn != nullptr) m_downloadBtn->setText(tr("下载到本地..."));
+    if (m_cancelBtn != nullptr)   m_cancelBtn->setText(tr("取消"));
+    if (m_wipeBtn != nullptr)     m_wipeBtn->setText(tr("清空 FLASH"));
+
+    updateCapacityLabel(m_lastTotalCapacity, m_lastUsedSize);
+
+    if (m_stageIsIdle && m_stageLabel != nullptr) {
+        m_stageLabel->setText(tr("空闲"));
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -180,6 +210,9 @@ QString FlashStorageTab::humanBytes(quint64 v) {
 }
 
 void FlashStorageTab::updateCapacityLabel(quint32 totalCapacity, quint32 usedSize) {
+    // 记住最近一次容量值，供语言切换时按当前语言重绘
+    m_lastTotalCapacity = totalCapacity;
+    m_lastUsedSize = usedSize;
     if (totalCapacity == 0) {
         m_capacityLabel->setText(tr("容量：未知（点击刷新查询）"));
         return;
@@ -278,6 +311,7 @@ void FlashStorageTab::onServiceStateChanged(FlashStoreService::State /*newState*
 
 void FlashStorageTab::onServiceStage(const QString &message) {
     m_stageLabel->setText(message);
+    m_stageIsIdle = false;  // 进入真实阶段后，阶段文字不再随语言切换被重置为"空闲"
 }
 
 void FlashStorageTab::onServiceProgress(qint64 done, qint64 total) {
