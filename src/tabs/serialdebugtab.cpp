@@ -11,12 +11,14 @@
 
 #include <QByteArray>
 #include <QComboBox>
+#include <QEvent>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QSplitter>
 #include <QTextCursor>
@@ -202,11 +204,10 @@ void SerialDebugTab::setupUi() {
     connectionLayout->setContentsMargins(0, 0, 0, 1);
     rootLayout->addWidget(connectionBar);
 
-    auto *portLabel = new QLabel(connectionBar);
-    portLabel->setObjectName(QStringLiteral("portLabel"));
-    portLabel->setText(tr("端口："));
-    portLabel->setProperty("labelRole", QStringLiteral("form"));
-    connectionLayout->addWidget(portLabel);
+    m_portLabel = new QLabel(connectionBar);
+    m_portLabel->setObjectName(QStringLiteral("portLabel"));
+    m_portLabel->setProperty("labelRole", QStringLiteral("form"));
+    connectionLayout->addWidget(m_portLabel);
 
     m_portCombo = new QComboBox(connectionBar);
     m_portCombo->setObjectName(QStringLiteral("portCombo"));
@@ -215,11 +216,10 @@ void SerialDebugTab::setupUi() {
     m_portCombo->setInsertPolicy(QComboBox::NoInsert);
     connectionLayout->addWidget(m_portCombo);
 
-    auto *baudLabel = new QLabel(connectionBar);
-    baudLabel->setObjectName(QStringLiteral("baudLabel"));
-    baudLabel->setText(tr("波特率:"));
-    baudLabel->setProperty("labelRole", QStringLiteral("form"));
-    connectionLayout->addWidget(baudLabel);
+    m_baudLabel = new QLabel(connectionBar);
+    m_baudLabel->setObjectName(QStringLiteral("baudLabel"));
+    m_baudLabel->setProperty("labelRole", QStringLiteral("form"));
+    connectionLayout->addWidget(m_baudLabel);
 
     m_baudCombo = new QComboBox(connectionBar);
     m_baudCombo->setObjectName(QStringLiteral("baudCombo"));
@@ -271,12 +271,12 @@ void SerialDebugTab::setupUi() {
     leftLayout->setSpacing(16);
     leftLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto *responseTitle = new QLabel(leftPanel);
-    responseTitle->setObjectName(QStringLiteral("responseTitle"));
-    responseTitle->setText(tr("应答配置"));
-    leftLayout->addWidget(responseTitle);
+    m_responseTitle = new QLabel(leftPanel);
+    m_responseTitle->setObjectName(QStringLiteral("responseTitle"));
+    leftLayout->addWidget(m_responseTitle);
 
-    auto *responseForm = new QFormLayout();
+    m_responseForm = new QFormLayout();
+    QFormLayout *responseForm = m_responseForm;
     responseForm->setObjectName(QStringLiteral("responseForm"));
     responseForm->setHorizontalSpacing(10);
     responseForm->setVerticalSpacing(10);
@@ -349,10 +349,9 @@ void SerialDebugTab::setupUi() {
     logHeader->setContentsMargins(0, 0, 0, 0);
     logLayout->addLayout(logHeader);
 
-    auto *logTitle = new QLabel(logPanel);
-    logTitle->setObjectName(QStringLiteral("logTitle"));
-    logTitle->setText(tr("活动日志"));
-    logHeader->addWidget(logTitle);
+    m_logTitle = new QLabel(logPanel);
+    m_logTitle->setObjectName(QStringLiteral("logTitle"));
+    logHeader->addWidget(m_logTitle);
     logHeader->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     m_clearLogButton = new QPushButton(logPanel);
@@ -368,4 +367,71 @@ void SerialDebugTab::setupUi() {
     m_logEdit->setObjectName(QStringLiteral("logEdit"));
     m_logEdit->setReadOnly(true);
     logLayout->addWidget(m_logEdit);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+void SerialDebugTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设窗口标题、连接栏、应答配置表单与日志区所有可见文字。
+///
+/// 应答配置表单标签经 QFormLayout::labelForField 取得后重设；两个下拉框按当前语言
+/// 重排选项并保留选中项；连接按钮与状态徽标的动态文字交由 setConnectedState 按当前
+/// 连接态重设（ACK 为保留术语不译）。
+void SerialDebugTab::retranslateUi() {
+    setWindowTitle(tr("串口调试模拟器"));
+
+    if (m_portLabel != nullptr)     m_portLabel->setText(tr("端口："));
+    if (m_baudLabel != nullptr)     m_baudLabel->setText(tr("波特率:"));
+    if (m_scanButton != nullptr)    m_scanButton->setText(tr("刷新"));
+    if (m_portCombo != nullptr)     m_portCombo->setPlaceholderText(tr("选择端口"));
+    if (m_responseTitle != nullptr) m_responseTitle->setText(tr("应答配置"));
+    if (m_logTitle != nullptr)      m_logTitle->setText(tr("活动日志"));
+    if (m_clearLogButton != nullptr) m_clearLogButton->setText(tr("清除"));
+
+    // 应答配置表单标签（经 labelForField 重设，避免逐个持有标签成员）
+    auto setFormLabel = [this](QWidget *field, const QString &text) {
+        if (m_responseForm == nullptr) {
+            return;
+        }
+        if (auto *label = qobject_cast<QLabel *>(m_responseForm->labelForField(field))) {
+            label->setText(text);
+        }
+    };
+    setFormLabel(m_scanAddrEdit, tr("I2C扫描地址"));
+    setFormLabel(m_icAddrResultCombo, tr("IC连接"));
+    setFormLabel(m_regReadValueEdit, tr("寄存器读返回值"));
+    setFormLabel(m_writeResultCombo, tr("寄存器写"));
+    setFormLabel(m_delaySpinBox, tr("响应延迟(ms)"));
+
+    // IC 连接结果下拉：成功 / 失败（重排保留选中项）
+    if (m_icAddrResultCombo != nullptr) {
+        const QSignalBlocker blocker(m_icAddrResultCombo);
+        const int current = m_icAddrResultCombo->currentIndex();
+        m_icAddrResultCombo->clear();
+        m_icAddrResultCombo->addItem(tr("成功"));
+        m_icAddrResultCombo->addItem(tr("失败"));
+        m_icAddrResultCombo->setCurrentIndex(current < 0 ? 0 : current);
+    }
+    // 寄存器写结果下拉：ACK（保留术语）/ 失败
+    if (m_writeResultCombo != nullptr) {
+        const QSignalBlocker blocker(m_writeResultCombo);
+        const int current = m_writeResultCombo->currentIndex();
+        m_writeResultCombo->clear();
+        m_writeResultCombo->addItem(QStringLiteral("ACK"));
+        m_writeResultCombo->addItem(tr("失败"));
+        m_writeResultCombo->setCurrentIndex(current < 0 ? 0 : current);
+    }
+
+    // 连接按钮 + 状态徽标的动态文字按当前连接态重设
+    setConnectedState(m_service != nullptr && m_service->isConnected());
 }

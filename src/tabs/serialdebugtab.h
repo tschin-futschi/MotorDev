@@ -19,6 +19,8 @@
 #include <cstdint>
 
 class QComboBox;
+class QEvent;
+class QFormLayout;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -50,12 +52,19 @@ signals:
     /// @param active true=采样中，false=已停止
     void debugStreamActiveChanged(bool active);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新本窗口所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局（连接栏 + 左侧配置 + 右侧日志）
     void setupUi();
 
     /// @brief 连接信号槽（UI↔Service、Service→外部信号）
     void connectSignals();
+
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     /// @brief 刷新可用串口列表
     void refreshPortList();
@@ -81,13 +90,17 @@ private:
     SimulatorService *m_service = nullptr;      ///< 模拟器服务（命令分发 + 响应生成）
 
     // --- 连接栏控件 ---
+    QLabel *m_portLabel = nullptr;              ///< "端口：" 标签
     QComboBox *m_portCombo = nullptr;           ///< 串口选择
+    QLabel *m_baudLabel = nullptr;              ///< "波特率:" 标签
     QComboBox *m_baudCombo = nullptr;           ///< 波特率选择
     QPushButton *m_scanButton = nullptr;        ///< 刷新串口按钮
     QPushButton *m_connectButton = nullptr;     ///< 连接/断开按钮
     QLabel *m_statusBadge = nullptr;            ///< 连接状态标签（● 已连接/未连接）
 
     // --- 左侧应答配置控件 ---
+    QLabel *m_responseTitle = nullptr;          ///< "应答配置" 标题
+    QFormLayout *m_responseForm = nullptr;      ///< 应答配置表单（语言切换经 labelForField 重设标签）
     QLineEdit *m_scanAddrEdit = nullptr;        ///< I2C 扫描地址（逗号分隔，如 "0x5A"）
     QComboBox *m_icAddrResultCombo = nullptr;   ///< IC 连接结果（成功/失败）
     QLineEdit *m_regReadValueEdit = nullptr;    ///< 寄存器读返回值（如 "0x0000"）
@@ -96,6 +109,7 @@ private:
 
     // --- 右侧日志区控件 ---
     QSplitter *m_mainSplitter = nullptr;        ///< 左右区域水平分割器
+    QLabel *m_logTitle = nullptr;               ///< "活动日志" 标题
     QTextEdit *m_logEdit = nullptr;             ///< 活动日志（HTML 富文本）
     QPushButton *m_clearLogButton = nullptr;    ///< 清除日志按钮
 };

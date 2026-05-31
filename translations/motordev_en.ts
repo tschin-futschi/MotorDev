@@ -1133,107 +1133,119 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
 <context>
     <name>SerialDebugTab</name>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="41"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="43"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="391"/>
         <source>串口调试模拟器</source>
-        <translation type="unfinished"></translation>
+        <translation>Serial Debug Simulator</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="48"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="50"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="396"/>
         <source>选择端口</source>
-        <translation type="unfinished"></translation>
+        <translation>Select Port</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="84"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="86"/>
         <source>未选择串口</source>
-        <translation type="unfinished"></translation>
+        <translation>No serial port selected</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="147"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="149"/>
         <source>断开</source>
         <translation>Disconnect</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="147"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="149"/>
         <location filename="../src/tabs/serialdebugtab.cpp" line="242"/>
         <source>连接</source>
         <translation>Connect</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="151"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="153"/>
         <source>● 已连接</source>
-        <translation type="unfinished"></translation>
+        <translation>● Connected</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="151"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="153"/>
         <location filename="../src/tabs/serialdebugtab.cpp" line="248"/>
         <source>● 未连接</source>
-        <translation type="unfinished"></translation>
+        <translation>● Disconnected</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="207"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="393"/>
         <source>端口：</source>
-        <translation type="unfinished"></translation>
+        <translation>Port:</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="220"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="394"/>
         <source>波特率:</source>
-        <translation type="unfinished"></translation>
+        <translation>Baud Rate:</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="234"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="395"/>
         <source>刷新</source>
-        <translation type="unfinished"></translation>
+        <translation>Refresh</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="276"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="397"/>
         <source>应答配置</source>
-        <translation type="unfinished"></translation>
+        <translation>Response Config</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="295"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="410"/>
         <source>I2C扫描地址</source>
-        <translation type="unfinished"></translation>
+        <translation>I2C Scan Address</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="303"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="411"/>
         <source>IC连接</source>
-        <translation type="unfinished"></translation>
+        <translation>IC Connection</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="307"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="421"/>
         <source>成功</source>
-        <translation type="unfinished"></translation>
+        <translation>Success</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="308"/>
         <location filename="../src/tabs/serialdebugtab.cpp" line="325"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="422"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="431"/>
         <source>失败</source>
-        <translation type="unfinished"></translation>
+        <translation>Fail</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="312"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="412"/>
         <source>寄存器读返回值</source>
-        <translation type="unfinished"></translation>
+        <translation>Register Read Value</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="320"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="413"/>
         <source>寄存器写</source>
-        <translation type="unfinished"></translation>
+        <translation>Register Write</translation>
     </message>
     <message>
         <location filename="../src/tabs/serialdebugtab.cpp" line="329"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="414"/>
         <source>响应延迟(ms)</source>
-        <translation type="unfinished"></translation>
+        <translation>Response Delay (ms)</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="354"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="398"/>
         <source>活动日志</source>
-        <translation type="unfinished"></translation>
+        <translation>Activity Log</translation>
     </message>
     <message>
-        <location filename="../src/tabs/serialdebugtab.cpp" line="362"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="361"/>
+        <location filename="../src/tabs/serialdebugtab.cpp" line="399"/>
         <source>清除</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear</translation>
     </message>
 </context>
 <context>
