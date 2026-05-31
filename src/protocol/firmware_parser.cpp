@@ -330,23 +330,13 @@ FirmwareInfo parseDwHexGeneric(const QFileInfo &fi,
     info.originalLines = dataLineCount;
 
     if (dataLineCount < kExpectedLines) {
-        if (format == FirmwareFormat::Dw9786Hex) {
-            // [临时实验 2026-05-30] DW9786：不补 0、不写 footer，尾部保持擦除态 0xFFFF。
-            // 目的：让“写入 flash 的内容”= hex 真实数据，尾部不覆盖任何值，验证“补 0 覆盖
-            // 启动区”是否为掉电不自举的元凶。写 0xFFFF 等价于不写（flash 擦除态即 0xFFFF，
-            // 写 1 不清位），故 flash 最终态 = 真实数据 + 尾部 0xFFFF。**实验结束须还原本分支。**
-            for (int w = wordIdx; w < kExpectedWords; ++w) outWords[w] = 0xFFFFu;
-            info.originalLines = dataLineCount;
-            info.paddingApplied = true;  // 仍标记，便于 UI/日志显示“未满”
-        } else {
-            // 补齐分支：原始 N 行已写入 outWords[0..2N)，剩余 (kExpectedWords - 2N)
-            // 个 uint16 在 buf 构造时已是 0（QByteArray(size, 0)）。需要再把 footer 的
-            // CRC32 覆盖到倒数第二行；最后一行已是 0 不动。
-            const quint32 footerCrc = FirmwareParser::computeCrc32(content);
-            info.footerCrc32 = footerCrc;
-            writeWords(outWords + kCrcLineIndex * 2, footerCrc);
-            info.paddingApplied = true;
-        }
+        // 补齐分支：原始 N 行已写入 outWords[0..2N)，剩余 (kExpectedWords - 2N)
+        // 个 uint16 在 buf 构造时已是 0（QByteArray(size, 0)）。需要再把 footer 的
+        // CRC32 覆盖到倒数第二行；最后一行已是 0 不动。
+        const quint32 footerCrc = FirmwareParser::computeCrc32(content);
+        info.footerCrc32 = footerCrc;
+        writeWords(outWords + kCrcLineIndex * 2, footerCrc);
+        info.paddingApplied = true;
     }
     // dataLineCount == kExpectedLines 路径：不写 footer，保持向后兼容；
     // paddingApplied=false / footerCrc32=0 / originalLines=kExpectedLines
