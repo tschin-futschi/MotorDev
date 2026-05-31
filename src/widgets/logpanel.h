@@ -41,9 +41,16 @@ public slots:
     /// @param msg 日志内容
     void appendMessage(QtMsgType type, const QString &category, const QString &msg);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新标题与清空按钮
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局（标题 + 清空按钮 + 文本区）
     void setupUi();
+
+    /// @brief 重设标题与清空按钮文字
+    void retranslateUi();
 
     QLabel *m_titleLabel = nullptr;         ///< "输出"标题标签
     QPushButton *m_clearButton = nullptr;   ///< 清空日志按钮

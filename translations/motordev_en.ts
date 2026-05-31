@@ -4,7 +4,37 @@
 <context>
     <name>ActivityBar</name>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="169"/>
+        <location filename="../src/widgets/activitybar.cpp" line="194"/>
+        <source>配置</source>
+        <translation>Config</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="195"/>
+        <source>读写</source>
+        <translation>R/W</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="196"/>
+        <source>烧录</source>
+        <translation>Flash</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="197"/>
+        <source>示波</source>
+        <translation>Scope</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="198"/>
+        <source>存储</source>
+        <translation>Storage</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="199"/>
+        <source>调试</source>
+        <translation>Debug</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="200"/>
         <source>设置</source>
         <translation>Settings</translation>
     </message>
@@ -469,12 +499,12 @@ Proceed?</translation>
 <context>
     <name>LogPanel</name>
     <message>
-        <location filename="../src/widgets/logpanel.cpp" line="121"/>
+        <location filename="../src/widgets/logpanel.cpp" line="152"/>
         <source>输出</source>
-        <translation type="unfinished"></translation>
+        <translation>Output</translation>
     </message>
     <message>
-        <location filename="../src/widgets/logpanel.cpp" line="129"/>
+        <location filename="../src/widgets/logpanel.cpp" line="153"/>
         <source>清空</source>
         <translation>Clear</translation>
     </message>
@@ -482,27 +512,44 @@ Proceed?</translation>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/mainwindow.cpp" line="60"/>
+        <location filename="../src/mainwindow.cpp" line="61"/>
+        <location filename="../src/mainwindow.cpp" line="155"/>
         <source>MotorDev</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="218"/>
+        <location filename="../src/mainwindow.cpp" line="157"/>
         <source>固件 v0.0.0 · 编译日期 2026-01-01</source>
-        <translation type="unfinished"></translation>
+        <translation>Firmware v0.0.0 · Built 2026-01-01</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="374"/>
+        <location filename="../src/mainwindow.cpp" line="161"/>
+        <location filename="../src/mainwindow.cpp" line="479"/>
+        <source>▲ 输出</source>
+        <translation>▲ Output</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="161"/>
+        <location filename="../src/mainwindow.cpp" line="251"/>
+        <location filename="../src/mainwindow.cpp" line="480"/>
+        <source>▼ 输出</source>
+        <translation>▼ Output</translation>
+    </message>
+    <message>
+        <location filename="../src/mainwindow.cpp" line="397"/>
         <source>STM32 启动失败</source>
-        <translation type="unfinished"></translation>
+        <translation>STM32 Startup Failed</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="375"/>
+        <location filename="../src/mainwindow.cpp" line="398"/>
         <source>%1
 
 STM32 已进入 LED 快闪死循环，不再响应任何命令。
 请处理硬件问题后重启 MCU。</source>
-        <translation type="unfinished"></translation>
+        <translation>%1
+
+The STM32 has entered an LED fast-blink dead loop and no longer responds to any command.
+Please fix the hardware issue and restart the MCU.</translation>
     </message>
 </context>
 <context>

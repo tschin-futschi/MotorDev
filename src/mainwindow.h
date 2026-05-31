@@ -25,6 +25,8 @@ class FwFlashTab;
 class FlashStorageTab;
 class LogPanel;
 class OscilloscopTab;
+class QEvent;
+class QLabel;
 class QStackedWidget;
 class QPushButton;
 class RegisterRwTab;
@@ -49,9 +51,16 @@ public:
     /// @brief 析构函数，释放 SerialManager（需在子线程清理前手动删除）
     ~MainWindow() override;
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新主窗口自身可见文字（状态栏等）
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局和所有子控件
     void setupUi();
+
+    /// @brief 重设主窗口自身可见文字（窗口标题、状态栏固件标签、日志切换按钮）
+    void retranslateUi();
 
     /// @brief 连接所有信号槽（页面切换、串口状态、日志面板等）
     void connectSignals();
@@ -72,6 +81,7 @@ private:
     ActivityBar *m_activityBar = nullptr;            ///< 左侧活动栏（页面切换按钮）
     QStackedWidget *m_contentStack = nullptr;        ///< 内容区域堆叠容器（各 Tab 页面）
     LogPanel *m_logPanel = nullptr;                  ///< 底部日志面板
+    QLabel *m_firmwareLabel = nullptr;               ///< 状态栏固件版本标签（"固件 v…"）
     QPushButton *m_logToggleButton = nullptr;        ///< 状态栏上的日志面板展开/收起按钮
 
     // --- Tab 页面 ---

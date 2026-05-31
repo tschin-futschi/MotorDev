@@ -6,6 +6,7 @@
 
 #include "ui/style_constants.h"
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMetaObject>
@@ -118,7 +119,6 @@ void LogPanel::setupUi() {
 
     m_titleLabel = new QLabel(this);
     m_titleLabel->setObjectName(QStringLiteral("titleLabel"));
-    m_titleLabel->setText(tr("输出"));
     headerLayout->addWidget(m_titleLabel);
     headerLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
@@ -126,7 +126,6 @@ void LogPanel::setupUi() {
     m_clearButton->setObjectName(QStringLiteral("clearButton"));
     m_clearButton->setMinimumSize(QSize(0, 20));
     m_clearButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 20));
-    m_clearButton->setText(tr("清空"));
     headerLayout->addWidget(m_clearButton);
 
     // 日志文本区
@@ -134,4 +133,22 @@ void LogPanel::setupUi() {
     m_textEdit->setObjectName(QStringLiteral("textEdit"));
     m_textEdit->setReadOnly(true);
     rootLayout->addWidget(m_textEdit);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+void LogPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void LogPanel::retranslateUi() {
+    if (m_titleLabel != nullptr) m_titleLabel->setText(tr("输出"));
+    if (m_clearButton != nullptr) m_clearButton->setText(tr("清空"));
 }

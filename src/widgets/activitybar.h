@@ -9,6 +9,7 @@
 #pragma once
 
 #include <QWidget>
+class QEvent;
 class QPushButton;
 
 /// @brief 左侧活动栏控件 — 垂直排列的页面导航按钮
@@ -43,12 +44,19 @@ signals:
     /// @param index 选中的页面索引（Page 枚举值）
     void pageSelected(int index);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新所有导航按钮文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局（垂直排列 5 个导航按钮 + 底部设置按钮）
     void setupUi();
 
     /// @brief 连接按钮点击信号到 pageSelected
     void connectSignals();
+
+    /// @brief 重设所有导航按钮文字（用字面量 tr 以便 lupdate 提取 + 语言切换刷新）
+    void retranslateUi();
 
     /// @brief 更新按钮 "active" 属性并触发 QSS 重绘
     /// @param index 当前活跃页面索引

@@ -33,6 +33,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QEvent>
 #include <QGuiApplication>
 #include <QSettings>
 #include <QHBoxLayout>
@@ -85,6 +86,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupUi();
     connectSignals();
+    retranslateUi();
 
     // 产品决策（2026-05-21）：连接状态不再门控页面可用性，所有 Tab 默认全部启用，
     // 便于 UI 浏览、离线调试和 stub 功能开发。具体业务命令在串口未连接时由
@@ -136,6 +138,28 @@ void MainWindow::applyLanguage(int index) {
 
     QSettings settings(QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
     settings.setValue(QStringLiteral("ui/language"), index);
+}
+
+void MainWindow::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QMainWindow::changeEvent(event);
+}
+
+/// @brief 重设主窗口自身的可见文字（子控件由各自 changeEvent 处理）。
+///
+/// 仅覆盖主窗口直接持有的文字：窗口标题、状态栏固件版本标签、日志展开/收起按钮
+/// （按当前日志面板显隐选 ▲/▼）。状态栏品牌+许可证串为固定标识，不参与翻译。
+void MainWindow::retranslateUi() {
+    setWindowTitle(tr("MotorDev"));
+    if (m_firmwareLabel != nullptr) {
+        m_firmwareLabel->setText(tr("固件 v0.0.0 · 编译日期 2026-01-01"));
+    }
+    if (m_logToggleButton != nullptr) {
+        const bool visible = m_logPanel != nullptr && m_logPanel->isVisible();
+        m_logToggleButton->setText(visible ? tr("▲ 输出") : tr("▼ 输出"));
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -213,11 +237,10 @@ void MainWindow::setupUi() {
     statusBarLayout->addStretch();
 
     // 固件版本标签（居中）
-    auto *firmwareLabel = new QLabel(statusBarWidget);
-    firmwareLabel->setObjectName(QStringLiteral("firmwareLabel"));
-    firmwareLabel->setText(tr("固件 v0.0.0 · 编译日期 2026-01-01"));
-    firmwareLabel->setAlignment(Qt::AlignCenter);
-    statusBarLayout->addWidget(firmwareLabel);
+    m_firmwareLabel = new QLabel(statusBarWidget);
+    m_firmwareLabel->setObjectName(QStringLiteral("firmwareLabel"));
+    m_firmwareLabel->setAlignment(Qt::AlignCenter);
+    statusBarLayout->addWidget(m_firmwareLabel);
     statusBarLayout->addStretch();
 
     // 日志面板展开/收起按钮（右侧）
@@ -225,7 +248,7 @@ void MainWindow::setupUi() {
     m_logToggleButton->setObjectName(QStringLiteral("logToggleButton"));
     m_logToggleButton->setMinimumSize(QSize(0, 18));
     m_logToggleButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 18));
-    m_logToggleButton->setText(QStringLiteral("▼ 输出"));
+    m_logToggleButton->setText(tr("▼ 输出"));
     m_logToggleButton->setFlat(true);
     statusBarLayout->addWidget(m_logToggleButton);
 
@@ -453,7 +476,7 @@ void MainWindow::connectSignals() {
     connect(m_logToggleButton, &QPushButton::clicked, this, [this]() {
         const bool visible = !m_logPanel->isVisible();
         m_logPanel->setVisible(visible);
-        m_logToggleButton->setText(visible ? QStringLiteral("▲ 输出")
-                                             : QStringLiteral("▼ 输出"));
+        m_logToggleButton->setText(visible ? tr("▲ 输出")
+                                             : tr("▼ 输出"));
     });
 }

@@ -7,6 +7,7 @@
 #include "ui/repolish.h"
 #include "ui/style_constants.h"
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QSizePolicy>
@@ -166,9 +167,47 @@ void ActivityBar::setupUi() {
     m_settingsButton->setObjectName(QStringLiteral("settingsButton"));
     m_settingsButton->setMinimumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
     m_settingsButton->setMaximumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
-    m_settingsButton->setText(tr("设置"));
     m_settingsButton->setProperty("active", false);
     settingsWrapper->addWidget(m_settingsButton);
     settingsWrapper->addStretch();
     verticalLayout->addLayout(settingsWrapper);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+void ActivityBar::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设所有导航按钮文字，并在英文模式下补 tooltip。
+///
+/// 注：setupUi 中按钮经 tr(spec.text) 设过初值，但 spec.text 是运行时 const char*，
+/// lupdate 无法静态提取；此处用字面量 tr() 既保证可提取入 .ts，又支持语言即时切换。
+///
+/// 侧边栏按钮为 34px 方块（按 2 个汉字设计）。英文词较长会超出按钮被截断，故在英文
+/// 模式下给每个按钮设置 tooltip = 完整英文词，鼠标悬停即可看到全称；中文 2 字可完整
+/// 显示，不设 tooltip（清空）。以「tr 结果是否相对源串变化」判断当前是否英文模式。
+void ActivityBar::retranslateUi() {
+    const bool isEnglish = (tr("配置") != QStringLiteral("配置"));
+    auto applyLabel = [isEnglish](QPushButton *button, const QString &text) {
+        if (button == nullptr) {
+            return;
+        }
+        button->setText(text);
+        button->setToolTip(isEnglish ? text : QString());
+    };
+    applyLabel(m_configButton, tr("配置"));
+    applyLabel(m_registerButton, tr("读写"));
+    applyLabel(m_flashButton, tr("烧录"));
+    applyLabel(m_scopeButton, tr("示波"));
+    applyLabel(m_storageButton, tr("存储"));
+    applyLabel(m_debugButton, tr("调试"));
+    applyLabel(m_settingsButton, tr("设置"));
 }
