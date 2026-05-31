@@ -11,6 +11,7 @@
 #include "ui/style_constants.h"
 
 #include <QComboBox>
+#include <QLineEdit>
 #include <QDoubleSpinBox>
 #include <QEvent>
 #include <QFileDialog>
@@ -111,9 +112,8 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_iovddSpin->setValue(2.80);
     m_vcmvddSpin->setValue(3.20);
 
-    // 配置文件区域：路径输入框（可编辑）+ Browse/Write/Read（连接逻辑见 connectSignals）
-    m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
-    m_fileCombo->setPlaceholderText(tr("选择配置文件"));
+    // 配置文件区域：路径输入框 + Browse/Write/Read（连接逻辑见 connectSignals）
+    m_filePathEdit->setPlaceholderText(tr("选择配置文件"));
 
     // 以下设备控制按钮暂未实现，保持禁用
     m_resetButton->setEnabled(false);
@@ -362,10 +362,10 @@ void ConfigTab::connectSignals() {
     // 配置文件存取：Browse 本地选路径；Read/Write 发信号交由 AppConfigService 编排
     // -------------------------------------------------------------------------
 
-    // Browse：选一个 *.json 路径回填到 m_fileCombo（允许选已有文件或输入新文件名，
+    // Browse：选一个 *.json 路径回填到 m_filePathEdit（允许选已有文件或输入新文件名，
     // DontConfirmOverwrite 避免选已有文件时弹覆盖确认——此处只取路径，不读不写）
     connect(m_browseButton, &QPushButton::clicked, this, [this]() {
-        QString startDir = m_fileCombo->currentText().trimmed();
+        QString startDir = m_filePathEdit->text().trimmed();
         if (!startDir.isEmpty()) {
             startDir = QFileInfo(startDir).absolutePath();
         } else {
@@ -376,13 +376,13 @@ void ConfigTab::connectSignals() {
             tr("JSON 配置文件 (*.json);;所有文件 (*.*)"), nullptr,
             QFileDialog::DontConfirmOverwrite);
         if (!path.isEmpty()) {
-            m_fileCombo->setCurrentText(path);
+            m_filePathEdit->setText(path);
         }
     });
 
     // Read：把当前路径发出去，由 AppConfigService 读 JSON 回填各页面
     connect(m_readButton, &QPushButton::clicked, this, [this]() {
-        const QString path = m_fileCombo->currentText().trimmed();
+        const QString path = m_filePathEdit->text().trimmed();
         if (path.isEmpty()) {
             qWarning() << "Read config: no path specified";
             return;
@@ -392,7 +392,7 @@ void ConfigTab::connectSignals() {
 
     // Write：把当前路径发出去，由 AppConfigService 采集各页面配置写 JSON
     connect(m_writeButton, &QPushButton::clicked, this, [this]() {
-        const QString path = m_fileCombo->currentText().trimmed();
+        const QString path = m_filePathEdit->text().trimmed();
         if (path.isEmpty()) {
             qWarning() << "Write config: no path specified";
             return;
@@ -749,12 +749,11 @@ void ConfigTab::setupUi() {
     m_configFileLabel->setObjectName(QStringLiteral("configFileLabel"));
     m_configFileLabel->setText(tr("配置文件"));
     configFileLayout->addWidget(m_configFileLabel);
-    // 文件浏览框紧跟标签，并占据该行剩余空间（stretch=1），让三个按钮保持紧凑
-    m_fileCombo = new QComboBox(configFileRow);
-    m_fileCombo->setObjectName(QStringLiteral("fileCombo"));
-    m_fileCombo->setEditable(true);
-    m_fileCombo->setProperty("inputRole", QStringLiteral("form"));
-    configFileLayout->addWidget(m_fileCombo, 1);
+    // 文件路径框紧跟标签，并占据该行剩余空间（stretch=1），让三个按钮保持紧凑
+    m_filePathEdit = new QLineEdit(configFileRow);
+    m_filePathEdit->setObjectName(QStringLiteral("filePathEdit"));
+    m_filePathEdit->setProperty("inputRole", QStringLiteral("form"));
+    configFileLayout->addWidget(m_filePathEdit, 1);
 
     // 三个操作按钮等宽、紧凑（固定宽度，不随窗口拉伸而变大）
     constexpr int kConfigFileBtnW = 120;
@@ -818,7 +817,7 @@ void ConfigTab::retranslateUi() {
     // 占位符
     if (m_slaveIdCombo != nullptr) m_slaveIdCombo->setPlaceholderText(tr("请先扫描"));
     if (m_portCombo != nullptr) m_portCombo->setPlaceholderText(tr("选择串口"));
-    if (m_fileCombo != nullptr) m_fileCombo->setPlaceholderText(tr("选择配置文件"));
+    if (m_filePathEdit != nullptr) m_filePathEdit->setPlaceholderText(tr("选择配置文件"));
 
     // 按钮（静态文本）
     if (m_icScanButton != nullptr) m_icScanButton->setText(tr("扫描"));

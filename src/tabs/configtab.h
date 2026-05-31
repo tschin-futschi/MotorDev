@@ -35,6 +35,7 @@ class QEvent;
 class QGroupBox;
 class QJsonObject;
 class QLabel;
+class QLineEdit;
 class QPushButton;
 class SerialManager;
 class QSplitter;
@@ -146,8 +147,8 @@ private:
     QPushButton *m_resetButton = nullptr;       ///< 设备复位按钮
     QPushButton *m_motorTestButton = nullptr;   ///< 电机测试按钮
 
-    // --- Config File 区域控件（功能开发中）---
-    QComboBox *m_fileCombo = nullptr;           ///< 配置文件选择框
+    // --- Config File 区域控件 ---
+    QLineEdit *m_filePathEdit = nullptr;        ///< 配置文件路径输入框
     QPushButton *m_browseButton = nullptr;      ///< 浏览文件按钮
     QPushButton *m_writeButton = nullptr;       ///< 写入配置按钮
     QPushButton *m_readButton = nullptr;        ///< 读取配置按钮
