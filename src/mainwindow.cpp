@@ -13,6 +13,7 @@
 #include "serialmanager.h"
 #include "services/commanddispatcher.h"
 #include "services/cyclicwriteservice.h"
+#include "services/dw9786oisresetservice.h"
 #include "services/fwflashservice.h"
 #include "services/generatorservice.h"
 #include "services/scopeservice.h"
@@ -76,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_serialManager = new SerialManager(this);
     m_dispatcher = new CommandDispatcher(m_serialManager, this);
     m_deviceContext = new DeviceContext(this);
+    m_oisResetService = new Dw9786OisResetService(m_serialManager, 0x24, this);
 
     setupUi();
     connectSignals();
@@ -353,6 +355,12 @@ void MainWindow::connectSignals() {
     connect(m_debugTab, &SerialDebugTab::debugStreamActiveChanged,
             m_scopeTab, &OscilloscopTab::setDebugStreamActive);
 
+    // --- DW9786 上电 OISReset 日志 → 底部日志面板 ---
+    connect(m_oisResetService, &Dw9786OisResetService::logMessage, this,
+            [this](const QString &line) {
+                m_logPanel->appendMessage(QtInfoMsg, QStringLiteral("DW9786"), line);
+            });
+
     // --- 串口连接成功：启用各受限页面 ---
     connect(m_configTab, &ConfigTab::serialConnected, this, [this](const QString &, qint32) {
         m_registerTab->setConnected(true);
@@ -363,6 +371,12 @@ void MainWindow::connectSignals() {
         m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
+
+        // DW9786 上电默认 Sleep（寄存器全读 0xFFFF）：连接成功后自动执行一次
+        // OISReset 把 IC 切到工作态。其它 IC 不触发。
+        if (m_deviceContext->icType() == MotorIcType::DW9786) {
+            m_oisResetService->requestOisReset();
+        }
     });
 
     // --- 串口断开：保持所有页面启用（产品决策：连接状态不门控页面可用性）---

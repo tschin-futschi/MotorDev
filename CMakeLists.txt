@@ -38,6 +38,8 @@ qt_add_executable(MotorDev
     src/services/commanddispatcher.h
     src/services/cyclicwriteservice.cpp
     src/services/cyclicwriteservice.h
+    src/services/dw9786oisresetservice.cpp
+    src/services/dw9786oisresetservice.h
     src/services/generatorservice.cpp
     src/services/generatorservice.h
     src/services/registerservice.cpp

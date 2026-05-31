@@ -19,6 +19,7 @@ class ActivityBar;
 class CommandDispatcher;
 class ConfigTab;
 class DeviceContext;
+class Dw9786OisResetService;
 class FwFlashTab;
 class FlashStorageTab;
 class LogPanel;
@@ -57,6 +58,7 @@ private:
     SerialManager *m_serialManager = nullptr;       ///< 串口管理器（独立线程运行）
     CommandDispatcher *m_dispatcher = nullptr;       ///< 命令分发器（命令队列 + 超时管理）
     DeviceContext *m_deviceContext = nullptr;        ///< 设备上下文（IC 类型 + 从机地址）
+    Dw9786OisResetService *m_oisResetService = nullptr;  ///< DW9786 上电 OISReset 服务
 
     // --- 顶层 UI 组件 ---
     TopBar *m_topBar = nullptr;                     ///< 顶栏（Logo、连接状态、示波器控件）
