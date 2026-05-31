@@ -76,8 +76,8 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     // 覆盖窗口在析构函数中手动 delete。
     m_registerPanel = new ScopeRegisterPanel(nullptr);
     m_generatorPanel = new ScopeGeneratorPanel(nullptr);
-    m_registerWindow = createOverlayWindow(tr("Register R/W"), m_registerPanel, QSize(500, 400));
-    m_generatorWindow = createOverlayWindow(tr("Wave Generator"), m_generatorPanel, QSize(420, 340));
+    m_registerWindow = createOverlayWindow(tr("寄存器读写"), m_registerPanel, QSize(500, 400));
+    m_generatorWindow = createOverlayWindow(tr("波形生成器"), m_generatorPanel, QSize(420, 340));
 
     // ---------- Y 轴菜单：Auto / Manual ----------
     m_yAxisMenu = new QMenu(m_yAxisButton);
@@ -613,6 +613,6 @@ void ScopeBottomPanel::setupUi() {
     // 跑马灯状态标签（占满剩余空间）
     m_marqueeLabel = new ScopeMarqueeLabel(this);
     m_marqueeLabel->setObjectName(QStringLiteral("marqueeLabel"));
-    m_marqueeLabel->setText(QStringLiteral("Idle"));
+    m_marqueeLabel->setText(tr("空闲"));
     buttonLayout->addWidget(m_marqueeLabel, 1);
 }

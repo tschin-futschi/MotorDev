@@ -227,7 +227,7 @@ void ScopeGeneratorPanel::setupUi() {
     rootLayout->setContentsMargins(10, 10, 10, 10);
 
     // --- 标题 ---
-    auto *titleLabel = new QLabel(tr("Wave Generator"), this);
+    auto *titleLabel = new QLabel(tr("波形生成器"), this);
     titleLabel->setObjectName(QStringLiteral("titleLabel"));
     rootLayout->addWidget(titleLabel);
 
@@ -272,11 +272,11 @@ void ScopeGeneratorPanel::setupUi() {
     m_linearStepEdit = createGeneratorEdit(linearPage, QStringLiteral("linearStepEdit"), QStringLiteral("5"));
     m_linearIntervalEdit = createGeneratorEdit(linearPage, QStringLiteral("linearIntervalEdit"), QStringLiteral("100"));
 
-    linearLayout->addRow(tr("Register Addr"), m_linearAddrEdit);
-    linearLayout->addRow(tr("Min"), m_linearMinEdit);
-    linearLayout->addRow(tr("Max"), m_linearMaxEdit);
-    linearLayout->addRow(tr("Step"), m_linearStepEdit);
-    linearLayout->addRow(tr("Interval (ms)"), m_linearIntervalEdit);
+    linearLayout->addRow(tr("寄存器地址"), m_linearAddrEdit);
+    linearLayout->addRow(tr("最小值"), m_linearMinEdit);
+    linearLayout->addRow(tr("最大值"), m_linearMaxEdit);
+    linearLayout->addRow(tr("步进"), m_linearStepEdit);
+    linearLayout->addRow(tr("间隔（毫秒）"), m_linearIntervalEdit);
     m_modeStack->addWidget(linearPage);
 
     // ===== 余弦模式参数页 =====
@@ -309,11 +309,11 @@ void ScopeGeneratorPanel::setupUi() {
     };
 
     // 行 0：振幅 + 偏移
-    addGlobalRow(0, tr("Amplitude"), &m_cosineAmplitudeEdit, QStringLiteral("cosineAmplitudeEdit"), QStringLiteral("1000"),
-                 tr("Offset"), &m_cosineOffsetEdit, QStringLiteral("cosineOffsetEdit"), QStringLiteral("0"));
+    addGlobalRow(0, tr("幅值"), &m_cosineAmplitudeEdit, QStringLiteral("cosineAmplitudeEdit"), QStringLiteral("1000"),
+                 tr("偏移"), &m_cosineOffsetEdit, QStringLiteral("cosineOffsetEdit"), QStringLiteral("0"));
 
     // 行 1：频率（仅左半列）
-    auto *freqLabel = new QLabel(tr("Freq (Hz)"), cosinePage);
+    auto *freqLabel = new QLabel(tr("频率（Hz）"), cosinePage);
     m_cosineFrequencyEdit = createGeneratorEdit(cosinePage, QStringLiteral("cosineFrequencyEdit"), QStringLiteral("1.0"));
     cosineLayout->addWidget(freqLabel, 1, 0);
     cosineLayout->addWidget(m_cosineFrequencyEdit, 1, 1);
@@ -321,8 +321,8 @@ void ScopeGeneratorPanel::setupUi() {
     // 行 2~4：3 个通道的地址 + 相位
     // 默认占位：CH1=0°, CH2=120°, CH3=240°（三相电机典型配置）
     for (int channel = 0; channel < 3; ++channel) {
-        auto *addrLabel = new QLabel(tr("CH%1 Addr").arg(channel + 1), cosinePage);
-        auto *phaseLabel = new QLabel(tr("CH%1 Phase (deg)").arg(channel + 1), cosinePage);
+        auto *addrLabel = new QLabel(tr("CH%1 地址").arg(channel + 1), cosinePage);
+        auto *phaseLabel = new QLabel(tr("CH%1 相位（度）").arg(channel + 1), cosinePage);
         m_cosineAddrEdits[channel] = createGeneratorEdit(
             cosinePage, QStringLiteral("cosineAddrEdit%1").arg(channel), channel == 0 ? QStringLiteral("0x0020") : QString());
         const QString phasePlaceholder = (channel == 0) ? QStringLiteral("0")
@@ -350,10 +350,10 @@ void ScopeGeneratorPanel::setupUi() {
     m_sawtoothMaxEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothMaxEdit"), QStringLiteral("100"));
     m_sawtoothStepEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothStepEdit"), QStringLiteral("1"));
 
-    sawtoothLayout->addRow(tr("Register Addr"), m_sawtoothAddrEdit);
-    sawtoothLayout->addRow(tr("Min"), m_sawtoothMinEdit);
-    sawtoothLayout->addRow(tr("Max"), m_sawtoothMaxEdit);
-    sawtoothLayout->addRow(tr("Step"), m_sawtoothStepEdit);
+    sawtoothLayout->addRow(tr("寄存器地址"), m_sawtoothAddrEdit);
+    sawtoothLayout->addRow(tr("最小值"), m_sawtoothMinEdit);
+    sawtoothLayout->addRow(tr("最大值"), m_sawtoothMaxEdit);
+    sawtoothLayout->addRow(tr("步进"), m_sawtoothStepEdit);
     m_modeStack->addWidget(sawtoothPage);
 
     // --- 底部按钮行 ---

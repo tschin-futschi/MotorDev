@@ -42,9 +42,9 @@ TopBar::~TopBar() = default;
 // =============================================================================
 
 void TopBar::connectSignals() {
-    m_viewModeButton->setToolTip(tr("Toggle view mode"));
-    m_styleButton->setToolTip(tr("Toggle channel style panel"));
-    m_crosshairButton->setToolTip(tr("Toggle crosshair cursor"));
+    m_viewModeButton->setToolTip(tr("切换视图模式"));
+    m_styleButton->setToolTip(tr("切换样式面板"));
+    m_crosshairButton->setToolTip(tr("切换十字光标"));
 
     // Overlay ↔ Stacked 切换
     connect(m_viewModeButton, &QToolButton::clicked, this, [this]() {
@@ -126,8 +126,8 @@ void TopBar::setScopeControlsVisible(bool visible) {
 void TopBar::setViewMode(int mode) {
     m_viewMode = mode == 1 ? 1 : 0;
     m_viewModeButton->setText(m_viewMode == 0
-            ? QStringLiteral("Overlay")
-            : QStringLiteral("Stacked"));
+            ? tr("叠加")
+            : tr("分层"));
 }
 
 void TopBar::setCrosshairEnabled(bool enabled) {
@@ -218,7 +218,7 @@ void TopBar::setupUi() {
     m_viewModeButton->setObjectName(QStringLiteral("viewModeButton"));
     m_viewModeButton->setMinimumSize(QSize(Style::Size::TopBarViewModeButtonMinW, Style::Size::TopBarScopeButtonMinH));
     m_viewModeButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarScopeButtonMaxH));
-    m_viewModeButton->setText(QStringLiteral("Overlay"));
+    m_viewModeButton->setText(tr("叠加"));
     topBarLayout->addWidget(m_viewModeButton);
 
     m_styleButton = new QToolButton(this);
@@ -226,7 +226,7 @@ void TopBar::setupUi() {
     m_styleButton->setMinimumSize(QSize(Style::Size::TopBarStyleButtonMinW, Style::Size::TopBarScopeButtonMinH));
     m_styleButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::TopBarScopeButtonMaxH));
     m_styleButton->setCheckable(true);
-    m_styleButton->setText(QStringLiteral("Style"));
+    m_styleButton->setText(tr("样式"));
     topBarLayout->addWidget(m_styleButton);
 
     m_crosshairButton = new QToolButton(this);

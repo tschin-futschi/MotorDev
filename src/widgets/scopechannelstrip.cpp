@@ -96,7 +96,7 @@ void ScopeChannelStrip::setupUi() {
     m_descEdit->setObjectName(QStringLiteral("descEdit"));
     m_descEdit->setMinimumSize(QSize(0, Style::Size::ScopeChannelStripRowH));
     m_descEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeChannelStripRowH));
-    m_descEdit->setPlaceholderText(tr("Description"));
+    m_descEdit->setPlaceholderText(tr("描述"));
     rootLayout->addWidget(m_descEdit);
 
     // --- 寄存器地址输入框 ---

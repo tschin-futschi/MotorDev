@@ -126,7 +126,7 @@ void ScopeStylePanel::connectSignals() {
             const QColor selected = QColorDialog::getColor(
                 m_rows[index].currentColor,
                 this,
-                tr("Select channel color"));
+                tr("选择通道颜色"));
             if (!selected.isValid()) {
                 return;                                 // 用户取消
             }
@@ -190,7 +190,7 @@ void ScopeStylePanel::setupUi() {
     // 标题
     auto *titleLabel = new QLabel(this);
     titleLabel->setObjectName(QStringLiteral("titleLabel"));
-    titleLabel->setText(tr("Channel Style"));
+    titleLabel->setText(tr("通道样式"));
     rootLayout->addWidget(titleLabel);
 
     // 恢复默认按钮
@@ -201,7 +201,7 @@ void ScopeStylePanel::setupUi() {
     rootLayout->addWidget(m_defaultButton);
 
     // ---------- 8 行通道样式控件 ----------
-    const QStringList comboItems = {tr("Solid"), tr("Dash"), tr("Dot"), tr("DashDot"), tr("SolidDot")};
+    const QStringList comboItems = {tr("实线"), tr("虚线"), tr("点线"), tr("点划线"), tr("实点线")};
     for (int index = 0; index < kChannelCount; ++index) {
         auto *rowLayout = new QHBoxLayout();
         rowLayout->setObjectName(QStringLiteral("row%1Layout").arg(index));

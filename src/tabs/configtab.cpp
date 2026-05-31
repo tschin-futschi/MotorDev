@@ -95,9 +95,9 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     }
 
     // 初始化控件状态
-    m_slaveIdCombo->setPlaceholderText(QStringLiteral("Scan first"));
+    m_slaveIdCombo->setPlaceholderText(tr("请先扫描"));
     m_slaveIdCombo->setCurrentIndex(-1);
-    m_portCombo->setPlaceholderText(tr("Select COM"));
+    m_portCombo->setPlaceholderText(tr("选择串口"));
     m_baudRateCombo->setCurrentText(QLatin1String(Style::Serial::DefaultBaudRate));
 
     // PMIC 电压 SpinBox 统一配置：范围 0.60~3.77V，步进 0.10V
@@ -112,7 +112,7 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
 
     // 配置文件区域：路径输入框（可编辑）+ Browse/Write/Read（连接逻辑见 connectSignals）
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
-    m_fileCombo->setPlaceholderText(tr("Select config file"));
+    m_fileCombo->setPlaceholderText(tr("选择配置文件"));
 
     // 以下设备控制按钮暂未实现，保持禁用
     m_resetButton->setEnabled(false);
@@ -492,7 +492,7 @@ void ConfigTab::refreshAvailablePorts() {
 
 /// @brief 根据连接状态切换控件启用/禁用和按钮文字
 void ConfigTab::setSerialControlsConnected(bool connected) {
-    m_connectButton->setText(connected ? tr("Disconnect") : tr("Connect"));
+    m_connectButton->setText(connected ? tr("断开") : tr("连接"));
     m_portCombo->setEnabled(!connected);
     m_baudRateCombo->setEnabled(!connected);
     m_scanButton->setEnabled(!connected);
@@ -566,7 +566,7 @@ void ConfigTab::setupUi() {
     icGroupLayout->addLayout(icFormLayout);
     auto *icLabel = new QLabel(m_icGroup);
     icLabel->setObjectName(QStringLiteral("icLabel"));
-    icLabel->setText(QStringLiteral("Select IC"));
+    icLabel->setText(tr("选择 IC"));
     icFormLayout->setWidget(0, QFormLayout::LabelRole, icLabel);
     m_icCombo = new QComboBox(m_icGroup);
     m_icCombo->setObjectName(QStringLiteral("icCombo"));
@@ -576,7 +576,7 @@ void ConfigTab::setupUi() {
     icFormLayout->setWidget(0, QFormLayout::FieldRole, m_icCombo);
     auto *slaveIdLabel = new QLabel(m_icGroup);
     slaveIdLabel->setObjectName(QStringLiteral("slaveIdLabel"));
-    slaveIdLabel->setText(QStringLiteral("Slave ID"));
+    slaveIdLabel->setText(tr("从机地址"));
     icFormLayout->setWidget(1, QFormLayout::LabelRole, slaveIdLabel);
     m_slaveIdCombo = new QComboBox(m_icGroup);
     m_slaveIdCombo->setObjectName(QStringLiteral("slaveIdCombo"));
@@ -591,14 +591,14 @@ void ConfigTab::setupUi() {
     m_icScanButton->setObjectName(QStringLiteral("icScanButton"));
     m_icScanButton->setMinimumSize(QSize(0, 32));
     m_icScanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_icScanButton->setText(QStringLiteral("Scan"));
+    m_icScanButton->setText(tr("扫描"));
     m_icScanButton->setProperty("buttonRole", QStringLiteral("primary"));
     icButtonRow->addWidget(m_icScanButton);
     m_icConnectButton = new QPushButton(m_icGroup);
     m_icConnectButton->setObjectName(QStringLiteral("icConnectButton"));
     m_icConnectButton->setMinimumSize(QSize(0, 32));
     m_icConnectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_icConnectButton->setText(QStringLiteral("Connect"));
+    m_icConnectButton->setText(tr("连接"));
     m_icConnectButton->setProperty("buttonRole", QStringLiteral("primary"));
     icButtonRow->addWidget(m_icConnectButton);
     icButtonRow->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
@@ -617,7 +617,7 @@ void ConfigTab::setupUi() {
     serialGroupLayout->addLayout(serialFormLayout);
     auto *portLabel = new QLabel(m_serialGroup);
     portLabel->setObjectName(QStringLiteral("portLabel"));
-    portLabel->setText(QStringLiteral("Port"));
+    portLabel->setText(tr("端口"));
     serialFormLayout->setWidget(0, QFormLayout::LabelRole, portLabel);
     m_portCombo = new QComboBox(m_serialGroup);
     m_portCombo->setObjectName(QStringLiteral("portCombo"));
@@ -627,7 +627,7 @@ void ConfigTab::setupUi() {
     serialFormLayout->setWidget(0, QFormLayout::FieldRole, m_portCombo);
     auto *baudRateLabel = new QLabel(m_serialGroup);
     baudRateLabel->setObjectName(QStringLiteral("baudRateLabel"));
-    baudRateLabel->setText(QStringLiteral("Baud Rate"));
+    baudRateLabel->setText(tr("波特率"));
     serialFormLayout->setWidget(1, QFormLayout::LabelRole, baudRateLabel);
     m_baudRateCombo = new QComboBox(m_serialGroup);
     m_baudRateCombo->setObjectName(QStringLiteral("baudRateCombo"));
@@ -645,25 +645,25 @@ void ConfigTab::setupUi() {
     m_scanButton = new QPushButton(m_serialGroup);
     m_scanButton->setObjectName(QStringLiteral("scanButton"));
     m_scanButton->setFixedHeight(32);
-    m_scanButton->setText(QStringLiteral("Scan"));
+    m_scanButton->setText(tr("扫描"));
     m_scanButton->setProperty("buttonRole", QStringLiteral("primary"));
     serialButtonGrid->addWidget(m_scanButton, 0, 0);
     m_connectButton = new QPushButton(m_serialGroup);
     m_connectButton->setObjectName(QStringLiteral("connectButton"));
     m_connectButton->setFixedHeight(32);
-    m_connectButton->setText(QStringLiteral("Connect"));
+    m_connectButton->setText(tr("连接"));
     m_connectButton->setProperty("buttonRole", QStringLiteral("primary"));
     serialButtonGrid->addWidget(m_connectButton, 0, 1);
     m_resetButton = new QPushButton(m_serialGroup);
     m_resetButton->setObjectName(QStringLiteral("resetButton"));
     m_resetButton->setFixedHeight(32);
-    m_resetButton->setText(tr("Reset Device"));
+    m_resetButton->setText(tr("设备复位"));
     m_resetButton->setProperty("buttonRole", QStringLiteral("secondary"));
     serialButtonGrid->addWidget(m_resetButton, 1, 0);
     m_motorTestButton = new QPushButton(m_serialGroup);
     m_motorTestButton->setObjectName(QStringLiteral("motorTestButton"));
     m_motorTestButton->setFixedHeight(32);
-    m_motorTestButton->setText(tr("Motor Test"));
+    m_motorTestButton->setText(tr("电机测试"));
     m_motorTestButton->setProperty("buttonRole", QStringLiteral("secondary"));
     serialButtonGrid->addWidget(m_motorTestButton, 1, 1);
 

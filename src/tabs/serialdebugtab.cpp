@@ -204,7 +204,7 @@ void SerialDebugTab::setupUi() {
 
     auto *portLabel = new QLabel(connectionBar);
     portLabel->setObjectName(QStringLiteral("portLabel"));
-    portLabel->setText(QStringLiteral("Port:"));
+    portLabel->setText(tr("端口："));
     portLabel->setProperty("labelRole", QStringLiteral("form"));
     connectionLayout->addWidget(portLabel);
 
