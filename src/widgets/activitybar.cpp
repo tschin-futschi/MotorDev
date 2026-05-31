@@ -96,7 +96,6 @@ void ActivityBar::setActivePage(int index) {
         m_scopeButton,
         m_storageButton,
         m_debugButton,
-        m_settingsButton,
     };
 
     for (auto *button : buttons) {
@@ -126,7 +125,7 @@ void ActivityBar::setupUi() {
     verticalLayout->setSpacing(6);
     verticalLayout->setContentsMargins(4, 8, 4, 8);
 
-    // 5 个导航按钮：配置 / 读写 / 烧录 / 示波 / 调试
+    // 6 个导航按钮：配置 / 读写 / 烧录 / 示波 / 存储 / 调试
     const struct {
         QPushButton **button;
         const char *objectName;
@@ -156,21 +155,8 @@ void ActivityBar::setupUi() {
         verticalLayout->addLayout(wrapper);
     }
 
-    // 弹性间距 → 设置按钮推到底部
+    // 弹性间距 → 导航按钮顶部对齐，底部留白
     verticalLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
-
-    // 底部设置按钮
-    auto *settingsWrapper = new QHBoxLayout();
-    settingsWrapper->setContentsMargins(0, 0, 0, 0);
-    settingsWrapper->addStretch();
-    m_settingsButton = new QPushButton(this);
-    m_settingsButton->setObjectName(QStringLiteral("settingsButton"));
-    m_settingsButton->setMinimumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
-    m_settingsButton->setMaximumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
-    m_settingsButton->setProperty("active", false);
-    settingsWrapper->addWidget(m_settingsButton);
-    settingsWrapper->addStretch();
-    verticalLayout->addLayout(settingsWrapper);
 
     retranslateUi();
 }
@@ -209,5 +195,4 @@ void ActivityBar::retranslateUi() {
     applyLabel(m_scopeButton, tr("示波"));
     applyLabel(m_storageButton, tr("存储"));
     applyLabel(m_debugButton, tr("调试"));
-    applyLabel(m_settingsButton, tr("设置"));
 }

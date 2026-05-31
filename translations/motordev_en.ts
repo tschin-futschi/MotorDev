@@ -4,39 +4,39 @@
 <context>
     <name>ActivityBar</name>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="194"/>
+        <location filename="../src/widgets/activitybar.cpp" line="184"/>
+        <location filename="../src/widgets/activitybar.cpp" line="192"/>
         <source>配置</source>
         <translation>Config</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="195"/>
+        <location filename="../src/widgets/activitybar.cpp" line="193"/>
         <source>读写</source>
         <translation>R/W</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="196"/>
+        <location filename="../src/widgets/activitybar.cpp" line="194"/>
         <source>烧录</source>
         <translation>Flash</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="197"/>
+        <location filename="../src/widgets/activitybar.cpp" line="195"/>
         <source>示波</source>
         <translation>Scope</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="198"/>
+        <location filename="../src/widgets/activitybar.cpp" line="196"/>
         <source>存储</source>
         <translation>Storage</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="199"/>
+        <location filename="../src/widgets/activitybar.cpp" line="197"/>
         <source>调试</source>
         <translation>Debug</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="200"/>
         <source>设置</source>
-        <translation>Settings</translation>
+        <translation type="vanished">Settings</translation>
     </message>
 </context>
 <context>

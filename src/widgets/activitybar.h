@@ -2,8 +2,8 @@
 // @file    activitybar.h
 // @brief   活动栏 — 左侧垂直导航按钮栏，用于切换主界面页面
 //
-// ActivityBar 位于主窗口最左侧，提供 5 个页面导航按钮：
-// 配置 → 读写 → 烧录 → 示波 → 调试，底部为设置按钮。
+// ActivityBar 位于主窗口最左侧，提供页面导航按钮：
+// 配置 → 读写 → 烧录 → 示波 → 存储 → 调试。
 // 当前选中的按钮通过 "active" 动态属性驱动 QSS 高亮样式。
 // =============================================================================
 #pragma once
@@ -68,5 +68,4 @@ private:
     QPushButton *m_scopeButton = nullptr;       ///< "示波"按钮
     QPushButton *m_storageButton = nullptr;     ///< "存储"按钮（FLASH 文件存储）
     QPushButton *m_debugButton = nullptr;       ///< "调试"按钮
-    QPushButton *m_settingsButton = nullptr;    ///< "设置"按钮（底部）
 };
