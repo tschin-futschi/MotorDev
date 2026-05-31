@@ -303,11 +303,11 @@ void FwFlashTab::setupUi() {
     icRow->setContentsMargins(2, 0, 2, 0);
     icRow->setSpacing(8);
 
-    auto *icLabel = new QLabel(tr("目标 IC："), leftPane);
-    QFont normalFont = icLabel->font();
+    m_icLabel = new QLabel(tr("目标 IC："), leftPane);
+    QFont normalFont = m_icLabel->font();
     normalFont.setPixelSize(11);
-    icLabel->setFont(normalFont);
-    icRow->addWidget(icLabel);
+    m_icLabel->setFont(normalFont);
+    icRow->addWidget(m_icLabel);
 
     m_icCombo = new QComboBox(leftPane);
     m_icCombo->setObjectName(QStringLiteral("fwFlashIcCombo"));
@@ -328,7 +328,8 @@ void FwFlashTab::setupUi() {
     leftLayout->addLayout(icRow);
 
     // 固件文件卡片（占左栏大头）
-    auto *fileCard = new QGroupBox(tr("固件文件"), leftPane);
+    m_fileCard = new QGroupBox(tr("固件文件"), leftPane);
+    QGroupBox *fileCard = m_fileCard;
     fileCard->setObjectName(QStringLiteral("fwFlashFileCard"));
     auto *fileCardLayout = new QVBoxLayout(fileCard);
     fileCardLayout->setSpacing(10);
@@ -399,6 +400,42 @@ void FwFlashTab::setupUi() {
     rightLayout->addWidget(m_logPanel, 1);
 
     topLayout->addWidget(m_mainContent, 1);
+
+    retranslateUi();
+}
+
+// -----------------------------------------------------------------------------
+// 语言切换 / 文字重设
+// -----------------------------------------------------------------------------
+
+void FwFlashTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设本页静态可见文字；子面板（信息/控制/日志）各自处理自身文字，
+/// IC 描述与日志/阶段消息为动态内容不在此重译。
+void FwFlashTab::retranslateUi() {
+    if (m_icLabel != nullptr) {
+        m_icLabel->setText(tr("目标 IC："));
+    }
+    if (m_icCombo != nullptr) {
+        m_icCombo->setToolTip(tr("目标 IC 跟随配置页 Select IC，请在配置页修改"));
+    }
+    if (m_fileCard != nullptr) {
+        m_fileCard->setTitle(tr("固件文件"));
+    }
+    if (m_pathEdit != nullptr) {
+        m_pathEdit->setPlaceholderText(tr("点击「浏览...」选择 .bin 或 .hex 固件文件"));
+    }
+    if (m_browseBtn != nullptr) {
+        m_browseBtn->setText(tr("浏览..."));
+    }
+    if (m_clearFileBtn != nullptr) {
+        m_clearFileBtn->setText(tr("清空"));
+    }
 }
 
 // -----------------------------------------------------------------------------

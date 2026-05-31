@@ -7,6 +7,7 @@
 #include "protocol/firmware_parser.h"
 #include "ui/style_constants.h"
 
+#include <QEvent>
 #include <QGridLayout>
 #include <QLabel>
 #include <QStackedWidget>
@@ -87,19 +88,23 @@ void FwFileInfoPanel::setupUi() {
     grid->setColumnStretch(1, 1);
 
     int row = 0;
-    grid->addWidget(makeLabel(validPage, tr("文件名"), false), row, 0, Qt::AlignLeft);
+    m_fileNameLabel = makeLabel(validPage, tr("文件名"), false);
+    grid->addWidget(m_fileNameLabel, row, 0, Qt::AlignLeft);
     m_fileNameValue = makeLabel(validPage, QString(), true);
     grid->addWidget(m_fileNameValue, row++, 1, Qt::AlignLeft);
 
-    grid->addWidget(makeLabel(validPage, tr("文件大小"), false), row, 0, Qt::AlignLeft);
+    m_fileSizeLabel = makeLabel(validPage, tr("文件大小"), false);
+    grid->addWidget(m_fileSizeLabel, row, 0, Qt::AlignLeft);
     m_fileSizeValue = makeLabel(validPage, QString(), true);
     grid->addWidget(m_fileSizeValue, row++, 1, Qt::AlignLeft);
 
-    grid->addWidget(makeLabel(validPage, tr("文件格式"), false), row, 0, Qt::AlignLeft);
+    m_formatLabel = makeLabel(validPage, tr("文件格式"), false);
+    grid->addWidget(m_formatLabel, row, 0, Qt::AlignLeft);
     m_formatValue = makeLabel(validPage, QString(), true);
     grid->addWidget(m_formatValue, row++, 1, Qt::AlignLeft);
 
-    grid->addWidget(makeLabel(validPage, tr("CRC32"), false), row, 0, Qt::AlignLeft);
+    m_crc32Label = makeLabel(validPage, tr("CRC32"), false);
+    grid->addWidget(m_crc32Label, row, 0, Qt::AlignLeft);
     m_crc32Value = makeLabel(validPage, QString(), true);
     grid->addWidget(m_crc32Value, row++, 1, Qt::AlignLeft);
 
@@ -147,6 +152,25 @@ void FwFileInfoPanel::setupUi() {
 
 void FwFileInfoPanel::clear() {
     m_stack->setCurrentIndex(0);
+}
+
+void FwFileInfoPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+void FwFileInfoPanel::retranslateUi() {
+    if (m_emptyLabel != nullptr)     m_emptyLabel->setText(tr("请先选择固件文件"));
+    if (m_fileNameLabel != nullptr)  m_fileNameLabel->setText(tr("文件名"));
+    if (m_fileSizeLabel != nullptr)  m_fileSizeLabel->setText(tr("文件大小"));
+    if (m_formatLabel != nullptr)    m_formatLabel->setText(tr("文件格式"));
+    if (m_crc32Label != nullptr)     m_crc32Label->setText(tr("CRC32"));
+    if (m_segCountLabel != nullptr)  m_segCountLabel->setText(tr("段数"));
+    if (m_addrRangeLabel != nullptr) m_addrRangeLabel->setText(tr("地址范围"));
+    if (m_effectiveLabel != nullptr) m_effectiveLabel->setText(tr("有效字节"));
+    if (m_paddingLabel != nullptr)   m_paddingLabel->setText(tr("自动补齐"));
 }
 
 void FwFileInfoPanel::setInfo(const FirmwareInfo &info) {

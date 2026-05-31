@@ -9,6 +9,7 @@
 
 #include <QGroupBox>
 
+class QEvent;
 class QLabel;
 class QProgressBar;
 class QPushButton;
@@ -30,11 +31,19 @@ signals:
     void startRequested();
     void cancelRequested();
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新标题/按钮（空闲态阶段文字）
+    void changeEvent(QEvent *event) override;
+
 private:
     void setupUi();
+
+    /// @brief 重设标题、开始/取消按钮文字；若处于空闲态则同步刷新阶段文字
+    void retranslateUi();
 
     QPushButton *m_startBtn = nullptr;
     QPushButton *m_cancelBtn = nullptr;
     QProgressBar *m_progress = nullptr;
     QLabel *m_stageLabel = nullptr;
+    bool m_stageIsIdle = true;          ///< 阶段标签是否处于"空闲"默认态（语言切换时随之重译）
 };

@@ -6,6 +6,7 @@
 
 #include "ui/style_constants.h"
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QProgressBar>
@@ -118,8 +119,31 @@ void FwFlashControlPanel::setProgress(qint64 sentBytes, qint64 totalBytes) {
 
 void FwFlashControlPanel::setStageText(const QString &text) {
     m_stageLabel->setText(text);
+    // 与当前语言的"空闲"比较，记住是否处于空闲默认态，供语言切换时重译
+    m_stageIsIdle = (text == tr("空闲"));
 }
 
 void FwFlashControlPanel::resetProgress() {
     m_progress->setValue(0);
+}
+
+void FwFlashControlPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QGroupBox::changeEvent(event);
+}
+
+void FwFlashControlPanel::retranslateUi() {
+    setTitle(tr("烧录控制"));
+    if (m_startBtn != nullptr) {
+        m_startBtn->setText(tr("开始烧录"));
+    }
+    if (m_cancelBtn != nullptr) {
+        m_cancelBtn->setText(tr("取消烧录"));
+    }
+    // 阶段文字若处于空闲默认态，随语言切换重译；进行中的真实阶段消息保持原状
+    if (m_stageIsIdle && m_stageLabel != nullptr) {
+        m_stageLabel->setText(tr("空闲"));
+    }
 }

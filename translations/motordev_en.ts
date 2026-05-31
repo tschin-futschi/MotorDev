@@ -226,120 +226,136 @@
 <context>
     <name>FwFileInfoPanel</name>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="69"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="70"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="165"/>
         <source>请先选择固件文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Please select a firmware file first</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="90"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="91"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="166"/>
         <source>文件名</source>
-        <translation type="unfinished"></translation>
+        <translation>File Name</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="94"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="96"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="167"/>
         <source>文件大小</source>
-        <translation type="unfinished"></translation>
+        <translation>File Size</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="98"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="101"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="168"/>
         <source>文件格式</source>
-        <translation type="unfinished"></translation>
+        <translation>Format</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="102"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="106"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="169"/>
         <source>CRC32</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="106"/>
-        <source>段数</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../src/widgets/fwfileinfopanel.cpp" line="111"/>
-        <source>地址范围</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="170"/>
+        <source>段数</source>
+        <translation>Segments</translation>
     </message>
     <message>
         <location filename="../src/widgets/fwfileinfopanel.cpp" line="116"/>
-        <source>有效字节</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="171"/>
+        <source>地址范围</source>
+        <translation>Address Range</translation>
     </message>
     <message>
         <location filename="../src/widgets/fwfileinfopanel.cpp" line="121"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="172"/>
+        <source>有效字节</source>
+        <translation>Effective Bytes</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="126"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="173"/>
         <source>自动补齐</source>
-        <translation type="unfinished"></translation>
+        <translation>Auto-pad</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="154"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="178"/>
         <source>解析失败：%1</source>
-        <translation type="unfinished"></translation>
+        <translation>Parse failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="164"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="188"/>
         <source>Binary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="165"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="189"/>
         <source>Intel HEX</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="166"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="190"/>
         <source>Dongwoon HL9788N hex</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="167"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="191"/>
         <source>Dongwoon DW9786 hex</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="168"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="192"/>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="207"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="231"/>
         <source>%1 原始行 + %2 填充 0 行 + footer (CRC32=%3, 末行全 0)</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 original lines + %2 zero-padding lines + footer (CRC32=%3, last line all 0)</translation>
     </message>
 </context>
 <context>
     <name>FwFlashControlPanel</name>
     <message>
-        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="19"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="20"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="138"/>
         <source>烧录控制</source>
-        <translation type="unfinished"></translation>
+        <translation>Flash Control</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="23"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="24"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="123"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="147"/>
         <source>空闲</source>
         <translation>Idle</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="44"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="45"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="140"/>
         <source>开始烧录</source>
-        <translation type="unfinished"></translation>
+        <translation>Start Flash</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="50"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="51"/>
+        <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="143"/>
         <source>取消烧录</source>
-        <translation type="unfinished"></translation>
+        <translation>Cancel Flash</translation>
     </message>
 </context>
 <context>
     <name>FwFlashLogPanel</name>
     <message>
-        <location filename="../src/widgets/fwflashlogpanel.cpp" line="21"/>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="22"/>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="70"/>
         <source>操作日志</source>
-        <translation type="unfinished"></translation>
+        <translation>Operation Log</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwflashlogpanel.cpp" line="49"/>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="50"/>
+        <location filename="../src/widgets/fwflashlogpanel.cpp" line="72"/>
         <source>清空</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear</translation>
     </message>
 </context>
 <context>
@@ -351,88 +367,94 @@
     </message>
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="306"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="422"/>
         <source>目标 IC：</source>
-        <translation type="unfinished"></translation>
+        <translation>Target IC:</translation>
     </message>
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="318"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="425"/>
         <source>目标 IC 跟随配置页 Select IC，请在配置页修改</source>
-        <translation type="unfinished"></translation>
+        <translation>Target IC follows Select IC on the Config page; change it there</translation>
     </message>
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="331"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="428"/>
         <source>固件文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Firmware File</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="349"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="350"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="431"/>
         <source>点击「浏览...」选择 .bin 或 .hex 固件文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Click "Browse..." to select a .bin or .hex firmware file</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="352"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="353"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="434"/>
         <source>浏览...</source>
         <translation>Browse...</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="357"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="358"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="437"/>
         <source>清空</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="466"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="503"/>
         <source>选择固件文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Select Firmware File</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="468"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="505"/>
         <source>Firmware Files (*.bin *.hex);;Binary (*.bin);;Intel HEX (*.hex)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="475"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="512"/>
         <source>已清空文件选择</source>
-        <translation type="unfinished"></translation>
+        <translation>File selection cleared</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="499"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="536"/>
         <source>文件解析失败：%1</source>
-        <translation type="unfinished"></translation>
+        <translation>File parse failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="513"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="550"/>
         <source>固件 %1 字节超出 AW 本地 ISP 上限（64 KB），无法烧录</source>
-        <translation type="unfinished"></translation>
+        <translation>Firmware %1 bytes exceeds the AW local ISP limit (64 KB); cannot flash</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="534"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="571"/>
         <source>已加载固件：%1（%2 字节，CRC32 0x%3）</source>
-        <translation type="unfinished"></translation>
+        <translation>Firmware loaded: %1 (%2 bytes, CRC32 0x%3)</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="547"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="584"/>
         <source>%1 仅 %2 行（&lt; %3），已自动补齐：填 0 + footer CRC32 0x%4，实际烧入 %5 字节</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 has only %2 lines (&lt; %3); auto-padded: zero-fill + footer CRC32 0x%4, %5 bytes actually flashed</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="560"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="597"/>
         <source>已保存补齐烧录文件：%1</source>
-        <translation type="unfinished"></translation>
+        <translation>Padded flash file saved: %1</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="564"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="601"/>
         <source>补齐烧录文件保存失败（不影响继续烧录）：%1</source>
-        <translation type="unfinished"></translation>
+        <translation>Failed to save the padded flash file (flashing can still continue): %1</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="569"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="606"/>
         <source>固件 %1 字节非 4 字节对齐，已自动末尾补 %2 字节 0xFF → %3 字节后写入</source>
-        <translation type="unfinished"></translation>
+        <translation>Firmware %1 bytes is not 4-byte aligned; auto-padded %2 bytes of 0xFF at the end → written as %3 bytes</translation>
     </message>
     <message>
-        <location filename="../src/tabs/fwflashtab.cpp" line="628"/>
+        <location filename="../src/tabs/fwflashtab.cpp" line="665"/>
         <source>请先选择 IC 与有效固件文件</source>
-        <translation type="unfinished"></translation>
+        <translation>Please select an IC and a valid firmware file first</translation>
     </message>
 </context>
 <context>
@@ -445,7 +467,7 @@
     <message>
         <location filename="../src/widgets/logpanel.cpp" line="129"/>
         <source>清空</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear</translation>
     </message>
 </context>
 <context>
@@ -975,17 +997,17 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
         <translation>Start Sampling</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopeplotwidget.cpp" line="508"/>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="516"/>
         <source>重置缩放</source>
         <translation>Reset Zoom</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopeplotwidget.cpp" line="978"/>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="986"/>
         <source>Live scope preview</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopeplotwidget.cpp" line="978"/>
+        <location filename="../src/widgets/scopeplotwidget.cpp" line="986"/>
         <source>Scope idle preview</source>
         <translation type="unfinished"></translation>
     </message>

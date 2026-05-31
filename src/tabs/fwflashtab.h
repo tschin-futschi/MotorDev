@@ -32,6 +32,8 @@ class FwFileInfoPanel;
 class FwFlashControlPanel;
 class FwFlashLogPanel;
 class QComboBox;
+class QEvent;
+class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -63,6 +65,9 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新本页静态可见文字
+    void changeEvent(QEvent *event) override;
+
 private slots:
     void onBrowseClicked();
     void onClearFileClicked();
@@ -79,6 +84,7 @@ private slots:
 private:
     void setupUi();
     void connectSignals();
+    void retranslateUi();   ///< 重设本页静态可见文字（setupUi 末尾 + 语言切换调用）
     void rebuildIcCombo();
     void syncIcFromContext();   ///< 目标 IC 只读跟随配置页 Select IC（DeviceContext）
     void parseAndShowFile(const QString &path);
@@ -104,10 +110,12 @@ private:
     bool m_splitterInitialSized = false;  ///< 仅第一次 show 时设初始 1:1，之后由用户拖动决定
 
     // --- 1. IC 选择栏 ---
+    QLabel *m_icLabel = nullptr;        ///< "目标 IC：" 标签
     QComboBox *m_icCombo = nullptr;
     QLabel *m_icDescLabel = nullptr;
 
     // --- 2. 文件选择栏 ---
+    QGroupBox *m_fileCard = nullptr;    ///< "固件文件" 卡片
     QLineEdit *m_pathEdit = nullptr;
     QPushButton *m_browseBtn = nullptr;
     QPushButton *m_clearFileBtn = nullptr;

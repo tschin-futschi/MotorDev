@@ -7,6 +7,7 @@
 #include "ui/style_constants.h"
 
 #include <QDateTime>
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -56,6 +57,20 @@ void FwFlashLogPanel::setupUi() {
 
 void FwFlashLogPanel::clearAll() {
     m_textEdit->clear();
+}
+
+void FwFlashLogPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QGroupBox::changeEvent(event);
+}
+
+void FwFlashLogPanel::retranslateUi() {
+    setTitle(tr("操作日志"));
+    if (m_clearBtn != nullptr) {
+        m_clearBtn->setText(tr("清空"));
+    }
 }
 
 void FwFlashLogPanel::appendColored(const QString &color,

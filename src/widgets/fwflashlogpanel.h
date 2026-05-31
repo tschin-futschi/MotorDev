@@ -10,6 +10,7 @@
 
 #include <QGroupBox>
 
+class QEvent;
 class QPlainTextEdit;
 class QPushButton;
 
@@ -27,8 +28,15 @@ public slots:
     void appendOk(const QString &message);
     void clearAll();
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新标题与清空按钮
+    void changeEvent(QEvent *event) override;
+
 private:
     void setupUi();
+
+    /// @brief 重设标题与清空按钮文字
+    void retranslateUi();
     void appendColored(const QString &color, const QString &level, const QString &message);
 
     QPlainTextEdit *m_textEdit = nullptr;

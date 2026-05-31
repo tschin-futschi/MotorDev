@@ -14,6 +14,7 @@
 
 #include <QWidget>
 
+class QEvent;
 class QLabel;
 class QStackedWidget;
 struct FirmwareInfo;
@@ -31,12 +32,25 @@ public:
     /// @brief 清空显示，回到空提示
     void clear();
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新固定字段标签
+    void changeEvent(QEvent *event) override;
+
 private:
     void setupUi();
+
+    /// @brief 重设空提示与各固定字段标签文字（值文本为动态数据，不在此处理）
+    void retranslateUi();
 
     QStackedWidget *m_stack = nullptr;
     QLabel *m_emptyLabel = nullptr;
     QLabel *m_errorLabel = nullptr;
+
+    // 固定字段标签（提为成员以支持语言即时切换）
+    QLabel *m_fileNameLabel = nullptr;
+    QLabel *m_fileSizeLabel = nullptr;
+    QLabel *m_formatLabel = nullptr;
+    QLabel *m_crc32Label = nullptr;
 
     QLabel *m_fileNameValue = nullptr;
     QLabel *m_fileSizeValue = nullptr;
