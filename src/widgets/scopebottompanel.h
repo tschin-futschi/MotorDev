@@ -19,8 +19,10 @@
 #include <QWidget>
 
 class ScopeChannelStrip;
+class QAction;
 class QComboBox;
 class QEvent;
+class QLabel;
 class QLineEdit;
 class QMenu;
 class QPushButton;
@@ -103,12 +105,19 @@ signals:
     void yAxisAutoRequested();
     void yAxisManualRequested(double minValue, double maxValue);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新本面板及两浮窗的可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 事件过滤器 — 监听覆盖窗口外部点击以自动关闭
     bool eventFilter(QObject *watched, QEvent *event) override;
 
     void setupUi();
     void connectSignals();
+
+    /// @brief 重设本面板所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     /// @brief 创建覆盖窗口（标题栏 + 内容 + 关闭按钮）
     QWidget *createOverlayWindow(const QString &title, QWidget *content, const QSize &size);
@@ -130,6 +139,9 @@ private:
     QWidget *m_channelFrame = nullptr;              ///< 通道条容器框架
 
     // --- 采样配置控件 ---
+    QLabel *m_intervalLabel = nullptr;               ///< "采样时间间隔"标签
+    QLabel *m_windowLabel = nullptr;                 ///< "显示时间窗口"标签
+    QLabel *m_recordDirLabel = nullptr;              ///< "波形存储目录"标签
     QComboBox *m_intervalCombo = nullptr;            ///< 采样间隔下拉框
     QToolButton *m_yAxisButton = nullptr;            ///< Y 轴模式按钮
     QComboBox *m_windowCombo = nullptr;              ///< 显示窗口下拉框
@@ -153,6 +165,8 @@ private:
     QWidget *m_registerWindow = nullptr;             ///< 寄存器面板覆盖窗口
     QWidget *m_generatorWindow = nullptr;            ///< 生成器面板覆盖窗口
     QMenu *m_yAxisMenu = nullptr;                    ///< Y 轴模式弹出菜单
+    QAction *m_yAxisAutoAction = nullptr;            ///< Y 轴"自动"菜单项
+    QAction *m_yAxisManualAction = nullptr;          ///< Y 轴"手动…"菜单项
 
     // --- 状态 ---
     bool m_channelsVisible = false;                  ///< 通道条是否展开

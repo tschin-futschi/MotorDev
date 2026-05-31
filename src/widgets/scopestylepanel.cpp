@@ -19,6 +19,7 @@
 
 #include <QColorDialog>
 #include <QComboBox>
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -188,16 +189,14 @@ void ScopeStylePanel::setupUi() {
     rootLayout->setContentsMargins(8, 8, 8, 8);
 
     // 标题
-    auto *titleLabel = new QLabel(this);
-    titleLabel->setObjectName(QStringLiteral("titleLabel"));
-    titleLabel->setText(tr("通道样式"));
-    rootLayout->addWidget(titleLabel);
+    m_titleLabel = new QLabel(this);
+    m_titleLabel->setObjectName(QStringLiteral("titleLabel"));
+    rootLayout->addWidget(m_titleLabel);
 
     // 恢复默认按钮
     m_defaultButton = new QPushButton(this);
     m_defaultButton->setObjectName(QStringLiteral("defaultButton"));
     m_defaultButton->setProperty("buttonRole", QStringLiteral("default"));
-    m_defaultButton->setText(tr("恢复默认"));
     rootLayout->addWidget(m_defaultButton);
 
     // ---------- 8 行通道样式控件 ----------
@@ -245,4 +244,37 @@ void ScopeStylePanel::setupUi() {
 
     // 底部弹簧
     rootLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+/// @brief 语言切换时刷新所有可见文字。
+void ScopeStylePanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设标题、恢复默认按钮，并按当前语言重排线型下拉项（保留当前选中项）。
+void ScopeStylePanel::retranslateUi() {
+    m_titleLabel->setText(tr("通道样式"));
+    m_defaultButton->setText(tr("恢复默认"));
+
+    const QStringList comboItems = {tr("实线"), tr("虚线"), tr("点线"), tr("点划线"), tr("实点线")};
+    for (int index = 0; index < kChannelCount; ++index) {
+        QComboBox *combo = m_rows[index].styleCombo;
+        if (combo == nullptr) {
+            continue;
+        }
+        const QSignalBlocker blocker(combo);
+        const int current = combo->currentIndex();
+        combo->clear();
+        combo->addItems(comboItems);
+        combo->setCurrentIndex(current);
+    }
 }

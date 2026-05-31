@@ -45,9 +45,16 @@ signals:
     /// @brief 通道地址文本变化
     void addressChanged(int index, const QString &text);
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新占位文字
+    void changeEvent(QEvent *event) override;
+
 private:
     void setupUi();
     void connectSignals();
+
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     QCheckBox *m_checkBox = nullptr;    ///< 通道启用复选框（显示 "CH#"）
     QLineEdit *m_descEdit = nullptr;    ///< 描述输入框

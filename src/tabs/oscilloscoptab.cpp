@@ -600,6 +600,14 @@ void OscilloscopTab::keyPressEvent(QKeyEvent *event) {
     QWidget::keyPressEvent(event);
 }
 
+/// @brief 语言切换时刷新底部跑马灯（其文字由本类按当前状态拼装，子面板各自处理自身文字）。
+void OscilloscopTab::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        refreshMarqueeStatus();
+    }
+    QWidget::changeEvent(event);
+}
+
 // =============================================================================
 // 视图模式转换
 // =============================================================================
@@ -718,22 +726,27 @@ void OscilloscopTab::refreshMarqueeStatus() {
     if (m_scopeRunning) {
         QString sampleText = m_sampleIntervalText;
         sampleText.remove(QLatin1Char(' '));
-        parts << QStringLiteral("Sampling @ %1").arg(sampleText);
+        parts << tr("采样中 @ %1").arg(sampleText);
     }
     if (m_recordService != nullptr && m_recordService->isRecording()) {
-        parts << QStringLiteral("● Rec → %1").arg(m_recordService->currentFileName());
+        parts << tr("● 记录 → %1").arg(m_recordService->currentFileName());
     }
     if (m_cyclicWriteService != nullptr && m_cyclicWriteService->isRunning()) {
-        parts << QStringLiteral("Cyclic Write @ %1ms").arg(m_cyclicWriteService->intervalMs());
+        parts << tr("循环写入 @ %1ms").arg(m_cyclicWriteService->intervalMs());
     }
     if (m_generatorService != nullptr && m_generatorService->isRunning()) {
         if (m_generatorService->modeLabel() == QStringLiteral("Cosine")) {
-            parts << QStringLiteral("Generator: Cosine %1ch").arg(m_generatorService->cosineChannelCount());
+            parts << tr("生成器：余弦 %1 通道").arg(m_generatorService->cosineChannelCount());
         } else {
-            parts << QStringLiteral("Generator: %1").arg(m_generatorService->modeLabel());
+            // modeLabel() 为服务层英文标识（Linear/Sawtooth），在展示层映射为中文
+            const QString mode = m_generatorService->modeLabel();
+            const QString modeText = mode == QStringLiteral("Linear")     ? tr("线性")
+                                     : mode == QStringLiteral("Sawtooth") ? tr("锯齿")
+                                                                          : mode;
+            parts << tr("生成器：%1").arg(modeText);
         }
     }
 
-    m_bottomPanel->marqueeLabel()->setText(parts.isEmpty() ? QStringLiteral("Idle")
+    m_bottomPanel->marqueeLabel()->setText(parts.isEmpty() ? tr("空闲")
                                                            : parts.join(QStringLiteral("  |  ")));
 }

@@ -13,6 +13,8 @@
 #include <QString>
 #include <QWidget>
 
+class QEvent;
+class QLabel;
 class QLineEdit;
 class QPushButton;
 class QJsonObject;
@@ -80,11 +82,18 @@ signals:
     void stopRequested();               ///< 停止循环写入
     void clearPanelRequested();         ///< 清空面板
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     static constexpr int RowCount = 8;  ///< 面板行数
 
     void setupUi();
     void connectSignals();
+
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
 
     /// @brief 校验指定行数值文本，非法（非空且解析失败）则标红
     void validateValueRow(int row);
@@ -103,6 +112,7 @@ private:
     QLineEdit *m_valueEdits[RowCount] = {};     ///< 8 行值输入框
     QPushButton *m_readButtons[RowCount] = {};  ///< 8 个读按钮
     QPushButton *m_writeButtons[RowCount] = {}; ///< 8 个写按钮
+    QLabel *m_intervalLabel = nullptr;          ///< "下发时间间隔"标签
     QLineEdit *m_intervalEdit = nullptr;        ///< 循环写入间隔输入框
     QPushButton *m_startButton = nullptr;       ///< 启动循环写入按钮
     QPushButton *m_stopButton = nullptr;        ///< 停止循环写入按钮

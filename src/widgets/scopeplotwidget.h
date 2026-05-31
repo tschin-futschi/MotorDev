@@ -124,6 +124,9 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void leaveEvent(QEvent *event) override;
 
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新采样按钮文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 拖拽缩放方向
     enum class DragZoomMode {

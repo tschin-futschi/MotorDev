@@ -14,6 +14,7 @@
 #include "protocol/register_utils.h"
 #include "ui/repolish.h"
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -361,10 +362,9 @@ void ScopeRegisterPanel::setupUi() {
     intervalRow->setContentsMargins(0, 10, 0, 0);       // 与上方行间留出间距
     rootLayout->addLayout(intervalRow);
 
-    auto *intervalLabel = new QLabel(this);
-    intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
-    intervalLabel->setText(tr("下发时间间隔"));
-    intervalRow->addWidget(intervalLabel);
+    m_intervalLabel = new QLabel(this);
+    m_intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
+    intervalRow->addWidget(m_intervalLabel);
 
     // --- 间隔输入框 ---
     m_intervalEdit = new QLineEdit(this);
@@ -404,4 +404,42 @@ void ScopeRegisterPanel::setupUi() {
     m_formatToggleButton->setProperty("buttonRole", QStringLiteral("action-format"));
     m_formatToggleButton->setText(QStringLiteral("HEX"));    // 默认 HEX 模式（与 m_hexMode 一致）
     intervalRow->addWidget(m_formatToggleButton);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+/// @brief 语言切换时刷新所有可见文字。
+void ScopeRegisterPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设 8 行 R/W 按钮、间隔标签与底部控制按钮文字（HEX/DEC 为保留术语不译）。
+void ScopeRegisterPanel::retranslateUi() {
+    for (int row = 0; row < RowCount; ++row) {
+        if (m_readButtons[row] != nullptr) {
+            m_readButtons[row]->setText(tr("读"));
+        }
+        if (m_writeButtons[row] != nullptr) {
+            m_writeButtons[row]->setText(tr("写"));
+        }
+    }
+    if (m_intervalLabel != nullptr) {
+        m_intervalLabel->setText(tr("下发时间间隔"));
+    }
+    if (m_startButton != nullptr) {
+        m_startButton->setText(tr("启动"));
+    }
+    if (m_stopButton != nullptr) {
+        m_stopButton->setText(tr("停止"));
+    }
+    if (m_clearButton != nullptr) {
+        m_clearButton->setText(tr("清除面板"));
+    }
 }

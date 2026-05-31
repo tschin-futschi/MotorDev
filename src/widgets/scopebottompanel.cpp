@@ -79,10 +79,10 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     m_registerWindow = createOverlayWindow(tr("寄存器读写"), m_registerPanel, QSize(500, 400));
     m_generatorWindow = createOverlayWindow(tr("波形生成器"), m_generatorPanel, QSize(420, 340));
 
-    // ---------- Y 轴菜单：Auto / Manual ----------
+    // ---------- Y 轴菜单：自动 / 手动 ----------
     m_yAxisMenu = new QMenu(m_yAxisButton);
-    m_yAxisMenu->addAction(tr("Auto"));
-    m_yAxisMenu->addAction(tr("Manual..."));
+    m_yAxisAutoAction = m_yAxisMenu->addAction(tr("自动"));
+    m_yAxisManualAction = m_yAxisMenu->addAction(tr("手动…"));
     m_yAxisButton->setMenu(m_yAxisMenu);
 
     // 采样间隔 / 显示窗口默认值统一取自 SamplingConfig（唯一来源）。
@@ -91,6 +91,60 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     m_windowCombo->setCurrentText(SamplingConfig::defaultDisplayWindowLabel());
 
     connectSignals();
+    retranslateUi();    // 设置全部静态文字，并刷新面板/ Y 轴按钮的动态文字
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+/// @brief 语言切换时刷新本面板及两个覆盖浮窗的可见文字。
+///
+/// 浮窗为 Qt::Tool 顶级窗口，不随本面板自动收到 LanguageChange，
+/// 其窗口标题在此主动重设；浮窗内部控件（寄存器/生成器面板）各自处理。
+void ScopeBottomPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设本面板所有静态文字，并触发面板切换按钮 / Y 轴按钮的动态文字刷新。
+void ScopeBottomPanel::retranslateUi() {
+    if (m_intervalLabel != nullptr) {
+        m_intervalLabel->setText(tr("采样时间间隔"));
+    }
+    if (m_windowLabel != nullptr) {
+        m_windowLabel->setText(tr("显示时间窗口"));
+    }
+    if (m_recordDirLabel != nullptr) {
+        m_recordDirLabel->setText(tr("波形存储目录"));
+    }
+    if (m_recordDirEdit != nullptr) {
+        m_recordDirEdit->setPlaceholderText(tr("数据记录保存目录（采样时自动写入 CSV）"));
+    }
+    if (m_recordDirBrowseButton != nullptr) {
+        m_recordDirBrowseButton->setText(tr("浏览…"));
+    }
+    if (m_recordOpenButton != nullptr) {
+        m_recordOpenButton->setText(tr("打开"));
+        m_recordOpenButton->setToolTip(tr("用 Excel 打开最新的记录文件"));
+    }
+    if (m_yAxisAutoAction != nullptr) {
+        m_yAxisAutoAction->setText(tr("自动"));
+    }
+    if (m_yAxisManualAction != nullptr) {
+        m_yAxisManualAction->setText(tr("手动…"));
+    }
+    // 覆盖浮窗标题（独立顶级窗口，需主动重设）
+    if (m_registerWindow != nullptr) {
+        m_registerWindow->setWindowTitle(tr("寄存器读写"));
+    }
+    if (m_generatorWindow != nullptr) {
+        m_generatorWindow->setWindowTitle(tr("波形生成器"));
+    }
+
+    // 动态文字（折叠/显隐状态相关）由既有刷新函数按当前状态重设
     refreshPanels();
     refreshYAxisButton();
 }
@@ -426,14 +480,14 @@ void ScopeBottomPanel::connectSignals() {
             return;
         }
 
-        if (action->text() == tr("Auto")) {
+        if (action == m_yAxisAutoAction) {
             m_yAxisAuto = true;
             refreshYAxisButton();
             emit yAxisAutoRequested();
             return;
         }
 
-        // Manual: 弹出输入对话框
+        // 手动：弹出输入对话框
         double minValue = m_manualYMin;
         double maxValue = m_manualYMax;
         if (!promptManualYAxisRange(minValue, maxValue)) {
@@ -515,10 +569,9 @@ void ScopeBottomPanel::setupUi() {
     channelLayout->addLayout(channelHeaderLayout);
 
     // 采样间隔选择
-    auto *intervalLabel = new QLabel(m_channelFrame);
-    intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
-    intervalLabel->setText(tr("采样时间间隔"));
-    channelHeaderLayout->addWidget(intervalLabel);
+    m_intervalLabel = new QLabel(m_channelFrame);
+    m_intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
+    channelHeaderLayout->addWidget(m_intervalLabel);
 
     m_intervalCombo = new QComboBox(m_channelFrame);
     m_intervalCombo->setObjectName(QStringLiteral("intervalCombo"));
@@ -532,14 +585,12 @@ void ScopeBottomPanel::setupUi() {
     m_yAxisButton->setMinimumSize(QSize(Style::Size::ScopeYAxisButtonMinW, 0));
     m_yAxisButton->setPopupMode(QToolButton::InstantPopup);
     m_yAxisButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    m_yAxisButton->setText(tr("Y 轴：自动"));
     channelHeaderLayout->addWidget(m_yAxisButton);
 
     // 显示窗口时长选择
-    auto *windowLabel = new QLabel(m_channelFrame);
-    windowLabel->setObjectName(QStringLiteral("windowLabel"));
-    windowLabel->setText(tr("显示时间窗口"));
-    channelHeaderLayout->addWidget(windowLabel);
+    m_windowLabel = new QLabel(m_channelFrame);
+    m_windowLabel->setObjectName(QStringLiteral("windowLabel"));
+    channelHeaderLayout->addWidget(m_windowLabel);
 
     m_windowCombo = new QComboBox(m_channelFrame);
     m_windowCombo->setObjectName(QStringLiteral("windowCombo"));
@@ -549,28 +600,23 @@ void ScopeBottomPanel::setupUi() {
     channelHeaderLayout->addWidget(m_windowCombo);
 
     // 数据记录目录（替换原 Capture Note）：标签 + 路径框（占满右侧）+ 浏览按钮
-    auto *recordDirLabel = new QLabel(m_channelFrame);
-    recordDirLabel->setObjectName(QStringLiteral("recordDirLabel"));
-    recordDirLabel->setText(tr("波形存储目录"));
-    channelHeaderLayout->addWidget(recordDirLabel);
+    m_recordDirLabel = new QLabel(m_channelFrame);
+    m_recordDirLabel->setObjectName(QStringLiteral("recordDirLabel"));
+    channelHeaderLayout->addWidget(m_recordDirLabel);
 
     m_recordDirEdit = new QLineEdit(m_channelFrame);
     m_recordDirEdit->setObjectName(QStringLiteral("recordDirEdit"));
     m_recordDirEdit->setMinimumSize(QSize(220, 0));
-    m_recordDirEdit->setPlaceholderText(QStringLiteral("数据记录保存目录（采样时自动写入 CSV）"));
     channelHeaderLayout->addWidget(m_recordDirEdit);
 
     m_recordDirBrowseButton = new QPushButton(m_channelFrame);
     m_recordDirBrowseButton->setObjectName(QStringLiteral("recordDirBrowseButton"));
     m_recordDirBrowseButton->setProperty("buttonRole", QStringLiteral("toggle"));
-    m_recordDirBrowseButton->setText(QStringLiteral("浏览…"));
     channelHeaderLayout->addWidget(m_recordDirBrowseButton);
 
     m_recordOpenButton = new QPushButton(m_channelFrame);
     m_recordOpenButton->setObjectName(QStringLiteral("recordOpenButton"));
     m_recordOpenButton->setProperty("buttonRole", QStringLiteral("toggle"));
-    m_recordOpenButton->setText(QStringLiteral("打开"));
-    m_recordOpenButton->setToolTip(QStringLiteral("用 Excel 打开最新的记录文件"));
     channelHeaderLayout->addWidget(m_recordOpenButton);
 
     // --- 通道条行（8 个 ScopeChannelStrip 的占位容器） ---

@@ -173,6 +173,14 @@ void ScopePlotWidget::resizeEvent(QResizeEvent *event) {
     updateSamplingButtonGeometry();
 }
 
+/// @brief 语言切换时刷新采样按钮文字（右键菜单每次弹出时重建，无需在此处理）。
+void ScopePlotWidget::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        updateSamplingButton();
+    }
+    QOpenGLWidget::changeEvent(event);
+}
+
 void ScopePlotWidget::setViewMode(ScopeViewMode mode) {
     if (m_viewMode == mode) {
         return;

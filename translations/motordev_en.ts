@@ -142,7 +142,7 @@
     <message>
         <location filename="../src/tabs/flashstoragetab.cpp" line="31"/>
         <source>空闲</source>
-        <translation type="unfinished"></translation>
+        <translation>Idle</translation>
     </message>
     <message>
         <location filename="../src/tabs/flashstoragetab.cpp" line="62"/>
@@ -316,7 +316,7 @@
     <message>
         <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="23"/>
         <source>空闲</source>
-        <translation type="unfinished"></translation>
+        <translation>Idle</translation>
     </message>
     <message>
         <location filename="../src/widgets/fwflashcontrolpanel.cpp" line="44"/>
@@ -347,7 +347,7 @@
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="203"/>
         <source>空闲</source>
-        <translation type="unfinished"></translation>
+        <translation>Idle</translation>
     </message>
     <message>
         <location filename="../src/tabs/fwflashtab.cpp" line="306"/>
@@ -472,6 +472,49 @@
 STM32 已进入 LED 快闪死循环，不再响应任何命令。
 请处理硬件问题后重启 MCU。</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>OscilloscopTab</name>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="729"/>
+        <source>采样中 @ %1</source>
+        <translation>Sampling @ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="732"/>
+        <source>● 记录 → %1</source>
+        <translation>● Rec → %1</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="735"/>
+        <source>循环写入 @ %1ms</source>
+        <translation>Cyclic Write @ %1ms</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="739"/>
+        <source>生成器：余弦 %1 通道</source>
+        <translation>Generator: Cosine %1 ch</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="743"/>
+        <source>线性</source>
+        <translation>Linear</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="744"/>
+        <source>锯齿</source>
+        <translation>Sawtooth</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="746"/>
+        <source>生成器：%1</source>
+        <translation>Generator: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/tabs/oscilloscoptab.cpp" line="750"/>
+        <source>空闲</source>
+        <translation>Idle</translation>
     </message>
 </context>
 <context>
@@ -664,134 +707,156 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
     <name>ScopeBottomPanel</name>
     <message>
         <location filename="../src/widgets/scopebottompanel.cpp" line="79"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="141"/>
         <source>寄存器读写</source>
-        <translation type="unfinished"></translation>
+        <translation>Register R/W</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopebottompanel.cpp" line="80"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="144"/>
         <source>波形生成器</source>
-        <translation type="unfinished"></translation>
+        <translation>Wave Generator</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="356"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="642"/>
+        <source>隐藏通道</source>
+        <translation>Hide Channels</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="356"/>
+        <source>显示通道</source>
+        <translation>Show Channels</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="357"/>
+        <source>隐藏寄存器</source>
+        <translation>Hide Register</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="357"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="649"/>
+        <source>显示寄存器</source>
+        <translation>Show Register</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="358"/>
+        <source>隐藏生成器</source>
+        <translation>Hide Generator</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="358"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="656"/>
+        <source>显示生成器</source>
+        <translation>Show Generator</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="366"/>
+        <source>Y 轴：自动</source>
+        <translation>Y Axis: Auto</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="370"/>
+        <source>Y 轴：%1 ~ %2</source>
+        <translation>Y Axis: %1 ~ %2</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="386"/>
+        <source>设置 Y Axis 范围</source>
+        <translation>Set Y Axis Range</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="399"/>
+        <source>例如 -1000</source>
+        <translation>e.g. -1000</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="400"/>
+        <source>例如 1000</source>
+        <translation>e.g. 1000</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="401"/>
+        <source>最小值</source>
+        <translation>Min</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="402"/>
+        <source>最大值</source>
+        <translation>Max</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="469"/>
+        <source>选择数据记录目录</source>
+        <translation>Select Record Directory</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="115"/>
+        <source>采样时间间隔</source>
+        <translation>Sample Interval</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopebottompanel.cpp" line="84"/>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="429"/>
-        <source>Auto</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="134"/>
+        <source>自动</source>
+        <translation>Auto</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopebottompanel.cpp" line="85"/>
-        <source>Manual...</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="137"/>
+        <source>手动…</source>
+        <translation>Manual…</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="302"/>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="596"/>
-        <source>隐藏通道</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="302"/>
-        <source>显示通道</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="303"/>
-        <source>隐藏寄存器</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="303"/>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="603"/>
-        <source>显示寄存器</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="304"/>
-        <source>隐藏生成器</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="304"/>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="610"/>
-        <source>显示生成器</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="312"/>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="535"/>
-        <source>Y 轴：自动</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="316"/>
-        <source>Y 轴：%1 ~ %2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="332"/>
-        <source>设置 Y Axis 范围</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="345"/>
-        <source>例如 -1000</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="346"/>
-        <source>例如 1000</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="347"/>
-        <source>最小值</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="348"/>
-        <source>最大值</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="415"/>
-        <source>选择数据记录目录</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="520"/>
-        <source>采样时间间隔</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="541"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="118"/>
         <source>显示时间窗口</source>
-        <translation type="unfinished"></translation>
+        <translation>Display Window</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="554"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="121"/>
         <source>波形存储目录</source>
-        <translation type="unfinished"></translation>
+        <translation>Record Dir</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopebottompanel.cpp" line="616"/>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="124"/>
+        <source>数据记录保存目录（采样时自动写入 CSV）</source>
+        <translation>Record save directory (CSV written automatically while sampling)</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="127"/>
+        <source>浏览…</source>
+        <translation>Browse…</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="130"/>
+        <source>打开</source>
+        <translation>Open</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="131"/>
+        <source>用 Excel 打开最新的记录文件</source>
+        <translation>Open the latest record file in Excel</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopebottompanel.cpp" line="662"/>
         <source>空闲</source>
-        <translation type="unfinished"></translation>
+        <translation>Idle</translation>
     </message>
 </context>
 <context>
     <name>ScopeChannelStrip</name>
     <message>
-        <location filename="../src/widgets/scopechannelstrip.cpp" line="91"/>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="92"/>
         <source>CH1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopechannelstrip.cpp" line="99"/>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="126"/>
         <source>描述</source>
         <translation>Desc</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopechannelstrip.cpp" line="107"/>
+        <location filename="../src/widgets/scopechannelstrip.cpp" line="127"/>
         <source>0x0000</source>
         <translation type="unfinished"></translation>
     </message>
@@ -799,88 +864,102 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
 <context>
     <name>ScopeGeneratorPanel</name>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="230"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="388"/>
         <source>波形生成器</source>
-        <translation type="unfinished"></translation>
+        <translation>Wave Generator</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="241"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="242"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="391"/>
         <source>线性</source>
-        <translation type="unfinished"></translation>
+        <translation>Linear</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="244"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="245"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="394"/>
         <source>余弦</source>
-        <translation type="unfinished"></translation>
+        <translation>Cosine</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="246"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="247"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="397"/>
         <source>锯齿</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="275"/>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="353"/>
-        <source>寄存器地址</source>
-        <translation type="unfinished"></translation>
+        <translation>Sawtooth</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopegeneratorpanel.cpp" line="276"/>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="354"/>
-        <source>最小值</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="345"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="408"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="414"/>
+        <source>寄存器地址</source>
+        <translation>Register Address</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopegeneratorpanel.cpp" line="277"/>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="355"/>
-        <source>最大值</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="346"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="409"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="415"/>
+        <source>最小值</source>
+        <translation>Min</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopegeneratorpanel.cpp" line="278"/>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="356"/>
-        <source>步进</source>
-        <translation type="unfinished"></translation>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="347"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="410"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="416"/>
+        <source>最大值</source>
+        <translation>Max</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopegeneratorpanel.cpp" line="279"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="348"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="411"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="417"/>
+        <source>步进</source>
+        <translation>Step</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="280"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="412"/>
         <source>间隔（毫秒）</source>
-        <translation type="unfinished"></translation>
+        <translation>Interval (ms)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="312"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="420"/>
         <source>幅值</source>
-        <translation type="unfinished"></translation>
+        <translation>Amplitude</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="313"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="423"/>
         <source>偏移</source>
-        <translation type="unfinished"></translation>
+        <translation>Offset</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="316"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="426"/>
         <source>频率（Hz）</source>
-        <translation type="unfinished"></translation>
+        <translation>Frequency (Hz)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="324"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="430"/>
         <source>CH%1 地址</source>
-        <translation type="unfinished"></translation>
+        <translation>CH%1 Addr</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="325"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="433"/>
         <source>CH%1 相位（度）</source>
-        <translation type="unfinished"></translation>
+        <translation>CH%1 Phase (deg)</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="365"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="357"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="438"/>
         <source>启动</source>
-        <translation type="unfinished"></translation>
+        <translation>Start</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="370"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="362"/>
+        <location filename="../src/widgets/scopegeneratorpanel.cpp" line="441"/>
         <source>停止</source>
-        <translation type="unfinished"></translation>
+        <translation>Stop</translation>
     </message>
 </context>
 <context>
@@ -888,17 +967,17 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
     <message>
         <location filename="../src/widgets/scopeplotwidget.cpp" line="151"/>
         <source>停止采样</source>
-        <translation type="unfinished"></translation>
+        <translation>Stop Sampling</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopeplotwidget.cpp" line="151"/>
         <source>开始采样</source>
-        <translation type="unfinished"></translation>
+        <translation>Start Sampling</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopeplotwidget.cpp" line="508"/>
         <source>重置缩放</source>
-        <translation type="unfinished"></translation>
+        <translation>Reset Zoom</translation>
     </message>
     <message>
         <location filename="../src/widgets/scopeplotwidget.cpp" line="978"/>
@@ -937,77 +1016,87 @@ STM32 已进入 LED 快闪死循环，不再响应任何命令。
 <context>
     <name>ScopeRegisterPanel</name>
     <message>
-        <location filename="../src/widgets/scoperegisterpanel.cpp" line="344"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="345"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="427"/>
         <source>读</source>
-        <translation type="unfinished"></translation>
+        <translation>R</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scoperegisterpanel.cpp" line="353"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="354"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="430"/>
         <source>写</source>
-        <translation type="unfinished"></translation>
+        <translation>W</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scoperegisterpanel.cpp" line="366"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="434"/>
         <source>下发时间间隔</source>
-        <translation type="unfinished"></translation>
+        <translation>Interval</translation>
     </message>
     <message>
         <location filename="../src/widgets/scoperegisterpanel.cpp" line="382"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="437"/>
         <source>启动</source>
-        <translation type="unfinished"></translation>
+        <translation>Start</translation>
     </message>
     <message>
         <location filename="../src/widgets/scoperegisterpanel.cpp" line="389"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="440"/>
         <source>停止</source>
-        <translation type="unfinished"></translation>
+        <translation>Stop</translation>
     </message>
     <message>
         <location filename="../src/widgets/scoperegisterpanel.cpp" line="398"/>
+        <location filename="../src/widgets/scoperegisterpanel.cpp" line="443"/>
         <source>清除面板</source>
-        <translation type="unfinished"></translation>
+        <translation>Clear</translation>
     </message>
 </context>
 <context>
     <name>ScopeStylePanel</name>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="129"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="130"/>
         <source>选择通道颜色</source>
-        <translation type="unfinished"></translation>
+        <translation>Select Channel Color</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="193"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="265"/>
         <source>通道样式</source>
-        <translation type="unfinished"></translation>
+        <translation>Channel Style</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="200"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="266"/>
         <source>恢复默认</source>
-        <translation type="unfinished"></translation>
+        <translation>Restore Defaults</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="203"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="268"/>
         <source>实线</source>
-        <translation type="unfinished"></translation>
+        <translation>Solid</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="203"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="268"/>
         <source>虚线</source>
-        <translation type="unfinished"></translation>
+        <translation>Dash</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="203"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="268"/>
         <source>点线</source>
-        <translation type="unfinished"></translation>
+        <translation>Dot</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="203"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="268"/>
         <source>点划线</source>
-        <translation type="unfinished"></translation>
+        <translation>Dash-Dot</translation>
     </message>
     <message>
-        <location filename="../src/widgets/scopestylepanel.cpp" line="204"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="203"/>
+        <location filename="../src/widgets/scopestylepanel.cpp" line="268"/>
         <source>实点线</source>
-        <translation type="unfinished"></translation>
+        <translation>Solid-Dot</translation>
     </message>
 </context>
 <context>

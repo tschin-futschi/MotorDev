@@ -111,6 +111,9 @@ protected:
     /// @brief 键盘事件处理 — Escape 退出全屏
     void keyPressEvent(QKeyEvent *event) override;
 
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新底部跑马灯状态文字
+    void changeEvent(QEvent *event) override;
+
 private:
     /// @brief 构建 UI 布局
     void setupUi();

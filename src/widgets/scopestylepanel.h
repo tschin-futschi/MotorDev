@@ -14,6 +14,8 @@
 #include <QWidget>
 
 class QComboBox;
+class QEvent;
+class QLabel;
 class QPushButton;
 class QSpinBox;
 
@@ -47,6 +49,10 @@ signals:
     void dataPointsChanged(int index, bool showDataPoints);         ///< 数据点显示变化
     void defaultSettingsRequested();                                ///< 恢复默认请求
 
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新所有可见文字
+    void changeEvent(QEvent *event) override;
+
 private:
     static constexpr int kChannelCount = 8;     ///< 通道数量
 
@@ -61,9 +67,13 @@ private:
     void connectSignals();
     void setupUi();
 
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
+
     /// @brief 更新颜色按钮的背景色
     void updateColorButton(int index);
 
+    QLabel *m_titleLabel = nullptr;             ///< 面板标题"通道样式"
     QPushButton *m_defaultButton = nullptr;     ///< "恢复默认"按钮
     ChannelRow m_rows[kChannelCount];           ///< 8 通道控件行
 };

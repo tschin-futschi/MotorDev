@@ -14,6 +14,9 @@
 #include <QWidget>
 
 class QButtonGroup;
+class QEvent;
+class QFormLayout;
+class QLabel;
 class QLineEdit;
 class QRadioButton;
 class QPushButton;
@@ -42,6 +45,10 @@ public:
 
     /// @brief 从 JSON 回填生成器参数
     void fromJson(const QJsonObject &obj);
+
+protected:
+    /// @brief 语言切换（QEvent::LanguageChange）时刷新所有可见文字
+    void changeEvent(QEvent *event) override;
 
 signals:
     /// @brief 请求启动线性波形生成
@@ -74,6 +81,9 @@ private:
     void setupUi();
     void connectSignals();
 
+    /// @brief 重设所有用户可见文字（setupUi 末尾 + 语言切换时调用）
+    void retranslateUi();
+
     /// @brief 设置输入框错误样式
     void setFieldError(QLineEdit *edit, bool error);
 
@@ -98,12 +108,26 @@ private:
     /// @brief 清除所有输入框的错误样式
     void clearErrors();
 
+    // --- 标题 ---
+    QLabel *m_titleLabel = nullptr;             ///< 面板标题"波形生成器"
+
     // --- 模式选择 ---
     QButtonGroup *m_modeGroup = nullptr;        ///< 线性/余弦互斥按钮组
     QRadioButton *m_linearRadio = nullptr;      ///< 线性模式单选按钮
     QRadioButton *m_cosineRadio = nullptr;      ///< 余弦模式单选按钮
     QRadioButton *m_sawtoothRadio = nullptr;    ///< 锯齿波测试模式单选按钮
     QStackedWidget *m_modeStack = nullptr;      ///< 模式参数切换容器
+
+    // --- 表单布局（用于语言切换时经 labelForField 重设字段标签）---
+    QFormLayout *m_linearLayout = nullptr;      ///< 线性参数表单
+    QFormLayout *m_sawtoothLayout = nullptr;    ///< 锯齿参数表单
+
+    // --- 余弦参数标签（网格布局，需直接持有以便语言切换重设）---
+    QLabel *m_cosineAmplitudeLabel = nullptr;   ///< "幅值"
+    QLabel *m_cosineOffsetLabel = nullptr;      ///< "偏移"
+    QLabel *m_cosineFrequencyLabel = nullptr;   ///< "频率（Hz）"
+    QLabel *m_cosineAddrLabels[3] = {};         ///< "CH# 地址"
+    QLabel *m_cosinePhaseLabels[3] = {};        ///< "CH# 相位（度）"
 
     // --- 线性模式参数 ---
     QLineEdit *m_linearAddrEdit = nullptr;      ///< 目标地址

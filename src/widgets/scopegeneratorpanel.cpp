@@ -37,6 +37,7 @@
 
 #include <QAbstractButton>
 #include <QButtonGroup>
+#include <QEvent>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -227,9 +228,9 @@ void ScopeGeneratorPanel::setupUi() {
     rootLayout->setContentsMargins(10, 10, 10, 10);
 
     // --- 标题 ---
-    auto *titleLabel = new QLabel(tr("波形生成器"), this);
-    titleLabel->setObjectName(QStringLiteral("titleLabel"));
-    rootLayout->addWidget(titleLabel);
+    m_titleLabel = new QLabel(this);
+    m_titleLabel->setObjectName(QStringLiteral("titleLabel"));
+    rootLayout->addWidget(m_titleLabel);
 
     // --- 模式选择（互斥 RadioButton 组） ---
     auto *modeLayout = new QHBoxLayout();
@@ -261,10 +262,10 @@ void ScopeGeneratorPanel::setupUi() {
     // ===== 线性模式参数页 =====
     auto *linearPage = new QWidget(m_modeStack);
     linearPage->setObjectName(QStringLiteral("linearPage"));
-    auto *linearLayout = new QFormLayout(linearPage);
-    linearLayout->setObjectName(QStringLiteral("linearLayout"));
-    linearLayout->setSpacing(8);
-    linearLayout->setContentsMargins(0, 0, 0, 0);
+    m_linearLayout = new QFormLayout(linearPage);
+    m_linearLayout->setObjectName(QStringLiteral("linearLayout"));
+    m_linearLayout->setSpacing(8);
+    m_linearLayout->setContentsMargins(0, 0, 0, 0);
 
     m_linearAddrEdit = createGeneratorEdit(linearPage, QStringLiteral("linearAddrEdit"), QStringLiteral("0x0020"));
     m_linearMinEdit = createGeneratorEdit(linearPage, QStringLiteral("linearMinEdit"), QStringLiteral("-100"));
@@ -272,11 +273,11 @@ void ScopeGeneratorPanel::setupUi() {
     m_linearStepEdit = createGeneratorEdit(linearPage, QStringLiteral("linearStepEdit"), QStringLiteral("5"));
     m_linearIntervalEdit = createGeneratorEdit(linearPage, QStringLiteral("linearIntervalEdit"), QStringLiteral("100"));
 
-    linearLayout->addRow(tr("寄存器地址"), m_linearAddrEdit);
-    linearLayout->addRow(tr("最小值"), m_linearMinEdit);
-    linearLayout->addRow(tr("最大值"), m_linearMaxEdit);
-    linearLayout->addRow(tr("步进"), m_linearStepEdit);
-    linearLayout->addRow(tr("间隔（毫秒）"), m_linearIntervalEdit);
+    m_linearLayout->addRow(tr("寄存器地址"), m_linearAddrEdit);
+    m_linearLayout->addRow(tr("最小值"), m_linearMinEdit);
+    m_linearLayout->addRow(tr("最大值"), m_linearMaxEdit);
+    m_linearLayout->addRow(tr("步进"), m_linearStepEdit);
+    m_linearLayout->addRow(tr("间隔（毫秒）"), m_linearIntervalEdit);
     m_modeStack->addWidget(linearPage);
 
     // ===== 余弦模式参数页 =====
@@ -293,36 +294,27 @@ void ScopeGeneratorPanel::setupUi() {
     cosineLayout->setColumnStretch(1, 1);               // 左侧输入列弹性
     cosineLayout->setColumnStretch(3, 1);               // 右侧输入列弹性
 
-    // 辅助 lambda：在一行中创建左右两组 [标签 + 输入框]
-    auto addGlobalRow = [cosinePage, cosineLayout](int row, const QString &leftLabel, QLineEdit **leftEdit,
-                                                   const QString &leftName, const QString &leftPlaceholder,
-                                                   const QString &rightLabel, QLineEdit **rightEdit,
-                                                   const QString &rightName, const QString &rightPlaceholder) {
-        auto *lLabel = new QLabel(leftLabel, cosinePage);
-        auto *rLabel = new QLabel(rightLabel, cosinePage);
-        *leftEdit = createGeneratorEdit(cosinePage, leftName, leftPlaceholder);
-        *rightEdit = createGeneratorEdit(cosinePage, rightName, rightPlaceholder);
-        cosineLayout->addWidget(lLabel, row, 0);
-        cosineLayout->addWidget(*leftEdit, row, 1);
-        cosineLayout->addWidget(rLabel, row, 2);
-        cosineLayout->addWidget(*rightEdit, row, 3);
-    };
-
-    // 行 0：振幅 + 偏移
-    addGlobalRow(0, tr("幅值"), &m_cosineAmplitudeEdit, QStringLiteral("cosineAmplitudeEdit"), QStringLiteral("1000"),
-                 tr("偏移"), &m_cosineOffsetEdit, QStringLiteral("cosineOffsetEdit"), QStringLiteral("0"));
+    // 行 0：振幅 + 偏移（标签持有为成员，供语言切换重设）
+    m_cosineAmplitudeLabel = new QLabel(cosinePage);
+    m_cosineOffsetLabel = new QLabel(cosinePage);
+    m_cosineAmplitudeEdit = createGeneratorEdit(cosinePage, QStringLiteral("cosineAmplitudeEdit"), QStringLiteral("1000"));
+    m_cosineOffsetEdit = createGeneratorEdit(cosinePage, QStringLiteral("cosineOffsetEdit"), QStringLiteral("0"));
+    cosineLayout->addWidget(m_cosineAmplitudeLabel, 0, 0);
+    cosineLayout->addWidget(m_cosineAmplitudeEdit, 0, 1);
+    cosineLayout->addWidget(m_cosineOffsetLabel, 0, 2);
+    cosineLayout->addWidget(m_cosineOffsetEdit, 0, 3);
 
     // 行 1：频率（仅左半列）
-    auto *freqLabel = new QLabel(tr("频率（Hz）"), cosinePage);
+    m_cosineFrequencyLabel = new QLabel(cosinePage);
     m_cosineFrequencyEdit = createGeneratorEdit(cosinePage, QStringLiteral("cosineFrequencyEdit"), QStringLiteral("1.0"));
-    cosineLayout->addWidget(freqLabel, 1, 0);
+    cosineLayout->addWidget(m_cosineFrequencyLabel, 1, 0);
     cosineLayout->addWidget(m_cosineFrequencyEdit, 1, 1);
 
     // 行 2~4：3 个通道的地址 + 相位
     // 默认占位：CH1=0°, CH2=120°, CH3=240°（三相电机典型配置）
     for (int channel = 0; channel < 3; ++channel) {
-        auto *addrLabel = new QLabel(tr("CH%1 地址").arg(channel + 1), cosinePage);
-        auto *phaseLabel = new QLabel(tr("CH%1 相位（度）").arg(channel + 1), cosinePage);
+        m_cosineAddrLabels[channel] = new QLabel(cosinePage);
+        m_cosinePhaseLabels[channel] = new QLabel(cosinePage);
         m_cosineAddrEdits[channel] = createGeneratorEdit(
             cosinePage, QStringLiteral("cosineAddrEdit%1").arg(channel), channel == 0 ? QStringLiteral("0x0020") : QString());
         const QString phasePlaceholder = (channel == 0) ? QStringLiteral("0")
@@ -330,9 +322,9 @@ void ScopeGeneratorPanel::setupUi() {
                                                         : QStringLiteral("240");
         m_cosinePhaseEdits[channel] = createGeneratorEdit(
             cosinePage, QStringLiteral("cosinePhaseEdit%1").arg(channel), phasePlaceholder);
-        cosineLayout->addWidget(addrLabel, channel + 2, 0);
+        cosineLayout->addWidget(m_cosineAddrLabels[channel], channel + 2, 0);
         cosineLayout->addWidget(m_cosineAddrEdits[channel], channel + 2, 1);
-        cosineLayout->addWidget(phaseLabel, channel + 2, 2);
+        cosineLayout->addWidget(m_cosinePhaseLabels[channel], channel + 2, 2);
         cosineLayout->addWidget(m_cosinePhaseEdits[channel], channel + 2, 3);
     }
     m_modeStack->addWidget(cosinePage);
@@ -340,20 +332,20 @@ void ScopeGeneratorPanel::setupUi() {
     // ===== 锯齿波测试模式参数页 =====
     auto *sawtoothPage = new QWidget(m_modeStack);
     sawtoothPage->setObjectName(QStringLiteral("sawtoothPage"));
-    auto *sawtoothLayout = new QFormLayout(sawtoothPage);
-    sawtoothLayout->setObjectName(QStringLiteral("sawtoothLayout"));
-    sawtoothLayout->setSpacing(8);
-    sawtoothLayout->setContentsMargins(0, 0, 0, 0);
+    m_sawtoothLayout = new QFormLayout(sawtoothPage);
+    m_sawtoothLayout->setObjectName(QStringLiteral("sawtoothLayout"));
+    m_sawtoothLayout->setSpacing(8);
+    m_sawtoothLayout->setContentsMargins(0, 0, 0, 0);
 
     m_sawtoothAddrEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothAddrEdit"), QStringLiteral("0x0020"));
     m_sawtoothMinEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothMinEdit"), QStringLiteral("-100"));
     m_sawtoothMaxEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothMaxEdit"), QStringLiteral("100"));
     m_sawtoothStepEdit = createGeneratorEdit(sawtoothPage, QStringLiteral("sawtoothStepEdit"), QStringLiteral("1"));
 
-    sawtoothLayout->addRow(tr("寄存器地址"), m_sawtoothAddrEdit);
-    sawtoothLayout->addRow(tr("最小值"), m_sawtoothMinEdit);
-    sawtoothLayout->addRow(tr("最大值"), m_sawtoothMaxEdit);
-    sawtoothLayout->addRow(tr("步进"), m_sawtoothStepEdit);
+    m_sawtoothLayout->addRow(tr("寄存器地址"), m_sawtoothAddrEdit);
+    m_sawtoothLayout->addRow(tr("最小值"), m_sawtoothMinEdit);
+    m_sawtoothLayout->addRow(tr("最大值"), m_sawtoothMaxEdit);
+    m_sawtoothLayout->addRow(tr("步进"), m_sawtoothStepEdit);
     m_modeStack->addWidget(sawtoothPage);
 
     // --- 底部按钮行 ---
@@ -371,6 +363,83 @@ void ScopeGeneratorPanel::setupUi() {
     m_stopButton->setObjectName(QStringLiteral("stopButton"));
     m_stopButton->setProperty("buttonRole", QStringLiteral("generator-stop"));
     buttonLayout->addWidget(m_stopButton);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+/// @brief 语言切换时刷新所有可见文字。
+void ScopeGeneratorPanel::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设标题、模式单选、线性/锯齿/余弦各参数标签与启停按钮文字。
+///
+/// 线性/锯齿为 QFormLayout，标签经 labelForField 取得后重设；
+/// 余弦为 QGridLayout，标签直接持有为成员。
+void ScopeGeneratorPanel::retranslateUi() {
+    if (m_titleLabel != nullptr) {
+        m_titleLabel->setText(tr("波形生成器"));
+    }
+    if (m_linearRadio != nullptr) {
+        m_linearRadio->setText(tr("线性"));
+    }
+    if (m_cosineRadio != nullptr) {
+        m_cosineRadio->setText(tr("余弦"));
+    }
+    if (m_sawtoothRadio != nullptr) {
+        m_sawtoothRadio->setText(tr("锯齿"));
+    }
+
+    auto setFormLabel = [](QFormLayout *form, QWidget *field, const QString &text) {
+        if (form == nullptr) {
+            return;
+        }
+        if (auto *label = qobject_cast<QLabel *>(form->labelForField(field))) {
+            label->setText(text);
+        }
+    };
+    setFormLabel(m_linearLayout, m_linearAddrEdit, tr("寄存器地址"));
+    setFormLabel(m_linearLayout, m_linearMinEdit, tr("最小值"));
+    setFormLabel(m_linearLayout, m_linearMaxEdit, tr("最大值"));
+    setFormLabel(m_linearLayout, m_linearStepEdit, tr("步进"));
+    setFormLabel(m_linearLayout, m_linearIntervalEdit, tr("间隔（毫秒）"));
+
+    setFormLabel(m_sawtoothLayout, m_sawtoothAddrEdit, tr("寄存器地址"));
+    setFormLabel(m_sawtoothLayout, m_sawtoothMinEdit, tr("最小值"));
+    setFormLabel(m_sawtoothLayout, m_sawtoothMaxEdit, tr("最大值"));
+    setFormLabel(m_sawtoothLayout, m_sawtoothStepEdit, tr("步进"));
+
+    if (m_cosineAmplitudeLabel != nullptr) {
+        m_cosineAmplitudeLabel->setText(tr("幅值"));
+    }
+    if (m_cosineOffsetLabel != nullptr) {
+        m_cosineOffsetLabel->setText(tr("偏移"));
+    }
+    if (m_cosineFrequencyLabel != nullptr) {
+        m_cosineFrequencyLabel->setText(tr("频率（Hz）"));
+    }
+    for (int channel = 0; channel < 3; ++channel) {
+        if (m_cosineAddrLabels[channel] != nullptr) {
+            m_cosineAddrLabels[channel]->setText(tr("CH%1 地址").arg(channel + 1));
+        }
+        if (m_cosinePhaseLabels[channel] != nullptr) {
+            m_cosinePhaseLabels[channel]->setText(tr("CH%1 相位（度）").arg(channel + 1));
+        }
+    }
+
+    if (m_startButton != nullptr) {
+        m_startButton->setText(tr("启动"));
+    }
+    if (m_stopButton != nullptr) {
+        m_stopButton->setText(tr("停止"));
+    }
 }
 
 // =============================================================================

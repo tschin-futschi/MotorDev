@@ -7,6 +7,7 @@
 #include "ui/style_constants.h"
 
 #include <QCheckBox>
+#include <QEvent>
 #include <QLineEdit>
 #include <QSignalBlocker>
 #include <QSizePolicy>
@@ -96,7 +97,6 @@ void ScopeChannelStrip::setupUi() {
     m_descEdit->setObjectName(QStringLiteral("descEdit"));
     m_descEdit->setMinimumSize(QSize(0, Style::Size::ScopeChannelStripRowH));
     m_descEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeChannelStripRowH));
-    m_descEdit->setPlaceholderText(tr("描述"));
     rootLayout->addWidget(m_descEdit);
 
     // --- 寄存器地址输入框 ---
@@ -104,8 +104,27 @@ void ScopeChannelStrip::setupUi() {
     m_addrEdit->setObjectName(QStringLiteral("addrEdit"));
     m_addrEdit->setMinimumSize(QSize(0, Style::Size::ScopeChannelStripRowH));
     m_addrEdit->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeChannelStripRowH));
-    m_addrEdit->setPlaceholderText(tr("0x0000"));
     rootLayout->addWidget(m_addrEdit);
+
+    retranslateUi();
+}
+
+// =============================================================================
+// 语言切换 / 文字重设
+// =============================================================================
+
+/// @brief 语言切换时刷新占位文字。
+void ScopeChannelStrip::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
+        retranslateUi();
+    }
+    QWidget::changeEvent(event);
+}
+
+/// @brief 重设所有用户可见文字（描述/地址占位）。
+void ScopeChannelStrip::retranslateUi() {
+    m_descEdit->setPlaceholderText(tr("描述"));
+    m_addrEdit->setPlaceholderText(tr("0x0000"));
 }
 
 // =============================================================================
