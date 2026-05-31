@@ -456,8 +456,8 @@ qint16 RegisterTable::rowValue(int globalRow) const {
 // JSON 持久化（固定 TableRowCount × TableGroupCount 条）
 // =============================================================================
 
-/// @brief 保存所有行到 JSON：按 group-major × row 顺序，共 TotalRows 条
-void RegisterTable::saveConfig(const QString &path) const {
+/// @brief 采集所有行为 JSON 数组：按 group-major × row 顺序，共 TotalRows 条
+QJsonArray RegisterTable::toJsonRows() const {
     QJsonArray registers;
     for (int group = 0; group < Style::Size::TableGroupCount; ++group) {
         for (int row = 0; row < Style::Size::TableRowCount; ++row) {
@@ -471,10 +471,14 @@ void RegisterTable::saveConfig(const QString &path) const {
             registers.append(entry);
         }
     }
+    return registers;
+}
 
+/// @brief 保存所有行到 JSON 文件（复用 toJsonRows）
+void RegisterTable::saveConfig(const QString &path) const {
     QJsonObject root;
     root[QStringLiteral("version")] = 1;
-    root[QStringLiteral("registers")] = registers;
+    root[QStringLiteral("registers")] = toJsonRows();
 
     QFile file(path);
     if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -498,7 +502,11 @@ void RegisterTable::loadConfig(const QString &path) {
         return;
     }
 
-    const QJsonArray registers = document.object().value(QStringLiteral("registers")).toArray();
+    fromJsonRows(document.object().value(QStringLiteral("registers")).toArray());
+}
+
+/// @brief 从 JSON 数组回填到表格（兼容旧版不同 rowsPerGroup）
+void RegisterTable::fromJsonRows(const QJsonArray &registers) {
     const int jsonSize = registers.size();
     if (jsonSize <= 0) {
         return;

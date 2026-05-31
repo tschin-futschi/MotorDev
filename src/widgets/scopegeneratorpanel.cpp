@@ -40,6 +40,8 @@
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -109,6 +111,99 @@ void ScopeGeneratorPanel::setRunning(bool running) {
 }
 
 // =============================================================================
+// 配置文件存取：模式 + 线性 / 锯齿 / 余弦各参数（按输入框原始文本）
+// =============================================================================
+
+namespace {
+QString editText(const QLineEdit *edit) {
+    return edit != nullptr ? edit->text() : QString();
+}
+void setEditText(QLineEdit *edit, const QJsonObject &obj, const QString &key) {
+    if (edit != nullptr && obj.contains(key)) edit->setText(obj.value(key).toString());
+}
+}  // namespace
+
+QJsonObject ScopeGeneratorPanel::toJson() const {
+    QJsonObject obj;
+
+    QString mode = QStringLiteral("linear");
+    if (m_cosineRadio != nullptr && m_cosineRadio->isChecked()) mode = QStringLiteral("cosine");
+    else if (m_sawtoothRadio != nullptr && m_sawtoothRadio->isChecked()) mode = QStringLiteral("sawtooth");
+    obj.insert(QStringLiteral("mode"), mode);
+
+    QJsonObject linear;
+    linear.insert(QStringLiteral("addr"), editText(m_linearAddrEdit));
+    linear.insert(QStringLiteral("min"), editText(m_linearMinEdit));
+    linear.insert(QStringLiteral("max"), editText(m_linearMaxEdit));
+    linear.insert(QStringLiteral("step"), editText(m_linearStepEdit));
+    linear.insert(QStringLiteral("interval"), editText(m_linearIntervalEdit));
+    obj.insert(QStringLiteral("linear"), linear);
+
+    QJsonObject sawtooth;
+    sawtooth.insert(QStringLiteral("addr"), editText(m_sawtoothAddrEdit));
+    sawtooth.insert(QStringLiteral("min"), editText(m_sawtoothMinEdit));
+    sawtooth.insert(QStringLiteral("max"), editText(m_sawtoothMaxEdit));
+    sawtooth.insert(QStringLiteral("step"), editText(m_sawtoothStepEdit));
+    obj.insert(QStringLiteral("sawtooth"), sawtooth);
+
+    QJsonObject cosine;
+    cosine.insert(QStringLiteral("amplitude"), editText(m_cosineAmplitudeEdit));
+    cosine.insert(QStringLiteral("offset"), editText(m_cosineOffsetEdit));
+    cosine.insert(QStringLiteral("frequency"), editText(m_cosineFrequencyEdit));
+    QJsonArray cosChannels;
+    for (int i = 0; i < 3; ++i) {
+        QJsonObject c;
+        c.insert(QStringLiteral("addr"), editText(m_cosineAddrEdits[i]));
+        c.insert(QStringLiteral("phase"), editText(m_cosinePhaseEdits[i]));
+        cosChannels.append(c);
+    }
+    cosine.insert(QStringLiteral("channels"), cosChannels);
+    obj.insert(QStringLiteral("cosine"), cosine);
+
+    return obj;
+}
+
+void ScopeGeneratorPanel::fromJson(const QJsonObject &obj) {
+    if (obj.contains(QStringLiteral("linear"))) {
+        const QJsonObject linear = obj.value(QStringLiteral("linear")).toObject();
+        setEditText(m_linearAddrEdit, linear, QStringLiteral("addr"));
+        setEditText(m_linearMinEdit, linear, QStringLiteral("min"));
+        setEditText(m_linearMaxEdit, linear, QStringLiteral("max"));
+        setEditText(m_linearStepEdit, linear, QStringLiteral("step"));
+        setEditText(m_linearIntervalEdit, linear, QStringLiteral("interval"));
+    }
+    if (obj.contains(QStringLiteral("sawtooth"))) {
+        const QJsonObject sawtooth = obj.value(QStringLiteral("sawtooth")).toObject();
+        setEditText(m_sawtoothAddrEdit, sawtooth, QStringLiteral("addr"));
+        setEditText(m_sawtoothMinEdit, sawtooth, QStringLiteral("min"));
+        setEditText(m_sawtoothMaxEdit, sawtooth, QStringLiteral("max"));
+        setEditText(m_sawtoothStepEdit, sawtooth, QStringLiteral("step"));
+    }
+    if (obj.contains(QStringLiteral("cosine"))) {
+        const QJsonObject cosine = obj.value(QStringLiteral("cosine")).toObject();
+        setEditText(m_cosineAmplitudeEdit, cosine, QStringLiteral("amplitude"));
+        setEditText(m_cosineOffsetEdit, cosine, QStringLiteral("offset"));
+        setEditText(m_cosineFrequencyEdit, cosine, QStringLiteral("frequency"));
+        if (cosine.contains(QStringLiteral("channels"))) {
+            const QJsonArray cosChannels = cosine.value(QStringLiteral("channels")).toArray();
+            const int count = qMin(cosChannels.size(), 3);
+            for (int i = 0; i < count; ++i) {
+                const QJsonObject c = cosChannels.at(i).toObject();
+                setEditText(m_cosineAddrEdits[i], c, QStringLiteral("addr"));
+                setEditText(m_cosinePhaseEdits[i], c, QStringLiteral("phase"));
+            }
+        }
+    }
+    // 模式最后切换（setChecked 触发 stacked widget 切页）
+    if (obj.contains(QStringLiteral("mode"))) {
+        const QString mode = obj.value(QStringLiteral("mode")).toString();
+        if (mode == QStringLiteral("cosine") && m_cosineRadio != nullptr) m_cosineRadio->setChecked(true);
+        else if (mode == QStringLiteral("sawtooth") && m_sawtoothRadio != nullptr) m_sawtoothRadio->setChecked(true);
+        else if (m_linearRadio != nullptr) m_linearRadio->setChecked(true);
+    }
+}
+
+// =============================================================================
 // UI 构建
 // =============================================================================
 
@@ -143,12 +238,12 @@ void ScopeGeneratorPanel::setupUi() {
     rootLayout->addLayout(modeLayout);
 
     m_modeGroup = new QButtonGroup(this);
-    m_linearRadio = new QRadioButton(tr("Linear"), this);
+    m_linearRadio = new QRadioButton(tr("线性"), this);
     m_linearRadio->setObjectName(QStringLiteral("linearRadio"));
     m_linearRadio->setChecked(true);                    // 默认选中线性模式
-    m_cosineRadio = new QRadioButton(tr("Cosine"), this);
+    m_cosineRadio = new QRadioButton(tr("余弦"), this);
     m_cosineRadio->setObjectName(QStringLiteral("cosineRadio"));
-    m_sawtoothRadio = new QRadioButton(tr("Sawtooth"), this);
+    m_sawtoothRadio = new QRadioButton(tr("锯齿"), this);
     m_sawtoothRadio->setObjectName(QStringLiteral("sawtoothRadio"));
     m_modeGroup->addButton(m_linearRadio, 0);           // ID 0 = Linear
     m_modeGroup->addButton(m_cosineRadio, 1);           // ID 1 = Cosine
@@ -267,12 +362,12 @@ void ScopeGeneratorPanel::setupUi() {
     buttonLayout->addStretch(1);                        // 左侧弹簧，按钮靠右
     rootLayout->addLayout(buttonLayout);
 
-    m_startButton = new QPushButton(tr("Start"), this);
+    m_startButton = new QPushButton(tr("启动"), this);
     m_startButton->setObjectName(QStringLiteral("startButton"));
     m_startButton->setProperty("buttonRole", QStringLiteral("generator-start"));
     buttonLayout->addWidget(m_startButton);
 
-    m_stopButton = new QPushButton(tr("Stop"), this);
+    m_stopButton = new QPushButton(tr("停止"), this);
     m_stopButton->setObjectName(QStringLiteral("stopButton"));
     m_stopButton->setProperty("buttonRole", QStringLiteral("generator-stop"));
     buttonLayout->addWidget(m_stopButton);

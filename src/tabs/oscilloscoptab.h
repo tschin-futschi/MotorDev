@@ -44,6 +44,7 @@ class ScopeRecordService;
 class ScopeService;
 class ScopeStylePanel;
 class SerialManager;
+class QJsonObject;
 class QTimer;
 class QSplitter;
 class QVBoxLayout;
@@ -65,6 +66,12 @@ public:
                             CommandDispatcher *dispatcher,
                             QWidget *parent = nullptr);
     ~OscilloscopTab() override;
+
+    /// @brief 采集示波器功能参数（8 通道配置 + 采样间隔 + 记录目录）为 JSON
+    QJsonObject collectScopeConfig() const;
+
+    /// @brief 回填示波器功能参数（直接写 model + 阻塞信号刷新各面板，不启动采样）
+    void applyScopeConfig(const QJsonObject &scope);
 
 signals:
     /// @brief 采样运行状态变化

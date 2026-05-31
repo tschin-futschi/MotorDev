@@ -20,6 +20,7 @@
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QJsonArray>
 #include <QLineEdit>
 #include <QDebug>
 #include <QLabel>
@@ -52,9 +53,7 @@ RegisterRwTab::RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent)
     if (m_blockReadDirEdit != nullptr) {
         m_blockReadDirEdit->setText(m_blockReadLastDir);
     }
-
-    // 从持久化文件加载上次的寄存器配置
-    m_registerTable->loadConfig(configFilePath());
+    // 寄存器表内容不再自动加载/保存；改由配置页「配置文件」Read/Write 手动统一存取
 }
 
 RegisterRwTab::~RegisterRwTab() {
@@ -102,11 +101,6 @@ void RegisterRwTab::connectSignals() {
     // 单行写入请求
     connect(m_registerTable, &RegisterTable::writeRowRequested, this, [this](int globalRow, quint16 addr, qint16 value) {
         m_service->writeSingleRow(globalRow, addr, value);
-    });
-
-    // 表格配置变化 → 自动保存
-    connect(m_registerTable, &RegisterTable::configChanged, this, [this]() {
-        m_registerTable->saveConfig(configFilePath());
     });
 
     // -------------------------------------------------------------------------
@@ -196,14 +190,14 @@ void RegisterRwTab::connectSignals() {
         m_registerTable->markWriteButtonFeedback(globalRow, false);
     });
 
-    // Sidebar 全部读/写 完成 → 释放互斥；自动保存读取结果
+    // Sidebar 全部读/写 完成 → 释放互斥
     // 注：m_service 的 queueFinished 也会在单行读写时触发，但此时 m_busyOwner != SidebarAll
-    // 不进释放分支，无副作用。
+    // 不进释放分支，无副作用。读取结果不再自动保存（改由配置页手动 Write）。
     connect(m_service, &RegisterService::queueFinished, this, [this](bool wasWrite) {
+        Q_UNUSED(wasWrite);
         if (m_busyOwner == BusyOwner::SidebarAll) {
             setBusyOwner(BusyOwner::None);
         }
-        if (!wasWrite) m_registerTable->saveConfig(configFilePath());
     });
 
     // -------------------------------------------------------------------------
@@ -270,11 +264,16 @@ void RegisterRwTab::setConnected(bool connected) {
     m_registerTable->setConnected(connected);
 }
 
-/// @brief 获取寄存器配置的持久化文件路径（AppData/registers.json）
-QString RegisterRwTab::configFilePath() const {
-    const QString dirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    QDir().mkpath(dirPath);
-    return dirPath + QStringLiteral("/registers.json");
+// =============================================================================
+// 配置文件存取：寄存器表 section 采集 / 回填（转发给内部 RegisterTable）
+// =============================================================================
+
+QJsonArray RegisterRwTab::collectRegisterRows() const {
+    return m_registerTable->toJsonRows();
+}
+
+void RegisterRwTab::applyRegisterRows(const QJsonArray &rows) {
+    m_registerTable->fromJsonRows(rows);
 }
 
 // =============================================================================

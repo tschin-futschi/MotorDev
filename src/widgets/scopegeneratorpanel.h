@@ -18,6 +18,7 @@ class QLineEdit;
 class QRadioButton;
 class QPushButton;
 class QStackedWidget;
+class QJsonObject;
 
 /// @brief 余弦通道参数结构体
 struct ScopeGeneratorCosineChannel {
@@ -35,6 +36,12 @@ public:
 
     /// @brief 设置运行状态（切换启动/停止按钮可用性）
     void setRunning(bool running);
+
+    /// @brief 采集生成器参数为 JSON（模式 + 线性/锯齿/余弦各参数），供统一配置文件
+    QJsonObject toJson() const;
+
+    /// @brief 从 JSON 回填生成器参数
+    void fromJson(const QJsonObject &obj);
 
 signals:
     /// @brief 请求启动线性波形生成

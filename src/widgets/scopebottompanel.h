@@ -55,11 +55,22 @@ public:
     /// @brief 获取跑马灯标签
     ScopeMarqueeLabel *marqueeLabel() const;
 
-    /// @brief 设置记录目录路径框文本（载入 QSettings 初值用，不发信号）
+    /// @brief 设置记录目录路径框文本（载入初值用，不发信号）
     void setRecordDir(const QString &dir);
 
     /// @brief 返回当前记录目录路径框文本（已 trim）
     QString recordDir() const;
+
+    /// @brief 回填单通道配置（统一配置文件 Read 用）。**阻塞内部信号**，
+    /// 不外发 channelToggled/channelDescriptionChanged/channelAddressChanged。
+    void setChannelConfig(int index, bool enabled,
+                          const QString &description, const QString &address);
+
+    /// @brief 返回当前采样间隔下拉文本
+    QString sampleIntervalText() const;
+
+    /// @brief 回填采样间隔下拉（**阻塞信号**，不外发 sampleIntervalChanged）
+    void setSampleInterval(const QString &text);
 
 signals:
     // --- 寄存器面板信号 ---

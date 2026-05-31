@@ -11,6 +11,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QJsonObject>
 #include <QLabel>
 #include <QMessageBox>
 #include <QProgressBar>
@@ -195,13 +196,15 @@ void FlashStorageTab::updateCapacityLabel(quint32 totalCapacity, quint32 usedSiz
 // -----------------------------------------------------------------------------
 
 void FlashStorageTab::onUploadClicked() {
-    const QString startDir =
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString startDir = m_lastDir.isEmpty()
+        ? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+        : m_lastDir;
     const QString path = QFileDialog::getOpenFileName(
         this, tr("选择要上传的文件"), startDir, tr("All Files (*.*)"));
     if (path.isEmpty()) return;
 
     const QFileInfo fi(path);
+    m_lastDir = fi.absolutePath();  // 记住目录，供下次对话框 + 配置文件存取
     constexpr qint64 kMax = 917488;
     if (fi.size() <= 0) {
         m_logPanel->appendError(tr("文件为空"));
@@ -217,12 +220,30 @@ void FlashStorageTab::onUploadClicked() {
 }
 
 void FlashStorageTab::onDownloadClicked() {
-    const QString startDir =
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString startDir = m_lastDir.isEmpty()
+        ? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+        : m_lastDir;
     const QString dir = QFileDialog::getExistingDirectory(
         this, tr("选择下载目录"), startDir);
     if (dir.isEmpty()) return;
+    m_lastDir = dir;  // 记住目录，供下次对话框 + 配置文件存取
     m_service->startRead(dir);
+}
+
+// =============================================================================
+// 配置文件存取：FLASH 存储页 section 采集 / 回填
+// =============================================================================
+
+QJsonObject FlashStorageTab::collectFlashStoreConfig() const {
+    QJsonObject flashStore;
+    flashStore.insert(QStringLiteral("lastDir"), m_lastDir);
+    return flashStore;
+}
+
+void FlashStorageTab::applyFlashStoreConfig(const QJsonObject &flashStore) {
+    if (flashStore.contains(QStringLiteral("lastDir"))) {
+        m_lastDir = flashStore.value(QStringLiteral("lastDir")).toString();
+    }
 }
 
 void FlashStorageTab::onCancelClicked() {

@@ -30,6 +30,7 @@
 #include <QGraphicsDropShadowEffect>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLatin1Char>
 #include <QLineEdit>
@@ -203,6 +204,28 @@ FwFlashTab::FwFlashTab(SerialManager *serialManager, DeviceContext *deviceContex
 }
 
 FwFlashTab::~FwFlashTab() = default;
+
+// =============================================================================
+// 配置文件存取：烧录页 section 采集 / 回填
+// =============================================================================
+
+QJsonObject FwFlashTab::collectFlashConfig() const {
+    QJsonObject flash;
+    flash.insert(QStringLiteral("lastFile"), m_currentFilePath);
+    return flash;
+}
+
+void FwFlashTab::applyFlashConfig(const QJsonObject &flash) {
+    if (!flash.contains(QStringLiteral("lastFile"))) {
+        return;
+    }
+    const QString path = flash.value(QStringLiteral("lastFile")).toString();
+    if (path.isEmpty()) {
+        return;
+    }
+    // 只重新解析展示文件，不启动烧录；文件不存在时 parseAndShowFile 自行落到错误态
+    parseAndShowFile(path);
+}
 
 void FwFlashTab::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);

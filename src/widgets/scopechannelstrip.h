@@ -29,6 +29,12 @@ public:
     /// @brief 通道是否启用
     bool isChannelEnabled() const;
 
+    /// @brief 回填通道配置（统一配置文件 Read 用）。**阻塞控件信号**，不向外发
+    /// channelToggled/descriptionChanged/addressChanged（model 由调用方直接写）。
+    void setChannelEnabled(bool enabled);
+    void setDescriptionText(const QString &text);
+    void setAddressText(const QString &text);
+
 signals:
     /// @brief 通道启用/禁用切换
     void channelToggled(int index, bool enabled);

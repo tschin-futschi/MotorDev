@@ -36,6 +36,7 @@
 #include <QMenu>
 #include <QPushButton>
 #include <QScreen>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -121,6 +122,31 @@ void ScopeBottomPanel::setRecordDir(const QString &dir) {
 /// @brief 返回当前记录目录路径框文本。
 QString ScopeBottomPanel::recordDir() const {
     return m_recordDirEdit != nullptr ? m_recordDirEdit->text().trimmed() : QString();
+}
+
+/// @brief 回填单通道配置（统一配置文件 Read 用，子控件信号已在 strip 内阻塞）。
+void ScopeBottomPanel::setChannelConfig(int index, bool enabled,
+                                        const QString &description, const QString &address) {
+    if (index < 0 || index >= 8 || m_channels[index] == nullptr) {
+        return;
+    }
+    m_channels[index]->setChannelEnabled(enabled);
+    m_channels[index]->setDescriptionText(description);
+    m_channels[index]->setAddressText(address);
+}
+
+/// @brief 返回当前采样间隔下拉文本。
+QString ScopeBottomPanel::sampleIntervalText() const {
+    return m_intervalCombo != nullptr ? m_intervalCombo->currentText() : QString();
+}
+
+/// @brief 回填采样间隔下拉（阻塞信号，不外发 sampleIntervalChanged）。
+void ScopeBottomPanel::setSampleInterval(const QString &text) {
+    if (m_intervalCombo == nullptr || text.isEmpty()) {
+        return;
+    }
+    const QSignalBlocker blocker(m_intervalCombo);
+    m_intervalCombo->setCurrentText(text);
 }
 
 /// @brief 返回波形生成器面板指针。
@@ -273,9 +299,9 @@ void ScopeBottomPanel::refreshPanels() {
                                        : Style::Size::ScopeBottomPanelMinCollapsed);
 
     // 同步按钮文本
-    m_channelsToggleButton->setText(m_channelsVisible ? tr("Hide Channels") : tr("Show Channels"));
-    m_registerToggleButton->setText(m_registerWindow->isVisible() ? tr("Hide Register") : tr("Show Register"));
-    m_generatorToggleButton->setText(m_generatorWindow->isVisible() ? tr("Hide Generator") : tr("Show Generator"));
+    m_channelsToggleButton->setText(m_channelsVisible ? tr("隐藏通道") : tr("显示通道"));
+    m_registerToggleButton->setText(m_registerWindow->isVisible() ? tr("隐藏寄存器") : tr("显示寄存器"));
+    m_generatorToggleButton->setText(m_generatorWindow->isVisible() ? tr("隐藏生成器") : tr("显示生成器"));
 
     updateGeometry();
 }
@@ -283,11 +309,11 @@ void ScopeBottomPanel::refreshPanels() {
 /// @brief 刷新 Y 轴按钮文本（Auto 或手动范围）。
 void ScopeBottomPanel::refreshYAxisButton() {
     if (m_yAxisAuto) {
-        m_yAxisButton->setText(tr("Y Axis: Auto"));
+        m_yAxisButton->setText(tr("Y 轴：自动"));
         return;
     }
 
-    m_yAxisButton->setText(tr("Y Axis: %1 ~ %2")
+    m_yAxisButton->setText(tr("Y 轴：%1 ~ %2")
                                  .arg(QString::number(m_manualYMin, 'f', 1))
                                  .arg(QString::number(m_manualYMax, 'f', 1)));
 }
@@ -491,7 +517,7 @@ void ScopeBottomPanel::setupUi() {
     // 采样间隔选择
     auto *intervalLabel = new QLabel(m_channelFrame);
     intervalLabel->setObjectName(QStringLiteral("intervalLabel"));
-    intervalLabel->setText(QStringLiteral("Sample Interval"));
+    intervalLabel->setText(tr("采样时间间隔"));
     channelHeaderLayout->addWidget(intervalLabel);
 
     m_intervalCombo = new QComboBox(m_channelFrame);
@@ -506,13 +532,13 @@ void ScopeBottomPanel::setupUi() {
     m_yAxisButton->setMinimumSize(QSize(Style::Size::ScopeYAxisButtonMinW, 0));
     m_yAxisButton->setPopupMode(QToolButton::InstantPopup);
     m_yAxisButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
-    m_yAxisButton->setText(QStringLiteral("Y Axis: Auto"));
+    m_yAxisButton->setText(tr("Y 轴：自动"));
     channelHeaderLayout->addWidget(m_yAxisButton);
 
     // 显示窗口时长选择
     auto *windowLabel = new QLabel(m_channelFrame);
     windowLabel->setObjectName(QStringLiteral("windowLabel"));
-    windowLabel->setText(QStringLiteral("Display Window"));
+    windowLabel->setText(tr("显示时间窗口"));
     channelHeaderLayout->addWidget(windowLabel);
 
     m_windowCombo = new QComboBox(m_channelFrame);
@@ -525,7 +551,7 @@ void ScopeBottomPanel::setupUi() {
     // 数据记录目录（替换原 Capture Note）：标签 + 路径框（占满右侧）+ 浏览按钮
     auto *recordDirLabel = new QLabel(m_channelFrame);
     recordDirLabel->setObjectName(QStringLiteral("recordDirLabel"));
-    recordDirLabel->setText(QStringLiteral("Record Dir"));
+    recordDirLabel->setText(tr("波形存储目录"));
     channelHeaderLayout->addWidget(recordDirLabel);
 
     m_recordDirEdit = new QLineEdit(m_channelFrame);
@@ -567,21 +593,21 @@ void ScopeBottomPanel::setupUi() {
     m_channelsToggleButton = new QPushButton(this);
     m_channelsToggleButton->setObjectName(QStringLiteral("channelsToggleButton"));
     m_channelsToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
-    m_channelsToggleButton->setText(QStringLiteral("Hide Channels"));
+    m_channelsToggleButton->setText(tr("隐藏通道"));
     buttonLayout->addWidget(m_channelsToggleButton);
 
     // 寄存器面板切换按钮
     m_registerToggleButton = new QPushButton(this);
     m_registerToggleButton->setObjectName(QStringLiteral("registerToggleButton"));
     m_registerToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
-    m_registerToggleButton->setText(QStringLiteral("Show Register"));
+    m_registerToggleButton->setText(tr("显示寄存器"));
     buttonLayout->addWidget(m_registerToggleButton);
 
     // 生成器面板切换按钮
     m_generatorToggleButton = new QPushButton(this);
     m_generatorToggleButton->setObjectName(QStringLiteral("generatorToggleButton"));
     m_generatorToggleButton->setProperty("buttonRole", QStringLiteral("toggle"));
-    m_generatorToggleButton->setText(QStringLiteral("Show Generator"));
+    m_generatorToggleButton->setText(tr("显示生成器"));
     buttonLayout->addWidget(m_generatorToggleButton);
 
     // 跑马灯状态标签（占满剩余空间）

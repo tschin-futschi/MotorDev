@@ -224,13 +224,7 @@ Sidebar 内容:
 
 #### 持久化
 
-```
-格式: JSON
-路径: QStandardPaths::AppDataLocation / "registers.json"
-触发: 描述、地址或值单元格内容变更后立即保存；批量读取完成后自动保存
-内容: 4 组 × 30 行共 120 条记录，每条包含 {desc: string, addr: string, val: string}
-启动时自动加载
-```
+> **2026-05-31 变更**：寄存器表不再自动持久化到 `registers.json`（取消"改即存 / 启动自动恢复 / 批量读取后自动存"）。寄存器表 120 行（`{desc, addr, val}`）已并入**统一配置文件**，由配置页「配置文件」区域的 Read/Write 手动存取（见下文「统一配置文件存取」）。
 
 #### 批量操作（全部读取 / 全部写入）
 
@@ -510,6 +504,42 @@ B006,0000\n
 3. ContentArea 同步扩展填满
 4. ‹ 变为 › 显示在活动栏边缘
 5. 再次点击展开
+
+---
+
+## 统一配置文件存取（配置页 Config File 区域）
+
+> 2026-05-31 新增。把**各页面的功能参数**统一存到一个用户指定的 JSON 文件，全手动存/取。
+
+### 入口控件（配置页下方 Config File 行）
+
+| 控件 | 类型 | 行为 |
+|------|------|------|
+| `ConfigFile` | QComboBox（可编辑） | 配置文件完整路径，可手输，或由 Browse 回填 |
+| `Browse` | QPushButton | 弹文件对话框（过滤 `*.json`，允许选已有文件或输入新文件名），仅回填路径，不读不写 |
+| `Write` | QPushButton | 采集各页面当前功能参数 → 写 JSON 到该路径（已存在则覆盖） |
+| `Read` | QPushButton | 从该路径读 JSON → 回填各页面参数 |
+
+### 范围与语义
+
+- **只记功能参数，不记 UI 状态**（窗口几何 / Splitter / 浮窗位置不纳入）。
+- **全手动**：不自动保存、启动不自动恢复；路径与时机全由用户掌控。
+- **Read 只回填参数值，不触发任何串口动作**：填好串口但不自动连接、填好 PMIC 但不下发、填好寄存器表但不写芯片、填好示波器但不启动采样、填好烧录路径但不烧录。是否生效由用户随后手动操作。
+- 缺字段 / 缺段 / version 不符：跳过该项 + 日志告警，不整体失败（尽力恢复）。
+
+### 字段（JSON `version:1`）
+
+| 段 | 来源页面 | 内容 |
+|----|---------|------|
+| `device` | 配置页 | 串口端口、波特率、IC 型号、I2C 从机地址、PMIC 三路电压（DRVDD/VCMVDD/IOVDD） |
+| `registers` | 寄存器读写页 | 寄存器表 120 行 `{desc, addr, val}` |
+| `scope` | 示波器页 | 8 通道（enabled/description/address/color/lineWidth/lineStyle/showDataPoints）、采样间隔、记录目录、**寄存器辅助面板**（`registerPanel`：8 行 desc/addr/val + 循环间隔）、**波形生成器**（`generator`：模式 + 线性/锯齿/余弦各参数 + 余弦 3 通道） |
+| `flash` | 固件烧录页 | 上次烧录文件路径（**不记目标 IC**，目标 IC 只读跟随配置页 Select IC） |
+| `flashStore` | FLASH 存储页 | 上次上传/下载目录 |
+
+### 与旧自动持久化的关系
+
+改为全手动后，**移除**以下旧的自动持久化：寄存器表 `registers.json`（改即存 / 启动恢复 / 批量读后存）、示波器记录目录 QSettings `scope/recordDir`。
 
 ---
 

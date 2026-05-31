@@ -21,7 +21,8 @@
 // 用户关闭浮窗时按钮状态自动同步。块读取与批量读写**独立通道**，不互斥
 // （独立 RegisterService 实例隔离命令流，串口底层 SerialManager 命令队列共享）。
 //
-// 寄存器表格配置持久化到 AppData/registers.json。
+// 寄存器表格内容不再自动持久化；统一由配置页「配置文件」Read/Write 手动存取
+// （AppConfigService 调 collectRegisterRows / applyRegisterRows）。
 // =============================================================================
 #pragma once
 
@@ -32,6 +33,7 @@
 #include <QWidget>
 
 class QLabel;
+class QJsonArray;
 class QProgressBar;
 class QPushButton;
 class QToolButton;
@@ -53,6 +55,12 @@ public:
     /// @param parent 父控件指针
     explicit RegisterRwTab(CommandDispatcher *dispatcher, QWidget *parent = nullptr);
     ~RegisterRwTab() override;
+
+    /// @brief 采集寄存器表 120 行（desc/addr/val）为 JSON 数组，供统一配置文件
+    QJsonArray collectRegisterRows() const;
+
+    /// @brief 从 JSON 数组回填寄存器表
+    void applyRegisterRows(const QJsonArray &rows);
 
 public slots:
     /// @brief 设置串口连接状态，联动启用/禁用操作按钮
@@ -81,10 +89,6 @@ private:
 
     /// @brief 连接信号槽（表格↔Service、按钮↔操作）
     void connectSignals();
-
-    /// @brief 获取寄存器配置文件的持久化路径
-    /// @return AppData 下的 registers.json 完整路径
-    QString configFilePath() const;
 
     // --- 批量浮窗 UI 行为（仅控件交互，业务在 BatchRegisterService）---
     void onBatchBrowseClicked(int slotIndex);

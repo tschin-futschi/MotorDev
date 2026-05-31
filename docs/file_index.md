@@ -26,8 +26,11 @@
 - `src/tabs/configtab` `[UI-Tab]` — PMIC 电压配置 UI（DRVDD/VCMVDD/IOVDD 输入 + 配置 / 关闭按钮）
 - `src/services/configservice` `[通信]` — PMIC 两步序列（SetVoltage → Enable）+ 5s 整体超时 + 关闭命令
 
-### IC 配置文件写入/读出
-- `src/tabs/configtab` `[UI-Tab]` — Config File 行（文件选择 combo、Browse/Write/Read 按钮；**当前为 UI stub，按钮未连接信号**）
+### 统一配置文件存取（各页面功能参数）
+- `src/services/appconfigservice` `[配置]` — **统一配置文件存取服务**：把各页面功能参数采集成一个 JSON 文件（手动 Write）/ 从 JSON 回填各页面（手动 Read）。**全手动**：不自动保存、启动不自动恢复，路径由用户在配置页 ConfigFile 指定。结构 `{version:1, device, registers, scope, flash, flashStore}`。Read 语义：**只回填参数值，不触发任何串口动作**（不连接/下发/写寄存器/启动采样/烧录）。MainWindow 持有，接收 ConfigTab 的 readConfigRequested/writeConfigRequested，编排各 tab 的 `collectXxx()/applyXxx()`；缺段跳过 + 日志，version 不符仅告警尽力恢复；logMessage 经 MainWindow 路由到 LogPanel
+- `src/tabs/configtab` `[UI-Tab]` — Config File 行（`m_fileCombo` 可编辑路径 + Browse/Write/Read）：Browse 弹 `*.json` 文件框回填路径；Read/Write 发 `readConfigRequested/writeConfigRequested(path)` 信号交 AppConfigService；自身 `collectDeviceConfig()/applyDeviceConfig()` 负责 device 段（串口/波特率/IC/从机/PMIC 三路电压，apply 只回填不下发）
+- 各页 collect/apply：`RegisterRwTab::collectRegisterRows/applyRegisterRows`（转发 `RegisterTable::toJsonRows/fromJsonRows`）、`OscilloscopTab::collectScopeConfig/applyScopeConfig`（8 通道 + 间隔 + 记录目录 + 寄存器辅助面板 `ScopeRegisterPanel::toJson/fromJson`（8 行 desc/addr/val + 循环间隔）+ 波形生成器 `ScopeGeneratorPanel::toJson/fromJson`（模式 + 线性/锯齿/余弦参数）；回填经 `ScopeBottomPanel::setChannelConfig/setSampleInterval` + `ScopeChannelStrip` 回填 setter + 样式面板 setter）、`FwFlashTab::collectFlashConfig/applyFlashConfig`（上次烧录文件路径）、`FlashStorageTab::collectFlashStoreConfig/applyFlashStoreConfig`（上次目录 `m_lastDir`）
+- **移除的自动持久化**（改全手动）：寄存器表 `registers.json` 自动存/启动恢复（RegisterRwTab）、示波器记录目录 QSettings `scope/recordDir` 存取（OscilloscopTab）
 
 ### 寄存器读写
 - `src/tabs/registerrwtab` `[UI-Tab]` — 表格事件转发、Hex/Dec 切换、Sidebar 全部读/写、页面清除（工具条按钮，位于「批量读写」左侧，即时清空表格所有描述/地址/值并触发持久化，无确认框）、批量读写浮窗（4 槽独立操作，全局互斥）、块读取浮窗（独立通道，不互斥）
@@ -168,7 +171,7 @@
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
 | UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel`, `src/widgets/fwfileinfopanel`, `src/widgets/fwflashcontrolpanel`, `src/widgets/fwflashlogpanel` |
-| 服务层 | `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/batchregisterservice`, `src/services/blockreadservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/dw9786oisresetservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstoreservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
+| 服务层 | `src/services/appconfigservice`, `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/batchregisterservice`, `src/services/blockreadservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/dw9786oisresetservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstoreservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
 | 开发工具传输层 | `src/services/simulatorserial` |
 | 共享枚举 | `src/ui/scopeviewmode.h` |
 | 样式常量 | `src/ui/style_constants.h` |

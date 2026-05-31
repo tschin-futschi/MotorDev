@@ -15,6 +15,7 @@
 
 class QLineEdit;
 class QPushButton;
+class QJsonObject;
 
 /// @brief 示波器寄存器辅助面板
 ///
@@ -62,6 +63,12 @@ public:
 
     /// @brief 清空所有行的内容
     void clearAll();
+
+    /// @brief 采集面板内容为 JSON（8 行 desc/addr/val + 循环间隔），供统一配置文件
+    QJsonObject toJson() const;
+
+    /// @brief 从 JSON 回填面板内容
+    void fromJson(const QJsonObject &obj);
 
     /// @brief 面板行数（固定 8 行）
     static constexpr int rowCount() { return RowCount; }

@@ -8,6 +8,7 @@
 
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QVBoxLayout>
 
@@ -52,6 +53,22 @@ ScopeChannelStrip::~ScopeChannelStrip() = default;
 /// @brief 返回当前通道是否启用（CheckBox 选中状态）。
 bool ScopeChannelStrip::isChannelEnabled() const {
     return m_checkBox->isChecked();
+}
+
+// 回填 setter：阻塞控件信号，不外发（model 由调用方直接写，避免信号回弹）
+void ScopeChannelStrip::setChannelEnabled(bool enabled) {
+    const QSignalBlocker blocker(m_checkBox);
+    m_checkBox->setChecked(enabled);
+}
+
+void ScopeChannelStrip::setDescriptionText(const QString &text) {
+    const QSignalBlocker blocker(m_descEdit);
+    m_descEdit->setText(text);
+}
+
+void ScopeChannelStrip::setAddressText(const QString &text) {
+    const QSignalBlocker blocker(m_addrEdit);
+    m_addrEdit->setText(text);
 }
 
 // =============================================================================

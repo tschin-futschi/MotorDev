@@ -16,6 +16,7 @@
 
 #include "services/flashstoreservice.h"
 
+#include <QString>
 #include <QWidget>
 
 class SerialManager;
@@ -23,6 +24,7 @@ class FwFlashLogPanel;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class QJsonObject;
 
 class FlashStorageTab : public QWidget {
     Q_OBJECT
@@ -30,6 +32,12 @@ class FlashStorageTab : public QWidget {
 public:
     explicit FlashStorageTab(SerialManager *serialManager, QWidget *parent = nullptr);
     ~FlashStorageTab() override;
+
+    /// @brief 采集 FLASH 存储页功能参数（上次上传/下载目录）为 JSON
+    QJsonObject collectFlashStoreConfig() const;
+
+    /// @brief 回填 FLASH 存储页功能参数（上次目录，作为后续文件对话框起始目录）
+    void applyFlashStoreConfig(const QJsonObject &flashStore);
 
 private slots:
     void onUploadClicked();
@@ -64,4 +72,6 @@ private:
     QLabel *m_stageLabel = nullptr;
     QProgressBar *m_progress = nullptr;
     FwFlashLogPanel *m_logPanel = nullptr;
+
+    QString m_lastDir;  ///< 上次上传/下载使用的目录（文件对话框起始目录；由配置文件存取）
 };

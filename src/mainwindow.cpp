@@ -11,6 +11,7 @@
 #include "devicecontext.h"
 #include "protocol/motor_protocol.h"
 #include "serialmanager.h"
+#include "services/appconfigservice.h"
 #include "services/commanddispatcher.h"
 #include "services/cyclicwriteservice.h"
 #include "services/dw9786oisresetservice.h"
@@ -359,6 +360,18 @@ void MainWindow::connectSignals() {
     connect(m_oisResetService, &Dw9786OisResetService::logMessage, this,
             [this](const QString &line) {
                 m_logPanel->appendMessage(QtInfoMsg, QStringLiteral("DW9786"), line);
+            });
+
+    // --- 统一配置文件存取：ConfigTab Read/Write → AppConfigService ---
+    m_appConfigService = new AppConfigService(m_configTab, m_registerTab, m_scopeTab,
+                                              m_fwFlashTab, m_flashStorageTab, this);
+    connect(m_configTab, &ConfigTab::writeConfigRequested,
+            m_appConfigService, &AppConfigService::onWriteRequested);
+    connect(m_configTab, &ConfigTab::readConfigRequested,
+            m_appConfigService, &AppConfigService::onReadRequested);
+    connect(m_appConfigService, &AppConfigService::logMessage, this,
+            [this](const QString &line) {
+                m_logPanel->appendMessage(QtInfoMsg, QStringLiteral("Config"), line);
             });
 
     // --- 串口连接成功：启用各受限页面 ---

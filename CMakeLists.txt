@@ -32,6 +32,8 @@ qt_add_executable(MotorDev
     src/protocol/firmware_parser.h
     src/protocol/batch_register_file.cpp
     src/protocol/batch_register_file.h
+    src/services/appconfigservice.cpp
+    src/services/appconfigservice.h
     src/services/configservice.cpp
     src/services/configservice.h
     src/services/commanddispatcher.cpp

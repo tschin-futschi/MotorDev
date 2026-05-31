@@ -32,6 +32,7 @@ class DeviceContext;
 class QComboBox;
 class QDoubleSpinBox;
 class QGroupBox;
+class QJsonObject;
 class QPushButton;
 class SerialManager;
 class QSplitter;
@@ -56,6 +57,14 @@ public:
                        QWidget *parent = nullptr);
     ~ConfigTab() override;
 
+    /// @brief 采集配置页功能参数（串口端口/波特率/IC/从机地址/PMIC 三路电压）
+    /// @return device section JSON（供 AppConfigService 组装统一配置文件）
+    QJsonObject collectDeviceConfig() const;
+
+    /// @brief 回填配置页功能参数（**只回填控件值，不触发任何串口动作**）
+    /// @param device  device section JSON；缺失字段跳过
+    void applyDeviceConfig(const QJsonObject &device);
+
 signals:
     /// @brief 串口连接成功
     /// @param port 端口名称（如 "COM3"）
@@ -64,6 +73,12 @@ signals:
 
     /// @brief 串口已断开
     void serialDisconnected();
+
+    /// @brief 请求从指定路径读取统一配置文件（由 MainWindow → AppConfigService 处理）
+    void readConfigRequested(const QString &path);
+
+    /// @brief 请求把当前配置写入指定路径（由 MainWindow → AppConfigService 处理）
+    void writeConfigRequested(const QString &path);
 
 private:
     /// @brief 构建 UI 布局（三张卡片 + 下方配置文件区，无侧边栏）

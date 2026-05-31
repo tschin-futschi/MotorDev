@@ -197,7 +197,7 @@ void ScopeStylePanel::setupUi() {
     m_defaultButton = new QPushButton(this);
     m_defaultButton->setObjectName(QStringLiteral("defaultButton"));
     m_defaultButton->setProperty("buttonRole", QStringLiteral("default"));
-    m_defaultButton->setText(tr("Default Setting"));
+    m_defaultButton->setText(tr("恢复默认"));
     rootLayout->addWidget(m_defaultButton);
 
     // ---------- 8 行通道样式控件 ----------

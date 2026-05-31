@@ -20,10 +20,12 @@
 #include "widgets/scoperegisterpanel.h"
 #include "widgets/scopestylepanel.h"
 
+#include <QColor>
 #include <QDebug>
 #include <QDir>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QProcess>
-#include <QSettings>
 #include <QSplitter>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -53,14 +55,8 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
     connectSignals();
     refreshPlotData();
 
-    // 载入上次记录目录（QSettings 跨会话持久化）
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope,
-                       QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
-    const QString savedRecordDir = settings.value(QStringLiteral("scope/recordDir")).toString();
-    if (!savedRecordDir.isEmpty()) {
-        m_recordService->setRecordDirectory(savedRecordDir);
-        m_bottomPanel->setRecordDir(savedRecordDir);
-    }
+    // 记录目录不再自动持久化（QSettings 已移除）；统一由配置页「配置文件」Read/Write
+    // 手动存取（AppConfigService 调 applyScopeConfig / collectScopeConfig）。
 
     // 性能统计定时器：每秒输出一次绘制耗时、FPS、采样率
     m_perfTimer = new QTimer(this);
@@ -71,6 +67,110 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
 
 OscilloscopTab::~OscilloscopTab() {
     exitFullscreen(); // 确保全屏窗口被正确清理
+}
+
+// =============================================================================
+// 配置文件存取：示波器 section 采集 / 回填
+// =============================================================================
+
+QJsonObject OscilloscopTab::collectScopeConfig() const {
+    QJsonObject scope;
+
+    QJsonArray channels;
+    const QVector<ScopeChannelState> &chs = m_channelModel->channels();
+    for (const ScopeChannelState &ch : chs) {
+        QJsonObject o;
+        o.insert(QStringLiteral("enabled"), ch.enabled);
+        o.insert(QStringLiteral("description"), ch.description);
+        o.insert(QStringLiteral("address"), ch.addressText);
+        o.insert(QStringLiteral("color"), ch.color.name(QColor::HexArgb));
+        o.insert(QStringLiteral("lineWidth"), ch.lineWidth);
+        o.insert(QStringLiteral("lineStyle"), static_cast<int>(ch.lineStyle));
+        o.insert(QStringLiteral("showDataPoints"), ch.showDataPoints);
+        channels.append(o);
+    }
+    scope.insert(QStringLiteral("channels"), channels);
+    scope.insert(QStringLiteral("intervalText"), m_sampleIntervalText);
+    scope.insert(QStringLiteral("recordDir"),
+                 m_bottomPanel != nullptr ? m_bottomPanel->recordDir() : QString());
+
+    // 示波器页两个子面板：寄存器辅助面板 + 波形生成器
+    if (m_bottomPanel != nullptr) {
+        if (ScopeRegisterPanel *rp = m_bottomPanel->registerPanel())
+            scope.insert(QStringLiteral("registerPanel"), rp->toJson());
+        if (ScopeGeneratorPanel *gp = m_bottomPanel->generatorPanel())
+            scope.insert(QStringLiteral("generator"), gp->toJson());
+    }
+    return scope;
+}
+
+void OscilloscopTab::applyScopeConfig(const QJsonObject &scope) {
+    // 直接写 ScopeChannelModel；可见 UI（通道条 / 样式面板 / 间隔下拉）随后阻塞信号回填。
+    // 全程不启动采样、不下发任何命令。
+    if (scope.contains(QStringLiteral("channels"))) {
+        const QJsonArray channels = scope.value(QStringLiteral("channels")).toArray();
+        const int count = qMin(channels.size(), m_channelModel->channelCount());
+        for (int i = 0; i < count; ++i) {
+            const QJsonObject o = channels.at(i).toObject();
+            if (o.contains(QStringLiteral("enabled")))
+                m_channelModel->setEnabled(i, o.value(QStringLiteral("enabled")).toBool());
+            if (o.contains(QStringLiteral("description")))
+                m_channelModel->setDescription(i, o.value(QStringLiteral("description")).toString());
+            if (o.contains(QStringLiteral("address")))
+                m_channelModel->setAddressText(i, o.value(QStringLiteral("address")).toString());
+            if (o.contains(QStringLiteral("color"))) {
+                const QColor c(o.value(QStringLiteral("color")).toString());
+                if (c.isValid()) m_channelModel->setColor(i, c);
+            }
+            if (o.contains(QStringLiteral("lineWidth")))
+                m_channelModel->setLineWidth(i, static_cast<int>(o.value(QStringLiteral("lineWidth")).toDouble()));
+            if (o.contains(QStringLiteral("lineStyle")))
+                m_channelModel->setLineStyle(i, static_cast<Qt::PenStyle>(o.value(QStringLiteral("lineStyle")).toInt()));
+            if (o.contains(QStringLiteral("showDataPoints")))
+                m_channelModel->setShowDataPoints(i, o.value(QStringLiteral("showDataPoints")).toBool());
+
+            // 回填可见 UI（通道条 enabled/desc/addr + 样式面板 color/width/style/points）
+            const ScopeChannelState &ch = m_channelModel->channel(i);
+            if (m_bottomPanel != nullptr)
+                m_bottomPanel->setChannelConfig(i, ch.enabled, ch.description, ch.addressText);
+            if (m_stylePanel != nullptr) {
+                m_stylePanel->setChannelColor(i, ch.color);
+                m_stylePanel->setChannelLineWidth(i, static_cast<int>(ch.lineWidth));
+                m_stylePanel->setChannelLineStyle(i, ch.lineStyle);
+                m_stylePanel->setChannelShowDataPoints(i, ch.showDataPoints);
+            }
+        }
+    }
+
+    if (scope.contains(QStringLiteral("intervalText"))) {
+        const QString text = scope.value(QStringLiteral("intervalText")).toString();
+        if (!text.isEmpty()) {
+            m_sampleIntervalIndex = SamplingConfig::intervalIndexForText(text);
+            m_sampleIntervalText = text;
+            if (m_bottomPanel != nullptr) m_bottomPanel->setSampleInterval(text);
+        }
+    }
+
+    if (scope.contains(QStringLiteral("recordDir"))) {
+        const QString dir = scope.value(QStringLiteral("recordDir")).toString();
+        m_recordService->setRecordDirectory(dir);
+        if (m_bottomPanel != nullptr) m_bottomPanel->setRecordDir(dir);
+    }
+
+    // 示波器页两个子面板：寄存器辅助面板 + 波形生成器
+    if (m_bottomPanel != nullptr) {
+        if (scope.contains(QStringLiteral("registerPanel"))) {
+            if (ScopeRegisterPanel *rp = m_bottomPanel->registerPanel())
+                rp->fromJson(scope.value(QStringLiteral("registerPanel")).toObject());
+        }
+        if (scope.contains(QStringLiteral("generator"))) {
+            if (ScopeGeneratorPanel *gp = m_bottomPanel->generatorPanel())
+                gp->fromJson(scope.value(QStringLiteral("generator")).toObject());
+        }
+    }
+
+    refreshPlotData();
+    refreshMarqueeStatus();
 }
 
 // =============================================================================
@@ -192,12 +292,9 @@ void OscilloscopTab::connectSignals() {
             m_generatorService, &GeneratorService::startSawtooth);
     connect(m_bottomPanel, &ScopeBottomPanel::generatorStopRequested,
             m_generatorService, &GeneratorService::stop);
-    // BottomPanel → 数据记录目录：更新服务 + QSettings 持久化
+    // BottomPanel → 数据记录目录：仅更新服务（不再自动持久化，改由配置页手动存取）
     connect(m_bottomPanel, &ScopeBottomPanel::recordDirChanged, this, [this](const QString &dir) {
         m_recordService->setRecordDirectory(dir);
-        QSettings settings(QSettings::IniFormat, QSettings::UserScope,
-                           QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
-        settings.setValue(QStringLiteral("scope/recordDir"), dir);
         qDebug().noquote() << QStringLiteral("[Scope GUI] Record dir=%1").arg(dir);
     });
 

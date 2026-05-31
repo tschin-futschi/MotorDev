@@ -36,6 +36,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QSplitter;
+class QJsonObject;
 struct FirmwareInfo;
 
 class FwFlashTab : public QWidget {
@@ -51,6 +52,12 @@ public:
     void setStopScopeCallback(std::function<void()> cb);
     void setStopGeneratorCallback(std::function<void()> cb);
     void setStopCyclicWriteCallback(std::function<void()> cb);
+
+    /// @brief 采集烧录页功能参数（上次烧录文件路径）为 JSON
+    QJsonObject collectFlashConfig() const;
+
+    /// @brief 回填烧录页功能参数：若有 lastFile 则重新解析展示（不启动烧录）
+    void applyFlashConfig(const QJsonObject &flash);
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

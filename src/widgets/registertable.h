@@ -27,6 +27,7 @@
 
 #include <cstdint>
 
+class QJsonArray;
 class QPushButton;
 class QTableWidget;
 
@@ -94,6 +95,13 @@ public:
     /// 兼容旧版本不同 TableRowCount 的 JSON：按 jsonSize / TableGroupCount
     /// 推断旧文件 rowsPerGroup，加载到表格前 min(rowsPerGroup, TableRowCount) 行。
     void loadConfig(const QString &path);
+
+    /// @brief 采集所有行的描述/地址/值为 JSON 数组（group-major × row，共 120 条）
+    /// 供统一配置文件 AppConfigService 调用；与 saveConfig 同格式
+    QJsonArray toJsonRows() const;
+
+    /// @brief 从 JSON 数组回填描述/地址/值到表格（兼容旧版不同 rowsPerGroup）
+    void fromJsonRows(const QJsonArray &registers);
 
     /// @brief 清空所有行的描述/地址/值（含错误态复位），并触发一次 configChanged 持久化
     void clearAll();

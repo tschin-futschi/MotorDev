@@ -15,6 +15,8 @@
 #include "ui/repolish.h"
 
 #include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -211,6 +213,45 @@ void ScopeRegisterPanel::clearAll() {
 }
 
 // =============================================================================
+// 配置文件存取：8 行 desc/addr/val + 循环间隔
+// =============================================================================
+
+QJsonObject ScopeRegisterPanel::toJson() const {
+    QJsonObject obj;
+    QJsonArray rows;
+    for (int row = 0; row < RowCount; ++row) {
+        QJsonObject r;
+        r.insert(QStringLiteral("desc"), m_descEdits[row] != nullptr ? m_descEdits[row]->text() : QString());
+        r.insert(QStringLiteral("addr"), m_addrEdits[row] != nullptr ? m_addrEdits[row]->text() : QString());
+        r.insert(QStringLiteral("val"), m_valueEdits[row] != nullptr ? m_valueEdits[row]->text() : QString());
+        rows.append(r);
+    }
+    obj.insert(QStringLiteral("rows"), rows);
+    obj.insert(QStringLiteral("interval"),
+               m_intervalEdit != nullptr ? m_intervalEdit->text() : QString());
+    return obj;
+}
+
+void ScopeRegisterPanel::fromJson(const QJsonObject &obj) {
+    if (obj.contains(QStringLiteral("rows"))) {
+        const QJsonArray rows = obj.value(QStringLiteral("rows")).toArray();
+        const int count = qMin(rows.size(), RowCount);
+        for (int row = 0; row < count; ++row) {
+            const QJsonObject r = rows.at(row).toObject();
+            if (m_descEdits[row] != nullptr && r.contains(QStringLiteral("desc")))
+                m_descEdits[row]->setText(r.value(QStringLiteral("desc")).toString());
+            if (m_addrEdits[row] != nullptr && r.contains(QStringLiteral("addr")))
+                m_addrEdits[row]->setText(r.value(QStringLiteral("addr")).toString());
+            if (m_valueEdits[row] != nullptr && r.contains(QStringLiteral("val")))
+                m_valueEdits[row]->setText(r.value(QStringLiteral("val")).toString());
+        }
+    }
+    if (obj.contains(QStringLiteral("interval")) && m_intervalEdit != nullptr) {
+        m_intervalEdit->setText(obj.value(QStringLiteral("interval")).toString());
+    }
+}
+
+// =============================================================================
 // 信号槽连接
 // =============================================================================
 
@@ -300,7 +341,7 @@ void ScopeRegisterPanel::setupUi() {
         m_readButtons[row]->setMinimumSize(QSize(28, 24));
         m_readButtons[row]->setMaximumSize(QSize(28, 24));
         m_readButtons[row]->setProperty("buttonRole", QStringLiteral("read"));
-        m_readButtons[row]->setText(QStringLiteral("R"));
+        m_readButtons[row]->setText(tr("读"));
         rowLayout->addWidget(m_readButtons[row]);
 
         // --- 写按钮（W） ---
@@ -309,7 +350,7 @@ void ScopeRegisterPanel::setupUi() {
         m_writeButtons[row]->setMinimumSize(QSize(28, 24));
         m_writeButtons[row]->setMaximumSize(QSize(28, 24));
         m_writeButtons[row]->setProperty("buttonRole", QStringLiteral("write"));
-        m_writeButtons[row]->setText(QStringLiteral("W"));
+        m_writeButtons[row]->setText(tr("写"));
         rowLayout->addWidget(m_writeButtons[row]);
     }
 

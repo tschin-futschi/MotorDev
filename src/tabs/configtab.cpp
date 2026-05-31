@@ -13,16 +13,20 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QEvent>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QGraphicsDropShadowEffect>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QFormLayout>
+#include <QJsonObject>
 #include <QLabel>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QSplitter>
 #include <QSpacerItem>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QVBoxLayout>
 #include <QDebug>
@@ -106,20 +110,14 @@ ConfigTab::ConfigTab(SerialManager *serialManager,
     m_iovddSpin->setValue(2.80);
     m_vcmvddSpin->setValue(3.20);
 
-    // 配置文件区域当前未实现，禁用相关控件
+    // 配置文件区域：路径输入框（可编辑）+ Browse/Write/Read（连接逻辑见 connectSignals）
     m_fileCombo->setInsertPolicy(QComboBox::NoInsert);
     m_fileCombo->setPlaceholderText(tr("Select config file"));
+
+    // 以下设备控制按钮暂未实现，保持禁用
     m_resetButton->setEnabled(false);
     m_motorTestButton->setEnabled(false);
     m_pmicDisableButton->setEnabled(false);
-    m_browseButton->setEnabled(false);
-    m_browseButton->setToolTip(tr("功能开发中"));
-    m_writeButton->setEnabled(false);
-    m_writeButton->setToolTip(tr("功能开发中"));
-    m_readButton->setEnabled(false);
-    m_readButton->setToolTip(tr("功能开发中"));
-    m_fileCombo->setEnabled(false);
-    m_fileCombo->setToolTip(tr("功能开发中"));
 
     connectSignals();
 }
@@ -358,6 +356,117 @@ void ConfigTab::connectSignals() {
         m_motorTestButton->setEnabled(true);
         qWarning().noquote() << QStringLiteral("Motor test failed: %1").arg(reason);
     });
+
+    // -------------------------------------------------------------------------
+    // 配置文件存取：Browse 本地选路径；Read/Write 发信号交由 AppConfigService 编排
+    // -------------------------------------------------------------------------
+
+    // Browse：选一个 *.json 路径回填到 m_fileCombo（允许选已有文件或输入新文件名，
+    // DontConfirmOverwrite 避免选已有文件时弹覆盖确认——此处只取路径，不读不写）
+    connect(m_browseButton, &QPushButton::clicked, this, [this]() {
+        QString startDir = m_fileCombo->currentText().trimmed();
+        if (!startDir.isEmpty()) {
+            startDir = QFileInfo(startDir).absolutePath();
+        } else {
+            startDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+        }
+        const QString path = QFileDialog::getSaveFileName(
+            this, tr("Select Config File"), startDir,
+            tr("JSON 配置文件 (*.json);;所有文件 (*.*)"), nullptr,
+            QFileDialog::DontConfirmOverwrite);
+        if (!path.isEmpty()) {
+            m_fileCombo->setCurrentText(path);
+        }
+    });
+
+    // Read：把当前路径发出去，由 AppConfigService 读 JSON 回填各页面
+    connect(m_readButton, &QPushButton::clicked, this, [this]() {
+        const QString path = m_fileCombo->currentText().trimmed();
+        if (path.isEmpty()) {
+            qWarning() << "Read config: no path specified";
+            return;
+        }
+        emit readConfigRequested(path);
+    });
+
+    // Write：把当前路径发出去，由 AppConfigService 采集各页面配置写 JSON
+    connect(m_writeButton, &QPushButton::clicked, this, [this]() {
+        const QString path = m_fileCombo->currentText().trimmed();
+        if (path.isEmpty()) {
+            qWarning() << "Write config: no path specified";
+            return;
+        }
+        emit writeConfigRequested(path);
+    });
+}
+
+// =============================================================================
+// 配置文件存取：device section 采集 / 回填
+// =============================================================================
+
+namespace {
+
+/// @brief 在下拉框中选中指定文本；不存在则先追加再选中
+/// 用于回填可能不在当前列表中的端口 / 波特率 / 从机地址
+void selectOrAddText(QComboBox *combo, const QString &text) {
+    if (text.isEmpty()) return;
+    if (combo->findText(text) < 0) combo->addItem(text);
+    combo->setCurrentText(text);
+}
+
+/// @brief IC 型号字符串 → MotorIcType（按 DeviceContext 型号字符串匹配，未知回退 AW86008）
+MotorIcType icTypeFromString(const QString &name) {
+    for (int i = 0; i < 4; ++i) {
+        const MotorIcType t = DeviceContext::motorIcTypeFromIndex(i);
+        if (DeviceContext::motorIcTypeToString(t) == name) return t;
+    }
+    return MotorIcType::AW86008;
+}
+
+}  // namespace
+
+QJsonObject ConfigTab::collectDeviceConfig() const {
+    QJsonObject device;
+    device.insert(QStringLiteral("port"), m_portCombo->currentText().trimmed());
+    device.insert(QStringLiteral("baud"), m_baudRateCombo->currentText().toInt());
+    device.insert(QStringLiteral("ic"),
+                  DeviceContext::motorIcTypeToString(m_deviceContext->icType()));
+    device.insert(QStringLiteral("slave"), m_slaveIdCombo->currentText().trimmed());
+
+    QJsonObject pmic;
+    pmic.insert(QStringLiteral("drvdd"), m_drvddSpin->value());
+    pmic.insert(QStringLiteral("vcmvdd"), m_vcmvddSpin->value());
+    pmic.insert(QStringLiteral("iovdd"), m_iovddSpin->value());
+    device.insert(QStringLiteral("pmic"), pmic);
+    return device;
+}
+
+void ConfigTab::applyDeviceConfig(const QJsonObject &device) {
+    // 只回填控件值，不触发任何串口动作（不连接 / 不扫描 / 不下发命令）。
+    // IC 与从机地址经既有双向同步写入 DeviceContext，仅更新状态模型，无串口副作用。
+    if (device.contains(QStringLiteral("port"))) {
+        selectOrAddText(m_portCombo, device.value(QStringLiteral("port")).toString().trimmed());
+    }
+    if (device.contains(QStringLiteral("baud"))) {
+        const int baud = device.value(QStringLiteral("baud")).toInt();
+        if (baud > 0) selectOrAddText(m_baudRateCombo, QString::number(baud));
+    }
+    if (device.contains(QStringLiteral("ic"))) {
+        const MotorIcType type = icTypeFromString(device.value(QStringLiteral("ic")).toString());
+        m_icCombo->setCurrentIndex(DeviceContext::indexFromMotorIcType(type));
+    }
+    if (device.contains(QStringLiteral("slave"))) {
+        selectOrAddText(m_slaveIdCombo, device.value(QStringLiteral("slave")).toString().trimmed());
+    }
+    if (device.contains(QStringLiteral("pmic"))) {
+        const QJsonObject pmic = device.value(QStringLiteral("pmic")).toObject();
+        if (pmic.contains(QStringLiteral("drvdd")))
+            m_drvddSpin->setValue(pmic.value(QStringLiteral("drvdd")).toDouble());
+        if (pmic.contains(QStringLiteral("vcmvdd")))
+            m_vcmvddSpin->setValue(pmic.value(QStringLiteral("vcmvdd")).toDouble());
+        if (pmic.contains(QStringLiteral("iovdd")))
+            m_iovddSpin->setValue(pmic.value(QStringLiteral("iovdd")).toDouble());
+    }
 }
 
 // =============================================================================
@@ -637,32 +746,33 @@ void ConfigTab::setupUi() {
     lowerLayout->addWidget(configFileRow);
     auto *configFileLabel = new QLabel(configFileRow);
     configFileLabel->setObjectName(QStringLiteral("configFileLabel"));
-    configFileLabel->setText(QStringLiteral("Config File"));
+    configFileLabel->setText(tr("配置文件"));
     configFileLayout->addWidget(configFileLabel);
+    // 文件浏览框紧跟标签，并占据该行剩余空间（stretch=1），让三个按钮保持紧凑
     m_fileCombo = new QComboBox(configFileRow);
     m_fileCombo->setObjectName(QStringLiteral("fileCombo"));
     m_fileCombo->setEditable(true);
     m_fileCombo->setProperty("inputRole", QStringLiteral("form"));
-    configFileLayout->addWidget(m_fileCombo);
+    configFileLayout->addWidget(m_fileCombo, 1);
+
+    // 三个操作按钮等宽、紧凑（固定宽度，不随窗口拉伸而变大）
+    constexpr int kConfigFileBtnW = 120;
     m_browseButton = new QPushButton(configFileRow);
     m_browseButton->setObjectName(QStringLiteral("browseButton"));
-    m_browseButton->setMinimumSize(QSize(0, 32));
-    m_browseButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_browseButton->setText(QStringLiteral("Browse"));
+    m_browseButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_browseButton->setText(tr("浏览文件"));
     m_browseButton->setProperty("buttonRole", QStringLiteral("secondary"));
     configFileLayout->addWidget(m_browseButton);
     m_writeButton = new QPushButton(configFileRow);
     m_writeButton->setObjectName(QStringLiteral("writeButton"));
-    m_writeButton->setMinimumSize(QSize(0, 32));
-    m_writeButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_writeButton->setText(QStringLiteral("Write"));
+    m_writeButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_writeButton->setText(tr("写入配置文件"));
     m_writeButton->setProperty("buttonRole", QStringLiteral("primary"));
     configFileLayout->addWidget(m_writeButton);
     m_readButton = new QPushButton(configFileRow);
     m_readButton->setObjectName(QStringLiteral("readButton"));
-    m_readButton->setMinimumSize(QSize(0, 32));
-    m_readButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
-    m_readButton->setText(QStringLiteral("Read"));
+    m_readButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_readButton->setText(tr("回填配置文件"));
     m_readButton->setProperty("buttonRole", QStringLiteral("primary"));
     configFileLayout->addWidget(m_readButton);
     lowerLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
