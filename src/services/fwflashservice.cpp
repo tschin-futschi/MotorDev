@@ -109,7 +109,7 @@ void FwFlashService::startFlash(const QString &icModel,
     m_cancelFlag = std::make_shared<std::atomic<bool>>(false);
 
     setState(State::Preparing);
-    emit stageMessage(QStringLiteral("准备中..."));
+    emit stageMessage(tr("准备中..."));
     emit progressUpdated(0, m_totalBytes);
     emitLog(LogLevel::Info,
             QStringLiteral("开始烧录序列 (%1, %2 KB)")
@@ -152,13 +152,13 @@ void FwFlashService::onFlashExecProgress(quint8 phase, quint32 done, quint32 tot
         pct = kPctData +
               static_cast<int>(static_cast<qint64>(kPctErase) * done / total);
         stageText = (done < total)
-                        ? QStringLiteral("擦除 Flash...")
-                        : QStringLiteral("擦除完成");
+                        ? tr("擦除 Flash...")
+                        : tr("擦除完成");
         break;
     case static_cast<quint8>(MotorProtocol::FlashExecPhase::Write):
         pct = kPctData + kPctErase +
               static_cast<int>(static_cast<qint64>(kPctWrite) * done / total);
-        stageText = QStringLiteral("写入 Flash %1 / %2 块").arg(done).arg(total);
+        stageText = tr("写入 Flash %1 / %2 块").arg(done).arg(total);
         break;
     default:
         qCWarning(lcFwFlash) << "unknown phase in 0x38 progress:" << phase;
@@ -180,17 +180,17 @@ void invokeIfSet(const FwFlashService::StopCallback &cb) {
 
 void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteArray &firmware) {
     setState(State::StoppingScope);
-    emit stageMessage(QStringLiteral("停止采样..."));
+    emit stageMessage(tr("停止采样..."));
     emitLog(LogLevel::Info, QStringLiteral("停止采样"));
     invokeIfSet(m_stopScope);
 
     setState(State::StoppingGenerator);
-    emit stageMessage(QStringLiteral("停止信号发生器..."));
+    emit stageMessage(tr("停止信号发生器..."));
     emitLog(LogLevel::Info, QStringLiteral("停止信号发生器"));
     invokeIfSet(m_stopGenerator);
 
     setState(State::StoppingCyclic);
-    emit stageMessage(QStringLiteral("停止循环写入..."));
+    emit stageMessage(tr("停止循环写入..."));
     emitLog(LogLevel::Info, QStringLiteral("停止循环写入"));
     invokeIfSet(m_stopCyclic);
 
@@ -199,7 +199,7 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
     // 前置期间用户已点取消则提前结束
     if (m_cancelFlag->load()) {
         setState(State::Cancelled);
-        emit stageMessage(QStringLiteral("已取消"));
+        emit stageMessage(tr("已取消"));
         emitLog(LogLevel::Info, QStringLiteral("已取消"));
         emit finished(false, QStringLiteral("已取消"));
         setState(State::Idle);
@@ -207,7 +207,7 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
     }
 
     setState(State::Flashing);
-    emit stageMessage(QStringLiteral("烧录中..."));
+    emit stageMessage(tr("烧录中..."));
     emitLog(LogLevel::Info,
             QStringLiteral("调用 %1::flash() (%2 KB)")
                 .arg(strategy->icModel())
@@ -282,17 +282,17 @@ void FwFlashService::runPreflightAndFlash(FlashStrategy *strategy, const QByteAr
                 if (ok) {
                     self->emitProgressPct(100);
                     self->setState(State::Completed);
-                    emit self->stageMessage(QStringLiteral("烧录完成"));
+                    emit self->stageMessage(FwFlashService::tr("烧录完成"));
                     self->emitLog(LogLevel::Ok, QStringLiteral("烧录完成"));
                     emit self->finished(true, QStringLiteral("成功"));
                 } else if (wasCancelled) {
                     self->setState(State::Cancelled);
-                    emit self->stageMessage(QStringLiteral("已取消"));
+                    emit self->stageMessage(FwFlashService::tr("已取消"));
                     self->emitLog(LogLevel::Info, QStringLiteral("已取消"));
                     emit self->finished(false, QStringLiteral("已取消"));
                 } else {
                     self->setState(State::Failed);
-                    emit self->stageMessage(QStringLiteral("失败：%1").arg(errorMsg));
+                    emit self->stageMessage(FwFlashService::tr("失败：%1").arg(errorMsg));
                     self->emitLog(LogLevel::Error, QStringLiteral("烧录失败：%1").arg(errorMsg));
                     emit self->finished(false, errorMsg);
                 }

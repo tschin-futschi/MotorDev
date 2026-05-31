@@ -7,6 +7,7 @@
 #include "protocol/firmware_parser.h"
 #include "ui/style_constants.h"
 
+#include <QCoreApplication>
 #include <QEvent>
 #include <QGridLayout>
 #include <QLabel>
@@ -34,7 +35,8 @@ QLabel *makeLabel(QWidget *parent, const QString &text, bool valueRole) {
 }
 
 QString formatSize(qint64 bytes) {
-    return QStringLiteral("%1 字节 (%2 KB)")
+    // 自由函数无 tr()，用 QCoreApplication::translate 归入 FwFileInfoPanel 上下文
+    return QCoreApplication::translate("FwFileInfoPanel", "%1 字节 (%2 KB)")
         .arg(bytes)
         .arg(QString::number(bytes / 1024.0, 'f', 1));
 }
@@ -220,9 +222,9 @@ void FwFileInfoPanel::setInfo(const FirmwareInfo &info) {
         m_addrRangeValue->setText(QStringLiteral("%1 - %2")
                                       .arg(formatHex32(info.minAddress))
                                       .arg(formatHex32(info.maxAddress)));
-        m_effectiveValue->setText(QStringLiteral("%1 字节").arg(info.effectiveBytes));
+        m_effectiveValue->setText(tr("%1 字节").arg(info.effectiveBytes));
     } else if (isDwCustom) {
-        m_effectiveValue->setText(QStringLiteral("%1 字节").arg(info.effectiveBytes));
+        m_effectiveValue->setText(tr("%1 字节").arg(info.effectiveBytes));
         if (info.paddingApplied) {
             const int expectedLines = isHl9788 ? 16384 : 10240;
             // 期望行数 - 原始行数 - 2 = 填充 0 的行数；最后再加 1 行 footer CRC + 1 行 0

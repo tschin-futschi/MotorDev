@@ -2,37 +2,85 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
+    <name>AboutDialog</name>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="44"/>
+        <source>关于 %1</source>
+        <translation>About %1</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="62"/>
+        <source>电机驱动模组调试上位机</source>
+        <translation>Motor driver module debugging host</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="97"/>
+        <source>版本</source>
+        <translation>Version</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="98"/>
+        <source>构建</source>
+        <translation>Build</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="100"/>
+        <source>支持 IC</source>
+        <translation>Supported ICs</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="101"/>
+        <source>通信协议</source>
+        <translation>Protocol</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="102"/>
+        <source>作者</source>
+        <translation>Author</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/aboutdialog.cpp" line="120"/>
+        <source>确定</source>
+        <translation>OK</translation>
+    </message>
+</context>
+<context>
     <name>ActivityBar</name>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="184"/>
-        <location filename="../src/widgets/activitybar.cpp" line="192"/>
+        <location filename="../src/widgets/activitybar.cpp" line="199"/>
+        <location filename="../src/widgets/activitybar.cpp" line="207"/>
         <source>配置</source>
         <translation>Config</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="193"/>
+        <location filename="../src/widgets/activitybar.cpp" line="208"/>
         <source>读写</source>
         <translation>R/W</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="194"/>
+        <location filename="../src/widgets/activitybar.cpp" line="209"/>
         <source>烧录</source>
         <translation>Flash</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="195"/>
+        <location filename="../src/widgets/activitybar.cpp" line="210"/>
         <source>示波</source>
         <translation>Scope</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="196"/>
+        <location filename="../src/widgets/activitybar.cpp" line="211"/>
         <source>存储</source>
         <translation>Storage</translation>
     </message>
     <message>
-        <location filename="../src/widgets/activitybar.cpp" line="197"/>
+        <location filename="../src/widgets/activitybar.cpp" line="212"/>
         <source>调试</source>
         <translation>Debug</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/activitybar.cpp" line="213"/>
+        <source>关于</source>
+        <translation>About</translation>
     </message>
     <message>
         <source>设置</source>
@@ -42,21 +90,21 @@
 <context>
     <name>ConfigTab</name>
     <message>
-        <location filename="../src/tabs/configtab.cpp" line="99"/>
-        <location filename="../src/tabs/configtab.cpp" line="819"/>
+        <location filename="../src/tabs/configtab.cpp" line="100"/>
+        <location filename="../src/tabs/configtab.cpp" line="818"/>
         <source>请先扫描</source>
         <translation>Scan first</translation>
     </message>
     <message>
-        <location filename="../src/tabs/configtab.cpp" line="101"/>
-        <location filename="../src/tabs/configtab.cpp" line="820"/>
+        <location filename="../src/tabs/configtab.cpp" line="102"/>
+        <location filename="../src/tabs/configtab.cpp" line="819"/>
         <source>选择串口</source>
         <translation>Select COM</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="116"/>
         <location filename="../src/tabs/configtab.cpp" line="375"/>
-        <location filename="../src/tabs/configtab.cpp" line="821"/>
+        <location filename="../src/tabs/configtab.cpp" line="820"/>
         <source>选择配置文件</source>
         <translation>Select config file</translation>
     </message>
@@ -67,7 +115,7 @@
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="496"/>
-        <location filename="../src/tabs/configtab.cpp" line="837"/>
+        <location filename="../src/tabs/configtab.cpp" line="836"/>
         <source>断开</source>
         <translation>Disconnect</translation>
     </message>
@@ -75,94 +123,94 @@
         <location filename="../src/tabs/configtab.cpp" line="496"/>
         <location filename="../src/tabs/configtab.cpp" line="602"/>
         <location filename="../src/tabs/configtab.cpp" line="655"/>
-        <location filename="../src/tabs/configtab.cpp" line="825"/>
-        <location filename="../src/tabs/configtab.cpp" line="837"/>
+        <location filename="../src/tabs/configtab.cpp" line="824"/>
+        <location filename="../src/tabs/configtab.cpp" line="836"/>
         <source>连接</source>
         <translation>Connect</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="570"/>
-        <location filename="../src/tabs/configtab.cpp" line="812"/>
+        <location filename="../src/tabs/configtab.cpp" line="811"/>
         <source>选择 IC</source>
         <translation>Select IC</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="580"/>
-        <location filename="../src/tabs/configtab.cpp" line="813"/>
+        <location filename="../src/tabs/configtab.cpp" line="812"/>
         <source>从机地址</source>
         <translation>Slave ID</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="595"/>
         <location filename="../src/tabs/configtab.cpp" line="649"/>
-        <location filename="../src/tabs/configtab.cpp" line="824"/>
-        <location filename="../src/tabs/configtab.cpp" line="826"/>
+        <location filename="../src/tabs/configtab.cpp" line="823"/>
+        <location filename="../src/tabs/configtab.cpp" line="825"/>
         <source>扫描</source>
         <translation>Scan</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="608"/>
-        <location filename="../src/tabs/configtab.cpp" line="809"/>
+        <location filename="../src/tabs/configtab.cpp" line="808"/>
         <source>串口</source>
         <translation>Serial</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="621"/>
-        <location filename="../src/tabs/configtab.cpp" line="814"/>
+        <location filename="../src/tabs/configtab.cpp" line="813"/>
         <source>端口</source>
         <translation>Port</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="631"/>
-        <location filename="../src/tabs/configtab.cpp" line="815"/>
+        <location filename="../src/tabs/configtab.cpp" line="814"/>
         <source>波特率</source>
         <translation>Baud Rate</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="661"/>
-        <location filename="../src/tabs/configtab.cpp" line="827"/>
+        <location filename="../src/tabs/configtab.cpp" line="826"/>
         <source>设备复位</source>
         <translation>Reset Device</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="667"/>
-        <location filename="../src/tabs/configtab.cpp" line="828"/>
+        <location filename="../src/tabs/configtab.cpp" line="827"/>
         <source>电机测试</source>
         <translation>Motor Test</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="717"/>
-        <location filename="../src/tabs/configtab.cpp" line="829"/>
+        <location filename="../src/tabs/configtab.cpp" line="828"/>
         <source>配置 PMIC</source>
         <translation>Config PMIC</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="728"/>
-        <location filename="../src/tabs/configtab.cpp" line="830"/>
+        <location filename="../src/tabs/configtab.cpp" line="829"/>
         <source>关闭 PMIC</source>
         <translation>Disable PMIC</translation>
     </message>
     <message>
         <location filename="../src/tabs/configtab.cpp" line="750"/>
-        <location filename="../src/tabs/configtab.cpp" line="816"/>
+        <location filename="../src/tabs/configtab.cpp" line="815"/>
         <source>配置文件</source>
         <translation>Config File</translation>
     </message>
     <message>
-        <location filename="../src/tabs/configtab.cpp" line="764"/>
-        <location filename="../src/tabs/configtab.cpp" line="831"/>
+        <location filename="../src/tabs/configtab.cpp" line="763"/>
+        <location filename="../src/tabs/configtab.cpp" line="830"/>
         <source>浏览文件</source>
         <translation>Browse</translation>
     </message>
     <message>
-        <location filename="../src/tabs/configtab.cpp" line="770"/>
-        <location filename="../src/tabs/configtab.cpp" line="832"/>
+        <location filename="../src/tabs/configtab.cpp" line="769"/>
+        <location filename="../src/tabs/configtab.cpp" line="831"/>
         <source>写入配置文件</source>
         <translation>Write Config</translation>
     </message>
     <message>
-        <location filename="../src/tabs/configtab.cpp" line="776"/>
-        <location filename="../src/tabs/configtab.cpp" line="833"/>
+        <location filename="../src/tabs/configtab.cpp" line="775"/>
+        <location filename="../src/tabs/configtab.cpp" line="832"/>
         <source>回填配置文件</source>
         <translation>Read Config</translation>
     </message>
@@ -263,93 +311,132 @@ Proceed?</translation>
     </message>
 </context>
 <context>
+    <name>FlashStoreService</name>
+    <message>
+        <location filename="../src/services/flashstoreservice.cpp" line="212"/>
+        <source>擦除 Flash 区域（3-7 秒，不可取消）...</source>
+        <translation>Erasing Flash area (3-7 s, cannot cancel)...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/flashstoreservice.cpp" line="315"/>
+        <source>擦除 Flash 区域（3-7 秒）...</source>
+        <translation>Erasing Flash area (3-7 s)...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/flashstoreservice.cpp" line="374"/>
+        <source>传输中 %1 KB / %2 KB</source>
+        <translation>Transferring %1 KB / %2 KB</translation>
+    </message>
+    <message>
+        <location filename="../src/services/flashstoreservice.cpp" line="385"/>
+        <source>校验 CRC + 提交元数据...</source>
+        <translation>Verifying CRC + committing metadata...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/flashstoreservice.cpp" line="480"/>
+        <source>下载中 %1 KB / %2 KB</source>
+        <translation>Downloading %1 KB / %2 KB</translation>
+    </message>
+</context>
+<context>
     <name>FwFileInfoPanel</name>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="70"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="165"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="39"/>
+        <source>%1 字节 (%2 KB)</source>
+        <translation>%1 bytes (%2 KB)</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="72"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="167"/>
         <source>请先选择固件文件</source>
         <translation>Please select a firmware file first</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="91"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="166"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="93"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="168"/>
         <source>文件名</source>
         <translation>File Name</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="96"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="167"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="98"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="169"/>
         <source>文件大小</source>
         <translation>File Size</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="101"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="168"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="103"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="170"/>
         <source>文件格式</source>
         <translation>Format</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="106"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="169"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="108"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="171"/>
         <source>CRC32</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="111"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="170"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="113"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="172"/>
         <source>段数</source>
         <translation>Segments</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="116"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="171"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="118"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="173"/>
         <source>地址范围</source>
         <translation>Address Range</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="121"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="172"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="123"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="174"/>
         <source>有效字节</source>
         <translation>Effective Bytes</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="126"/>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="173"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="128"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="175"/>
         <source>自动补齐</source>
         <translation>Auto-pad</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="178"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="180"/>
         <source>解析失败：%1</source>
         <translation>Parse failed: %1</translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="188"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="190"/>
         <source>Binary</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="189"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="191"/>
         <source>Intel HEX</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="190"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="192"/>
         <source>Dongwoon HL9788N hex</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="191"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="193"/>
         <source>Dongwoon DW9786 hex</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="192"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="194"/>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/widgets/fwfileinfopanel.cpp" line="231"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="225"/>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="227"/>
+        <source>%1 字节</source>
+        <translation>%1 bytes</translation>
+    </message>
+    <message>
+        <location filename="../src/widgets/fwfileinfopanel.cpp" line="233"/>
         <source>%1 原始行 + %2 填充 0 行 + footer (CRC32=%3, 末行全 0)</source>
         <translation>%1 original lines + %2 zero-padding lines + footer (CRC32=%3, last line all 0)</translation>
     </message>
@@ -395,6 +482,65 @@ Proceed?</translation>
         <location filename="../src/widgets/fwflashlogpanel.cpp" line="72"/>
         <source>清空</source>
         <translation>Clear</translation>
+    </message>
+</context>
+<context>
+    <name>FwFlashService</name>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="112"/>
+        <source>准备中...</source>
+        <translation>Preparing...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="155"/>
+        <source>擦除 Flash...</source>
+        <translation>Erasing Flash...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="156"/>
+        <source>擦除完成</source>
+        <translation>Erase complete</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="161"/>
+        <source>写入 Flash %1 / %2 块</source>
+        <translation>Writing Flash %1 / %2 blocks</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="183"/>
+        <source>停止采样...</source>
+        <translation>Stopping sampling...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="188"/>
+        <source>停止信号发生器...</source>
+        <translation>Stopping generator...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="193"/>
+        <source>停止循环写入...</source>
+        <translation>Stopping cyclic write...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="202"/>
+        <location filename="../src/services/fwflashservice.cpp" line="290"/>
+        <source>已取消</source>
+        <translation>Cancelled</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="210"/>
+        <source>烧录中...</source>
+        <translation>Flashing...</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="285"/>
+        <source>烧录完成</source>
+        <translation>Flash complete</translation>
+    </message>
+    <message>
+        <location filename="../src/services/fwflashservice.cpp" line="295"/>
+        <source>失败：%1</source>
+        <translation>Failed: %1</translation>
     </message>
 </context>
 <context>
@@ -512,36 +658,36 @@ Proceed?</translation>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../src/mainwindow.cpp" line="61"/>
-        <location filename="../src/mainwindow.cpp" line="155"/>
+        <location filename="../src/mainwindow.cpp" line="62"/>
+        <location filename="../src/mainwindow.cpp" line="156"/>
         <source>MotorDev</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="157"/>
+        <location filename="../src/mainwindow.cpp" line="158"/>
         <source>固件 v0.0.0 · 编译日期 2026-01-01</source>
         <translation>Firmware v0.0.0 · Built 2026-01-01</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="161"/>
-        <location filename="../src/mainwindow.cpp" line="479"/>
+        <location filename="../src/mainwindow.cpp" line="162"/>
+        <location filename="../src/mainwindow.cpp" line="486"/>
         <source>▲ 输出</source>
         <translation>▲ Output</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="161"/>
-        <location filename="../src/mainwindow.cpp" line="251"/>
-        <location filename="../src/mainwindow.cpp" line="480"/>
+        <location filename="../src/mainwindow.cpp" line="162"/>
+        <location filename="../src/mainwindow.cpp" line="252"/>
+        <location filename="../src/mainwindow.cpp" line="487"/>
         <source>▼ 输出</source>
         <translation>▼ Output</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="397"/>
+        <location filename="../src/mainwindow.cpp" line="404"/>
         <source>STM32 启动失败</source>
         <translation>STM32 Startup Failed</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow.cpp" line="398"/>
+        <location filename="../src/mainwindow.cpp" line="405"/>
         <source>%1
 
 STM32 已进入 LED 快闪死循环，不再响应任何命令。

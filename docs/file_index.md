@@ -116,8 +116,9 @@
 ### 主窗口框架与页面导航
 - `src/main.cpp` — 程序入口，创建 QApplication 和 MainWindow，安装全局 Qt 消息处理器（将 qDebug/qWarning 路由至 LogPanel）
 - `src/mainwindow` `[UI-Shell]` — 主窗口，持有并组合所有顶层组件，管理串口连接后部分页面的启用/禁用状态
-- `src/widgets/activitybar` `[UI-Shell]` — 左侧活动栏（配置/读写/烧录/示波/存储 五个页面切换按钮 + 调试按钮（浮动窗口）；另有"设置"按钮为 UI 占位，未连接信号）
-- `src/widgets/topbar` `[UI-Shell]` — 顶栏（Logo、串口连接状态显示、示波器页面专属控件：视图模式切换/Style/采样启停；语言切换 combo 为 UI 占位，**i18n 未实现**）
+- `src/widgets/activitybar` `[UI-Shell]` — 左侧活动栏（配置/读写/烧录/示波/存储/调试 页面切换按钮；底部"关于"按钮经 `aboutRequested` 信号弹出 AboutDialog）
+- `src/widgets/aboutdialog` `[UI-Widget]` — 关于对话框（模态）：软件名/版本/构建/支持 IC/协议/作者/版权/仓库 + 两句固定德语题词；背景为 Logo SVG 全幅展开 + 半透明遮罩；由 ActivityBar"关于"按钮触发
+- `src/widgets/topbar` `[UI-Shell]` — 顶栏（Logo、串口连接状态显示、示波器页面专属控件：视图模式切换/Style/采样启停；语言切换 combo 经 `languageChanged` 驱动运行时中英即时切换，**i18n 已实现**）
 
 ### 日志面板
 - `src/widgets/logpanel` `[UI-Shell]` — 底部日志面板，全局单例，接收 Qt 消息输出
@@ -154,8 +155,8 @@
 | 信号发生器 | `src/widgets/scopegeneratorpanel` + `src/services/generatorservice` | 已实现：Linear / Cosine / Sawtooth 三种模式 + 协议命令（0x55/0x56/0x57/0x58），波形由 STM32 执行 |
 | 固件烧录 | `src/tabs/fwflashtab` + `src/services/fwflashservice` + `src/services/flashstrategies/*` | AW86008 / AW86100 / DW9788 / DW9786 全部已落地。AW86008/AW86100：`AwLocalIspStrategy` 走 STM32 本地 ISP 协议 0x32~0x37（BEGIN → DATA 循环 → EXEC，失败时 RESET_CHIP + CANCEL 收尾）；上位机不再依赖 PC 端 DLL。DW9788：`DW9788Strategy` + `Hl9788nBridge` 调 Dongwoon HL9788N vendor SDK；DW9786：`DW9786Strategy` + `Dw9786Bridge` 调 Dongwoon DW9786 vendor SDK，序列 id_check + fw_download_with_buffer (erase+write+checksum) + chip_enable；vendor I2C 通过 0x30 / 0x31 透传到 STM32；OTA 模式默认保留模组校准；HL9788N 与 DW9786 vendor 共享同名全局符号，link 阶段用 `--allow-multiple-definition` 合并，两桥接层调用方互斥保障运行时正确性 |
 | STM32 FLASH 文件存储 | `src/tabs/flashstoragetab` + `src/services/flashstoreservice` | 已实现：单插槽覆盖（每次擦 Sector 5-11 共 896 KB）+ 上传/下载/容量查询/**清空 FLASH(0x3F WIPE)**；下载 1:1 无损（改扩展名复原）；协议 v2.11 / 0x39~0x3F |
-| 多语言切换（i18n） | `src/widgets/topbar` | UI stub，combo 未连接信号 |
-| 设置页面 | `src/widgets/activitybar` | UI stub，按钮未连接信号 |
+| 多语言切换（i18n） | 全局（`src/mainwindow` 装/卸 QTranslator + 各 widget `retranslateUi`/`changeEvent`） | 已实现：运行时中英即时切换，QSettings 记忆，TopBar combo 驱动；译文 `translations/motordev_en.ts`（保留术语英文源回退）；服务层阶段标签已译，日志/诊断保留中文 |
+| 关于对话框 | `src/widgets/aboutdialog` + `src/widgets/activitybar` | 已实现：侧边栏底部"关于"按钮弹出模态对话框（元信息 + 德语题词 + Logo 全幅背景）；原"设置"占位按钮已移除 |
 
 ---
 

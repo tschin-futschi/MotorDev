@@ -59,6 +59,8 @@ void ActivityBar::connectSignals() {
         setActivePage(DebugPage);
         emit pageSelected(DebugPage);
     });
+    // 「关于」非页面切换，不改 active 态，仅请求弹出对话框
+    connect(m_aboutButton, &QPushButton::clicked, this, &ActivityBar::aboutRequested);
 }
 
 // =============================================================================
@@ -155,8 +157,21 @@ void ActivityBar::setupUi() {
         verticalLayout->addLayout(wrapper);
     }
 
-    // 弹性间距 → 导航按钮顶部对齐，底部留白
+    // 弹性间距 → 导航按钮顶部对齐，「关于」按钮推到底部
     verticalLayout->addItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding));
+
+    // 底部「关于」按钮（非页面切换，点击弹出关于对话框）
+    auto *aboutWrapper = new QHBoxLayout();
+    aboutWrapper->setContentsMargins(0, 0, 0, 0);
+    aboutWrapper->addStretch();
+    m_aboutButton = new QPushButton(this);
+    m_aboutButton->setObjectName(QStringLiteral("aboutButton"));
+    m_aboutButton->setMinimumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
+    m_aboutButton->setMaximumSize(QSize(Style::Size::ActivityButtonSize, Style::Size::ActivityButtonSize));
+    m_aboutButton->setProperty("active", false);
+    aboutWrapper->addWidget(m_aboutButton);
+    aboutWrapper->addStretch();
+    verticalLayout->addLayout(aboutWrapper);
 
     retranslateUi();
 }
@@ -195,4 +210,5 @@ void ActivityBar::retranslateUi() {
     applyLabel(m_scopeButton, tr("示波"));
     applyLabel(m_storageButton, tr("存储"));
     applyLabel(m_debugButton, tr("调试"));
+    applyLabel(m_aboutButton, tr("关于"));
 }

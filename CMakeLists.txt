@@ -96,6 +96,8 @@ qt_add_executable(MotorDev
     src/protocol/motor_protocol.cpp
     src/protocol/motor_protocol.h
     src/ui/style_constants.h
+    src/widgets/aboutdialog.cpp
+    src/widgets/aboutdialog.h
     src/widgets/activitybar.cpp
     src/widgets/activitybar.h
     src/widgets/logpanel.cpp

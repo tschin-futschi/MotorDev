@@ -209,7 +209,7 @@ void FlashStoreService::startWipe() {
     if (!armBusy()) return;
     // 复用 WriteBeginning 状态（语义近似：都是整区擦），不引入新状态
     setState(State::WriteBeginning);
-    emit stageMessage(QStringLiteral("擦除 Flash 区域（3-7 秒，不可取消）..."));
+    emit stageMessage(tr("擦除 Flash 区域（3-7 秒，不可取消）..."));
     emitLog(LogLevel::Info, QStringLiteral("开始清空 Flash 文件存储区"));
     dispatchOp(Op::Wipe);
 }
@@ -312,7 +312,7 @@ void FlashStoreService::dispatchOp(Op op,
             // ============================ WRITE ============================
             case Op::Write: {
                 setStateOnMain(State::WriteBeginning);
-                stageOnMain(QStringLiteral("擦除 Flash 区域（3-7 秒）..."));
+                stageOnMain(FlashStoreService::tr("擦除 Flash 区域（3-7 秒）..."));
 
                 QByteArray resp;
                 if (!sendCmd(MotorProtocol::CmdFlashStoreWriteBegin,
@@ -371,7 +371,7 @@ void FlashStoreService::dispatchOp(Op op,
                                 if (!self.isNull()) emit self->progressUpdated(sent, total);
                             }, Qt::QueuedConnection);
                         }
-                        stageOnMain(QStringLiteral("传输中 %1 KB / %2 KB")
+                        stageOnMain(FlashStoreService::tr("传输中 %1 KB / %2 KB")
                                         .arg(QString::number(sent / 1024.0, 'f', 1))
                                         .arg(QString::number(total / 1024.0, 'f', 1)));
                         lastProgBytes = offset;
@@ -382,7 +382,7 @@ void FlashStoreService::dispatchOp(Op op,
 
                 // -------- 0x3B END --------
                 setStateOnMain(State::WriteEnding);
-                stageOnMain(QStringLiteral("校验 CRC + 提交元数据..."));
+                stageOnMain(FlashStoreService::tr("校验 CRC + 提交元数据..."));
                 if (!sendCmd(MotorProtocol::CmdFlashStoreWriteEnd,
                              MotorProtocol::encodeFlashStoreWriteEnd(writeCrc),
                              resp, kShortTimeoutMs, "WRITE_END", &errorMsg)) {
@@ -477,7 +477,7 @@ void FlashStoreService::dispatchOp(Op op,
                                 if (!self.isNull()) emit self->progressUpdated(cur, t);
                             }, Qt::QueuedConnection);
                         }
-                        stageOnMain(QStringLiteral("下载中 %1 KB / %2 KB")
+                        stageOnMain(FlashStoreService::tr("下载中 %1 KB / %2 KB")
                                         .arg(QString::number(cur / 1024.0, 'f', 1))
                                         .arg(QString::number(t / 1024.0, 'f', 1)));
                         lastProgBytes = cur;

@@ -25,6 +25,7 @@
 #include "tabs/registerrwtab.h"
 #include "tabs/serialdebugtab.h"
 #include "ui/style_constants.h"
+#include "widgets/aboutdialog.h"
 #include "widgets/activitybar.h"
 #include "widgets/logpanel.h"
 #include "widgets/topbar.h"
@@ -322,6 +323,12 @@ void MainWindow::connectSignals() {
             return;
         }
         m_contentStack->setCurrentIndex(index);
+    });
+
+    // --- 侧边栏「关于」按钮 → 弹出关于对话框（模态）---
+    connect(m_activityBar, &ActivityBar::aboutRequested, this, [this]() {
+        AboutDialog dialog(this);
+        dialog.exec();
     });
 
     // --- 串口连接状态 → TopBar 指示灯更新 ---
