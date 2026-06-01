@@ -303,6 +303,7 @@ void ConfigTab::connectSignals() {
         const uint addr = addrText.toUInt(&ok, 16);
         if (ok && DeviceContext::isValidSlaveAddress(addr)) m_deviceContext->setSlaveId(static_cast<uint8_t>(addr));
         qDebug().noquote() << QStringLiteral("Motor IC address set to %1").arg(addrText);
+        emit motorIcConnected();
     });
 
     // 协议错误 → 恢复所有操作按钮

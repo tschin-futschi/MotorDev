@@ -461,9 +461,12 @@ void MainWindow::connectSignals() {
         m_activityBar->setPageEnabled(ActivityBar::FlashStoragePage, true);
         m_contentStack->widget(ActivityBar::FlashPage)->setEnabled(true);
         m_scopeTab->setEnabled(true);
+    });
 
-        // DW9786 上电默认 Sleep（寄存器全读 0xFFFF）：连接成功后自动执行一次
-        // OISReset 把 IC 切到工作态。其它 IC 不触发。
+    // DW9786 上电默认 Sleep（寄存器全读 0xFFFF）：在用户完成 I2C 扫描、选定 SlaveID 并点击
+    // IC「连接」（从机地址设置成功 → ConfigTab::motorIcConnected）后，自动执行一次 OISReset
+    // 把 IC 切到工作态。仅 DW9786 触发；不再在串口连接成功时触发。
+    connect(m_configTab, &ConfigTab::motorIcConnected, this, [this]() {
         if (m_deviceContext->icType() == MotorIcType::DW9786) {
             m_oisResetService->requestOisReset();
         }

@@ -77,6 +77,10 @@ signals:
     /// @brief 串口已断开
     void serialDisconnected();
 
+    /// @brief 电机 IC 连接成功（用户点 IC「连接」按钮、从机地址设置成功后发出）
+    /// 供 MainWindow 在 DW9786 连接后触发 OISReset 等"连接后"动作
+    void motorIcConnected();
+
     /// @brief 请求从指定路径读取统一配置文件（由 MainWindow → AppConfigService 处理）
     void readConfigRequested(const QString &path);
 
