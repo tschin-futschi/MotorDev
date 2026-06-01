@@ -61,7 +61,9 @@ int displayWindowMsForText(const QString &text) {
 // 默认 UI 文本在此集中定义，索引/毫秒值由对应映射函数派生，确保三者始终一致。
 
 QString defaultIntervalLabel() {
-    return QStringLiteral("500 us");
+    // 与 protocol.md §4.4 固件上电默认采样间隔一致（索引 0x03 = 400us），
+    // 消除 UI 默认与固件默认的语义漂移。
+    return QStringLiteral("400 us");
 }
 
 uint8_t defaultIntervalIndex() {
