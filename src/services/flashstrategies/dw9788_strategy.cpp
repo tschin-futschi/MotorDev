@@ -104,7 +104,10 @@ bool DW9788Strategy::flash(const QByteArray &firmware,
         // vendor 端日志统一按 Info 级别上报
         log(LogLevel::Info, s);
     };
-    Hl9788nBridge::attach(m_serialManager, logToBridge);
+    if (!Hl9788nBridge::attach(m_serialManager, logToBridge)) {
+        setErr(QStringLiteral("HL9788N 桥接层已被占用（另一次 DW 烧录进行中），本次烧录中止"));
+        return false;
+    }
     Hl9788nBridge::setCancelFlag(&cancelFlag);
     Hl9788nBridge::setProgressCallback(
         [&reportPct](int pct) { reportPct(pct); });

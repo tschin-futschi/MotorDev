@@ -153,14 +153,23 @@ int vendor_cancel_trampoline(void) {
 
 namespace Hl9788nBridge {
 
-void attach(SerialManager *sm,
+bool attach(SerialManager *sm,
             std::function<void(const QString &)> logSink,
             int defaultTimeoutMs) {
     std::lock_guard<std::mutex> lock(g_mutex);
 
-    Q_ASSERT_X(!g_attached, "Hl9788nBridge::attach",
-               "vendor function pointers already attached; detach() first");
-    Q_ASSERT(sm != nullptr);
+    // 运行期互斥：已有调用方 attach 未 detach 时拒绝（Release 下亦生效，不再仅靠
+    // Q_ASSERT）。同时刻只允许 1 个 DW IC 占用 vendor 全局函数指针。
+    if (g_attached) {
+        if (logSink) {
+            logSink(QStringLiteral("[hl9788n_bridge] attach 拒绝：桥接层已被占用，请先 detach"));
+        }
+        return false;
+    }
+    if (sm == nullptr) {
+        Q_ASSERT(sm != nullptr);
+        return false;
+    }
 
     g_serial            = sm;
     g_logSink           = std::move(logSink);
@@ -185,6 +194,7 @@ void attach(SerialManager *sm,
                                   "timeBeginPeriod(2) + busy-wait; ~1 CPU core "
                                   "will be occupied during flashing"));
     }
+    return true;
 }
 
 void detach() {

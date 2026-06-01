@@ -33,9 +33,11 @@ namespace Hl9788nBridge {
 /// @param sm                  SerialManager 实例（必须非空）
 /// @param logSink             日志接收 sink；中转 vendor OutputLog
 /// @param defaultTimeoutMs    单次 I2C 透传超时（默认 2000 ms，覆盖串口往返）
-void attach(SerialManager *sm,
-            std::function<void(const QString &)> logSink,
-            int defaultTimeoutMs = 2000);
+/// @return true=attach 成功；false=已有其他调用方 attach 未 detach（运行期互斥，
+///         Release 下亦生效），调用方应据此中止本次烧录。
+[[nodiscard]] bool attach(SerialManager *sm,
+                          std::function<void(const QString &)> logSink,
+                          int defaultTimeoutMs = 2000);
 
 /// @brief 解绑桥接层。烧录结束/失败时调用。重复 detach 安全（幂等）。
 void detach();

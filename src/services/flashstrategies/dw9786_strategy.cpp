@@ -99,7 +99,10 @@ bool DW9786Strategy::flash(const QByteArray &firmware,
     auto logToBridge = [this](const QString &s) {
         log(LogLevel::Info, s);
     };
-    Dw9786Bridge::attach(m_serialManager, logToBridge);
+    if (!Dw9786Bridge::attach(m_serialManager, logToBridge)) {
+        setErr(QStringLiteral("DW9786 桥接层已被占用（OISReset 或另一次烧录进行中），本次烧录中止"));
+        return false;
+    }
     Dw9786Bridge::setCancelFlag(&cancelFlag);
     Dw9786Bridge::setProgressCallback(
         [&reportPctMilli](int pct_milli) { reportPctMilli(pct_milli); });

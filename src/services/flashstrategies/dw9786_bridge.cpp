@@ -32,6 +32,7 @@ namespace {
 // -----------------------------------------------------------------------------
 std::mutex g_mutex;
 bool       g_attached = false;
+int        g_transferErrors = 0;  ///< 本次 attach 以来 I2C 透传失败次数（仅工作线程访问）
 
 SerialManager                       *g_serial = nullptr;
 std::function<void(const QString &)> g_logSink;
@@ -63,6 +64,7 @@ int32_t bridge_i2c_write(uint8_t slv7, uint8_t count, uint8_t *data) {
             g_logSink(QStringLiteral("[dw9786_bridge] I2C write timeout (slv=0x%1, count=%2)")
                           .arg(slv7, 2, 16, QLatin1Char('0')).arg(count));
         }
+        ++g_transferErrors;
         return -1;
     }
     if (outCmd == MotorProtocol::CmdErrorResponse) {
@@ -72,6 +74,7 @@ int32_t bridge_i2c_write(uint8_t slv7, uint8_t count, uint8_t *data) {
                           .arg(code, 2, 16, QLatin1Char('0'))
                           .arg(slv7, 2, 16, QLatin1Char('0')));
         }
+        ++g_transferErrors;
         return -1;
     }
     return 0;
@@ -97,6 +100,7 @@ int32_t bridge_i2c_read(uint8_t slv7,
             g_logSink(QStringLiteral("[dw9786_bridge] I2C read timeout (slv=0x%1, read_cnt=%2)")
                           .arg(slv7, 2, 16, QLatin1Char('0')).arg(read_cnt));
         }
+        ++g_transferErrors;
         return -1;
     }
     if (outCmd == MotorProtocol::CmdErrorResponse) {
@@ -106,6 +110,7 @@ int32_t bridge_i2c_read(uint8_t slv7,
                           .arg(code, 2, 16, QLatin1Char('0'))
                           .arg(slv7, 2, 16, QLatin1Char('0')));
         }
+        ++g_transferErrors;
         return -1;
     }
     if (outData.size() < read_cnt) {
@@ -113,6 +118,7 @@ int32_t bridge_i2c_read(uint8_t slv7,
             g_logSink(QStringLiteral("[dw9786_bridge] I2C read short (got=%1, expected=%2)")
                           .arg(outData.size()).arg(read_cnt));
         }
+        ++g_transferErrors;
         return -1;
     }
     std::memcpy(buf, outData.constData(), read_cnt);
@@ -146,20 +152,30 @@ int vendor_cancel_trampoline(void) {
 
 namespace Dw9786Bridge {
 
-void attach(SerialManager *sm,
+bool attach(SerialManager *sm,
             std::function<void(const QString &)> logSink,
             int defaultTimeoutMs) {
     std::lock_guard<std::mutex> lock(g_mutex);
 
-    Q_ASSERT_X(!g_attached, "Dw9786Bridge::attach",
-               "vendor function pointers already attached; detach() first");
-    Q_ASSERT(sm != nullptr);
+    // 运行期互斥：已有调用方 attach 未 detach 时拒绝（Release 下亦生效，不再仅靠
+    // Q_ASSERT）。同时刻只允许 1 个 DW IC 占用 vendor 全局函数指针。
+    if (g_attached) {
+        if (logSink) {
+            logSink(QStringLiteral("[dw9786_bridge] attach 拒绝：桥接层已被占用，请先 detach"));
+        }
+        return false;
+    }
+    if (sm == nullptr) {
+        Q_ASSERT(sm != nullptr);
+        return false;
+    }
 
     g_serial            = sm;
     g_logSink           = std::move(logSink);
     g_defaultTimeoutMs  = defaultTimeoutMs > 0 ? defaultTimeoutMs : 2000;
     g_progressCb        = nullptr;
     g_cancelFlag        = nullptr;
+    g_transferErrors    = 0;
     g_attached          = true;
 
     // 用 vendor 自身的标准初始化接口 dw978x_extfuncinit 注入函数指针。
@@ -185,6 +201,7 @@ void attach(SerialManager *sm,
                                   "timeBeginPeriod(2) + busy-wait; ~1 CPU core "
                                   "will be occupied during flashing"));
     }
+    return true;
 }
 
 void detach() {
@@ -213,6 +230,12 @@ void setProgressCallback(std::function<void(int)> cb) {
 void setCancelFlag(const std::atomic<bool> *flag) {
     std::lock_guard<std::mutex> lock(g_mutex);
     g_cancelFlag = flag;
+}
+
+int transferErrorCount() {
+    // 仅在 SerialManager 工作线程读取（与 bridge_i2c_write/read 的递增同线程），
+    // 无需加锁。
+    return g_transferErrors;
 }
 
 }  // namespace Dw9786Bridge

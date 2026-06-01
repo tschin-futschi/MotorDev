@@ -29,8 +29,17 @@ ScopeRecordService::ScopeRecordService(ScopeChannelModel *channelModel, QObject 
     m_flushTimer = new QTimer(this);
     m_flushTimer->setInterval(kFlushIntervalMs);
     connect(m_flushTimer, &QTimer::timeout, this, [this]() {
-        if (m_stream != nullptr) {
-            m_stream->flush();
+        if (m_stream == nullptr) {
+            return;
+        }
+        m_stream->flush();
+        // 写盘失败检测（磁盘满 / 移动介质拔出）：flush 把缓冲推到 QFile 后，若底层
+        // 写入失败 QFile 会置 error；不检测则会静默丢数据，与"崩溃安全"承诺不符。
+        if (m_file != nullptr && m_file->error() != QFileDevice::NoError) {
+            const QString failedFile = m_currentFileName;
+            const QString reason = m_file->errorString();
+            emit recordError(tr("记录写入失败，已停止录制：%1（%2）").arg(failedFile, reason));
+            stopRecording();
         }
     });
 }

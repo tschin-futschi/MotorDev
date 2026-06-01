@@ -98,7 +98,11 @@ void Dw9786OisResetService::runOnSerialThread() {
                 .arg(m_slaveId8bit, 2, 16, QLatin1Char('0')));
 
     // 注入 vendor I2C 透传函数指针（复用已验证的烧录写通道），并设置 OIS 从机地址。
-    Dw9786Bridge::attach(m_serialManager, logLine, kI2cTimeoutMs);
+    // attach 失败（桥接层已被烧录占用）时直接中止，不可与烧录并发覆盖 vendor 指针。
+    if (!Dw9786Bridge::attach(m_serialManager, logLine, kI2cTimeoutMs)) {
+        emit finished(false, QStringLiteral("OISReset 失败：DW9786 桥接层已被占用（可能正在烧录）"));
+        return;
+    }
     dw978x_ois_slvid(m_slaveId8bit);
 
     // ---- 严格按用户口述 9 步执行（顺序 / 数值 / 延时不得改动）----
@@ -116,7 +120,18 @@ void Dw9786OisResetService::runOnSerialThread() {
     RamWriteA(kRegMcuActive, kMcuActive);    // 步骤 8: 0xE004 = 0x0001
     QThread::msleep(kDelayFinalMs);          // 步骤 9
 
+    // 整条序列只调 vendor 写、不读 vendor 返回值；用 bridge 透传失败计数判定真实结果，
+    // 避免任一步 I2C 超时/错误时仍误报"完成"，让用户误判 IC 已唤醒。
+    const int transferErrors = Dw9786Bridge::transferErrorCount();
     Dw9786Bridge::detach();
+
+    if (transferErrors > 0) {
+        logLine(QStringLiteral("[OISReset] 失败：%1 次 I2C 透传未成功，IC 可能仍处 Sleep")
+                    .arg(transferErrors));
+        emit finished(false,
+                      QStringLiteral("OISReset 失败：%1 次 I2C 透传未成功").arg(transferErrors));
+        return;
+    }
 
     logLine(QStringLiteral("[OISReset] 完成"));
     emit finished(true, QStringLiteral("OISReset 完成"));

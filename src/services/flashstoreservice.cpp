@@ -569,6 +569,9 @@ void FlashStoreService::dispatchOp(Op op,
                 summary = wasCancelled ? QStringLiteral("已取消") : errorMsg;
             }
 
+            // service 若已析构则 self.data() 为 nullptr，不能作为 invokeMethod 的
+            // receiver（与 fwflashservice 对称）；提前判空，避免空 receiver。
+            if (self.isNull()) return;
             QMetaObject::invokeMethod(self.data(),
                 [self, ok, wasCancelled, summary, infoTotal, infoUsed, savedReadPath]() {
                     if (self.isNull()) return;
