@@ -1,6 +1,6 @@
 # MotorDev — 技术概览
 
-> 版本：v0.4 | 日期：2026-05-28
+> 版本：v0.5 | 日期：2026-06-01
 
 ---
 
@@ -63,28 +63,33 @@ MotorDev/
 │   │   └── channelbuffer.cpp / .h     # 单通道双层环形缓冲（原始环 + 降采样后 UI 环）
 │   ├── services/
 │   │   ├── commanddispatcher.cpp / .h # 命令分发器（优先级队列 + seq 匹配 + 错误回退）
+│   │   ├── appconfigservice.cpp / .h  # 统一配置文件存取（各页面功能参数 → 单个 JSON，全手动 Read/Write）
 │   │   ├── configservice.cpp / .h     # 串口连接、I2C 扫描、IC 地址、PMIC 配置/复位
 │   │   ├── registerservice.cpp / .h   # 单行/批量寄存器读写 + 500ms 超时
 │   │   ├── batchregisterservice.cpp / .h # 批量读写浮窗业务层：文件解析 + 状态机 + 顺序读写 + 进度信号
 │   │   ├── blockreadservice.cpp / .h    # 块读取浮窗业务层：连续地址段 dump → CSV + 协作式取消 + 失败即停（已成功条目仍写文件）
 │   │   ├── scopeservice.cpp / .h      # 4 步采样启动序列 + 流帧批量 + 5s 看门狗
+│   │   ├── scoperecordservice.cpp / .h # 示波器采样全速率原始数据持续写 CSV（采样启停即录制启停）
 │   │   ├── cyclicwriteservice.cpp / .h # 循环写入服务（轮询 + 连续错误自停）
 │   │   ├── generatorservice.cpp / .h  # 波形发生器（Linear/Cosine/Sawtooth + 3s ACK 超时）
 │   │   ├── simulatorservice.cpp / .h  # 调试模拟器命令分发与正弦波形生成（独立 std::thread）
 │   │   ├── simulatorserial.cpp / .h   # 模拟器串口驱动（独立线程，供 SimulatorService 使用）
 │   │   ├── fwflashservice.cpp / .h    # 固件烧录服务：状态机 + 前置序列协调 + fast-path worker + 心跳暂停/恢复 + 0x38 进度帧消费
 │   │   ├── flashstoreservice.cpp / .h # STM32 FLASH 文件存储服务（上传/下载/容量查询/WIPE）
+│   │   ├── dw9786oisresetservice.cpp / .h # DW9786 上电 OISReset 9 步序列（连接成功且 Select IC=DW9786 时触发）
 │   │   ├── flashstrategy.cpp / .h     # 烧录策略抽象基类
 │   │   ├── flashstrategyregistry.cpp / .h # 烧录策略注册中心（按 IC 型号枚举/查找）
 │   │   └── flashstrategies/
 │   │       ├── aw_local_isp_strategy.cpp / .h # AW 本地 ISP 策略基类（0x32~0x37 序列）
 │   │       ├── aw86008_strategy.cpp / .h      # AW86008 策略（继承 AW base）
 │   │       ├── aw86100_strategy.cpp / .h      # AW86100 策略（继承 AW base）
-│   │       ├── dw9786_strategy.cpp / .h       # DW9786 策略（stub）
+│   │       ├── dw9786_strategy.cpp / .h       # DW9786 真实策略：vendor SDK + I2C 透传
+│   │       ├── dw9786_bridge.cpp / .h         # DW9786 vendor 库与 SerialManager 的桥接层
+│   │       ├── dw9786_vendor_include.h        # DW9786 vendor 包装头
 │   │       ├── dw9788_strategy.cpp / .h       # DW9788 (HL9788N) 真实策略：vendor SDK + I2C 透传
 │   │       ├── hl9788n_bridge.cpp / .h        # HL9788N vendor 库与 SerialManager 的桥接层
 │   │       ├── hl9788n_vendor_include.h       # vendor 包装头（先展开 Qt/std 头再 #undef 污染宏）
-│   │       └── vendor/hl9788n/                # Dongwoon 原厂 vendor 源码（Func.cpp/.h、hl9788n_api_ref.cpp/.h、stdafx.h）
+│   │       └── vendor/{hl9788n,dw9786}/       # Dongwoon 原厂 vendor 源码（Func、api_ref、stdafx；dw9786 另含 symbol_rename.h 隔离同名符号）
 │   ├── ui/
 │   │   ├── repolish.h               # QSS 重新 polish 工具函数
 │   │   ├── style_constants.h        # 所有颜色、尺寸、间距常量
@@ -97,8 +102,9 @@ MotorDev/
 │   │   ├── flashstoragetab.cpp / .h # Tab4 STM32 FLASH 文件存储（上传/下载/容量/WIPE）
 │   │   └── serialdebugtab.cpp / .h  # 串口调试模拟器（独立窗口，模拟 STM32 全栈响应）
 │   └── widgets/
-│       ├── activitybar.cpp / .h     # 左侧活动栏（五个页面 + 调试浮窗按钮）
-│       ├── topbar.cpp / .h          # 顶栏（Logo、连接状态、MCU 启动状态徽章、Overlay/Style/Crosshair；语言切换占位）
+│       ├── activitybar.cpp / .h     # 左侧活动栏（六个页面 + 调试浮窗按钮 + 底部「关于」按钮）
+│       ├── aboutdialog.cpp / .h     # 关于对话框（模态：元信息 + 德语题词 + Logo 全幅背景）
+│       ├── topbar.cpp / .h          # 顶栏（Logo、连接状态、MCU 启动状态徽章、Overlay/Style/Crosshair、语言切换 combo 运行时中英即时切换）
 │       ├── sidebar.cpp / .h         # 可收缩侧边栏（configtab/registerrwtab/oscilloscoptab 共用）
 │       ├── logpanel.cpp / .h        # 底部日志面板（全局单例，跨线程安全）
 │       ├── registertable.cpp / .h   # 寄存器表格组件（4 组×30 行）
@@ -123,10 +129,10 @@ MotorDev/
 | 应用入口 | QApplication 启动、日志安装、主窗口创建 | `main.cpp` |
 | UI Shell | 顶层窗口、页面切换、日志面板 | `mainwindow`、`widgets/{topbar,activitybar,logpanel,sidebar}` |
 | UI Tab | 业务页面 | `tabs/{configtab,registerrwtab,fwflashtab,oscilloscoptab,flashstoragetab,serialdebugtab}` |
-| UI Widget | 复用控件 | `widgets/{registertable,scopeplotwidget,scopebottompanel,scopechannelstrip,scoperegisterpanel,scopegeneratorpanel,scopestylepanel,scopepreviewwidget,scopemarqueelabel,fwfileinfopanel,fwflashcontrolpanel,fwflashlogpanel}` |
-| 服务层 | 业务逻辑封装，UI/通信解耦 | `services/{commanddispatcher,configservice,registerservice,batchregisterservice,scopeservice,cyclicwriteservice,generatorservice,simulatorservice,fwflashservice,flashstoreservice}` |
-| 烧录策略层 | 按 IC 型号封装烧录算法（策略模式） | `services/{flashstrategy,flashstrategyregistry}`、`services/flashstrategies/{aw_local_isp_strategy,aw86008_strategy,aw86100_strategy,dw9786_strategy,dw9788_strategy,hl9788n_bridge}` |
-| 第三方 vendor | Dongwoon HL9788N 原厂 SDK 源码（最小改动适配 MotorDev 工程） | `services/flashstrategies/vendor/hl9788n/{Func,hl9788n_api_ref,stdafx.h}` |
+| UI Widget | 复用控件 | `widgets/{registertable,scopeplotwidget,scopebottompanel,scopechannelstrip,scoperegisterpanel,scopegeneratorpanel,scopestylepanel,scopepreviewwidget,scopemarqueelabel,fwfileinfopanel,fwflashcontrolpanel,fwflashlogpanel,aboutdialog}` |
+| 服务层 | 业务逻辑封装，UI/通信解耦 | `services/{appconfigservice,commanddispatcher,configservice,registerservice,batchregisterservice,blockreadservice,scopeservice,scoperecordservice,cyclicwriteservice,generatorservice,simulatorservice,fwflashservice,flashstoreservice,dw9786oisresetservice}` |
+| 烧录策略层 | 按 IC 型号封装烧录算法（策略模式） | `services/{flashstrategy,flashstrategyregistry}`、`services/flashstrategies/{aw_local_isp_strategy,aw86008_strategy,aw86100_strategy,dw9786_strategy,dw9786_bridge,dw9788_strategy,hl9788n_bridge}` |
+| 第三方 vendor | Dongwoon HL9788N / DW9786 原厂 SDK 源码（最小改动适配 MotorDev 工程；dw9786 用 symbol_rename.h 隔离同名符号） | `services/flashstrategies/vendor/{hl9788n,dw9786}/{Func,*_api_ref,stdafx.h}` |
 | 数据模型层 | 状态与缓冲 | `models/{scopechannelmodel,channelbuffer}`、`devicecontext` |
 | 协议层 | 指令编解码、采样参数映射、固件文件解析、批量读写配置文件 | `protocol/{motor_protocol,register_utils,sampling_config,firmware_parser,batch_register_file}` |
 | 通信层 | 串口管理 + 跨线程消息 + fast-path 同步 API | `serialmanager` |
@@ -138,7 +144,7 @@ MotorDev/
 
 ## 开发优先级
 
-> 状态截至 2026-05-28。"✓"=已落地，"⌛"=部分实现 / stub，"○"=未实现。
+> 状态截至 2026-06-01。"✓"=已落地，"⌛"=部分实现 / stub，"○"=未实现。
 
 1. CMakeLists.txt 基础构建配置 ✓
 2. 主窗口框架（TopBar + ActivityBar + Sidebar + ContentArea + StatusBar）✓
@@ -148,7 +154,7 @@ MotorDev/
 6. Tab 2 FW 烧录 ✓
    - AW86008 / AW86100：STM32 本地 ISP（协议 0x32~0x37）+ 0x38 真实进度
    - DW9788 (HL9788N)：vendor SDK + I2C 透传桥接（OTA 模式默认保留校准）
-   - DW9786：stub
+   - DW9786：vendor SDK + I2C 透传桥接（id_check + fw_download_with_buffer + chip_enable，OTA 模式默认保留校准）✓
 7. Tab 3 示波器（QPainter + QOpenGLWidget 自研渲染，8ch 60fps）✓
 8. Tab 4 STM32 FLASH 文件存储（v2.11 / 0x39~0x3F）✓
 9. 串口调试模拟器（SerialDebugTab，独立浮窗）✓
@@ -156,8 +162,8 @@ MotorDev/
 11. 配置持久化（registers.json）✓
 12. 启动画面 + 应用图标 + DPI 锁屏 ✓
 13. MCU 启动状态徽章（0x0B BOOT_STATUS）✓
-14. 多语言支持 ○
-15. 设置页面 ○
+14. 多语言支持（i18n 运行时中英即时切换，TopBar combo 驱动 + QSettings 记忆）✓
+15. 关于对话框（侧边栏底部「关于」按钮，元信息 + 德语题词 + Logo 背景；原「设置」占位按钮已移除）✓
 16. 打包发布（windeployqt）⌛
 
 ---

@@ -163,7 +163,7 @@ Header:
 #### 整体布局
 
 ```
-[Sidebar 168px] | [主内容区]
+[Sidebar 150px] | [主内容区]
 
 主内容区（垂直 QVBoxLayout，无 QSplitter）:
   · RegisterTable（主表格，stretch=1，占满主内容区）
@@ -507,6 +507,61 @@ B006,0000\n
 
 ---
 
+## 配置页面规格（ConfigTab）
+
+```
+整体布局（垂直，无 Sidebar，主内容区占满）:
+[主内容区 QVBoxLayout：spacing=16，margins=24]
+└── 垂直 QSplitter（Qt::Vertical，childrenCollapsible=false，handleWidth=8）
+
+  上栏 upperArea（stretch=4）：QGridLayout 1 行 3 列，列等宽（每列 stretch=1），水平/垂直间距 16
+    ┌── IC 卡片 ───┬── 串口 卡片 ──┬── PMIC 卡片 ──┐
+    │ QFormLayout   │ QFormLayout    │ QFormLayout    │
+    │  选择 IC ▾    │  端口 ▾(可编辑) │  DRVDD [▢] V   │
+    │  从机地址 ▾   │  波特率 ▾      │  VCMVDD [▢] V  │
+    │  (弹簧)       │  (弹簧)        │  IOVDD [▢] V   │
+    │ [扫描][连接]  │  2×2 按钮网格   │  (弹簧)        │
+    │              │  [扫描][连接]   │ [配置 PMIC]    │
+    │              │  [设备复位][电机测试]│ [关闭 PMIC] │
+    └──────────────┴────────────────┴────────────────┘
+
+  下栏 lowerArea（stretch=1）：Config File 行（详见「统一配置文件存取」章节）
+
+每张卡片 = QGroupBox，panelRole="card"，外层 QVBoxLayout（spacing=10，margins 24/8/24/24）
+```
+
+### IC 选择卡片（objectName `icGroup`，标题 `IC` 不译）
+
+- `QFormLayout` 两行：
+  - 「选择 IC」label + `m_icCombo`（inputRole="form"），固定 4 项 `AW86008 / AW86100 / DW9786 / DW9788`，与 `DeviceContext::icType()` 双向同步
+  - 「从机地址」label + `m_slaveIdCombo`（inputRole="form"），placeholder `请先扫描`，初始 currentIndex=-1，I2C 扫描结果以 `0x##` 大写填充
+- 弹簧后底部按钮行（`QHBoxLayout`，spacing=10，尾部弹簧）：`扫描`、`连接` 两个 primary 按钮，高度固定 32px
+
+### 串口连接卡片（objectName `serialGroup`，标题 `串口` 可译）
+
+- `QFormLayout` 两行：「端口」`m_portCombo`（**可编辑**，`NoInsert`，placeholder `选择串口`）；「波特率」`m_baudRateCombo`（选项取 `Style::Serial::baudRateLabels()`，默认 `Style::Serial::DefaultBaudRate` = 460800）
+- 弹簧后 **2×2 按钮网格**（`QGridLayout`，h-spacing=10，v-spacing=6，按钮高 32px）：
+  - 行 0：`扫描`、`连接`（primary；`连接`↔`断开` 随连接态切换文字）
+  - 行 1：`设备复位`、`电机测试`（secondary，当前未实现，常禁用）
+
+### PMIC 电源卡片（objectName `pmicGroup`，标题 `PMIC` 不译）
+
+- `QFormLayout` 三行电压输入，每行 = label + `QDoubleSpinBox` + 单位 label `V` + 尾部弹簧（`QHBoxLayout`）：
+  - `DRVDD` → `m_drvddSpin`（默认 1.80）
+  - `VCMVDD` → `m_vcmvddSpin`（默认 3.20）
+  - `IOVDD` → `m_iovddSpin`（默认 2.80）
+  - 三路 SpinBox 统一：range `0.60~3.77`、decimals=2、singleStep=0.10
+- 弹簧后按钮行（`QHBoxLayout`，spacing=10）：`配置 PMIC`（primary，下发三路电压）、`关闭 PMIC`（secondary）
+
+### 卡片视觉与交互
+
+- 三张卡片均启用与 FwFlashTab 一致风格：`QGraphicsDropShadowEffect`（offset (0,1)、blur 6、color `Style::Color::PanelShadow`）+ `WA_Hover` + `GroupHoverFilter`（悬停设 `hovered` 动态属性驱动 QSS）
+- 控件状态由 `setSerialControlsConnected(bool)` 统一管理：未连接时仅串口扫描/连接可用；连接后启用 IC 扫描/连接、PMIC、复位、电机测试，禁用端口/波特率/扫描
+- 所有业务下沉到 `ConfigService`，UI 仅做控件状态管理与信号转发；串口连接/断开经 `serialConnected/serialDisconnected` 信号广播给 MainWindow
+- 底部 Config File 行（路径输入 + 浏览/写入/回填）见下一节「统一配置文件存取」，此处不重复
+
+---
+
 ## 统一配置文件存取（配置页 Config File 区域）
 
 > 2026-05-31 新增。把**各页面的功能参数**统一存到一个用户指定的 JSON 文件，全手动存/取。
@@ -515,7 +570,7 @@ B006,0000\n
 
 | 控件 | 类型 | 行为 |
 |------|------|------|
-| `ConfigFile` | QComboBox（可编辑） | 配置文件完整路径，可手输，或由 Browse 回填 |
+| `ConfigFile` | QLineEdit | 配置文件完整路径，可手输，或由 Browse 回填 |
 | `Browse` | QPushButton | 弹文件对话框（过滤 `*.json`，允许选已有文件或输入新文件名），仅回填路径，不读不写 |
 | `Write` | QPushButton | 采集各页面当前功能参数 → 写 JSON 到该路径（已存在则覆盖） |
 | `Read` | QPushButton | 从该路径读 JSON → 回填各页面参数 |
@@ -712,15 +767,13 @@ Style::Size::  FwFlashIcComboW=200
 > 数据流已接入，支持 8 通道 60fps 实时渲染。示波器工具栏控件已迁移至 TopBar（仅示波器页面可见），底部面板信号部分为 stub。
 
 ```
-整体布局（水平）:
-[Sidebar 224px（默认收起）] | [主内容区]
-
-主内容区（垂直）:
+整体布局（垂直，无 Sidebar）:
 1. ScopePlotWidget（波形绘制画布，stretch=1）
 2. ScopeBottomPanel（底部面板）
 
 注：原 ScopeToolBar 已移除。视图模式切换、Style、采样启停按钮现位于 TopBar，
 仅在示波器页面可见，由 MainWindow 在页面切换时控制显隐。
+注：示波器页**不含 Sidebar**（通道样式经 TopBar→Style 浮窗，寄存器/发生器经底部面板浮窗）。
 ```
 
 ### TopBar 示波器控件
@@ -851,14 +904,12 @@ Crosshair toggle: QToolButton，checkable；文字在「使用十字光标：开
   点击 Hide/Show Generator 按钮切换显示
 ```
 
-### 示波器 Sidebar
+### 示波器 Sidebar（已废弃）
 
 ```
-宽度: 224px（默认收起）
-标题: "示波"
-
-当前状态: 未实现（占位，暂无内容）
-保留作为未来采样通道属性配置入口，具体内容待规格细化后补充。
+示波器页**不设 Sidebar**。早期规格曾保留 224px 占位侧边栏，现已确认不实现：
+通道样式经 TopBar→Style 浮窗访问，寄存器辅助面板与信号发生器面板经底部面板浮窗（Qt::Tool）弹出，
+不再需要常驻侧边栏容器。
 ```
 
 ---
@@ -1039,6 +1090,103 @@ Style::Size::   ContentPadding (24) / ContentSpacing (16)
 
 ---
 
+## 串口调试模拟器规格（SerialDebugTab）
+
+> 独立浮窗（`Qt::Window | Qt::WindowCloseButtonHint`，初始 820×560），**非 ContentStack 页面**；由活动栏「调试」按钮弹出。模拟 STM32 侧协议行为，经真实串口（通常配虚拟串口对）与上位机主程序通信。
+
+```
+整体布局（垂直，QVBoxLayout：spacing=16，margins=24）:
+┌── 顶部连接栏 connectionBar（QFrame，高 36）──────────────────────┐
+│ [端口：][端口 ▾(可编辑)] [波特率:][波特率 ▾] [刷新][连接] ● 未连接 (弹簧)│
+└──────────────────────────────────────────────────────────────────┘
+┌── 主区域 水平 QSplitter（childrenCollapsible=false，handleWidth=8）─┐
+│ 左 leftPanel（固定宽 260，stretch=0）│ 右 logPanel（stretch=1）      │
+│  「应答配置」标题                     │  「活动日志」标题 (弹簧) [清除] │
+│  QFormLayout 5 行                     │  QTextEdit（只读 HTML 富文本）  │
+│  (弹簧)                               │                               │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### 连接栏（connectionBar）
+
+- 「端口：」label + `m_portCombo`（**可编辑**，`NoInsert`，placeholder `选择端口`）
+- 「波特率:」label + `m_baudCombo`（选项 `Style::Serial::baudRateLabels()`，默认 `Style::Serial::DefaultBaudRate` = 460800）
+- `刷新` 按钮（secondary，高 32）刷新串口列表；`连接` 按钮（primary，高 32，文字 `连接`↔`断开`）
+- `m_statusBadge` 状态标签：`● 已连接` / `● 未连接`，`connected` 动态属性驱动 QSS 配色，经 `setConnectedState()` 切换
+- 连接后禁用端口/波特率/刷新；连接由 `SimulatorService` 处理
+
+### 应答配置区（左栏 QFormLayout 5 行，labelRole="form"，inputRole="form"）
+
+| 字段 | 控件 | 默认/取值 | 同步到 Service |
+|---|---|---|---|
+| I2C扫描地址 | `m_scanAddrEdit`（QLineEdit，逗号分隔） | `0x5A` | `setScanAddresses()` |
+| IC连接 | `m_icAddrResultCombo` | `成功`/`失败` | `setIcAddrResultSuccess(index==0)` |
+| 寄存器读返回值 | `m_regReadValueEdit`（QLineEdit） | `0x0000` | `setRegisterReadValue()` |
+| 寄存器写 | `m_writeResultCombo` | `ACK`(保留术语)/`失败` | `setWriteResultSuccess(index==0)` |
+| 响应延迟(ms) | `m_delaySpinBox`（QSpinBox） | max 500，默认 0 | `setResponseDelay()` |
+
+### 活动日志区（右栏）
+
+- 标题栏：「活动日志」label + 弹簧 + `清除` 按钮（secondary，高 32，清空 `m_logEdit`）
+- `m_logEdit`：只读 `QTextEdit`，HTML 富文本，每行带 `HH:mm:ss.zzz` 时间戳：
+  - 系统日志 `appendSysLog()`：`[时间] SYS  <消息>`，正常 `Style::Color::MutedText`，错误 `Style::Color::LogError`
+  - 帧日志 `appendLog()`：`[时间] <RX/TX> cmd=0x## seq=0x## <数据> (备注)`；RX 用 `Style::Color::AppText`，TX 正常用 `Style::Color::ReadButtonForeground`（蓝），错误帧（cmd=0xFE）用 `Style::Color::LogError`（红）
+- 模拟生成的波形数据经 `debugStreamGenerated` / `debugStreamActiveChanged` 信号转发给示波器（经 MainWindow 中继）
+
+---
+
+## 关于对话框规格（AboutDialog）
+
+> 模态对话框（`setModal(true)`），由活动栏底部「关于」按钮触发（`ActivityBar::aboutRequested → MainWindow` 弹出）。每次打开按当前语言构建，无运行时 retranslate。元信息集中在 `aboutdialog.cpp` 顶部具名 `constexpr` 常量，改版本/作者只改此处。
+
+```
+整体布局（垂直，QVBoxLayout：margins 20/18/20/16，spacing=10，minWidth=380）:
+┌────────────────────────────────────────────┐
+│            MotorDev   （标题 22px 加粗居中）  │
+│        电机驱动模组调试上位机（题注 12px 居中）│
+│  ──────────── HLine 分隔 ────────────        │
+│  QFormLayout 信息表（左对齐，h16/v8）:       │
+│    版本     v1.0.0                           │
+│    构建     Qt <版本> · <编译日期>           │
+│    支持 IC  AW86008 / AW86100 / DW9786 / DW9788│
+│    通信协议 generator_v1 / v2.10             │
+│    作者     Qin Fu Qi                        │
+│  ──────────── HLine 分隔 ────────────        │
+│   „德语题词 1“（斜体居中）                    │
+│   „德语题词 2“（斜体居中）                    │
+│   © 2026 · MIT License（居中弱化）           │
+│   github.com/tschin-futschi/MotorDev（居中）  │
+│                              [ 确定 ]（右对齐）│
+└────────────────────────────────────────────┘
+背景：Logo SVG 全幅拉伸 + 半透明遮罩（paintEvent 绘制于所有控件之下）
+```
+
+### 元信息字段（信息表 QFormLayout）
+
+值标签均 `Qt::TextSelectableByMouse` 可选中复制：
+- 软件名 `kAppName` = `MotorDev`（标题，固定像素 `kTitleFontPx`=22，加粗居中）
+- 题注 `电机驱动模组调试上位机`（`kTaglineFontPx`=12，居中，可译）
+- 版本 `kAppVersion` = `v1.0.0`
+- 构建 `Qt <QT_VERSION_STR> · <__DATE__>`（运行时由 Qt 版本宏与编译日期拼接）
+- 支持 IC `kSupportedIcs` = `AW86008 / AW86100 / DW9786 / DW9788`（`setWordWrap(true)`）
+- 通信协议 `kProtocol` = `generator_v1 / v2.10`
+- 作者 `kAuthor` = `Qin Fu Qi`
+- 版权 `kCopyright` = `© 2026 · MIT License`（居中弱化）
+- 仓库 `kRepoUrl` = `github.com/tschin-futschi/MotorDev`（居中，可选中复制）
+- 确定按钮：`QDialogButtonBox(Ok)`，文字 `确定`，右对齐，`accept()`
+
+### 德语题词（固定德语，不进 i18n，两种界面语言下均原样显示）
+
+斜体居中、`setWordWrap(true)`，objectName `aboutQuote`，分隔线后两句（具体文案以 `aboutdialog.cpp` 常量为准）。
+
+### Logo 全幅背景 + 半透明遮罩（paintEvent 实现）
+
+- 背景渲染器 `m_bgRenderer` = `QSvgRenderer(Style::Text::LogoResource)`（`:/motordev_logo.svg`，与窗口图标/启动图/顶栏 Logo 同源）
+- `paintEvent`：启用 `Antialiasing` + `SmoothPixmapTransform`；先 `m_bgRenderer->render(painter, rect())` 把 SVG 拉伸填满整个对话框；再用窗口底色（`palette().color(QPalette::Window)`）以 `kBackdropScrimOpacity`=0.82 透明度 `fillRect(rect())` 压低图标对比度，使 Logo 作为淡水印透出、前景文字清晰可读
+- 前景控件（标题/信息表/题词/版权/按钮）由各自 widget 叠加绘制在遮罩之上
+
+---
+
 ## Logo 规格
 
 ```
@@ -1067,7 +1215,9 @@ Style::Size::   ContentPadding (24) / ContentSpacing (16)
 
 ## 多语言对照表（核心字符串）
 
-| Key | 中文 | English | Русский | 日本語 |
+> **当前实现状态（2026-06-01）**：运行时语言切换**已实现，但仅交付 中文 / English 两种**（TopBar 语言 combo 仅含此两项，QSettings 记忆，即时切换）。下表的 **Русский / 日本語 两列为规格预留，尚未纳入构建**；译文文件 `translations/motordev_en.ts` 仅含英文。新增语言时按本表补充并扩展 combo 即可。
+
+| Key | 中文 | English | Русский（预留） | 日本語（预留） |
 |-----|------|---------|---------|--------|
 | app.title | MotorDev | MotorDev | MotorDev | MotorDev |
 | sidebar.config | 配置 | Config | Настройки | 設定 |
