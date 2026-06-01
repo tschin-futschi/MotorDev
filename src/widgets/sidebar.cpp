@@ -152,8 +152,8 @@ void Sidebar::setupUi(const QString &title) {
     // Body 区域：标题 + 内容占位
     m_bodyWidget = new QWidget(this);
     m_bodyWidget->setObjectName(QStringLiteral("bodyWidget"));
-    m_bodyWidget->setMinimumSize(QSize(150, 0));
-    m_bodyWidget->setMaximumSize(QSize(150, QWIDGETSIZE_MAX));
+    m_bodyWidget->setMinimumSize(QSize(Style::Size::SidebarWidth, 0));
+    m_bodyWidget->setMaximumSize(QSize(Style::Size::SidebarWidth, QWIDGETSIZE_MAX));
     auto *bodyLayout = new QVBoxLayout(m_bodyWidget);
     bodyLayout->setObjectName(QStringLiteral("bodyLayout"));
     bodyLayout->setSpacing(0);
@@ -162,8 +162,8 @@ void Sidebar::setupUi(const QString &title) {
 
     m_headerLabel = new QLabel(m_bodyWidget);
     m_headerLabel->setObjectName(QStringLiteral("headerLabel"));
-    m_headerLabel->setMinimumSize(QSize(0, 30));
-    m_headerLabel->setMaximumSize(QSize(QWIDGETSIZE_MAX, 30));
+    m_headerLabel->setMinimumSize(QSize(0, Style::Size::SidebarHeaderHeight));
+    m_headerLabel->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarHeaderHeight));
     m_headerLabel->setAlignment(Qt::AlignLeading | Qt::AlignLeft | Qt::AlignVCenter);
     m_headerLabel->setText(title);
     bodyLayout->addWidget(m_headerLabel);

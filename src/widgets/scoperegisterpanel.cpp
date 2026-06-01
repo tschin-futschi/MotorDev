@@ -13,6 +13,7 @@
 
 #include "protocol/register_utils.h"
 #include "ui/repolish.h"
+#include "ui/style_constants.h"
 
 #include <QEvent>
 #include <QHBoxLayout>
@@ -24,6 +25,8 @@
 #include <QSpacerItem>
 #include <QTimer>
 #include <QVBoxLayout>
+
+using namespace MotorDev;
 
 // =============================================================================
 // 构造 / 析构
@@ -290,7 +293,7 @@ void ScopeRegisterPanel::connectSignals() {
 /// @brief 创建 8 行寄存器输入控件和底部控制栏。
 void ScopeRegisterPanel::setupUi() {
     setObjectName(QStringLiteral("ScopeRegisterPanel"));
-    setMinimumSize(QSize(430, 292));
+    setMinimumSize(QSize(Style::Size::ScopeRegPanelMinW, Style::Size::ScopeRegPanelMinH));
 
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setObjectName(QStringLiteral("rootLayout"));
@@ -312,8 +315,8 @@ void ScopeRegisterPanel::setupUi() {
         // --- 描述输入框 ---
         m_descEdits[row] = new QLineEdit(this);
         m_descEdits[row]->setObjectName(QStringLiteral("descEdit%1").arg(row));
-        m_descEdits[row]->setMinimumSize(QSize(124, 24));
-        m_descEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+        m_descEdits[row]->setMinimumSize(QSize(Style::Size::ScopeRegDescWidth, Style::Size::ScopeRegRowHeight));
+        m_descEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeRegRowHeight));
         m_descEdits[row]->setText(QStringLiteral("REG%1").arg(row + 1));
         m_descEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_descEdits[row]);
@@ -321,8 +324,8 @@ void ScopeRegisterPanel::setupUi() {
         // --- 地址输入框：默认从 0x0020 开始递增 ---
         m_addrEdits[row] = new QLineEdit(this);
         m_addrEdits[row]->setObjectName(QStringLiteral("addrEdit%1").arg(row));
-        m_addrEdits[row]->setMinimumSize(QSize(92, 24));
-        m_addrEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+        m_addrEdits[row]->setMinimumSize(QSize(Style::Size::ScopeRegInputWidth, Style::Size::ScopeRegRowHeight));
+        m_addrEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeRegRowHeight));
         m_addrEdits[row]->setText(QStringLiteral("0x%1").arg(0x0020 + row * 2, 4, 16, QLatin1Char('0')).toUpper());
         m_addrEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_addrEdits[row]);
@@ -330,8 +333,8 @@ void ScopeRegisterPanel::setupUi() {
         // --- 值输入框 ---
         m_valueEdits[row] = new QLineEdit(this);
         m_valueEdits[row]->setObjectName(QStringLiteral("valueEdit%1").arg(row));
-        m_valueEdits[row]->setMinimumSize(QSize(92, 24));
-        m_valueEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, 24));
+        m_valueEdits[row]->setMinimumSize(QSize(Style::Size::ScopeRegInputWidth, Style::Size::ScopeRegRowHeight));
+        m_valueEdits[row]->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::ScopeRegRowHeight));
         m_valueEdits[row]->setText(QStringLiteral("0x0000"));
         m_valueEdits[row]->setProperty("inputRole", QStringLiteral("scope-register"));
         rowLayout->addWidget(m_valueEdits[row]);
@@ -339,8 +342,8 @@ void ScopeRegisterPanel::setupUi() {
         // --- 读按钮（R） ---
         m_readButtons[row] = new QPushButton(this);
         m_readButtons[row]->setObjectName(QStringLiteral("readButton%1").arg(row));
-        m_readButtons[row]->setMinimumSize(QSize(28, 24));
-        m_readButtons[row]->setMaximumSize(QSize(28, 24));
+        m_readButtons[row]->setMinimumSize(QSize(Style::Size::ScopeRegButtonWidth, Style::Size::ScopeRegRowHeight));
+        m_readButtons[row]->setMaximumSize(QSize(Style::Size::ScopeRegButtonWidth, Style::Size::ScopeRegRowHeight));
         m_readButtons[row]->setProperty("buttonRole", QStringLiteral("read"));
         m_readButtons[row]->setText(tr("读"));
         rowLayout->addWidget(m_readButtons[row]);
@@ -348,8 +351,8 @@ void ScopeRegisterPanel::setupUi() {
         // --- 写按钮（W） ---
         m_writeButtons[row] = new QPushButton(this);
         m_writeButtons[row]->setObjectName(QStringLiteral("writeButton%1").arg(row));
-        m_writeButtons[row]->setMinimumSize(QSize(28, 24));
-        m_writeButtons[row]->setMaximumSize(QSize(28, 24));
+        m_writeButtons[row]->setMinimumSize(QSize(Style::Size::ScopeRegButtonWidth, Style::Size::ScopeRegRowHeight));
+        m_writeButtons[row]->setMaximumSize(QSize(Style::Size::ScopeRegButtonWidth, Style::Size::ScopeRegRowHeight));
         m_writeButtons[row]->setProperty("buttonRole", QStringLiteral("write"));
         m_writeButtons[row]->setText(tr("写"));
         rowLayout->addWidget(m_writeButtons[row]);

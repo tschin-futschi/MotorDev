@@ -188,16 +188,17 @@ void SerialDebugTab::setupUi() {
 
     auto *rootLayout = new QVBoxLayout(this);
     rootLayout->setObjectName(QStringLiteral("rootLayout"));
-    rootLayout->setSpacing(16);
-    rootLayout->setContentsMargins(24, 24, 24, 24);
+    rootLayout->setSpacing(Style::Size::ContentSpacing);
+    rootLayout->setContentsMargins(Style::Size::ContentPadding, Style::Size::ContentPadding,
+                                   Style::Size::ContentPadding, Style::Size::ContentPadding);
 
     // =========================================================================
     // 顶部连接栏：Port | BaudRate | 刷新 | 连接 | 状态标签
     // =========================================================================
     auto *connectionBar = new QFrame(this);
     connectionBar->setObjectName(QStringLiteral("connectionBar"));
-    connectionBar->setMinimumSize(QSize(0, 36));
-    connectionBar->setMaximumSize(QSize(QWIDGETSIZE_MAX, 36));
+    connectionBar->setMinimumSize(QSize(0, Style::Size::SimulatorConnectionBarHeight));
+    connectionBar->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SimulatorConnectionBarHeight));
     auto *connectionLayout = new QHBoxLayout(connectionBar);
     connectionLayout->setObjectName(QStringLiteral("connectionLayout"));
     connectionLayout->setSpacing(10);
@@ -229,16 +230,16 @@ void SerialDebugTab::setupUi() {
 
     m_scanButton = new QPushButton(connectionBar);
     m_scanButton->setObjectName(QStringLiteral("scanButton"));
-    m_scanButton->setMinimumSize(QSize(0, 32));
-    m_scanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_scanButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_scanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_scanButton->setText(tr("刷新"));
     m_scanButton->setProperty("buttonRole", QStringLiteral("secondary"));
     connectionLayout->addWidget(m_scanButton);
 
     m_connectButton = new QPushButton(connectionBar);
     m_connectButton->setObjectName(QStringLiteral("connectButton"));
-    m_connectButton->setMinimumSize(QSize(0, 32));
-    m_connectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_connectButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_connectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_connectButton->setText(tr("连接"));
     m_connectButton->setProperty("buttonRole", QStringLiteral("primary"));
     connectionLayout->addWidget(m_connectButton);
@@ -256,7 +257,7 @@ void SerialDebugTab::setupUi() {
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
     m_mainSplitter->setObjectName(QStringLiteral("mainSplitter"));
     m_mainSplitter->setChildrenCollapsible(false);
-    m_mainSplitter->setHandleWidth(8);
+    m_mainSplitter->setHandleWidth(Style::Size::SplitterHandleWidth);
     rootLayout->addWidget(m_mainSplitter);
     m_mainSplitter->setStretchFactor(0, 0);
     m_mainSplitter->setStretchFactor(1, 1);
@@ -264,11 +265,11 @@ void SerialDebugTab::setupUi() {
     // --- 左侧应答配置面板 ---
     auto *leftPanel = new QWidget(m_mainSplitter);
     leftPanel->setObjectName(QStringLiteral("leftPanel"));
-    leftPanel->setMinimumSize(QSize(260, 0));
-    leftPanel->setMaximumSize(QSize(260, QWIDGETSIZE_MAX));
+    leftPanel->setMinimumSize(QSize(Style::Size::SimulatorLeftPanelWidth, 0));
+    leftPanel->setMaximumSize(QSize(Style::Size::SimulatorLeftPanelWidth, QWIDGETSIZE_MAX));
     auto *leftLayout = new QVBoxLayout(leftPanel);
     leftLayout->setObjectName(QStringLiteral("leftLayout"));
-    leftLayout->setSpacing(16);
+    leftLayout->setSpacing(Style::Size::ContentSpacing);
     leftLayout->setContentsMargins(0, 0, 0, 0);
 
     m_responseTitle = new QLabel(leftPanel);

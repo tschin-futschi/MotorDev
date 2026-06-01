@@ -124,8 +124,9 @@ void ActivityBar::setupUi() {
 
     auto *verticalLayout = new QVBoxLayout(this);
     verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
-    verticalLayout->setSpacing(6);
-    verticalLayout->setContentsMargins(4, 8, 4, 8);
+    verticalLayout->setSpacing(Style::Size::ActivityBarSpacing);
+    verticalLayout->setContentsMargins(Style::Size::ActivityButtonPadding, Style::Size::ActivityBarTopPadding,
+                                       Style::Size::ActivityButtonPadding, Style::Size::ActivityBarBottomPadding);
 
     // 6 个导航按钮：配置 / 读写 / 烧录 / 示波 / 存储 / 调试
     const struct {

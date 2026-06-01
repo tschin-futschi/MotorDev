@@ -23,7 +23,7 @@ QLabel *makeLabel(QWidget *parent, const QString &text, bool valueRole) {
     l->setObjectName(valueRole ? QStringLiteral("infoValue") : QStringLiteral("infoLabel"));
     QFont f = l->font();
     if (valueRole) f.setFamily(QString::fromLatin1(Style::Font::Monospace));
-    f.setPixelSize(11);
+    f.setPixelSize(Style::Size::FwFlashInfoFontPx);
     l->setFont(f);
     QPalette p = l->palette();
     p.setColor(QPalette::WindowText,
@@ -75,7 +75,7 @@ void FwFileInfoPanel::setupUi() {
     emptyPal.setColor(QPalette::WindowText, Style::Color::MutedText);
     m_emptyLabel->setPalette(emptyPal);
     QFont emptyFont = m_emptyLabel->font();
-    emptyFont.setPixelSize(11);
+    emptyFont.setPixelSize(Style::Size::FwFlashInfoFontPx);
     m_emptyLabel->setFont(emptyFont);
     emptyLayout->addWidget(m_emptyLabel);
     m_stack->addWidget(emptyPage);
@@ -145,7 +145,7 @@ void FwFileInfoPanel::setupUi() {
     errPal.setColor(QPalette::WindowText, Style::Color::FwFlashFileInfoErrorFg);
     m_errorLabel->setPalette(errPal);
     QFont errFont = m_errorLabel->font();
-    errFont.setPixelSize(11);
+    errFont.setPixelSize(Style::Size::FwFlashInfoFontPx);
     m_errorLabel->setFont(errFont);
     errorLayout->addWidget(m_errorLabel);
     errorLayout->addStretch();

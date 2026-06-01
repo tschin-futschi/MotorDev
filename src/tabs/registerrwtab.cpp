@@ -299,16 +299,16 @@ void RegisterRwTab::setupUi() {
 
     m_readAllButton = new QPushButton(m_sidebarContent);
     m_readAllButton->setObjectName(QStringLiteral("readAllButton"));
-    m_readAllButton->setMinimumSize(QSize(0, 32));
-    m_readAllButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_readAllButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_readAllButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_readAllButton->setProperty("buttonRole", QStringLiteral("primary-sidebar"));
     m_readAllButton->setText(tr("全部读取"));
     sidebarLayout->addWidget(m_readAllButton);
 
     m_writeAllButton = new QPushButton(m_sidebarContent);
     m_writeAllButton->setObjectName(QStringLiteral("writeAllButton"));
-    m_writeAllButton->setMinimumSize(QSize(0, 32));
-    m_writeAllButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_writeAllButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_writeAllButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_writeAllButton->setProperty("buttonRole", QStringLiteral("write-sidebar"));
     m_writeAllButton->setText(tr("全部写入"));
     sidebarLayout->addWidget(m_writeAllButton);
@@ -435,8 +435,8 @@ void RegisterRwTab::setupUi() {
 
         m_batchBtn[i] = new QPushButton(m_batchPanel);
         m_batchBtn[i]->setObjectName(QString::fromLatin1(rowSpecs[i].buttonName));
-        m_batchBtn[i]->setMinimumSize(QSize(96, 32));
-        m_batchBtn[i]->setMaximumSize(QSize(96, 32));
+        m_batchBtn[i]->setMinimumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
+        m_batchBtn[i]->setMaximumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
         m_batchBtn[i]->setProperty("buttonRole", QStringLiteral("primary-sidebar"));
         m_batchBtn[i]->setText(tr(rowSpecs[i].buttonText));
         rowLayout->addWidget(m_batchBtn[i]);
@@ -449,8 +449,8 @@ void RegisterRwTab::setupUi() {
 
         m_batchBrowseBtn[i] = new QPushButton(m_batchPanel);
         m_batchBrowseBtn[i]->setObjectName(QString::fromLatin1(rowSpecs[i].browseName));
-        m_batchBrowseBtn[i]->setMinimumSize(QSize(96, 32));
-        m_batchBrowseBtn[i]->setMaximumSize(QSize(96, 32));
+        m_batchBrowseBtn[i]->setMinimumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
+        m_batchBrowseBtn[i]->setMaximumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
         m_batchBrowseBtn[i]->setProperty("buttonRole", QStringLiteral("secondary"));
         m_batchBrowseBtn[i]->setText(tr("浏览"));
         rowLayout->addWidget(m_batchBrowseBtn[i]);
@@ -534,8 +534,8 @@ void RegisterRwTab::setupUi() {
     dirRow->addWidget(m_blockReadDirEdit, 1);
     m_blockReadBrowseBtn = new QPushButton(m_blockReadPanel);
     m_blockReadBrowseBtn->setObjectName(QStringLiteral("blockReadBrowseBtn"));
-    m_blockReadBrowseBtn->setMinimumSize(QSize(96, 32));
-    m_blockReadBrowseBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadBrowseBtn->setMinimumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
+    m_blockReadBrowseBtn->setMaximumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
     m_blockReadBrowseBtn->setProperty("buttonRole", QStringLiteral("secondary"));
     m_blockReadBrowseBtn->setText(tr("浏览..."));
     dirRow->addWidget(m_blockReadBrowseBtn);
@@ -575,16 +575,16 @@ void RegisterRwTab::setupUi() {
     btnRow->addStretch(1);
     m_blockReadStartBtn = new QPushButton(m_blockReadPanel);
     m_blockReadStartBtn->setObjectName(QStringLiteral("blockReadStartBtn"));
-    m_blockReadStartBtn->setMinimumSize(QSize(96, 32));
-    m_blockReadStartBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadStartBtn->setMinimumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
+    m_blockReadStartBtn->setMaximumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
     m_blockReadStartBtn->setProperty("buttonRole", QStringLiteral("primary-sidebar"));
     m_blockReadStartBtn->setText(tr("开始读取"));
     btnRow->addWidget(m_blockReadStartBtn);
 
     m_blockReadCancelBtn = new QPushButton(m_blockReadPanel);
     m_blockReadCancelBtn->setObjectName(QStringLiteral("blockReadCancelBtn"));
-    m_blockReadCancelBtn->setMinimumSize(QSize(96, 32));
-    m_blockReadCancelBtn->setMaximumSize(QSize(96, 32));
+    m_blockReadCancelBtn->setMinimumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
+    m_blockReadCancelBtn->setMaximumSize(QSize(Style::Size::RegisterPopupButtonW, Style::Size::SidebarButtonHeight));
     m_blockReadCancelBtn->setProperty("buttonRole", QStringLiteral("secondary"));
     m_blockReadCancelBtn->setText(tr("取消"));
     m_blockReadCancelBtn->setEnabled(false);  // 空闲时禁用

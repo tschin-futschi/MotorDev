@@ -39,7 +39,7 @@ void FwFlashLogPanel::setupUi() {
     m_textEdit->setReadOnly(true);
     m_textEdit->setMaximumBlockCount(2000);
     QFont f(QString::fromLatin1(Style::Font::Monospace));
-    f.setPixelSize(11);
+    f.setPixelSize(Style::Size::FwFlashInfoFontPx);
     m_textEdit->setFont(f);
     root->addWidget(m_textEdit, 1);
 

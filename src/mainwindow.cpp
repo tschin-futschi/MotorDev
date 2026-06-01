@@ -222,8 +222,8 @@ void MainWindow::setupUi() {
     // --- 状态栏 ---
     auto *statusBarWidget = new QWidget(centralWidget);
     statusBarWidget->setObjectName(QStringLiteral("statusBarWidget"));
-    statusBarWidget->setMinimumSize(QSize(0, 22));
-    statusBarWidget->setMaximumSize(QSize(QWIDGETSIZE_MAX, 22));
+    statusBarWidget->setMinimumSize(QSize(0, Style::Size::StatusBarHeight));
+    statusBarWidget->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::StatusBarHeight));
     auto *statusBarLayout = new QHBoxLayout(statusBarWidget);
     statusBarLayout->setObjectName(QStringLiteral("statusBarLayout"));
     statusBarLayout->setSpacing(10);

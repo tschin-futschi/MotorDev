@@ -523,15 +523,16 @@ void ConfigTab::setupUi() {
     m_mainContent->setObjectName(QStringLiteral("mainContent"));
     auto *mainContentLayout = new QVBoxLayout(m_mainContent);
     mainContentLayout->setObjectName(QStringLiteral("mainContentLayout"));
-    mainContentLayout->setSpacing(16);
-    mainContentLayout->setContentsMargins(24, 24, 24, 24);
+    mainContentLayout->setSpacing(Style::Size::ContentSpacing);
+    mainContentLayout->setContentsMargins(Style::Size::ContentPadding, Style::Size::ContentPadding,
+                                          Style::Size::ContentPadding, Style::Size::ContentPadding);
     topLayout->addWidget(m_mainContent);
 
     // 垂直分割器：上方卡片区 | 下方配置文件区
     m_mainSplitter = new QSplitter(Qt::Vertical, m_mainContent);
     m_mainSplitter->setObjectName(QStringLiteral("mainSplitter"));
     m_mainSplitter->setChildrenCollapsible(false);
-    m_mainSplitter->setHandleWidth(8);
+    m_mainSplitter->setHandleWidth(Style::Size::SplitterHandleWidth);
     mainContentLayout->addWidget(m_mainSplitter);
 
     // =========================================================================
@@ -559,7 +560,8 @@ void ConfigTab::setupUi() {
     auto *icGroupLayout = new QVBoxLayout(m_icGroup);
     icGroupLayout->setObjectName(QStringLiteral("icGroupLayout"));
     icGroupLayout->setSpacing(10);
-    icGroupLayout->setContentsMargins(24, 8, 24, 24);
+    icGroupLayout->setContentsMargins(Style::Size::ContentPadding, Style::Size::GroupBoxTopMargin,
+                                      Style::Size::ContentPadding, Style::Size::ContentPadding);
     auto *icFormLayout = new QFormLayout();
     icFormLayout->setObjectName(QStringLiteral("icFormLayout"));
     icFormLayout->setHorizontalSpacing(16);
@@ -590,15 +592,15 @@ void ConfigTab::setupUi() {
     icGroupLayout->addLayout(icButtonRow);
     m_icScanButton = new QPushButton(m_icGroup);
     m_icScanButton->setObjectName(QStringLiteral("icScanButton"));
-    m_icScanButton->setMinimumSize(QSize(0, 32));
-    m_icScanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_icScanButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_icScanButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_icScanButton->setText(tr("扫描"));
     m_icScanButton->setProperty("buttonRole", QStringLiteral("primary"));
     icButtonRow->addWidget(m_icScanButton);
     m_icConnectButton = new QPushButton(m_icGroup);
     m_icConnectButton->setObjectName(QStringLiteral("icConnectButton"));
-    m_icConnectButton->setMinimumSize(QSize(0, 32));
-    m_icConnectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, 32));
+    m_icConnectButton->setMinimumSize(QSize(0, Style::Size::SidebarButtonHeight));
+    m_icConnectButton->setMaximumSize(QSize(QWIDGETSIZE_MAX, Style::Size::SidebarButtonHeight));
     m_icConnectButton->setText(tr("连接"));
     m_icConnectButton->setProperty("buttonRole", QStringLiteral("primary"));
     icButtonRow->addWidget(m_icConnectButton);
@@ -610,7 +612,8 @@ void ConfigTab::setupUi() {
     auto *serialGroupLayout = new QVBoxLayout(m_serialGroup);
     serialGroupLayout->setObjectName(QStringLiteral("serialGroupLayout"));
     serialGroupLayout->setSpacing(10);
-    serialGroupLayout->setContentsMargins(24, 8, 24, 24);
+    serialGroupLayout->setContentsMargins(Style::Size::ContentPadding, Style::Size::GroupBoxTopMargin,
+                                          Style::Size::ContentPadding, Style::Size::ContentPadding);
     auto *serialFormLayout = new QFormLayout();
     serialFormLayout->setObjectName(QStringLiteral("serialFormLayout"));
     serialFormLayout->setHorizontalSpacing(16);
@@ -645,25 +648,25 @@ void ConfigTab::setupUi() {
     serialGroupLayout->addLayout(serialButtonGrid);
     m_scanButton = new QPushButton(m_serialGroup);
     m_scanButton->setObjectName(QStringLiteral("scanButton"));
-    m_scanButton->setFixedHeight(32);
+    m_scanButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_scanButton->setText(tr("扫描"));
     m_scanButton->setProperty("buttonRole", QStringLiteral("primary"));
     serialButtonGrid->addWidget(m_scanButton, 0, 0);
     m_connectButton = new QPushButton(m_serialGroup);
     m_connectButton->setObjectName(QStringLiteral("connectButton"));
-    m_connectButton->setFixedHeight(32);
+    m_connectButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_connectButton->setText(tr("连接"));
     m_connectButton->setProperty("buttonRole", QStringLiteral("primary"));
     serialButtonGrid->addWidget(m_connectButton, 0, 1);
     m_resetButton = new QPushButton(m_serialGroup);
     m_resetButton->setObjectName(QStringLiteral("resetButton"));
-    m_resetButton->setFixedHeight(32);
+    m_resetButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_resetButton->setText(tr("设备复位"));
     m_resetButton->setProperty("buttonRole", QStringLiteral("secondary"));
     serialButtonGrid->addWidget(m_resetButton, 1, 0);
     m_motorTestButton = new QPushButton(m_serialGroup);
     m_motorTestButton->setObjectName(QStringLiteral("motorTestButton"));
-    m_motorTestButton->setFixedHeight(32);
+    m_motorTestButton->setFixedHeight(Style::Size::SidebarButtonHeight);
     m_motorTestButton->setText(tr("电机测试"));
     m_motorTestButton->setProperty("buttonRole", QStringLiteral("secondary"));
     serialButtonGrid->addWidget(m_motorTestButton, 1, 1);
@@ -674,7 +677,8 @@ void ConfigTab::setupUi() {
     auto *pmicGroupLayout = new QVBoxLayout(m_pmicGroup);
     pmicGroupLayout->setObjectName(QStringLiteral("pmicGroupLayout"));
     pmicGroupLayout->setSpacing(10);
-    pmicGroupLayout->setContentsMargins(24, 8, 24, 24);
+    pmicGroupLayout->setContentsMargins(Style::Size::ContentPadding, Style::Size::GroupBoxTopMargin,
+                                        Style::Size::ContentPadding, Style::Size::ContentPadding);
     auto *pmicFormLayout = new QFormLayout();
     pmicFormLayout->setObjectName(QStringLiteral("pmicFormLayout"));
     pmicFormLayout->setHorizontalSpacing(16);
@@ -736,7 +740,7 @@ void ConfigTab::setupUi() {
     lowerArea->setObjectName(QStringLiteral("lowerArea"));
     auto *lowerLayout = new QVBoxLayout(lowerArea);
     lowerLayout->setObjectName(QStringLiteral("lowerLayout"));
-    lowerLayout->setSpacing(16);
+    lowerLayout->setSpacing(Style::Size::ContentSpacing);
     lowerLayout->setContentsMargins(0, 0, 0, 0);
     auto *configFileRow = new QWidget(lowerArea);
     configFileRow->setObjectName(QStringLiteral("configFileRow"));

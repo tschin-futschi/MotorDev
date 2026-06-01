@@ -57,7 +57,7 @@ void FwFlashControlPanel::setupUi() {
     m_stageLabel = new QLabel(this);
     m_stageLabel->setObjectName(QStringLiteral("fwFlashStageLabel"));
     QFont f = m_stageLabel->font();
-    f.setPixelSize(11);
+    f.setPixelSize(Style::Size::FwFlashInfoFontPx);
     m_stageLabel->setFont(f);
     QPalette pal = m_stageLabel->palette();
     pal.setColor(QPalette::WindowText, Style::Color::FwFlashStageLabelFg);
