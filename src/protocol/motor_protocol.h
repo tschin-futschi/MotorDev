@@ -19,6 +19,7 @@
 #include <QByteArray>
 #include <QList>
 #include <QPair>
+#include <QString>
 #include <QVector>
 
 #include <cstdint>
@@ -397,6 +398,18 @@ QList<uint8_t> decodeI2cScanResponse(const QByteArray &data);
 /// @param data  错误响应载荷
 /// @return 错误码（载荷为空时返回 0）
 uint8_t decodeErrorCode(const QByteArray &data);
+
+/// @brief 判断 0x06 调试信息是否为"采样时间不够"（tick overrun）
+///
+/// STM32 在采样/发生器启动耗时超限（预期单 tick I2C 总耗时 > tick 周期 × 80%）时，
+/// 主动发 0x06 文本 "Tick overrun: estimated Xus > limit Yus"
+/// （见 protocol.md §0x06 合法场景 / §0x50 耗时校验）。本函数集中持有该标记，
+/// 避免标记串散落到业务/UI 层。
+/// @param debugText    0x06 调试帧文本（UTF-8 解码后的字符串）
+/// @param estimatedUs  输出：预估耗时(us)，未解析到时置 -1（可为 nullptr）
+/// @param limitUs      输出：限值(us)，未解析到时置 -1（可为 nullptr）
+/// @return 文本含 tick overrun 标记返回 true，否则 false
+bool parseTickOverrunDebug(const QString &debugText, int *estimatedUs, int *limitUs);
 
 /// @brief 解码 0x0B BOOT_STATUS 帧载荷
 /// @param data       载荷字节流（应为 1 字节状态码）

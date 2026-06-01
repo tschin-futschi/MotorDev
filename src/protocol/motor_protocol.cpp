@@ -8,6 +8,8 @@
 
 #include "protocol/motor_protocol.h"
 
+#include <QRegularExpression>
+
 namespace MotorProtocol {
 
 // -----------------------------------------------------------------------------
@@ -547,6 +549,33 @@ uint8_t decodeErrorCode(const QByteArray &data) {
     }
 
     return static_cast<uint8_t>(data.at(0));
+}
+
+bool parseTickOverrunDebug(const QString &debugText, int *estimatedUs, int *limitUs) {
+    if (estimatedUs) {
+        *estimatedUs = -1;
+    }
+    if (limitUs) {
+        *limitUs = -1;
+    }
+    // 标记：STM32 启动耗时超限时 0x06 文本以 "Tick overrun" 开头（protocol.md §0x06 / §0x50）
+    if (!debugText.contains(QStringLiteral("Tick overrun"), Qt::CaseInsensitive)) {
+        return false;
+    }
+    // 尽力解析 "estimated Xus > limit Yus" 中的数值；解析失败不影响判定（仍返回 true）
+    static const QRegularExpression re(
+        QStringLiteral("estimated\\s*(\\d+)\\s*us.*limit\\s*(\\d+)\\s*us"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch match = re.match(debugText);
+    if (match.hasMatch()) {
+        if (estimatedUs) {
+            *estimatedUs = match.captured(1).toInt();
+        }
+        if (limitUs) {
+            *limitUs = match.captured(2).toInt();
+        }
+    }
+    return true;
 }
 
 // -----------------------------------------------------------------------------

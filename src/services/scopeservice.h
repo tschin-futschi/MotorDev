@@ -82,12 +82,23 @@ public:
     int perfSampleCount() const { return m_perfSampleCount; }
     void resetPerfCounters() { m_perfBatchCount = 0; m_perfSampleCount = 0; }
 
+public slots:
+    /// @brief 处理设备主动上报的 0x06 调试信息（由 MainWindow 路由，QueuedConnection 投递）。
+    ///
+    /// 若识别为"采样时间不够"（tick overrun）且当前确为采样启动尝试，emit
+    /// samplingTimeInsufficient；其他调试信息忽略。一次启动尝试最多上报一次（去抖）。
+    void onDeviceDebugInfo(const QString &message);
+
 signals:
     void runningChanged(bool running);
     void samplesReceived(uint8_t channelMask, const QVector<int16_t> &samples);
     void acquisitionConfigured(int sampleIntervalUs, int displayWindowMs);
     void resetViewRequested();
     void startError(const QString &message);
+
+    /// @brief 采样因"采样时间不够"被 STM32 拒绝（tick overrun）
+    /// @param detail 诊断详情（如 "estimated 742us > limit 720us"，无法解析时为空串）
+    void samplingTimeInsufficient(const QString &detail);
 
 private slots:
     void handleResponse(uint8_t cmd, uint8_t seq, const QByteArray &data);
@@ -127,6 +138,7 @@ private:
     bool m_stopPending = false;
     bool m_hasReceivedStream = false;
     bool m_debugStreamActive = false;
+    bool m_insufficientTimeArmed = false;  ///< 采样启动尝试期间置位；命中 tick overrun 上报后或启动成功后复位（去抖 + 限定采样启动场景）
     QString m_lastError;
     bool m_running = false;
     QAtomicInt m_uiProcessing {0};

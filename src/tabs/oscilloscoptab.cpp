@@ -25,6 +25,7 @@
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QMessageBox>
 #include <QProcess>
 #include <QSplitter>
 #include <QTimer>
@@ -370,6 +371,14 @@ void OscilloscopTab::connectSignals() {
     connect(m_service, &ScopeService::samplesReceived, m_plotWidget, &ScopePlotWidget::appendSamples);
     connect(m_service, &ScopeService::acquisitionConfigured, m_plotWidget, &ScopePlotWidget::configureAcquisition);
     connect(m_service, &ScopeService::resetViewRequested, m_plotWidget, &ScopePlotWidget::resetView);
+
+    // 采样时间不够（STM32 tick overrun 拒绝采样）→ 弹窗告知用户
+    connect(m_service, &ScopeService::samplingTimeInsufficient, this, [this](const QString &detail) {
+        const QString body = detail.isEmpty()
+            ? tr("采样时间不够，拒绝采样。")
+            : tr("采样时间不够，拒绝采样。\n%1").arg(detail);
+        QMessageBox::warning(this, tr("采样时间不够"), body);
+    });
 
     // -------------------------------------------------------------------------
     // ScopeService → 数据记录服务（采样参数 / 启停 / 数据）

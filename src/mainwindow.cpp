@@ -341,8 +341,17 @@ void MainWindow::connectSignals() {
             [this](uint8_t cmd, uint8_t seq, const QByteArray &data) {
                 Q_UNUSED(seq);
                 if (cmd == MotorProtocol::CmdDebugInfo) {
+                    const QString text = QString::fromUtf8(data);
                     qCWarning(lcMainWindow).noquote()
-                        << QStringLiteral("Device: %1").arg(QString::fromUtf8(data));
+                        << QStringLiteral("Device: %1").arg(text);
+                    // 路由给 ScopeService：识别"采样时间不够"(tick overrun) 等采样相关调试信息。
+                    // 取 OscilloscopTab 持有的 ScopeService（与 0x38/烧录前置序列同款 findChild 模式），
+                    // 经 QueuedConnection 投递到主线程的 service slot。
+                    if (auto *scope = m_scopeTab ? m_scopeTab->findChild<ScopeService *>() : nullptr) {
+                        QMetaObject::invokeMethod(scope, "onDeviceDebugInfo",
+                                                   Qt::QueuedConnection,
+                                                   Q_ARG(QString, text));
+                    }
                     return;
                 }
                 if (cmd == MotorProtocol::CmdFlashExecProgress) {

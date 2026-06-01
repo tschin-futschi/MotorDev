@@ -856,6 +856,24 @@ Crosshair toggle: QToolButton，checkable；文字在「使用十字光标：开
   CH8         rgb(220, 220, 220)  // light grey — ScopeWaveCh8
 ```
 
+### 采样时间不够弹窗（启动被拒）
+
+点击「开始采样」后，若 STM32 因**采样时间不够**（tick overrun：预期单 tick I2C 总耗时 > tick 周期 × 80%）拒绝采样，上位机弹模态告知框。
+
+```
+触发条件: STM32 主动上报 0x06 调试帧文本含 "Tick overrun"（见 protocol.md §0x06 / §0x50 耗时校验）
+          且当前确为一次采样启动尝试（去抖：一次启动最多弹一次）
+控件:     QMessageBox::warning，parent = OscilloscopTab
+标题:     "采样时间不够"（tr，可译）
+正文:     "采样时间不够，拒绝采样。"
+          若 0x06 文本可解析出数值，追加一行诊断 "estimated Xus > limit Yus"（诊断数值不翻译）
+行为:     纯告知；采样保持停止态（STM32 已拒绝，PC 侧采样状态已为停止）
+不触发:   其他采样启动失败原因（无有效通道映射 / 掩码 0 / 间隔越界）不弹此框
+分层:     "是否采样时间不够"的判定在协议层 MotorProtocol::parseTickOverrunDebug + 服务层
+          ScopeService::onDeviceDebugInfo（emit samplingTimeInsufficient）；MainWindow 仅路由
+          0x06 帧；QMessageBox 仅在 UI 层 OscilloscopTab
+```
+
 ### ScopeBottomPanel（底部面板）
 
 ```

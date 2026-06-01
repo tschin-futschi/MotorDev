@@ -211,6 +211,7 @@ void ScopeService::requestStart(uint8_t sampleIntervalIndex, int displayWindowMs
     m_startPending = true;
     m_stopPending = false;
     m_hasReceivedStream = false;
+    m_insufficientTimeArmed = true;  // 武装"采样时间不够"检测；仅采样启动尝试期间命中 0x06 才弹窗
     clearPendingStreamBatch();
 
     // 通知 UI 配置采集参数
@@ -253,6 +254,36 @@ void ScopeService::requestStop() {
         << QStringLiteral("%1 TX payload=%2")
                .arg(QString::fromLatin1(MotorProtocol::commandName(MotorProtocol::CmdStopSampling)))
                .arg(formatPayloadHex(payload));
+}
+
+// =============================================================================
+// 设备主动调试信息（0x06）
+// =============================================================================
+
+/// @brief 处理设备主动上报的 0x06 调试信息。
+///
+/// 仅关心"采样时间不够"(tick overrun)：识别后且当前确为采样启动尝试（m_insufficientTimeArmed），
+/// emit samplingTimeInsufficient 供 UI 弹窗。一次启动尝试最多上报一次。其他调试信息忽略
+/// （仍由 MainWindow 记入日志）。
+void ScopeService::onDeviceDebugInfo(const QString &message) {
+    int estimatedUs = -1;
+    int limitUs = -1;
+    if (!MotorProtocol::parseTickOverrunDebug(message, &estimatedUs, &limitUs)) {
+        return;  // 非"采样时间不够"调试信息
+    }
+    if (!m_insufficientTimeArmed) {
+        return;  // 非采样启动尝试引发，或已上报（去抖）
+    }
+    m_insufficientTimeArmed = false;
+
+    QString detail;
+    if (estimatedUs >= 0 && limitUs >= 0) {
+        detail = QStringLiteral("estimated %1us > limit %2us").arg(estimatedUs).arg(limitUs);
+    }
+    qCWarning(lcScope).noquote()
+        << QStringLiteral("Sampling rejected: insufficient tick budget (%1)")
+               .arg(detail.isEmpty() ? message : detail);
+    emit samplingTimeInsufficient(detail);
 }
 
 // =============================================================================
@@ -478,6 +509,7 @@ void ScopeService::handleResponse(uint8_t cmd, uint8_t seq, const QByteArray &da
                 << QStringLiteral("%1 RX ACK payload=%2")
                        .arg(QString::fromLatin1(MotorProtocol::commandName(cmd)))
                        .arg(formatPayloadHex(data));
+            m_insufficientTimeArmed = false;  // 启动成功，解除"采样时间不够"检测
             finishPendingCommand();
         }
         break;
