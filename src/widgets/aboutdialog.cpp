@@ -132,10 +132,10 @@ void AboutDialog::setupUi() {
         return l;
     };
     root->addWidget(makeQuote(QStringLiteral(
-        "„Bitte beantworte mir: Was ist der Sinn des Lebens?“")));
+        "„Antworte mir: Worin liegt der Sinn des Daseins?“")));
     root->addWidget(makeQuote(QStringLiteral(
-        "„Was hat sich im Vergleich zu gestern an dir verändert, "
-        "außer dass du einen Tag älter geworden bist?“")));
+        "„Bist du heute ein anderer geworden – "
+        "oder bloß um einen Tag gealtert?“")));
 
     // --- 版权 + 仓库（居中、弱化，可选中复制仓库地址）---
     auto *copyrightLabel = new QLabel(QString::fromLatin1(kCopyright), this);
