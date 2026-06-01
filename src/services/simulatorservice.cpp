@@ -471,8 +471,8 @@ void SimulatorService::handleStartSampling(uint8_t seq) {
         m_lastStreamActualUs = -1;
         m_streamActualUsAccumulator = 0;
         m_streamActualUsSamples = 0;
+        m_streamElapsedTimer.restart();  // 计时器与统计字段同锁，避免与流线程竞态
     }
-    m_streamElapsedTimer.restart();
     m_streamCv.notify_all();
 
     sendResponseFrame(seq, MotorProtocol::CmdStartSampling, {});
@@ -658,12 +658,17 @@ void SimulatorService::emitOneStreamFrame() {
     // 入队待投递到主线程
     queueDebugStreamFrame(channelMask, samples);
 
-    // 统计实际采样间隔（用于性能分析）
-    const qint64 nowUs = m_streamElapsedTimer.isValid() ? m_streamElapsedTimer.nsecsElapsed() / 1000 : -1;
-    const qint64 actualDeltaUs = (m_lastStreamActualUs >= 0 && nowUs >= 0) ? (nowUs - m_lastStreamActualUs) : -1;
-    if (actualDeltaUs >= 0) { m_streamActualUsAccumulator += actualDeltaUs; ++m_streamActualUsSamples; }
-    m_lastStreamActualUs = nowUs;
-    { std::lock_guard<std::mutex> lock(m_mutex); ++m_streamTick; }
+    // 统计实际采样间隔（用于性能分析）+ 推进 streamTick。
+    // 这些字段（含 m_streamElapsedTimer）主线程在 handleStart/StopSampling 持锁写，
+    // 故流线程此处读写必须同锁，避免数据竞态（仅赋值/计时器读取，临界区极短）。
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        const qint64 nowUs = m_streamElapsedTimer.isValid() ? m_streamElapsedTimer.nsecsElapsed() / 1000 : -1;
+        const qint64 actualDeltaUs = (m_lastStreamActualUs >= 0 && nowUs >= 0) ? (nowUs - m_lastStreamActualUs) : -1;
+        if (actualDeltaUs >= 0) { m_streamActualUsAccumulator += actualDeltaUs; ++m_streamActualUsSamples; }
+        m_lastStreamActualUs = nowUs;
+        ++m_streamTick;
+    }
 }
 
 /// @brief 将一帧调试流数据加入待投递队列，并调度主线程 flush。

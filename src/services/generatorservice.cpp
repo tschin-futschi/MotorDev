@@ -342,6 +342,7 @@ void GeneratorService::handleTimeout() {
     switch (m_pendingOp) {
     case PendingOp::StartLinear:
     case PendingOp::StartCosine:
+    case PendingOp::StartSawtooth:
         m_pendingOp = PendingOp::None;
         emit runningChanged(false);                     // 启动超时，恢复停止状态
         break;
