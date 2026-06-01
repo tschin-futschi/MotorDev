@@ -267,7 +267,7 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
                                          int timeoutMs) {
     // 诊断字段在入口立即重置，所有早退路径都会留下可读 exitReason
     m_lastDiag = FastPathDiag{};
-    m_lastDiag.sameThread = (QThread::currentThread() == m_thread);
+    m_lastDiag.sameThread = (QThread::currentThread() == thread());
     m_lastDiag.serialOpen = (m_serial != nullptr && m_serial->isOpen());
 
     if (!m_lastDiag.sameThread) {
@@ -493,8 +493,8 @@ void SerialManager::stopHeartbeatTimer() {
 /// @brief 处理解析完成的控制帧
 ///
 /// 分发逻辑：
-/// 1. 心跳响应（cmd==0x00）→ 重置心跳计数器
-/// 2. 错误响应（cmd==0xFF）→ 清除挂起命令并转发
+/// 1. 心跳响应（cmd==CmdHeartbeat, 0x00）→ 重置心跳计数器
+/// 2. 错误响应（cmd==CmdErrorResponse, 0x01）→ 清除挂起命令并转发
 /// 3. 无挂起命令 → 作为设备主动上报帧转发
 /// 4. seq 匹配 → 清除挂起命令并转发响应
 /// 5. seq 不匹配 → 仍然转发（可能是设备主动上报帧，如调试信息）

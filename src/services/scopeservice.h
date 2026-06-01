@@ -104,13 +104,11 @@ private:
     };
 
     void setRunning(bool running);
-    void startSamplingSequence();
     void sendNextStartCommand();
     void finishPendingCommand();
     void clearPendingCommandState();
     void clearPendingStreamBatch();
     void logStartSnapshot() const;
-    static uint8_t commandForPending(PendingCommand pending);
     bool sendCommand(uint8_t cmd, const QByteArray &data);
 
     static constexpr int StreamWatchdogMs = 5000;

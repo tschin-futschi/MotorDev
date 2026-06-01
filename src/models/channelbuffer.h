@@ -18,7 +18,6 @@
 #include <QVector>
 
 #include <array>
-#include <vector>
 
 /// @brief 单通道数据缓冲区
 ///
@@ -55,12 +54,6 @@ public:
     int rawCount() const { return m_rawCount; }
 
 private:
-    /// @brief 就地计算中值（会修改输入数组的顺序）
-    /// @param values  采样值数组
-    /// @param count   有效元素个数
-    /// @return 中值
-    static double medianValueInPlace(std::vector<double> &values, int count);
-
     /// @brief 将一个降采样后的值写入 UI 环
     void writeDisplaySample(double value);
 
@@ -75,6 +68,6 @@ private:
     int m_uiCount = 0;            ///< UI 环有效样本数
 
     // --- 降采样桶 ---
-    std::vector<double> m_bucketBuffer;  ///< 当前桶内积累的原始样本
+    int m_bucketWidth = 1;               ///< 降采样桶宽度（每多少个原始样本产出一个 UI 样本）
     int m_bucketFill = 0;                ///< 当前桶内已填充的样本数
 };

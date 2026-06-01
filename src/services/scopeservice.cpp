@@ -292,11 +292,6 @@ void ScopeService::setRunning(bool running) {
         << QStringLiteral("Sampling state=%1").arg(running ? QStringLiteral("Start") : QStringLiteral("Stop"));
 }
 
-/// @brief 启动采样命令序列的入口。
-void ScopeService::startSamplingSequence() {
-    sendNextStartCommand();
-}
-
 // =============================================================================
 // 4 步启动命令序列
 // =============================================================================
@@ -420,25 +415,6 @@ void ScopeService::finishPendingCommand() {
 /// @brief 重置待处理命令状态。
 void ScopeService::clearPendingCommandState() {
     m_pendingCommand = PendingCommand::None;
-}
-
-/// @brief 将 PendingCommand 枚举映射为协议命令字。
-uint8_t ScopeService::commandForPending(PendingCommand pending) {
-    switch (pending) {
-    case PendingCommand::SetSampleInterval:
-        return MotorProtocol::CmdSetSampleInterval;
-    case PendingCommand::SetSampleChannels:
-        return MotorProtocol::CmdSetSampleChannels;
-    case PendingCommand::SetChannelRegisterMap:
-        return MotorProtocol::CmdSetChannelRegisterMap;
-    case PendingCommand::StartSampling:
-        return MotorProtocol::CmdStartSampling;
-    case PendingCommand::StopSampling:
-        return MotorProtocol::CmdStopSampling;
-    case PendingCommand::None:
-        return 0xFF;
-    }
-    return 0xFF;
 }
 
 // =============================================================================

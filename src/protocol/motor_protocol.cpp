@@ -421,7 +421,7 @@ const char *flashStoreStatusName(uint8_t status) {
     return "UNKNOWN";
 }
 
-// appendU32LE / appendU16LE 已在本文件 line 318/325 定义（file-static）, 直接复用。
+// appendU32LE / appendU16LE 已在本文件上方定义（file-static）, 直接复用。
 // 这里只补两个 read helper, 命名加 fs 前缀避免与未来扩展冲突。
 namespace {
 inline quint32 fsReadU32LE(const QByteArray &data, int offset) {
