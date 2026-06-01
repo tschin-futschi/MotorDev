@@ -226,13 +226,11 @@ void FwFileInfoPanel::setInfo(const FirmwareInfo &info) {
     } else if (isDwCustom) {
         m_effectiveValue->setText(tr("%1 字节").arg(info.effectiveBytes));
         if (info.paddingApplied) {
-            const int expectedLines = isHl9788 ? 16384 : 10240;
-            // 期望行数 - 原始行数 - 2 = 填充 0 的行数；最后再加 1 行 footer CRC + 1 行 0
-            const int padLines = expectedLines - info.originalLines - 2;
+            // 行数计算（期望行数 / footer 占位）已下沉 FirmwareParser，UI 仅展示
             m_paddingValue->setText(
                 tr("%1 原始行 + %2 填充 0 行 + footer (CRC32=%3, 末行全 0)")
                     .arg(info.originalLines)
-                    .arg(padLines)
+                    .arg(info.paddingZeroLines)
                     .arg(formatHex32(info.footerCrc32)));
         }
     }

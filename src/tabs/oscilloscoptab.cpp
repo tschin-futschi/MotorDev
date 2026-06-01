@@ -47,7 +47,7 @@ OscilloscopTab::OscilloscopTab(SerialManager *serialManager,
     m_service = new ScopeService(serialManager, dispatcher, m_channelModel, this);
     m_regService = new RegisterService(dispatcher, this);
     m_generatorService = new GeneratorService(dispatcher, this);
-    m_cyclicWriteService = new CyclicWriteService(m_regService, this);
+    m_cyclicWriteService = new CyclicWriteService(dispatcher, this);  // 自建独立 RegisterService（F8 隔离）
     m_cyclicWriteService->setRowCount(ScopeRegisterPanel::rowCount());
     m_recordService = new ScopeRecordService(m_channelModel, this);
 

@@ -11,6 +11,7 @@
 #include <QObject>
 #include <functional>
 
+class CommandDispatcher;
 class RegisterService;
 class QTimer;
 
@@ -20,7 +21,13 @@ class CyclicWriteService : public QObject {
 public:
     using RowDataProvider = std::function<bool(int row, quint16 &addr, quint16 &value)>;
 
-    explicit CyclicWriteService(RegisterService *regService, QObject *parent = nullptr);
+    /// @brief 构造循环写入服务。
+    ///
+    /// 内部持有**独立的** RegisterService 实例（与示波器寄存器面板手动读写、
+    /// RegisterTable、BatchRegisterService 完全隔离，镜像 BlockReadService），
+    /// 避免循环写与手动写命中相同 row 号时响应被误归属；底层 SerialManager 命令
+    /// 队列共享，物理上仍串行执行。
+    explicit CyclicWriteService(CommandDispatcher *dispatcher, QObject *parent = nullptr);
     ~CyclicWriteService() override;
 
     bool isRunning() const;

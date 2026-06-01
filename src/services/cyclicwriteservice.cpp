@@ -23,13 +23,13 @@ Q_LOGGING_CATEGORY(lcCyclicWrite, "motordev.cyclicwrite")
 // 构造 / 析构
 // =============================================================================
 
-/// @brief 构造循环写入服务，绑定 RegisterService 的写入结果信号。
+/// @brief 构造循环写入服务，内部自建独立 RegisterService 并绑定其写入结果信号。
 ///
-/// @param regService  寄存器服务指针，用于实际执行写入命令
+/// @param dispatcher  CommandDispatcher（用于内部独立 RegisterService）
 /// @param parent      父对象
-CyclicWriteService::CyclicWriteService(RegisterService *regService, QObject *parent)
+CyclicWriteService::CyclicWriteService(CommandDispatcher *dispatcher, QObject *parent)
     : QObject(parent)
-    , m_regService(regService) {
+    , m_regService(new RegisterService(dispatcher, this)) {
     // ---------- 定时器：驱动周期性写入节奏 ----------
     m_timer = new QTimer(this);
     m_timer->setSingleShot(false);

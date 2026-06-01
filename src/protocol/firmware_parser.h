@@ -62,9 +62,12 @@ struct FirmwareInfo {
     quint32 minAddress = 0;             ///< 仅 Intel .hex 有意义
     quint32 maxAddress = 0;             ///< 仅 Intel .hex 有意义
 
-    // --- 仅 Hl9788Hex 路径有意义；其他格式恒为默认值 ---
-    bool    paddingApplied = false;     ///< 原始 hex 行数 < 16384 时触发了自动补齐
+    // --- 仅 Hl9788Hex / Dw9786Hex 路径有意义；其他格式恒为默认值 ---
+    bool    paddingApplied = false;     ///< 原始 hex 行数 < 期望行数时触发了自动补齐
     int     originalLines = 0;          ///< 原始 hex 有效（非空）数据行数 N
+    int     paddedTotalLines = 0;       ///< 补齐后总行数（格式期望行数 kExpectedLines，如 16384/10240）
+    int     paddingZeroLines = 0;       ///< 自动补齐时填 0 的行数 = paddedTotalLines - originalLines - 2
+                                         ///< （footer 占 2 行：1 行 CRC32 + 1 行全 0）
     quint32 footerCrc32 = 0;            ///< 写入 footer 倒数第二行的 CRC32 值
                                          ///< = CRC32(原始 hex 文件全部字节，含 \r\n / 空行)
 };
@@ -83,4 +86,18 @@ public:
 
     /// @brief 计算标准 CRC32（多项式 0xEDB88320，IEEE 802.3）
     static quint32 computeCrc32(const QByteArray &data);
+
+    /// @brief 取 DW 自定义 hex 格式参数（HL9788N / DW9786 的期望字数与拆字高低序，唯一真值来源）。
+    /// @param expectedWords [out] 期望 16-bit 字数（HL9788N=32768 / DW9786=20480）
+    /// @param highFirst     [out] 拆字高 16 位是否在前（HL9788N=false / DW9786=true）
+    /// @return true=该格式为 Hl9788Hex/Dw9786Hex 且已填出参；false=非 DW 自定义 hex 格式
+    static bool dwHexFormatParams(FirmwareFormat format, int *expectedWords, bool *highFirst);
+
+    /// @brief 由解析出的 FirmwareInfo.data 反生成 DW vendor hex 文本（每行 8 大写 hex 字符 + LF）。
+    ///
+    /// 与 parseDwHexGeneric 的拆字规则对称，是其逆运算。仅 Hl9788Hex / Dw9786Hex 有效；
+    /// 供 FwFlashTab「补齐后另存」复用，避免固件文本编码这类协议域知识散落到 UI 层。
+    /// @param errorMessage [out] 失败原因（可选）
+    /// @return 成功返回 hex 文本字节；失败返回空 QByteArray
+    static QByteArray generateDwHexText(const FirmwareInfo &info, QString *errorMessage = nullptr);
 };

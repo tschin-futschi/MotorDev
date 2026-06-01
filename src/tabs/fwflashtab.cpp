@@ -75,51 +75,13 @@ bool saveDwPaddedHex(const FirmwareInfo &info,
                      const QString &originalPath,
                      QString *outSavedPath,
                      QString *outErrorMessage) {
-    int kExpectedWords = 0;
-    bool highFirst = false;
-    switch (info.format) {
-    case FirmwareFormat::Hl9788Hex:
-        kExpectedWords = 32768;  // 16384 lines
-        highFirst = false;       // parser: out[2i]=low, out[2i+1]=high
-        break;
-    case FirmwareFormat::Dw9786Hex:
-        kExpectedWords = 20480;  // 10240 lines
-        highFirst = true;        // parser: out[2i]=high, out[2i+1]=low
-        break;
-    default:
-        if (outErrorMessage) *outErrorMessage = QStringLiteral("不支持的固件格式");
+    // 固件文本反编码（拆字逆运算 + 期望行数等协议域知识）下沉到 FirmwareParser，
+    // 本函数只负责落盘命名与写文件。
+    QString genErr;
+    const QByteArray textBuf = FirmwareParser::generateDwHexText(info, &genErr);
+    if (textBuf.isEmpty()) {
+        if (outErrorMessage) *outErrorMessage = genErr;
         return false;
-    }
-    const int kExpectedLines = kExpectedWords / 2;
-    constexpr int kLineBytes = 9;  // 8 hex 字符 + LF
-
-    if (info.data.size() != kExpectedWords * static_cast<int>(sizeof(quint16))) {
-        if (outErrorMessage) *outErrorMessage = QStringLiteral("固件数据大小异常");
-        return false;
-    }
-    const auto *outWords = reinterpret_cast<const quint16 *>(info.data.constData());
-
-    // 反推 32-bit 行内容（与 parser 拆字规则对称）：
-    //   HL9788N: parser out[2i]=low, out[2i+1]=high → reverse: val = (out[2i+1]<<16) | out[2i]
-    //   DW9786:  parser out[2i]=high, out[2i+1]=low → reverse: val = (out[2i]<<16) | out[2i+1]
-    QByteArray textBuf;
-    textBuf.resize(kExpectedLines * kLineBytes);
-    static constexpr char kHexTable[] = "0123456789ABCDEF";
-    char *p = textBuf.data();
-    for (int i = 0; i < kExpectedLines; ++i) {
-        const quint32 hi = highFirst ? outWords[2 * i] : outWords[2 * i + 1];
-        const quint32 lo = highFirst ? outWords[2 * i + 1] : outWords[2 * i];
-        const quint32 v = (hi << 16) | lo;
-        p[0] = kHexTable[(v >> 28) & 0xFu];
-        p[1] = kHexTable[(v >> 24) & 0xFu];
-        p[2] = kHexTable[(v >> 20) & 0xFu];
-        p[3] = kHexTable[(v >> 16) & 0xFu];
-        p[4] = kHexTable[(v >> 12) & 0xFu];
-        p[5] = kHexTable[(v >>  8) & 0xFu];
-        p[6] = kHexTable[(v >>  4) & 0xFu];
-        p[7] = kHexTable[v & 0xFu];
-        p[8] = '\n';
-        p += kLineBytes;
     }
 
     const QFileInfo fi(originalPath);

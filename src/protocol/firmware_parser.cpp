@@ -220,6 +220,61 @@ quint32 FirmwareParser::computeCrc32(const QByteArray &data) {
     return crc32Compute(data);
 }
 
+bool FirmwareParser::dwHexFormatParams(FirmwareFormat format, int *expectedWords, bool *highFirst) {
+    switch (format) {
+    case FirmwareFormat::Hl9788Hex:
+        if (expectedWords) *expectedWords = 32768;  // 16384 行 / 32768 words / 64KB
+        if (highFirst)     *highFirst     = false;  // 拆字 low 先
+        return true;
+    case FirmwareFormat::Dw9786Hex:
+        if (expectedWords) *expectedWords = 20480;  // 10240 行 / 20480 words / 40KB
+        if (highFirst)     *highFirst     = true;   // 拆字 high 先（与 HL9788N 相反）
+        return true;
+    default:
+        return false;
+    }
+}
+
+QByteArray FirmwareParser::generateDwHexText(const FirmwareInfo &info, QString *errorMessage) {
+    int expectedWords = 0;
+    bool highFirst = false;
+    if (!dwHexFormatParams(info.format, &expectedWords, &highFirst)) {
+        if (errorMessage) *errorMessage = QStringLiteral("不支持的固件格式（非 DW 自定义 hex）");
+        return QByteArray();
+    }
+    const int expectedLines = expectedWords / 2;
+    if (info.data.size() != expectedWords * static_cast<int>(sizeof(quint16))) {
+        if (errorMessage) *errorMessage = QStringLiteral("固件数据大小异常");
+        return QByteArray();
+    }
+    const auto *outWords = reinterpret_cast<const quint16 *>(info.data.constData());
+
+    // 反推 32-bit 行内容（与 parseDwHexGeneric 的 writeWords 拆字规则对称的逆运算）：
+    //   highFirst=false (HL9788N): out[2i]=low,  out[2i+1]=high → val=(out[2i+1]<<16)|out[2i]
+    //   highFirst=true  (DW9786):  out[2i]=high, out[2i+1]=low  → val=(out[2i]<<16)|out[2i+1]
+    constexpr int kLineBytes = 9;  // 8 hex 字符 + LF
+    static constexpr char kHexTable[] = "0123456789ABCDEF";
+    QByteArray textBuf;
+    textBuf.resize(expectedLines * kLineBytes);
+    char *p = textBuf.data();
+    for (int i = 0; i < expectedLines; ++i) {
+        const quint32 hi = highFirst ? outWords[2 * i] : outWords[2 * i + 1];
+        const quint32 lo = highFirst ? outWords[2 * i + 1] : outWords[2 * i];
+        const quint32 v = (hi << 16) | lo;
+        p[0] = kHexTable[(v >> 28) & 0xFu];
+        p[1] = kHexTable[(v >> 24) & 0xFu];
+        p[2] = kHexTable[(v >> 20) & 0xFu];
+        p[3] = kHexTable[(v >> 16) & 0xFu];
+        p[4] = kHexTable[(v >> 12) & 0xFu];
+        p[5] = kHexTable[(v >>  8) & 0xFu];
+        p[6] = kHexTable[(v >>  4) & 0xFu];
+        p[7] = kHexTable[v & 0xFu];
+        p[8] = '\n';
+        p += kLineBytes;
+    }
+    return textBuf;
+}
+
 namespace {
 
 // -----------------------------------------------------------------------------
@@ -328,6 +383,7 @@ FirmwareInfo parseDwHexGeneric(const QFileInfo &fi,
     }
 
     info.originalLines = dataLineCount;
+    info.paddedTotalLines = kExpectedLines;
 
     if (dataLineCount < kExpectedLines) {
         // 补齐分支：原始 N 行已写入 outWords[0..2N)，剩余 (kExpectedWords - 2N)
@@ -337,6 +393,8 @@ FirmwareInfo parseDwHexGeneric(const QFileInfo &fi,
         info.footerCrc32 = footerCrc;
         writeWords(outWords + kCrcLineIndex * 2, footerCrc);
         info.paddingApplied = true;
+        // 填 0 行数 = 总行 - 原始行 - footer(CRC 行 + 末行全 0) 2 行
+        info.paddingZeroLines = kExpectedLines - dataLineCount - 2;
     }
     // dataLineCount == kExpectedLines 路径：不写 footer，保持向后兼容；
     // paddingApplied=false / footerCrc32=0 / originalLines=kExpectedLines
@@ -350,14 +408,16 @@ FirmwareInfo parseDwHexGeneric(const QFileInfo &fi,
 
 /// HL9788N hex：16384 行 / 32768 words / 64KB，拆字 low 先
 FirmwareInfo parseHl9788Hex(const QFileInfo &fi, const QByteArray &content) {
-    return parseDwHexGeneric(fi, content, FirmwareFormat::Hl9788Hex,
-                              /*kExpectedWords=*/32768, /*highFirst=*/false);
+    int words = 0; bool highFirst = false;
+    FirmwareParser::dwHexFormatParams(FirmwareFormat::Hl9788Hex, &words, &highFirst);
+    return parseDwHexGeneric(fi, content, FirmwareFormat::Hl9788Hex, words, highFirst);
 }
 
 /// DW9786 hex：10240 行 / 20480 words / 40KB，拆字 high 先（与 HL9788N 相反）
 FirmwareInfo parseDw9786Hex(const QFileInfo &fi, const QByteArray &content) {
-    return parseDwHexGeneric(fi, content, FirmwareFormat::Dw9786Hex,
-                              /*kExpectedWords=*/20480, /*highFirst=*/true);
+    int words = 0; bool highFirst = false;
+    FirmwareParser::dwHexFormatParams(FirmwareFormat::Dw9786Hex, &words, &highFirst);
+    return parseDwHexGeneric(fi, content, FirmwareFormat::Dw9786Hex, words, highFirst);
 }
 
 // 内容嗅探：根据第一行非空白字符判断是 Intel HEX (`:` 起始) 还是 Hl9788Hex (纯 hex 字符)
