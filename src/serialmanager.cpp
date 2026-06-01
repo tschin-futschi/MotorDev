@@ -283,10 +283,12 @@ bool SerialManager::sendAndWaitResponse(uint8_t cmd,
     // 烧录开始前 dispatcher 队列里的 stop 命令仍在等响应；如果在此早退，
     // I2C 帧永远写不出去。强制 clearPendingCommand() 后继续，丢失的 stop 响应
     // 由 fast-path 期间 handleControlFrame 作为 stray frame 丢弃。
-    // 已知短板：dispatcher 端 m_waitingResponse 不会被通知，需要断连重连恢复。
+    // 抢占后通过 pendingCommandPreempted 信号通知 dispatcher 失败其活跃命令，
+    // 修复旧短板（此前 dispatcher m_waitingResponse 不被通知、需断连重连恢复）。
     if (!m_pendingFrame.isEmpty()) {
         m_lastDiag.pendingCleared = true;
         clearPendingCommand();
+        emit pendingCommandPreempted();
     }
     if (m_fastPath.active) {
         m_lastDiag.exitReason = FastPathDiag::ExitReason::AlreadyActive;

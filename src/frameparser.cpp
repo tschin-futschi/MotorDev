@@ -60,6 +60,16 @@ QString formatPayloadHex(const QByteArray &data) {
 // -----------------------------------------------------------------------------
 
 QByteArray FrameParser::encodeControlFrame(uint8_t seq, uint8_t cmd, const QByteArray &data) {
+    // LEN 字段仅 1 字节（最大 255）。>255 载荷若继续编码会被 `& 0xFF` 静默截断，
+    // 导致帧长 / CRC 范围错位、接收端必然解析失败且无告警。此处直接拒绝并返回空帧
+    // （本协议所有载荷均 < 255，触发即为调用方错误）；调用方写空帧不会发出有效命令，
+    // 由其超时/写校验兜底，而非静默发出损坏帧。
+    if (data.size() > 255) {
+        qCWarning(lcFrameParser) << "encodeControlFrame: payload too large, rejected"
+                                 << "size=" << data.size() << "cmd=" << cmd;
+        return QByteArray();
+    }
+
     QByteArray frame;
     frame.reserve(data.size() + 7);  // 帧头(2) + SEQ(1) + CMD(1) + LEN(1) + CRC(2)
 

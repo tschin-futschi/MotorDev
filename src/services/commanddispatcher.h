@@ -98,6 +98,10 @@ private slots:
     /// @brief 处理串口断开
     void onSerialDisconnected();
 
+    /// @brief 烧录 fast-path 抢占了挂起的 housekeeping 命令：失败当前活跃命令，
+    ///        避免 m_waitingResponse 永久卡 true（旧短板需断连重连恢复）
+    void onPendingCommandPreempted();
+
 private:
     /// @brief 队列中的待发送命令条目
     struct PendingEntry {
@@ -133,7 +137,10 @@ private:
     // --- 当前活跃命令状态 ---
     bool m_waitingResponse = false;            ///< 是否正在等待响应
     Ticket m_activeTicket = InvalidTicket;     ///< 活跃命令的票据
-    uint8_t m_activeSeq = 0xFF;                ///< 活跃命令的 seq（0xFF 表示尚未收到 commandSent）
+    uint8_t m_activeSeq = 0;                   ///< 活跃命令的 seq（有效性由 m_seqKnown 标记）
+    bool m_seqKnown = false;                   ///< 是否已收到 commandSent 分配的 seq；
+                                               ///< 取代旧的 0xFF 哨兵，避免真实 seq 回绕到
+                                               ///< 0xFF（== LocalErrorCode）时 seq 校验被绕过
     uint8_t m_activeCmd = 0;                   ///< 活跃命令的 cmd
     ResponseCallback m_activeCallback;         ///< 活跃命令的回调
 };

@@ -64,6 +64,18 @@ void BlockReadService::start(quint16 startAddr, int count, const QString &target
         return;
     }
 
+    // 地址自卫：最后一个读地址 = startAddr + 2*(count-1)，不得越过 16-bit 上限。
+    // 不纯依赖 UI 校验（service 入口独立防御，避免 submitNextRead 处 quint16 静默回绕）。
+    const long long lastAddr = static_cast<long long>(startAddr) + 2LL * (count - 1);
+    if (lastAddr > 0xFFFF) {
+        const QString msg = QStringLiteral("块读取：地址范围越界（0x%1 + %2×2 超出 0xFFFF）")
+                                .arg(formatHex4(startAddr)).arg(count);
+        emit stageMessage(msg);
+        emit logMessage(LogLevel::Warn, msg);
+        emit finished(false, msg, QString());
+        return;
+    }
+
     const QFileInfo dirInfo(targetDir);
     if (!dirInfo.isDir()) {
         const QString msg = QStringLiteral("块读取：保存目录不存在");

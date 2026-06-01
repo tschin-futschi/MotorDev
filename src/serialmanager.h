@@ -173,6 +173,10 @@ signals:
     /// @param message  错误描述信息
     void errorOccurred(const QString &message);
 
+    /// @brief 烧录 fast-path 抢占了挂起的 housekeeping 命令（强制 clearPendingCommand）。
+    ///        CommandDispatcher 据此失败其活跃命令，避免 m_waitingResponse 永久卡 true。
+    void pendingCommandPreempted();
+
 private slots:
     /// @brief 串口数据可读回调，逐字节喂入 FrameParser
     void onReadyRead();

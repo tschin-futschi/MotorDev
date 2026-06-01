@@ -12,10 +12,6 @@
 
 #include <QMetaObject>
 
-namespace {
-constexpr uint8_t kInvalidSeq = 0xFF;  ///< 无效序列号标记
-}
-
 // -----------------------------------------------------------------------------
 // 构造
 // -----------------------------------------------------------------------------
@@ -36,6 +32,8 @@ CommandDispatcher::CommandDispatcher(SerialManager *serialManager, QObject *pare
             this, &CommandDispatcher::onSerialError);
     connect(m_serialManager, &SerialManager::disconnected,
             this, &CommandDispatcher::onSerialDisconnected);
+    connect(m_serialManager, &SerialManager::pendingCommandPreempted,
+            this, &CommandDispatcher::onPendingCommandPreempted);
 }
 
 // -----------------------------------------------------------------------------
@@ -125,9 +123,10 @@ void CommandDispatcher::onFrameReceived(uint8_t cmd, uint8_t seq, const QByteArr
         return;
     }
 
-    // 尝试按 seq 或 cmd 匹配
-    const bool matchesBySeq = (m_activeSeq != kInvalidSeq && seq == m_activeSeq);
-    const bool matchesBeforeSeqKnown = (m_activeSeq == kInvalidSeq && cmd == m_activeCmd);
+    // 尝试按 seq 或 cmd 匹配（seq 有效性由 m_seqKnown 标记，不再用 0xFF 哨兵，
+    // 避免真实 seq 恰为 0xFF 时被误判为"seq 未知"而绕过 seq 校验）
+    const bool matchesBySeq = (m_seqKnown && seq == m_activeSeq);
+    const bool matchesBeforeSeqKnown = (!m_seqKnown && cmd == m_activeCmd);
     if (!matchesBySeq && !matchesBeforeSeqKnown) {
         emit unsolicitedFrameReceived(cmd, seq, data);
         return;
@@ -149,6 +148,7 @@ void CommandDispatcher::onCommandSent(uint8_t cmd, uint8_t seq) {
     }
 
     m_activeSeq = seq;
+    m_seqKnown = true;
     emit commandDispatched(m_activeTicket, cmd, seq);
 }
 
@@ -181,6 +181,19 @@ void CommandDispatcher::onSerialDisconnected() {
     failQueued(QStringLiteral("Serial port disconnected"));
 }
 
+/// @brief 烧录 fast-path 抢占了 SerialManager 的挂起命令。
+///
+/// 该挂起命令即 dispatcher 当前活跃命令（dispatcher 单命令串行）。fast-path 不再
+/// 给它发响应，故在此失败活跃命令、清除 m_waitingResponse，修复"永久卡等待、需断连
+/// 重连恢复"的旧短板。
+///
+/// 不调用 trySendNext()：烧录序列由多次 sendAndWaitResponse 同步占用工作线程，其嵌套
+/// event loop 会处理投递到工作线程的 invokeMethod；若此处续发队列命令，可能被注入到
+/// 两帧烧录命令之间。队列将在烧录结束后的下一次 submitCommand 自然恢复。
+void CommandDispatcher::onPendingCommandPreempted() {
+    failActive(QStringLiteral("Command preempted by firmware flashing fast-path"));
+}
+
 // -----------------------------------------------------------------------------
 // 内部辅助方法
 // -----------------------------------------------------------------------------
@@ -205,7 +218,8 @@ void CommandDispatcher::trySendNext() {
     const PendingEntry entry = m_queue.takeFirst();
     m_waitingResponse = true;
     m_activeTicket = entry.ticket;
-    m_activeSeq = kInvalidSeq;  // seq 尚未分配，等待 commandSent 回调
+    m_activeSeq = 0;
+    m_seqKnown = false;  // seq 尚未分配，等待 commandSent 回调
     m_activeCmd = entry.cmd;
     m_activeCallback = entry.onResponse;
 
@@ -218,7 +232,8 @@ void CommandDispatcher::trySendNext() {
 void CommandDispatcher::clearActive() {
     m_waitingResponse = false;
     m_activeTicket = InvalidTicket;
-    m_activeSeq = kInvalidSeq;
+    m_activeSeq = 0;
+    m_seqKnown = false;
     m_activeCmd = 0;
     m_activeCallback = ResponseCallback();
 }
