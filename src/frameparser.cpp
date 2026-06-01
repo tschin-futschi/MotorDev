@@ -102,7 +102,7 @@ QByteArray FrameParser::encodeControlFrame(uint8_t seq, uint8_t cmd, const QByte
 /// @brief CRC-16 校验算法
 ///
 /// 多项式：0x8005（反转），初始值：0xFFFF，LSB 优先处理。
-/// 与 Modbus CRC-16 兼容。
+/// 注意：本算法用 0x8005 + 右移，与标准 Modbus CRC-16（反射 0xA001）不同，不可混用。
 uint16_t FrameParser::calculateCrc16(const QByteArray &data) {
     uint16_t crc = 0xFFFF;
     for (char byte : data) {

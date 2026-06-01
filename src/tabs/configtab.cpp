@@ -760,22 +760,21 @@ void ConfigTab::setupUi() {
     configFileLayout->addWidget(m_filePathEdit, 1);
 
     // 三个操作按钮等宽、紧凑（固定宽度，不随窗口拉伸而变大）
-    constexpr int kConfigFileBtnW = 120;
     m_browseButton = new QPushButton(configFileRow);
     m_browseButton->setObjectName(QStringLiteral("browseButton"));
-    m_browseButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_browseButton->setFixedSize(QSize(Style::Size::ConfigFileButtonW, Style::Size::ConfigFileButtonH));
     m_browseButton->setText(tr("浏览文件"));
     m_browseButton->setProperty("buttonRole", QStringLiteral("secondary"));
     configFileLayout->addWidget(m_browseButton);
     m_writeButton = new QPushButton(configFileRow);
     m_writeButton->setObjectName(QStringLiteral("writeButton"));
-    m_writeButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_writeButton->setFixedSize(QSize(Style::Size::ConfigFileButtonW, Style::Size::ConfigFileButtonH));
     m_writeButton->setText(tr("写入配置文件"));
     m_writeButton->setProperty("buttonRole", QStringLiteral("primary"));
     configFileLayout->addWidget(m_writeButton);
     m_readButton = new QPushButton(configFileRow);
     m_readButton->setObjectName(QStringLiteral("readButton"));
-    m_readButton->setFixedSize(QSize(kConfigFileBtnW, 32));
+    m_readButton->setFixedSize(QSize(Style::Size::ConfigFileButtonW, Style::Size::ConfigFileButtonH));
     m_readButton->setText(tr("回填配置文件"));
     m_readButton->setProperty("buttonRole", QStringLiteral("primary"));
     configFileLayout->addWidget(m_readButton);

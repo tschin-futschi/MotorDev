@@ -139,7 +139,7 @@ QByteArray encodeSetMotorIcAddr(uint8_t addr) {
 /// @brief 编码 PMIC 电压设置
 ///
 /// 载荷格式（6 字节）：[DRVVDD_H][DRVVDD_L][IOVDD_H][IOVDD_L][VCMVDD_H][VCMVDD_L]
-/// 电压值单位为 mV。
+/// 电压值为实际电压 × 100（如 1.80V→180），范围 60~377。
 QByteArray encodePmicVoltage(quint16 drvvdd, quint16 iovdd, quint16 vcmvdd) {
     QByteArray payload;
     payload.reserve(6);

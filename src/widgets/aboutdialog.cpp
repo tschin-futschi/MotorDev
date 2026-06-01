@@ -25,7 +25,7 @@ namespace {
 constexpr auto kAppName       = "MotorDev";
 constexpr auto kAppVersion    = "v1.0.0";
 constexpr auto kSupportedIcs  = "AW86008 / AW86100 / DW9786 / DW9788";
-constexpr auto kProtocol      = "generator_v1 / v2.10";
+constexpr auto kProtocol      = "generator_v1 / v2.11";
 constexpr auto kAuthor        = "Qin Fu Qi";
 constexpr auto kRepoUrl       = "github.com/tschin-futschi/MotorDev";
 constexpr auto kCopyright     = "© 2026  ·  MIT License";

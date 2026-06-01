@@ -76,8 +76,10 @@ ScopeBottomPanel::ScopeBottomPanel(QWidget *overlayHost, QWidget *parent)
     // 覆盖窗口在析构函数中手动 delete。
     m_registerPanel = new ScopeRegisterPanel(nullptr);
     m_generatorPanel = new ScopeGeneratorPanel(nullptr);
-    m_registerWindow = createOverlayWindow(tr("寄存器读写"), m_registerPanel, QSize(500, 400));
-    m_generatorWindow = createOverlayWindow(tr("波形生成器"), m_generatorPanel, QSize(420, 340));
+    m_registerWindow = createOverlayWindow(tr("寄存器读写"), m_registerPanel,
+                                           QSize(Style::Size::ScopeRegWindowInitW, Style::Size::ScopeRegWindowInitH));
+    m_generatorWindow = createOverlayWindow(tr("波形生成器"), m_generatorPanel,
+                                            QSize(Style::Size::GeneratorPanelMinW, Style::Size::GeneratorPanelMinH));
 
     // ---------- Y 轴菜单：自动 / 手动 ----------
     m_yAxisMenu = new QMenu(m_yAxisButton);

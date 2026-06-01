@@ -150,7 +150,7 @@ MotorDev/
 2. 主窗口框架（TopBar + ActivityBar + Sidebar + ContentArea + StatusBar）✓
 3. SerialManager + FrameParser（核心通信）✓
 4. Tab 0 配置（串口/IC/PMIC）✓
-5. Tab 1 寄存器读写（RegisterTable + Hex/Dec + 自动持久化）✓
+5. Tab 1 寄存器读写（RegisterTable + Hex/Dec + 批量读写/块读取；参数经统一配置文件手动存取）✓
 6. Tab 2 FW 烧录 ✓
    - AW86008 / AW86100：STM32 本地 ISP（协议 0x32~0x37）+ 0x38 真实进度
    - DW9788 (HL9788N)：vendor SDK + I2C 透传桥接（OTA 模式默认保留校准）
@@ -159,7 +159,7 @@ MotorDev/
 8. Tab 4 STM32 FLASH 文件存储（v2.11 / 0x39~0x3F）✓
 9. 串口调试模拟器（SerialDebugTab，独立浮窗）✓
 10. 信号发生器（Linear / Cosine / Sawtooth）✓
-11. 配置持久化（registers.json）✓
+11. 统一配置文件存取（各页参数手动 Read/Write 单个 JSON；原 registers.json 自动持久化已移除）✓
 12. 启动画面 + 应用图标 + DPI 锁屏 ✓
 13. MCU 启动状态徽章（0x0B BOOT_STATUS）✓
 14. 多语言支持（i18n 运行时中英即时切换，TopBar combo 驱动 + QSettings 记忆）✓

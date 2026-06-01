@@ -1,6 +1,6 @@
 # MotorDev UI 设计规格文档
 
-> 版本：v0.2 | 日期：2026-05-06
+> 版本：v0.3 | 日期：2026-06-01
 > 本文档定义所有 UI 组件的精确规格，供开发实现参考。
 
 ---
@@ -571,9 +571,9 @@ B006,0000\n
 | 控件 | 类型 | 行为 |
 |------|------|------|
 | `ConfigFile` | QLineEdit | 配置文件完整路径，可手输，或由 Browse 回填 |
-| `Browse` | QPushButton | 弹文件对话框（过滤 `*.json`，允许选已有文件或输入新文件名），仅回填路径，不读不写 |
-| `Write` | QPushButton | 采集各页面当前功能参数 → 写 JSON 到该路径（已存在则覆盖） |
-| `Read` | QPushButton | 从该路径读 JSON → 回填各页面参数 |
+| `Browse`（文案「浏览文件」） | QPushButton | 弹文件对话框（过滤 `*.json`，允许选已有文件或输入新文件名），仅回填路径，不读不写 |
+| `Write`（文案「写入配置文件」） | QPushButton | 采集各页面当前功能参数 → 写 JSON 到该路径（已存在则覆盖） |
+| `Read`（文案「回填配置文件」） | QPushButton | 从该路径读 JSON → 回填各页面参数 |
 
 ### 范围与语义
 
@@ -1149,7 +1149,7 @@ Style::Size::   ContentPadding (24) / ContentSpacing (16)
 │    版本     v1.0.0                           │
 │    构建     Qt <版本> · <编译日期>           │
 │    支持 IC  AW86008 / AW86100 / DW9786 / DW9788│
-│    通信协议 generator_v1 / v2.10             │
+│    通信协议 generator_v1 / v2.11             │
 │    作者     Qin Fu Qi                        │
 │  ──────────── HLine 分隔 ────────────        │
 │   „德语题词 1“（斜体居中）                    │
@@ -1169,7 +1169,7 @@ Style::Size::   ContentPadding (24) / ContentSpacing (16)
 - 版本 `kAppVersion` = `v1.0.0`
 - 构建 `Qt <QT_VERSION_STR> · <__DATE__>`（运行时由 Qt 版本宏与编译日期拼接）
 - 支持 IC `kSupportedIcs` = `AW86008 / AW86100 / DW9786 / DW9788`（`setWordWrap(true)`）
-- 通信协议 `kProtocol` = `generator_v1 / v2.10`
+- 通信协议 `kProtocol` = `generator_v1 / v2.11`（含 0x39~0x3F FLASH 文件存储 + 0x3F WIPE）
 - 作者 `kAuthor` = `Qin Fu Qi`
 - 版权 `kCopyright` = `© 2026 · MIT License`（居中弱化）
 - 仓库 `kRepoUrl` = `github.com/tschin-futschi/MotorDev`（居中，可选中复制）

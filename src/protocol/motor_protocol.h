@@ -180,9 +180,9 @@ QByteArray encodeI2cBusScan(uint8_t busIndex = 0x02);
 QByteArray encodeSetMotorIcAddr(uint8_t addr);
 
 /// @brief 编码 PMIC 电压设置请求载荷
-/// @param drvvdd  DRVVDD 电压值（mV）
-/// @param iovdd   IOVDD 电压值（mV）
-/// @param vcmvdd  VCMVDD 电压值（mV）
+/// @param drvvdd  DRVVDD 电压值（实际电压 × 100，如 1.80V→180）
+/// @param iovdd   IOVDD 电压值（实际电压 × 100）
+/// @param vcmvdd  VCMVDD 电压值（实际电压 × 100）
 /// @return 6 字节载荷（3 × 2 字节大端）
 QByteArray encodePmicVoltage(quint16 drvvdd, quint16 iovdd, quint16 vcmvdd);
 

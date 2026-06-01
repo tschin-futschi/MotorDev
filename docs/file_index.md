@@ -51,7 +51,7 @@
 > 数据记录：采样期间将全速率原始采样持续写入 CSV（`ScopeRecordService`），采样启停即录制启停，目录由顶部行 Record Dir 控件指定。
 > 示波器工具栏控件（视图模式切换、Style、Crosshair）位于 TopBar 仅示波器页面可见；采样启停按钮内嵌在绘图区。
 
-- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，协调 ScopeService / RegisterService / GeneratorService / CyclicWriteService / ScopeRecordService 五个服务；通过 MainWindow 桥接与 TopBar 上的示波器控件交互；记录目录经 QSettings(`scope/recordDir`) 跨会话持久化
+- `src/tabs/oscilloscoptab` `[UI-Tab]` — 示波器 Tab 容器，协调 ScopeService / RegisterService / GeneratorService / CyclicWriteService / ScopeRecordService 五个服务；通过 MainWindow 桥接与 TopBar 上的示波器控件交互；记录目录不再走 QSettings 自动持久化，改由配置页「配置文件」Read/Write 统一存取（scope 段，`collectScopeConfig/applyScopeConfig`）
 - `src/widgets/scopeplotwidget` `[UI-Widget]` — 波形绘制画布（QOpenGLWidget + QPainter GL 后端，overlay/stacked 模式，拖拽缩放 X/Y 轴，双击全屏，内嵌采样按钮，十字光标）；16ms UI 定时器驱动 + 通道快照展平 + 零堆分配 paintEvent + cosmetic 画笔，8 通道稳定 60fps
 - `src/widgets/scopestylepanel` `[UI-Widget]` — 示波器通道样式面板（颜色选择、线宽、线型、数据点开关）；由 TopBar 的 Style 按钮触发显隐
 - `src/widgets/scopebottompanel` `[UI-Widget]` — 底部面板容器；通道条内嵌显示，寄存器/发生器面板以独立浮动窗口（`Qt::Tool`）弹出
@@ -143,12 +143,12 @@
 | 功能 | 入口文件 | 状态 |
 |------|---------|------|
 | PMIC 电压配置 | `src/tabs/configtab` + `src/services/configservice` | 已实现：DRVDD/IOVDD/VCMVDD 三路电压输入 + 两步序列（SetVoltage → Enable）+ Disable + 5s 超时 |
-| IC 配置文件写入/读出 | `src/tabs/configtab` | UI stub，按钮未连接信号 |
+| 统一配置文件写入/读出 | `src/tabs/configtab` + `src/services/appconfigservice` | 已实现：Config File 行（路径输入 + Browse/Write/Read）把各页面功能参数采集为单个 JSON（device/registers/scope/flash/flashStore 五段，手动 Write）/ 从 JSON 回填各页面（手动 Read，只回填不触发串口动作）；MainWindow 持有 AppConfigService 编排各 tab `collectXxx/applyXxx` |
 | 寄存器批量导入/导出（用户选择文件） | `src/tabs/registerrwtab` + `src/protocol/batch_register_file` | 已实现：4 槽独立操作（前 2 写、后 2 读）；配置文件格式 `<addr>, <value>` + `//` 注释（参考 `register_read.txt`）；遇错即停；读出全或无（中止时原文件不动）；全局互斥（与 Sidebar 全部读/写 互锁）；浮窗内底部状态文字反馈 |
 | 寄存器块读取（连续地址段 dump） | `src/tabs/registerrwtab` + `src/services/blockreadservice` | 已实现：起始地址 + 个数（步进 +2）→ `Bulkread_HHMMSS.csv`；失败即停 / 协作式取消（已成功条目仍写文件）；进度条 + 状态文字反馈；独立通道（不与 Sidebar 全部读/写 / 批量读写互斥） |
 | 示波器拖拽缩放（X/Y 轴） | `src/widgets/scopeplotwidget` | 已实现：鼠标拖拽选区缩放，双击全屏，右键重置 |
 | 示波器十字光标 | `src/widgets/scopeplotwidget` + `src/widgets/topbar` | 已实现：TopBar 切换按钮 + 吸附最近样本读数 |
-| 示波器数据记录（CSV） | `src/services/scoperecordservice` + `src/widgets/scopebottompanel` | 已实现：采样启停即录制启停，全速率原始采样写 `Scope_YYYYMMDD_HHMMSS.csv`；目录用户指定（Record Dir + 浏览 + QSettings 持久化），未设/无效则不录并提示；"打开"按钮用 Excel 打开最新记录文件（`latestRecordFile()` + `start excel`） |
+| 示波器数据记录（CSV） | `src/services/scoperecordservice` + `src/widgets/scopebottompanel` | 已实现：采样启停即录制启停，全速率原始采样写 `Scope_YYYYMMDD_HHMMSS.csv`；目录用户指定（Record Dir + 浏览），未设/无效则不录并提示；目录不再走 QSettings 自动持久化，改由配置页「配置文件」Read/Write 统一存取（scope 段）；"打开"按钮用 Excel 打开最新记录文件（`latestRecordFile()` + `start excel`） |
 | 示波器截图等操作 | `src/tabs/oscilloscoptab` | 未实现 |
 | 示波器串口数据流接入 | `src/services/scopeservice` + `src/widgets/scopeplotwidget` | 已实现：ScopeStreamBatcher 跨线程批量 + 背压 + 看门狗 |
 | 示波器寄存器面板（含循环写入） | `src/widgets/scoperegisterpanel` + `src/services/registerservice` + `src/services/cyclicwriteservice` | 已实现：8 行 R/W + 循环写入间隔/启停/清除 |
@@ -170,7 +170,7 @@
 | 协议层 | `src/protocol/motor_protocol`, `src/protocol/register_utils`, `src/protocol/sampling_config`, `src/protocol/firmware_parser` |
 | 数据模型层 | `src/devicecontext`, `src/models/scopechannelmodel`, `src/models/channelbuffer` |
 | UI Shell | `src/mainwindow`, `src/widgets/topbar`, `src/widgets/activitybar`, `src/widgets/logpanel` |
-| UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/serialdebugtab` |
+| UI Tab | `src/tabs/configtab`, `src/tabs/registerrwtab`, `src/tabs/oscilloscoptab`, `src/tabs/fwflashtab`, `src/tabs/flashstoragetab`, `src/tabs/serialdebugtab` |
 | UI Widget | `src/widgets/registertable`, `src/widgets/sidebar`, `src/widgets/scopeplotwidget`, `src/widgets/scopebottompanel`, `src/widgets/scopechannelstrip`, `src/widgets/scoperegisterpanel`, `src/widgets/scopegeneratorpanel`, `src/widgets/scopestylepanel`, `src/widgets/scopepreviewwidget`, `src/widgets/scopemarqueelabel`, `src/widgets/fwfileinfopanel`, `src/widgets/fwflashcontrolpanel`, `src/widgets/fwflashlogpanel` |
 | 服务层 | `src/services/appconfigservice`, `src/services/commanddispatcher`, `src/services/configservice`, `src/services/registerservice`, `src/services/batchregisterservice`, `src/services/blockreadservice`, `src/services/scopeservice`, `src/services/cyclicwriteservice`, `src/services/dw9786oisresetservice`, `src/services/generatorservice`, `src/services/simulatorservice`, `src/services/fwflashservice`, `src/services/flashstoreservice`, `src/services/flashstrategy`, `src/services/flashstrategyregistry`, `src/services/flashstrategies/*` |
 | 开发工具传输层 | `src/services/simulatorserial` |
