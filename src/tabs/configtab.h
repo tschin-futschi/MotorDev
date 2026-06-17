@@ -68,6 +68,10 @@ public:
     /// @param device  device section JSON；缺失字段跳过
     void applyDeviceConfig(const QJsonObject &device);
 
+    /// @brief 设置「配置文件」路径输入框文本（仅设文本，不读写文件、不发信号）
+    /// @param path 配置文件路径；供 MainWindow 启动时恢复上次使用的路径
+    void setConfigFilePath(const QString &path);
+
 signals:
     /// @brief 串口连接成功
     /// @param port 端口名称（如 "COM3"）

@@ -471,6 +471,14 @@ void ConfigTab::applyDeviceConfig(const QJsonObject &device) {
     }
 }
 
+void ConfigTab::setConfigFilePath(const QString &path) {
+    // 仅设置路径框文本：不读写文件、不发 read/write 信号。持久化与启动恢复
+    // 逻辑集中在 MainWindow，本类保持 UI 与持久化解耦。
+    if (m_filePathEdit != nullptr) {
+        m_filePathEdit->setText(path);
+    }
+}
+
 // =============================================================================
 // 辅助方法
 // =============================================================================

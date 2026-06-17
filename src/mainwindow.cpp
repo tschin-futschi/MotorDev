@@ -109,6 +109,17 @@ MainWindow::MainWindow(QWidget *parent)
     if (savedLang != 0) {
         m_topBar->setLanguageIndex(savedLang);
     }
+
+    // 启动时恢复上次使用的配置文件：路径填回配置页输入框，并自动回填各页面参数
+    // （复用 onReadRequested，与手动点「回填配置文件」完全同一路径 / 日志 / 健壮性）。
+    // 此处所有 Tab 与 AppConfigService 均已构造并接线完成。Read 只回填控件值、无任何
+    // 串口副作用；文件不存在 / 损坏时由 AppConfigService 记日志并优雅跳过，路径仍保留。
+    const QString lastConfigFile =
+        settings.value(QStringLiteral("config/lastFile")).toString();
+    if (!lastConfigFile.isEmpty()) {
+        m_configTab->setConfigFilePath(lastConfigFile);
+        m_appConfigService->onReadRequested(lastConfigFile);
+    }
 }
 
 MainWindow::~MainWindow() {
@@ -449,6 +460,14 @@ void MainWindow::connectSignals() {
     connect(m_appConfigService, &AppConfigService::logMessage, this,
             [this](const QString &line) {
                 m_logPanel->appendMessage(QtInfoMsg, QStringLiteral("Config"), line);
+            });
+    // 记住「上次成功使用的配置文件」：仅 Write/Read 成功时持久化路径（成功时 message 即
+    // 文件路径）。浏览选路径不算「使用」，失败不覆盖已存 key。下次启动据此自动回填。
+    connect(m_appConfigService, &AppConfigService::finished, this,
+            [](bool ok, const QString &message) {
+                if (!ok) return;
+                QSettings settings(QStringLiteral("MotorDev"), QStringLiteral("MotorDev"));
+                settings.setValue(QStringLiteral("config/lastFile"), message);
             });
 
     // --- 串口连接成功：启用各受限页面 ---
